@@ -51,7 +51,8 @@ backend DB password
 use English;
 
 use forks;
-use forks::shared deadlock => {
+use forks::shared 
+    deadlock => {
     detect => 1,
     resolve => 1
 };
@@ -77,6 +78,8 @@ use Ecenter::Schema;
 
 use perfSONAR_PS::Common qw( extract find unescapeString escapeString );
 use perfSONAR_PS::Client::gLS;
+use perfSONAR_PS::Error_compat qw/:try/;
+use perfSONAR_PS::Error;
 use perfSONAR_PS::Client::Echo;
 
 our ($DEBUGFLAG, $HELP, $KEY, $PASS, $USER) = ('','','','','');
@@ -102,36 +105,32 @@ our %SERVICE_LOOKUP = (  'http://ggf.org/ns/nmwg/characteristic/utilization/2.0'
                          'http://ggf.org/ns/nmwg/tools/ndt/1.0'  => 'ndt',
                          'http://ggf.org/ns/nmwg/tools/ping/1.0' => 'ping',
                          'http://ggf.org/ns/nmwg/tools/phoebus/1.0' => 'phoebus',
-);		     
+);
+our $DISCOVERY_EVENTTYPE = 'http://ogf.org/ns/nmwg/tools/org/perfsonar/service/lookup/discovery/xquery/2.0';
 my $status = GetOptions(
     'v|verbose'   => \$DEBUGFLAG,
-    'k|key=s'       => \$KEY,
-    'p|pass=s'    => \$PASS,
+    'k|key=s'     => \$KEY,
+    'p|password=s'    => \$PASS,
     'u|user=s'    => \$USER,
     'help|h|?'    => \$HELP,
 ) or pod2usage(1);
 
 $DEBUGFLAG?Log::Log4perl->easy_init($DEBUG):Log::Log4perl->easy_init($INFO);
-our  $logger = Log::Log4perl->get_logger(__PACKAGE__);
+my  $logger = Log::Log4perl->get_logger(__PACKAGE__);
 
 pod2usage(2) if ( $HELP || !($USER && $PASS));
 
 my $parser = XML::LibXML->new();
 my $hints  = "http://www.perfsonar.net/gls.root.hints";
 my @private_list = ( "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16" );
-my $base = ".";
 my $pattern = '';
-$logger->debug("Pattern: $pattern");
 my %hls = ();
 my $gls = perfSONAR_PS::Client::gLS->new( { url => $hints } );
 
 $logger->logdie("roots not found") unless ( $#{ $gls->{ROOTS} } > -1 );
  
 my %threads = ();
-
-### shared among procs - container for metadata
-my %mesh : shared;
-
+# 
 my $thread_counter=1;
 my $hls_query =  qq|declare namespace perfsonar="http://ggf.org/ns/nmwg/tools/org/perfsonar/1.0/";
  	    declare namespace nmwg="http://ggf.org/ns/nmwg/base/2.0/";
@@ -139,7 +138,6 @@ my $hls_query =  qq|declare namespace perfsonar="http://ggf.org/ns/nmwg/tools/or
  	    /nmwg:store[\@type="LSStore"]/nmwg:metadata
  	    [./perfsonar:subject/psservice:service/psservice:serviceType[matches(text(), '^[hH]?ls', 'i')]]
 	    |;
-   
 if($KEY) {
     ($pattern  = $KEY) =~ s/_([^_]+)/\\\-?($1)?/g;
     $logger->debug("Pattern: $pattern");
@@ -167,45 +165,58 @@ for my $root ( @{ $gls->{ROOTS} } ) {
         my $service = find( $doc->getDocumentElement, ".//*[local-name()='service']", 0 );
         foreach my $s ( $service->get_nodelist ) {  
 	  ### run query/echo/ping async
-	  $threads{$thread_counter} = threads->new( sub {
-	    my $now_str = strftime('%Y-%m-%d %H:%M:%S', localtime());
-	    my $dbh =  Ecenter::Schema->connect('DBI:mysql:ecenter',  $USER, $PASS);
- 	    my $keyword_str = $pattern;
-            my $accessPoint = extract( find( $s, ".//*[local-name()='accessPoint']", 1 ), 0 );
-	    my $serviceName = extract( find( $s, ".//*[local-name()='serviceName']", 1 ), 0 );
-            my $serviceType = extract( find( $s, ".//*[local-name()='serviceType']", 1 ), 0 );
-            my $serviceDescription = extract( find( $s, ".//*[local-name()='serviceDescription']", 1 ), 0 );
-            if ( $accessPoint ) {
-                $logger->debug("\t\thLS:\t$accessPoint");
-                my $test = $accessPoint;                
-                $test =~ s/^http:\/\///;
-                my ( $unt_test ) = $test =~ /^(.+):/;
-                if ( $unt_test 
-		     and ( (is_ipv4( $unt_test ) && !Net::CIDR::cidrlookup( $unt_test, @private_list )) 
-		           or  &Net::IPv6Addr::is_ipv6( $unt_test ) 
-			   or  (is_domain( $unt_test ) &&  $unt_test !~ m/^localhost/ )
-			 ) 
-		    ) {
-		    my $echo_service = perfSONAR_PS::Client::Echo->new( $accessPoint );
-                    my ( $status, $res ) = $echo_service->ping();
-		    my $hls = $dbh->resultset('Service')->update_or_create({ name => $serviceName,
-		                                                             url   =>   $accessPoint,
-		                                                             type => $serviceType,
-								             comments => $serviceDescription,
-								             is_alive => (!$status?'1':'0'), 
-								             updated =>  $now_str
-								            },
-								      { key => 'service_url'}
-								     );
-		    unless($status)  {
-		        get_fromHLS($accessPoint, $now_str, $hls, $dbh);
-		    }
-                 }  else  {
-                    $logger->debug("\t\t\tReject:\t$unt_test");
-                 }
-             }
-	    $dbh->storage->disconnect if $dbh;
-	   });
+	    $threads{$thread_counter} = threads->new( sub {
+		my $now_str = strftime('%Y-%m-%d %H:%M:%S', localtime());
+		my $dbh =  Ecenter::Schema->connect('DBI:mysql:ecenter',  $USER, $PASS);
+ 		my $keyword_str = $pattern;
+        	my $accessPoint = extract( find( $s, ".//*[local-name()='accessPoint']", 1 ), 0 );
+		my $serviceName = extract( find( $s, ".//*[local-name()='serviceName']", 1 ), 0 );
+        	my $serviceType = extract( find( $s, ".//*[local-name()='serviceType']", 1 ), 0 );
+        	my $serviceDescription = extract( find( $s, ".//*[local-name()='serviceDescription']", 1 ), 0 );
+        	try {
+		    if ( $accessPoint ) {
+                	$logger->debug("\t\thLS:\t$accessPoint");
+                	my $test = $accessPoint;                
+                	$test =~ s/^http:\/\///;
+                	my ( $unt_test ) = $test =~ /^(.+):/;
+                	if ( $unt_test 
+			     and ( (is_ipv4( $unt_test ) && !Net::CIDR::cidrlookup( $unt_test, @private_list )) 
+		        	   or  &Net::IPv6Addr::is_ipv6( $unt_test ) 
+				   or  (is_domain( $unt_test ) &&  $unt_test !~ m/^localhost/ )
+				 ) 
+			    ) {
+			    my $echo_service = perfSONAR_PS::Client::Echo->new( $accessPoint );
+                	    my ( $status, $res ) = $echo_service->ping();
+			    my $hls = $dbh->resultset('Service')->update_or_create({ name => $serviceName,
+		                                                        	     url   =>   $accessPoint,
+		                                                        	     type => $serviceType,
+								        	     comments => $serviceDescription,
+								        	     is_alive => (!$status?'1':'0'), 
+								        	     updated =>  $now_str
+								        	    },
+									      { key => 'service_url'}
+									     );
+			    unless($status)  {
+		        	get_fromHLS($accessPoint, $now_str, $hls, $dbh);
+			    }
+                	 }  else  {
+                	    $logger->debug("\t\t\tReject:\t$unt_test");
+                	 }
+        	     }
+		} 
+		catch perfSONAR_PS::Error   with {
+		    $logger->error( shift);
+		} catch perfSONAR_PS::Error_compat with {
+                    $logger->error( shift);
+        	}
+        	otherwise {
+                    my $ex  = shift; 
+                    $logger->error("Unhandled exception or crash: $ex");
+        	}
+		finally {
+	            $dbh->storage->disconnect if $dbh;
+		};
+	    });
 	}
     }
     else {
@@ -234,14 +245,14 @@ sub ls_store_request {
    my $result = $ls->queryRequestLS(
         {
             query     =>  $h_query,
-            eventType => "http://ogf.org/ns/nmwg/tools/org/perfsonar/service/lookup/discovery/xquery/2.0",
+            eventType =>  $DISCOVERY_EVENTTYPE,
             format    => 1
         } );
     if ( exists $result->{eventType}  && $result->{eventType} eq "error.ls.query.ls_output_not_accepted" ) {
         $result = $ls->queryRequestLS(
             {
                 query     => $h_query,
-                eventType => "http://ogf.org/ns/nmwg/tools/org/perfsonar/service/lookup/discovery/xquery/2.0"
+                eventType => $DISCOVERY_EVENTTYPE,
             }
         );
     }

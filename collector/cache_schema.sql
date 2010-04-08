@@ -67,10 +67,12 @@ FOREIGN KEY fk_kws_svc (service) REFERENCES  service (service)  on DELETE CASCAD
 --
 drop  table if exists metadata;
 CREATE TABLE   metadata (
+metadata  bigint AUTO_INCREMENT NOT NULL, 
 metaid  varchar(255) NOT NULL,
 service bigint  NOT NULL,
 subject varchar(1023) NOT NULL,
 parameters varchar(1023) NULL,
-PRIMARY KEY  (metaid),
+PRIMARY KEY  (metadata),
+KEY  (metaid),
 FOREIGN KEY fk_md_svc (service) REFERENCES  service (service)  on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB CHARSET=utf8 COMMENT='ps-ps metadata provided by each service';

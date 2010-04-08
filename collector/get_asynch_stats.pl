@@ -239,7 +239,7 @@ try hls twice
 =cut
  
 sub ls_store_request {
-   my ($ls) = @_;
+   my ($ls, $eventtype) = @_;
    my $h_query = qq|declare namespace perfsonar="http://ggf.org/ns/nmwg/tools/org/perfsonar/1.0/";
 	                  declare namespace nmwg="http://ggf.org/ns/nmwg/base/2.0/";
 	                  declare namespace psservice="http://ggf.org/ns/nmwg/tools/org/perfsonar/service/1.0/";
@@ -247,14 +247,13 @@ sub ls_store_request {
    my $result = $ls->queryRequestLS(
         {
             query     =>  $h_query,
-            eventType =>  $QUERY_EVENTTYPE,
-            format    => 1
+            eventType =>  $eventtype,
         } );
     if ( exists $result->{eventType}  && $result->{eventType} eq "error.ls.query.ls_output_not_accepted" ) {
         $result = $ls->queryRequestLS(
             {
                 query     => $h_query,
-                eventType => $QUERY_EVENTTYPE,
+                eventType =>  $eventtype,
             }
         );
     }
@@ -273,25 +272,30 @@ sub get_fromHLS {
     my $logger = get_logger(__PACKAGE__);
     $logger->debug("hLS: $hls_url............");
     my $ls = new perfSONAR_PS::Client::LS( { instance => $hls_url } );
-    my $result = ls_store_request($ls);
-    return unless   ( exists $result->{eventType} and not( $result->{eventType} =~ m/^error/ ) );
-    $logger->debug("EventType: $result->{eventType}");
-    $result->{response} = unescapeString( $result->{response} );
-    my $doc;
+    my $result_disc = ls_store_request($ls, $DISCOVERY_EVENTTYPE);
+    my $result_query = ls_store_request($ls, $QUERY_EVENTTYPE);
+    return unless   ( exists $result_disc->{eventType} and not( $result_disc->{eventType} =~ m/^error/ ) );
+    $logger->debug("EventType: $result_disc->{eventType}");
+    $result_disc->{response} = unescapeString( $result_disc->{response} );
+    $result_query->{response} = unescapeString( $result_query->{response} );
+    my ($doc_disc,$doc_query);
     eval {
-    	$doc = $parser->parse_string( $result->{response} ) if exists $result->{response};
+    	$doc_disc = $parser->parse_string( $result_disc->{response} ) if exists $result_disc->{response};
+	$doc_query = $parser->parse_string( $result_query->{response} ) if exists $result_query->{response};
     };
     if($EVAL_ERROR) {
         $logger->warning("This hls $hls_url failed ");
         $hls_obj->is_active(0);
         return;
     }
-    my $md = find( $doc->getDocumentElement, "./nmwg:store/nmwg:metadata", 0 );
-    my $d  = find( $doc->getDocumentElement, "./nmwg:store/nmwg:data",     0 );
+    my $md_disc = find( $doc_disc->getDocumentElement, "./nmwg:store/nmwg:metadata", 0 );
+    my $d_disc  = find( $doc_disc->getDocumentElement, "./nmwg:store/nmwg:data",     0 );
+    my $d_query  = find( $doc_query->getDocumentElement, "./nmwg:store/nmwg:data",     0 );
     # create lookup hash to avoid multiple array parsing
-    my %look_data_id =  map {   $_->getAttribute("metadataIdRef") => $_ } $d->get_nodelist;
-    
-    foreach my $m1 ( $md->get_nodelist ) {
+    my %look_data_disc_id =  map {   $_->getAttribute("metadataIdRef") => $_ } $d_disc->get_nodelist;
+    my %look_data_query_id =  map {   $_->getAttribute("metadataIdRef") => $_ } $d_query->get_nodelist;
+   
+    foreach my $m1 ( $md_disc->get_nodelist ) {
    	my $id = $m1->getAttribute("id");  
 	my %param_exist = ();
 	foreach my $param (keys %SERVICE_PARAM) {
@@ -313,16 +317,19 @@ sub get_fromHLS {
 	my $service_obj =  $dbh->resultset('Service')->update_or_create( \%param_exist,{ key => 'service_url' } ); 
       
 	##############  data part processing
-        my $d1 = $look_data_id{$id};
-	next unless $d1;
+        my $d1_disc = $look_data_disc_id{$id};
+	my $d1_query = $look_data_query_id{$id};
+	next unless $d1_disc;
    	# get the keywords
-   	my $keywords = find( $d1, "./nmwg:metadata/summary:parameters/nmwg:parameter", 0 );
+   	my $keywords = find( $d1_disc, "./nmwg:metadata/summary:parameters/nmwg:parameter", 0 );
    	my %keyword_hash = map { $_ => 1 } 
 			   grep {defined $_}  
 	        	   map {extract($_, 0)}  
 	        	   grep {$_->getAttribute("name") eq 'keyword'}
 	        	   $keywords->get_nodelist;
-	map { $logger->debug("DATA $id  MD element:::" . $d1->toString) }  @service_mds ;
+        my ($subj_md) =  @{$d1_query->findnodes("./nmwg:metadata/*[local-name()='subject']")};
+	my ($param_md)  =  @{$d1_query->findnodes('./nmwg:metadata/nmwg:parameters')};
+        $logger->debug("DATA $id  MD element:::" . $subj_md->toString);
    	# get the eventTypes
     	foreach my  $keyword_str (keys %keyword_hash) {
 	    my $keyword = $dbh->resultset('Keyword')->find_or_create({ keyword => $keyword_str,
@@ -339,7 +346,7 @@ sub get_fromHLS {
 								    { key => 'keywords_service' } 
 								  );
 	}
-	my $eventTypes = find( $d1 , "./nmwg:metadata/nmwg:eventType", 0 );
+	my $eventTypes = find( $d1_disc , "./nmwg:metadata/nmwg:eventType", 0 );
 	my $type_of_service =  $param_exist{type};
         foreach my $e ( $eventTypes->get_nodelist ) {
    	    my $value = extract( $e, 0 );
@@ -353,13 +360,12 @@ sub get_fromHLS {
 							    {key => 'eventtype_service'}
 							  );
 	}
-	my ($service_mds) =  @{$d1->findnodes("./nmwg:metadata/*[local-name()='subject']")};
-	my $subj =  $md_data->find("./*[local-name()='subject']");
-	my $parameters = $md_data->find("./nmwg:parameters'");
-	my $meta_row = $dbh->resultset('Metadata')->update_or_create( { metaid =>  $mdid,
+	
+	 
+	my $meta_rowid = $dbh->resultset('Metadata')->update_or_create( { metaid =>  $id,
 							     service =>   $service_obj,
-							     subject =>  $subj->toString(),
-							     parameters => $parameters->toString(), 
+							     subject =>  $subj_md->toString,
+							     parameters => ($param_md?$param_md->toString:''),
 							    }
 							  );
     }
@@ -372,16 +378,7 @@ must implement and return hashref of the structure:
 { '<mdid>' => {'<param1>' =>    }
 
 =cut
-
-my $process_subject = (
-    pinger => sub {  },
-    owamp=> sub {},
-    bwctl => sub {},
-    snmp => sub {},
-    traceroute => sub {},
-    npad => sub {},
-    ndt => sub {},
-);
+ 
  
 __END__
 

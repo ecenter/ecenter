@@ -69,21 +69,8 @@ drop  table if exists metadata;
 CREATE TABLE   metadata (
 metaid  varchar(255) NOT NULL,
 service bigint  NOT NULL,
+subject varchar(1023) NOT NULL,
+parameters varchar(1023) NULL,
 PRIMARY KEY  (metaid),
 FOREIGN KEY fk_md_svc (service) REFERENCES  service (service)  on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB CHARSET=utf8 COMMENT='ps-ps metadata provided by each service';
---
---  metadata parameters
---
-drop  table if exists parameters;
-CREATE TABLE   parameters (
-param_id  bigint AUTO_INCREMENT NOT NULL, 
-name  varchar(255) NOT NULL,
-metaid varchar(255) NOT NULL, 
-PRIMARY KEY  (param_id),
-KEY name (name),
-UNIQUE KEY param_mdid (name, metaid),
-FOREIGN KEY fk_param_md (metaid) REFERENCES  metadata (metaid) on DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB CHARSET=utf8 COMMENT='ps-ps metadata params';
-
-

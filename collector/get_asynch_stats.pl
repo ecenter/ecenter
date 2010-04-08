@@ -107,6 +107,8 @@ our %SERVICE_LOOKUP = (  'http://ggf.org/ns/nmwg/characteristic/utilization/2.0'
                          'http://ggf.org/ns/nmwg/tools/phoebus/1.0' => 'phoebus',
 );
 our $DISCOVERY_EVENTTYPE = 'http://ogf.org/ns/nmwg/tools/org/perfsonar/service/lookup/discovery/xquery/2.0';
+our $QUERY_EVENTTYPE = 'http://ogf.org/ns/nmwg/tools/org/perfsonar/service/lookup/query/xquery/2.0';
+
 my $status = GetOptions(
     'v|verbose'   => \$DEBUGFLAG,
     'k|key=s'     => \$KEY,
@@ -245,14 +247,14 @@ sub ls_store_request {
    my $result = $ls->queryRequestLS(
         {
             query     =>  $h_query,
-            eventType =>  $DISCOVERY_EVENTTYPE,
+            eventType =>  $QUERY_EVENTTYPE,
             format    => 1
         } );
     if ( exists $result->{eventType}  && $result->{eventType} eq "error.ls.query.ls_output_not_accepted" ) {
         $result = $ls->queryRequestLS(
             {
                 query     => $h_query,
-                eventType => $DISCOVERY_EVENTTYPE,
+                eventType => $QUERY_EVENTTYPE,
             }
         );
     }
@@ -286,6 +288,9 @@ sub get_fromHLS {
     }
     my $md = find( $doc->getDocumentElement, "./nmwg:store/nmwg:metadata", 0 );
     my $d  = find( $doc->getDocumentElement, "./nmwg:store/nmwg:data",     0 );
+    # create lookup hash to avoid multiple array parsing
+    my %look_data_id =  map {   $_->getAttribute("metadataIdRef") => $_ } $d->get_nodelist;
+    
     foreach my $m1 ( $md->get_nodelist ) {
    	my $id = $m1->getAttribute("id");  
 	my %param_exist = ();
@@ -306,59 +311,77 @@ sub get_fromHLS {
 	$param_exist{type} ||= 'N/A';
 	$param_exist{name} ||= 'N/A';
 	my $service_obj =  $dbh->resultset('Service')->update_or_create( \%param_exist,{ key => 'service_url' } ); 
-        my %keyword_hash = ();
-	foreach my $d1 ( $d->get_nodelist ) {
-   	    my $metadataIdRef = $d1->getAttribute("metadataIdRef");
-	     
-	    next unless $id eq $metadataIdRef;
-   	    # get the keywords
-   	    my $keywords = find( $d1, "./nmwg:metadata/summary:parameters/nmwg:parameter", 0 );
-   	    foreach my $k ( $keywords->get_nodelist ) {
-   		my $name = $k->getAttribute("name");
-   		next unless $name eq "keyword";
-   		my $value = extract( $k, 0 );
-   		$keyword_hash{$value} = 1 if $value;
-   	    }
-	    my @service_mds =  $d1->findnodes("./nmwg:metadata/*[local-name()='subject']");
-	    map { $logger->debug("DATA $id  MD element:::" . $d1->toString) }  @service_mds ;
-   	    # get the eventTypes
-    	    foreach my  $keyword_str (keys %keyword_hash) {
-	        my $keyword = $dbh->resultset('Keyword')->find_or_create({ keyword => $keyword_str,
-									 created => $now_str
-								       });
-		 $dbh->resultset('Keywords_Service')->update_or_create( { keyword => $keyword_str,
-								         service =>  $hls_obj
-								        },
-								        {key => 'keywords_service'}
-								      );
- 	         $dbh->resultset('Keywords_Service')->update_or_create( { keyword => $keyword_str,
-									 service =>  $service_obj
-								        },
-								        { key => 'keywords_service'}
-								      );
-	    }  
-	    my $eventTypes = find( $d1 , "./nmwg:metadata/nmwg:eventType", 0 );
-            foreach my $e ( $eventTypes->get_nodelist ) {
-   		my $value = extract( $e, 0 );
-		if($SERVICE_LOOKUP{$value}) {
-		    $service_obj->type($SERVICE_LOOKUP{$value});
-		}
-		$dbh->resultset('Eventtype')->update_or_create( { eventtype =>  $value,
-								   service =>  $hls_obj
-								},
-								{key => 'eventtype_service'}
-							      );
-	   }
-   	   last;
-   	}
+      
+	##############  data part processing
+        my $d1 = $look_data_id{$id};
+	next unless $d1;
+   	# get the keywords
+   	my $keywords = find( $d1, "./nmwg:metadata/summary:parameters/nmwg:parameter", 0 );
+   	my %keyword_hash = map { $_ => 1 } 
+			   grep {defined $_}  
+	        	   map {extract($_, 0)}  
+	        	   grep {$_->getAttribute("name") eq 'keyword'}
+	        	   $keywords->get_nodelist;
+	map { $logger->debug("DATA $id  MD element:::" . $d1->toString) }  @service_mds ;
+   	# get the eventTypes
+    	foreach my  $keyword_str (keys %keyword_hash) {
+	    my $keyword = $dbh->resultset('Keyword')->find_or_create({ keyword => $keyword_str,
+								       created => $now_str
+								    });
+	     $dbh->resultset('Keywords_Service')->update_or_create( { keyword => $keyword_str,
+								      service =>  $hls_obj
+								    },
+								    { key => 'keywords_service' }
+								  );
+ 	     $dbh->resultset('Keywords_Service')->update_or_create( { keyword => $keyword_str,
+								      service =>  $service_obj
+								    },
+								    { key => 'keywords_service' } 
+								  );
+	}
+	my $eventTypes = find( $d1 , "./nmwg:metadata/nmwg:eventType", 0 );
+	my $type_of_service =  $param_exist{type};
+        foreach my $e ( $eventTypes->get_nodelist ) {
+   	    my $value = extract( $e, 0 );
+	    if($SERVICE_LOOKUP{$value}) {
+		$service_obj->type($SERVICE_LOOKUP{$value});
+		$type_of_service = $SERVICE_LOOKUP{$value};
+	    }
+	    $dbh->resultset('Eventtype')->update_or_create( { eventtype =>  $value,
+							       service =>  $service_obj
+							    },
+							    {key => 'eventtype_service'}
+							  );
+	}
+	my ($service_mds) =  @{$d1->findnodes("./nmwg:metadata/*[local-name()='subject']")};
+	my $subj =  $md_data->find("./*[local-name()='subject']");
+	my $parameters = $md_data->find("./nmwg:parameters'");
+	my $meta_row = $dbh->resultset('Metadata')->update_or_create( { metaid =>  $mdid,
+							     service =>   $service_obj,
+							     subject =>  $subj->toString(),
+							     parameters => $parameters->toString(), 
+							    }
+							  );
     }
 }
 
-=head2     get_metadata 
+=head2     $process_subject 
 
-  get metadata from any
+processing metadata subject callbacks
+must implement and return hashref of the structure:
+{ '<mdid>' => {'<param1>' =>    }
 
 =cut
+
+my $process_subject = (
+    pinger => sub {  },
+    owamp=> sub {},
+    bwctl => sub {},
+    snmp => sub {},
+    traceroute => sub {},
+    npad => sub {},
+    ndt => sub {},
+);
  
 __END__
 

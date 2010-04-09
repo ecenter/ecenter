@@ -107,13 +107,13 @@ our %SERVICE_LOOKUP = (  'http://ggf.org/ns/nmwg/characteristic/utilization/2.0'
                          'http://ggf.org/ns/nmwg/tools/phoebus/1.0' => 'phoebus',
 );
 our $DISCOVERY_EVENTTYPE = 'http://ogf.org/ns/nmwg/tools/org/perfsonar/service/lookup/discovery/xquery/2.0';
-our $QUERY_EVENTTYPE = 'http://ogf.org/ns/nmwg/tools/org/perfsonar/service/lookup/query/xquery/2.0';
+our $QUERY_EVENTTYPE     = 'http://ogf.org/ns/nmwg/tools/org/perfsonar/service/lookup/query/xquery/2.0';
 
 my $status = GetOptions(
     'v|verbose'   => \$DEBUGFLAG,
-    'k|key=s'     => \$KEY,
-    'p|password=s'    => \$PASS,
-    'u|user=s'    => \$USER,
+    'key=s'     => \$KEY,
+    'password=s'    => \$PASS,
+    'user=s'    => \$USER,
     'help|h|?'    => \$HELP,
 ) or pod2usage(1);
 
@@ -272,7 +272,7 @@ sub get_fromHLS {
     my $logger = get_logger(__PACKAGE__);
     $logger->debug("hLS: $hls_url............");
     my $ls = new perfSONAR_PS::Client::LS( { instance => $hls_url } );
-    my $result_disc = ls_store_request($ls, $DISCOVERY_EVENTTYPE);
+    my $result_disc  = ls_store_request($ls, $DISCOVERY_EVENTTYPE);
     my $result_query = ls_store_request($ls, $QUERY_EVENTTYPE);
     return unless   ( exists $result_disc->{eventType} and not( $result_disc->{eventType} =~ m/^error/ ) );
     $logger->debug("EventType: $result_disc->{eventType}");
@@ -280,7 +280,7 @@ sub get_fromHLS {
     $result_query->{response} = unescapeString( $result_query->{response} );
     my ($doc_disc,$doc_query);
     eval {
-    	$doc_disc = $parser->parse_string( $result_disc->{response} ) if exists $result_disc->{response};
+    	$doc_disc  = $parser->parse_string( $result_disc->{response} )  if exists $result_disc->{response};
 	$doc_query = $parser->parse_string( $result_query->{response} ) if exists $result_query->{response};
     };
     if($EVAL_ERROR) {
@@ -288,14 +288,16 @@ sub get_fromHLS {
         $hls_obj->is_active(0);
         return;
     }
-    my $md_disc = find( $doc_disc->getDocumentElement, "./nmwg:store/nmwg:metadata", 0 );
+    my $md_query = find( $doc_query->getDocumentElement, "./nmwg:store/nmwg:metadata", 0 );
     my $d_disc  = find( $doc_disc->getDocumentElement, "./nmwg:store/nmwg:data",     0 );
+   
     my $d_query  = find( $doc_query->getDocumentElement, "./nmwg:store/nmwg:data",     0 );
     # create lookup hash to avoid multiple array parsing
-    my %look_data_disc_id =  map {   $_->getAttribute("metadataIdRef") => $_ } $d_disc->get_nodelist;
-    my %look_data_query_id =  map {   $_->getAttribute("metadataIdRef") => $_ } $d_query->get_nodelist;
-   
-    foreach my $m1 ( $md_disc->get_nodelist ) {
+    my %look_data_query_id= ();
+    foreach my $data_obj ($d_query->get_nodelist)  {
+       push @{$look_data_query_id{$data_obj->getAttribute("metadataIdRef")}}, $data_obj;
+    }
+    foreach my $m1 ( $md_query->get_nodelist ) {
    	my $id = $m1->getAttribute("id");  
 	my %param_exist = ();
 	foreach my $param (keys %SERVICE_PARAM) {
@@ -317,57 +319,59 @@ sub get_fromHLS {
 	my $service_obj =  $dbh->resultset('Service')->update_or_create( \%param_exist,{ key => 'service_url' } ); 
       
 	##############  data part processing
-        my $d1_disc = $look_data_disc_id{$id};
-	my $d1_query = $look_data_query_id{$id};
-	next unless $d1_disc;
+        ###my $d1_disc = $look_data_disc_id{$id};
+	my @d1_query = @{$look_data_query_id{$id}};
+	next unless @d1_query;
    	# get the keywords
-   	my $keywords = find( $d1_disc, "./nmwg:metadata/summary:parameters/nmwg:parameter", 0 );
-   	my %keyword_hash = map { $_ => 1 } 
-			   grep {defined $_}  
-	        	   map {extract($_, 0)}  
-	        	   grep {$_->getAttribute("name") eq 'keyword'}
-	        	   $keywords->get_nodelist;
-        my ($subj_md) =  @{$d1_query->findnodes("./nmwg:metadata/*[local-name()='subject']")};
-	my ($param_md)  =  @{$d1_query->findnodes('./nmwg:metadata/nmwg:parameters')};
-        $logger->debug("DATA $id  MD element:::" . $subj_md->toString);
-   	# get the eventTypes
-    	foreach my  $keyword_str (keys %keyword_hash) {
-	    my $keyword = $dbh->resultset('Keyword')->find_or_create({ keyword => $keyword_str,
-								       created => $now_str
-								    });
-	     $dbh->resultset('Keywords_Service')->update_or_create( { keyword => $keyword_str,
-								      service =>  $hls_obj
-								    },
-								    { key => 'keywords_service' }
-								  );
- 	     $dbh->resultset('Keywords_Service')->update_or_create( { keyword => $keyword_str,
-								      service =>  $service_obj
-								    },
-								    { key => 'keywords_service' } 
-								  );
-	}
-	my $eventTypes = find( $d1_disc , "./nmwg:metadata/nmwg:eventType", 0 );
-	my $type_of_service =  $param_exist{type};
-        foreach my $e ( $eventTypes->get_nodelist ) {
-   	    my $value = extract( $e, 0 );
-	    if($SERVICE_LOOKUP{$value}) {
-		$service_obj->type($SERVICE_LOOKUP{$value});
-		$type_of_service = $SERVICE_LOOKUP{$value};
+	foreach my $d1_el (@d1_query) {
+   	    my $keywords = find( $d1_el, "./nmwg:metadata/nmwg:parameters/nmwg:parameter", 0 );
+   	    my %keyword_hash = map { $_ => 1 } 
+			       grep {defined $_}  
+	        	       map {extract($_, 0)}  
+	        	       grep {$_->getAttribute("name") eq 'keyword'}
+	        	       $keywords->get_nodelist;
+            my ($subj_md) = @{$d1_el->findnodes("./nmwg:metadata/*[local-name()='subject']")};
+	    my ($param_md) =  @{$d1_el->findodes('./nmwg:metadata/nmwg:parameters')};
+            $logger->debug("DATA $id  MD element:::" . $subj_md->toString) if $subj_md;
+   	    # get the eventTypes
+    	    foreach my  $keyword_str (keys %keyword_hash) {
+		my $keyword = $dbh->resultset('Keyword')->find_or_create({ keyword => $keyword_str,
+									   created => $now_str
+									});
+		 $dbh->resultset('Keywords_Service')->update_or_create( { keyword => $keyword_str,
+									  service =>  $hls_obj
+									},
+									{ key => 'keywords_service' }
+								      );
+ 		 $dbh->resultset('Keywords_Service')->update_or_create( { keyword => $keyword_str,
+									  service =>  $service_obj
+									},
+									{ key => 'keywords_service' } 
+								      );
 	    }
-	    $dbh->resultset('Eventtype')->update_or_create( { eventtype =>  $value,
-							       service =>  $service_obj
-							    },
-							    {key => 'eventtype_service'}
-							  );
+	    my $eventTypes = find( $d1_el , "./nmwg:metadata/nmwg:eventType", 0 );
+	    my $type_of_service =  $param_exist{type};
+            foreach my $e ( $eventTypes->get_nodelist ) {
+   		my $value = extract( $e, 0 );
+		if($SERVICE_LOOKUP{$value}) {
+		    $service_obj->type($SERVICE_LOOKUP{$value});
+		    $type_of_service = $SERVICE_LOOKUP{$value};
+		}
+		$dbh->resultset('Eventtype')->update_or_create( { eventtype =>  $value,
+								   service =>  $service_obj
+								},
+								{key => 'eventtype_service'}
+							      );
+	    }
+
+
+	    my $meta_rowid = $dbh->resultset('Metadata')->update_or_create( { metaid =>  $id,
+								 service =>   $service_obj,
+								 subject =>  $subj_md->toString,
+								 parameters => ($param_md?$param_md->toString:''),
+								}
+	 					      );
 	}
-	
-	 
-	my $meta_rowid = $dbh->resultset('Metadata')->update_or_create( { metaid =>  $id,
-							     service =>   $service_obj,
-							     subject =>  $subj_md->toString,
-							     parameters => ($param_md?$param_md->toString:''),
-							    }
-							  );
     }
 }
 

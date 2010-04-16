@@ -5,16 +5,15 @@ use warnings;
 
 =head1 NAME
 
-get_async_stats.pl - cache program  with asynchronous calls to the remote LSes and mysql backend
+get_async_stats.pl - cache program  with asynchronous calls to the perfSONAR-PS remote LSes and mysql backend
 
 =head1 DESCRIPTION
 
-Builds up a list (flat file) of hLS instances that match a certain keyword
-query (e.g. 'LHC' and related combinations).
+ Inserts found perfSONAR-PS service's metadata into the backend DB. Runs asynchrounously. Spawns many processes.
 
 =head1 SYNOPSIS
 
-./get_lhs.pl --key=LHC_OPN
+./get_lhs.pl --key=LHC_OPN --password=<db password> --user=<db username>
 
 it will try to query fo all possible combinations:
 LHC, lhc, LHC-OPN, LHCOPN, lhcopn, lhc-opn
@@ -48,6 +47,7 @@ backend DB password
 =head1 FUNCTIONS
 
 =cut
+
 use English;
 
 use forks;
@@ -56,6 +56,7 @@ use forks::shared
     detect => 1,
     resolve => 1
 };
+use Time::HiRes qw(usleep);
 
 use XML::LibXML;
 use Getopt::Long;
@@ -81,6 +82,11 @@ use perfSONAR_PS::Client::gLS;
 use perfSONAR_PS::Error_compat qw/:try/;
 use perfSONAR_PS::Error;
 use perfSONAR_PS::Client::Echo;
+
+
+# Maximum working threads
+my $MAX_THREADS = 10;
+
 
 our ($DEBUGFLAG, $HELP, $KEY, $PASS, $USER) = ('','','','','');
 
@@ -110,11 +116,11 @@ our $DISCOVERY_EVENTTYPE = 'http://ogf.org/ns/nmwg/tools/org/perfsonar/service/l
 our $QUERY_EVENTTYPE     = 'http://ogf.org/ns/nmwg/tools/org/perfsonar/service/lookup/query/xquery/2.0';
 
 my $status = GetOptions(
-    'v|verbose'   => \$DEBUGFLAG,
-    'key=s'     => \$KEY,
-    'password=s'    => \$PASS,
-    'user=s'    => \$USER,
-    'help|h|?'    => \$HELP,
+    'v|verbose'  => \$DEBUGFLAG,
+    'key=s'      => \$KEY,
+    'password=s' => \$PASS,
+    'user=s'     => \$USER,
+    'help|h|?'   => \$HELP,
 ) or pod2usage(1);
 
 $DEBUGFLAG?Log::Log4perl->easy_init($DEBUG):Log::Log4perl->easy_init($INFO);
@@ -131,7 +137,7 @@ my $gls = perfSONAR_PS::Client::gLS->new( { url => $hints } );
 
 $logger->logdie("roots not found") unless ( $#{ $gls->{ROOTS} } > -1 );
  
-my %threads = ();
+my %threads   = ();
 # 
 my $thread_counter=1;
 my $hls_query =  qq|declare namespace perfsonar="http://ggf.org/ns/nmwg/tools/org/perfsonar/1.0/";
@@ -167,6 +173,7 @@ for my $root ( @{ $gls->{ROOTS} } ) {
         my $service = find( $doc->getDocumentElement, ".//*[local-name()='service']", 0 );
         foreach my $s ( $service->get_nodelist ) {  
 	  ### run query/echo/ping async
+	    pool_control();
 	    $threads{$thread_counter} = threads->new( sub {
 		my $now_str = strftime('%Y-%m-%d %H:%M:%S', localtime());
 		my $dbh =  Ecenter::Schema->connect('DBI:mysql:ecenter',  $USER, $PASS);
@@ -227,11 +234,31 @@ for my $root ( @{ $gls->{ROOTS} } ) {
         }
    }
 }
-foreach my $node_key (keys %threads) {
-   sleep 1 while($threads{$node_key}->is_running());
-   $threads{$node_key}->detach();
-}
+pool_control();
  
+=head2 pool_control
+
+=cut
+
+sub pool_control {
+    my ($threads_h) = @_;  
+    my $logger = get_logger(__PACKAGE__);
+    my @running =  threads->list(threads::running);
+    my $num_threads = scalar   @running;
+    $logger->info("Threads::" . join(' : ', map {$_->tid}  @running));
+    while( $num_threads >= $MAX_THREADS) {
+  	foreach my $tidx (@running) {
+  	    if( $tidx->is_running()) {
+  		usleep 10;
+  	    } else {
+  		$tidx->detach();
+  		$num_threads = threads->list(threads::running);
+  	    }
+  	}
+    }
+}
+
+
 =head2 ls_store_request
 
 try hls twice
@@ -284,8 +311,8 @@ sub get_fromHLS {
 	$doc_query = $parser->parse_string( $result_query->{response} ) if exists $result_query->{response};
     };
     if($EVAL_ERROR) {
-        $logger->warning("This hls $hls_url failed ");
-        $hls_obj->is_active(0);
+        $logger->error("This hls $hls_url failed ");
+        $hls_obj->is_alive(0);
         return;
     }
     my $md_query = find( $doc_query->getDocumentElement, "./nmwg:store/nmwg:metadata", 0 );
@@ -320,10 +347,12 @@ sub get_fromHLS {
       
 	##############  data part processing
         ###my $d1_disc = $look_data_disc_id{$id};
+	next unless $look_data_query_id{$id};
 	my @d1_query = @{$look_data_query_id{$id}};
-	next unless @d1_query;
+	
    	# get the keywords
 	foreach my $d1_el (@d1_query) {
+	    my $data_id =  $d1_el->getAttribute("id");
    	    my $keywords = find( $d1_el, "./nmwg:metadata/nmwg:parameters/nmwg:parameter", 0 );
    	    my %keyword_hash = map { $_ => 1 } 
 			       grep {defined $_}  
@@ -331,7 +360,7 @@ sub get_fromHLS {
 	        	       grep {$_->getAttribute("name") eq 'keyword'}
 	        	       $keywords->get_nodelist;
             my ($subj_md) = @{$d1_el->findnodes("./nmwg:metadata/*[local-name()='subject']")};
-	    my ($param_md) =  @{$d1_el->findodes('./nmwg:metadata/nmwg:parameters')};
+	    my ($param_md) =  @{$d1_el->findnodes('./nmwg:metadata/nmwg:parameters')};
             $logger->debug("DATA $id  MD element:::" . $subj_md->toString) if $subj_md;
    	    # get the eventTypes
     	    foreach my  $keyword_str (keys %keyword_hash) {
@@ -358,32 +387,24 @@ sub get_fromHLS {
 		    $type_of_service = $SERVICE_LOOKUP{$value};
 		}
 		$dbh->resultset('Eventtype')->update_or_create( { eventtype =>  $value,
-								   service =>  $service_obj
+								  service =>  $service_obj
 								},
 								{key => 'eventtype_service'}
 							      );
 	    }
 
 
-	    my $meta_rowid = $dbh->resultset('Metadata')->update_or_create( { metaid =>  $id,
+	    my $meta_rowid = $dbh->resultset('Metadata')->update_or_create( { metaid =>  $data_id ,
 								 service =>   $service_obj,
 								 subject =>  $subj_md->toString,
 								 parameters => ($param_md?$param_md->toString:''),
-								}
+								},
+								{key => 'metaid_service'}
 	 					      );
 	}
     }
 }
 
-=head2     $process_subject 
-
-processing metadata subject callbacks
-must implement and return hashref of the structure:
-{ '<mdid>' => {'<param1>' =>    }
-
-=cut
- 
- 
 __END__
 
 =head1 SEE ALSO
@@ -395,10 +416,6 @@ L<Net::CIDR>, <DBIx::Class>
 The E-center subversion repository is located at:
  
    https://ecenter.googlecode.com/svn
-
-To join the 'perfSONAR-PS' mailing list, please visit:
-
-  https://mail.internet2.edu/wws/info/i2-perfsonar
 
 The perfSONAR-PS subversion repository is located at:
 
@@ -415,8 +432,8 @@ $Id: $
 
 =head1 AUTHOR
 
-inpired by Jason Zurawski's cache.pl, zurawski@internet2.edu
 Maxim Grigoriev, maxim_at_fnal_dot_gov
+inspired by Jason Zurawski's cache.pl, zurawski@internet2.edu
 
 =head1 LICENSE
 

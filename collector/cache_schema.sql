@@ -44,7 +44,7 @@ CREATE TABLE   eventtype  (
  eventtype  varchar(255)  NULL, 
  service bigint NOT NULL, 
  PRIMARY KEY  (ref_id),
- UNIQUE KEY key_service (eventtype, service), 
+ UNIQUE KEY eventtype_service (eventtype, service), 
  FOREIGN KEY fk_evnt_svc (service) REFERENCES  service (service)  on DELETE CASCADE ON UPDATE CASCADE
  )  ENGINE=InnoDB CHARSET=utf8 COMMENT='project keywords';
 --
@@ -74,5 +74,6 @@ subject varchar(1023) NOT NULL,
 parameters varchar(1023) NULL,
 PRIMARY KEY  (metadata),
 KEY  (metaid),
+UNIQUE KEY metaid_service (metaid, service),
 FOREIGN KEY fk_md_svc (service) REFERENCES  service (service)  on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB CHARSET=utf8 COMMENT='ps-ps metadata provided by each service';

@@ -3,7 +3,7 @@ Library::import('eCenter.models.keyword');
 Library::import('recess.framework.forms.ModelForm');
 
 /**
- * !RespondsWith Layouts
+ * !RespondsWith Layouts, Json
  * !Prefix keyword/
  */
 class keywordController extends Controller {

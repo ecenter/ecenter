@@ -3,7 +3,7 @@ Library::import('eCenter.models.metadata');
 Library::import('recess.framework.forms.ModelForm');
 
 /**
- * !RespondsWith Layouts
+ * !RespondsWith Layouts, Json
  * !Prefix metadata/
  */
 class metadataController extends Controller {

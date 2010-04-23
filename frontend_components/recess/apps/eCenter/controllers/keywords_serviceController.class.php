@@ -3,7 +3,7 @@ Library::import('eCenter.models.keywords_service');
 Library::import('recess.framework.forms.ModelForm');
 
 /**
- * !RespondsWith Layouts
+ * !RespondsWith Layouts, Json
  * !Prefix keywordsService/
  */
 class keywords_serviceController extends Controller {

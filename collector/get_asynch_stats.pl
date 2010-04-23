@@ -13,7 +13,7 @@ get_async_stats.pl - cache program  with asynchronous calls to the perfSONAR-PS 
 
 =head1 SYNOPSIS
 
-./get_lhs.pl --key=LHC_OPN --password=<db password> --user=<db username>
+./get_lhs.pl --key=lhc --procs=20 --password=<db password> --user=<db username>
 
 it will try to query fo all possible combinations:
 LHC, lhc, LHC-OPN, LHCOPN, lhcopn, lhc-opn
@@ -24,21 +24,28 @@ Default: * - all keywords
 
 =over
 
-=item --verbose|v
+=item --debug
 
-=item --k|key=[project key]
+debugging info logged
+
+=item --key=[project key]
 
 keyword to query
 
-=item --help|h|?
+=item --procs
+
+number of asynchronous procs to spawn ( requests to remote hLses)
+Default: 10
+   
+=item --help
 
 print help
    
-=item --user|u
+=item --user
 
 backend DB username
 
-=item --pass|p
+=item --password
 
 backend DB password   
 
@@ -87,9 +94,7 @@ use perfSONAR_PS::Client::Echo;
 # Maximum working threads
 my $MAX_THREADS = 10;
 
-
-our ($DEBUGFLAG, $HELP, $KEY, $PASS, $USER) = ('','','','','');
-
+ 
 our %SERVICE_PARAM = ( url => [qw/accessPoint address/], 
 		       name => [qw/serviceName name/],
         	       type => [qw/serviceType type/],
@@ -115,18 +120,18 @@ our %SERVICE_LOOKUP = (  'http://ggf.org/ns/nmwg/characteristic/utilization/2.0'
 our $DISCOVERY_EVENTTYPE = 'http://ogf.org/ns/nmwg/tools/org/perfsonar/service/lookup/discovery/xquery/2.0';
 our $QUERY_EVENTTYPE     = 'http://ogf.org/ns/nmwg/tools/org/perfsonar/service/lookup/query/xquery/2.0';
 
-my $status = GetOptions(
-    'v|verbose'  => \$DEBUGFLAG,
-    'key=s'      => \$KEY,
-    'password=s' => \$PASS,
-    'user=s'     => \$USER,
-    'help|h|?'   => \$HELP,
+
+my %OPTIONS;
+my @string_option_keys = qw/key password user procs/;
+GetOptions( \%OPTIONS,
+            map("$_=s", @string_option_keys),
+            qw/debug help/,
 ) or pod2usage(1);
 
-$DEBUGFLAG?Log::Log4perl->easy_init($DEBUG):Log::Log4perl->easy_init($INFO);
+$OPTIONS{debug}?Log::Log4perl->easy_init($DEBUG):Log::Log4perl->easy_init($INFO);
 my  $logger = Log::Log4perl->get_logger(__PACKAGE__);
 
-pod2usage(2) if ( $HELP || !($USER && $PASS));
+pod2usage(-verbose => 2) if ( $OPTIONS{help}  || !($OPTIONS{user} && $OPTIONS{password}));
 
 my $parser = XML::LibXML->new();
 my $hints  = "http://www.perfsonar.net/gls.root.hints";
@@ -146,8 +151,8 @@ my $hls_query =  qq|declare namespace perfsonar="http://ggf.org/ns/nmwg/tools/or
  	    /nmwg:store[\@type="LSStore"]/nmwg:metadata
  	    [./perfsonar:subject/psservice:service/psservice:serviceType[matches(text(), '^[hH]?ls', 'i')]]
 	    |;
-if($KEY) {
-    ($pattern  = $KEY) =~ s/_([^_]+)/\\\-?($1)?/g;
+if($OPTIONS{key}) {
+    ($pattern  = $OPTIONS{key}) =~ s/_([^_]+)/\\\-?($1)?/g;
     $logger->debug("Pattern: $pattern");
     $hls_query =  qq|declare namespace nmwg="http://ggf.org/ns/nmwg/base/2.0/";
        for \$metadata in /nmwg:store[\@type="LSStore"]/nmwg:metadata
@@ -176,7 +181,7 @@ for my $root ( @{ $gls->{ROOTS} } ) {
 	    pool_control();
 	    $threads{$thread_counter} = threads->new( sub {
 		my $now_str = strftime('%Y-%m-%d %H:%M:%S', localtime());
-		my $dbh =  Ecenter::Schema->connect('DBI:mysql:ecenter',  $USER, $PASS);
+		my $dbh =  Ecenter::Schema->connect('DBI:mysql:ecenter',  $OPTIONS{user}, $OPTIONS{password});
  		my $keyword_str = $pattern;
         	my $accessPoint = extract( find( $s, ".//*[local-name()='accessPoint']", 1 ), 0 );
 		my $serviceName = extract( find( $s, ".//*[local-name()='serviceName']", 1 ), 0 );
@@ -229,9 +234,7 @@ for my $root ( @{ $gls->{ROOTS} } ) {
 	}
     }
     else {
-        if ( $DEBUGFLAG ) {
-             $logger->debug("\tResult:\t" , sub{Dumper($result)});
-        }
+       $logger->debug("\tResult:\t" , sub{Dumper($result)});
    }
 }
 pool_control();
@@ -395,8 +398,8 @@ sub get_fromHLS {
 
 
 	    my $meta_rowid = $dbh->resultset('Metadata')->update_or_create( { metaid =>  $data_id ,
-								 service =>   $service_obj,
-								 subject =>  $subj_md->toString,
+								 service    => $service_obj,
+								 subject    => ($subj_md?$subj_md->toString:''),
 								 parameters => ($param_md?$param_md->toString:''),
 								},
 								{key => 'metaid_service'}

@@ -6,7 +6,7 @@ Library::import('eCenter.models.metadata');
 Library::import('recess.framework.forms.ModelForm');
 
 /**
- * !RespondsWith Layouts
+ * !RespondsWith Layouts, Json
  * !Prefix service/
  */
 class serviceController extends Controller {
@@ -37,9 +37,22 @@ class serviceController extends Controller {
 		$keywords_svc = new keywords_service();
 		$eventtype= new eventtype();
 		$md = new metadata();
-		$this->service->keywords_services = $keywords_svc->equal('service', $service);
-		$this->service->eventtypes =  $eventtype->equal('service', $service);
-		$this->service->metadatas =  $md->equal('service', $service);
+		$kws =   $keywords_svc->equal('service', $service);
+		$evnts = $eventtype->equal('service', $service);
+		$mds =   $md->equal('service', $service);
+		
+		$this->service->metadatas = array();
+		$this->service->keywords_services  = array();
+		$this->service->eventtypes = array();
+		foreach ($mds as $md) {
+		  $this->service->metadatas [] = $md;
+		}
+		foreach ($kws as $kw) {
+		  $this->service->keywords_services [] = $kw;
+		}
+		foreach ($evnts as $ev) {
+		  $this->service->eventtypes [] = $ev;
+		}
 		if($this->service->exists()) {
 			return $this->ok('details');
 			

@@ -19,7 +19,12 @@ $title = 'Index';
 	  }
 	  
 	  echo '<li>' . Html::anchor(Url::action('serviceController::details', $service->service), $service->service);
-          echo ' <em><a href="' . $service->url . '">' . $service->name . '</a></em> ' . $service->comments;
+          
+	  preg_match('@^(http|tcp)://([^:]+)?@i', $service->url, $matches);
+	  $url =  ($matches && $matches[1] == 'http')?$service->url:
+	           $matches?'http://' . $matches[2]:
+		     'http://' .  $service->url;
+	  echo ' <em><a href="' . $url .'">' . $service->url  . '</a></em> '  . $service->comments;
       } 
       echo '</ul></ul>';
 ?>

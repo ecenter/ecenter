@@ -7,7 +7,12 @@ Part::input($service, 'service');
 	<ul>
           <li><strong>Name:</strong><?php  echo $service->name ?>
 	  <li><strong>Type:</strong><?php  echo $service->type ?>
-	  <li><strong>URL:</strong><a href="<?php  echo $service->url ?>"> <?php  echo $service->url ?></a>
+	  <li><strong>URL:</strong><a href="<?php   
+	                      preg_match('@^(http|tcp)://([^:]+)?@i', $service->url, $matches);
+	                      $url =  ($matches && $matches[1] == 'http')?$service->url:
+	                                  $matches?'http://' . $matches[2]:
+		                             'http://' .  $service->url; 
+				echo $url;  ?>"> <?php  echo $service->url ?></a>
 	 <li><strong>Description:</strong><?php  echo $service->comments ?>
 	 <li><strong>Keywords:</strong>
 	   <ul>
@@ -21,7 +26,7 @@ Part::input($service, 'service');
 	   <ul>
 	       <?php 
 	               foreach($service->eventtypes as $evnt) {
-		          echo '<li><em>' . Html::anchor(Url::action('eventtypeController::details', $evnt->eventtype ), 'eventtype= ' . $evnt->eventtype). '</em>';
+		          echo '<li><em>' . Html::anchor(Url::action('eventtypeController::details', $evnt->ref_id ), 'eventtype= ' . $evnt->eventtype). '</em>';
 		       }
 	       ?>
 	   </ul>

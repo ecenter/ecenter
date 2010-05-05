@@ -147,15 +147,12 @@ CREATE TABLE  bwctl_data (
    bwctl_data  bigint AUTO_INCREMENT NOT NULL, 
    metadata   BIGINT   NOT NULL,
    timestamp   bigint(20) unsigned NOT NULL,
-   send_ip     varchar(15) NOT NULL,
-   recv_ip    varchar(15) NOT NULL,
    throughput         float default NULL,
    jitter      float default NULL,
    lost  bigint(20) unsigned default NULL,
    sent  bigint(20) unsigned default NULL,
   PRIMARY KEY  (bwctl_data),
-  FOREIGN KEY fk_bwctl_dat_send_ip (send_ip) REFERENCES  node  (ip_addr),
-  FOREIGN KEY fk_bwctl_dat_recv_ip (recv_ip) REFERENCES  node  (ip_addr),
+  KEY (timestamp),
   FOREIGN KEY fk_bwctl_meta (metadata) REFERENCES  metadata (metadata)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='ps-ps  bwctl data  cache - 1 week';
 --
@@ -168,8 +165,6 @@ CREATE TABLE  owamp_data (
    metadata   BIGINT   NOT NULL,
    stimestamp  bigint(20) unsigned NOT NULL,
    etimestamp  bigint(20) unsigned NOT NULL,
-   send_ip     varchar(15) NOT NULL,
-   recv_ip     varchar(15) NOT NULL,  
    min float   NOT NULL DEFAULT  '0.0',
    max float  NOT NULL DEFAULT  '0.0',
    minttl tinyint(3) unsigned NOT NULL DEFAULT  '0',
@@ -179,8 +174,7 @@ CREATE TABLE  owamp_data (
    dups   bigint(20) unsigned NOT NULL DEFAULT  '0',
    maxerr float  NOT NULL DEFAULT  '0.0',
   PRIMARY KEY  (owamp_data),
-  FOREIGN KEY fk_owamp_dat_send_ip (send_ip) REFERENCES  node  (ip_addr),
-  FOREIGN KEY fk_owamp_dat_recv_ip (recv_ip) REFERENCES  node  (ip_addr),
+  KEY  (stimestamp,etimestamp),
   FOREIGN KEY fk_owamp_meta (metadata) REFERENCES  metadata (metadata)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='ps-ps  bwctl data  cache - 1 week';
 

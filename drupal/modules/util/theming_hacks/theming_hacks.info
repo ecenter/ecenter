@@ -1,5 +1,5 @@
 ;$Id$
-name = Theming Hacks
-package = Utilities
-description = Provide intuitive tpl and CSS override behavior, some UI improvements, and a set of simple site information blocks to themers.
+name = Utilities: Theming Hacks
+package = E-Center Project
+description = Provide intuiive CSS override behavior.
 core = 6.x

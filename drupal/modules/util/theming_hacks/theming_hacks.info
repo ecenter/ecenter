@@ -1,0 +1,5 @@
+;$Id$
+name = Theming Hacks
+package = Utilities
+description = Provide intuitive tpl and CSS override behavior, some UI improvements, and a set of simple site information blocks to themers.
+core = 6.x

@@ -1,0 +1,15 @@
+name = Ecenter
+description = The Ecenter theme
+version = 0.1
+core = 6.x
+
+regions[header] = Header
+regions[content] = Content
+regions[left] = Sidebar left
+regions[right] = Sidebar right
+regions[footer] = Footer
+
+; Working for kitt compability, see 
+; http://drupalcode.org/viewvc/drupal/contributions/modules/kit/kitt.txt?view=co
+; for more information
+kitt = "1.0-draft"

@@ -2,5 +2,18 @@
 /* vim:set fdm=marker: */
 
 /**
- * E-center Project: Core styles
+ * E-center Project: Site styles
  */
+
+/* Typography {{{ */
+@font-face {
+  font-family:'Raleway';
+  src:url(../font/raleway_thin.otf) format('opentype');
+}
+/* }}} */
+
+/* Headers {{{ */
+h1,h2,h3,h4,h5,h6 {
+  font-family: Raleway, sans-serif;
+}
+/* }}} */

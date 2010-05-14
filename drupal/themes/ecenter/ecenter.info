@@ -9,7 +9,7 @@ regions[left] = Sidebar left
 regions[right] = Sidebar right
 regions[footer] = Footer
 
-; Working for kitt compability, see 
+; Working for kitt compability, see
 ; http://drupalcode.org/viewvc/drupal/contributions/modules/kit/kitt.txt?view=co
 ; for more information
 kitt = "1.0-draft"

@@ -20,9 +20,9 @@
 </head>
 <body class="<?php print $body_classes; ?>">
 
-<div id="header-wrapper">
+<div id="header-wrapper" class="clearfix">
   <h1 id="site-name">
-    <a href="<?php print $front_page; ?>" title="<?php print t('Home'); ?>" rel="home"><<?php print $site_name; ?></a>
+    <a href="<?php print $front_page; ?>" title="<?php print t('Home'); ?>" rel="home"><?php print $site_name; ?></a>
   </h1>
 
   <?php if (!empty($header)): ?>
@@ -49,7 +49,7 @@
   <div id="content">
     <?php if (!empty($messages)): print $messages; endif; ?>
     <?php if (!empty($help)): print $help; endif; ?>
-    <?php if (!empty($tabs)): ?><div class="tabs"><?php print $tabs; ?></div><?php endif; ?>
+    <?php if (!empty($tabs)): ?><div class="tasks-wrapper clearfix"><?php print $tabs; ?></div><?php endif; ?>
     <?php if (!empty($title)): ?><h1 class="title" id="page-title"><?php print $title; ?></h1><?php endif; ?>
     <div id="content-body">
       <?php print $content; ?>

@@ -6,18 +6,18 @@
  */
 /* Menu trees {{{ */
 div.tree-child {
-  background: url(../../../../misc/tree.png) no-repeat 11px center; /* LTR */
+  background: url(../../../../../misc/tree.png) no-repeat 11px center; /* LTR */
 }
 div.tree-child-last {
-  background: url(../../../../misc/tree-bottom.png) no-repeat 11px center; /* LTR */
+  background: url(../../../../../misc/tree-bottom.png) no-repeat 11px center; /* LTR */
 }
 div.tree-child-horizontal {
-  background: url(../../../../misc/tree.png) no-repeat -11px center;
+  background: url(../../../../../misc/tree.png) no-repeat -11px center;
 }
 
 /* Animated throbber */
 html.js input.form-autocomplete {
-  background-image: url(../../../../misc/throbber.gif);
+  background-image: url(../../../../../misc/throbber.gif);
   background-repeat: no-repeat;
   background-position: 100% 2px; /* LTR */
 }
@@ -41,10 +41,10 @@ html.js fieldset.collapsed legend {
 }
 html.js fieldset.collapsible legend a {
   padding-left: 15px; /* LTR */
-  background: url(../../misc/menu-expanded.png) 5px 75% no-repeat; /* LTR */
+  background: url(../../../../../misc/menu-expanded.png) 5px 75% no-repeat; /* LTR */
 }
 html.js fieldset.collapsed legend a {
-  background-image: url(../../misc/menu-collapsed.png); /* LTR */
+  background-image: url(../../../../../misc/menu-collapsed.png); /* LTR */
   background-position: 5px 50%; /* LTR */
 }
 /* Note: IE-only fix due to '* html' (breaks Konqueror otherwise). */
@@ -72,7 +72,7 @@ html.js fieldset.collapsible .fieldset-wrapper {
 .resizable-textarea .grippie {
   height: 9px;
   overflow: hidden;
-  background: #eee url(../../../../misc/grippie.png) no-repeat center 2px;
+  background: #eee url(../../../../../misc/grippie.png) no-repeat center 2px;
   border: 1px solid #ddd;
   border-top-width: 0;
   cursor: s-resize;
@@ -99,7 +99,7 @@ a.tabledrag-handle .handle {
   margin-top: 4px;
   height: 13px;
   width: 13px;
-  background: url(../../../../misc/draggable.png) no-repeat 0 0;
+  background: url(../../../../../misc/draggable.png) no-repeat 0 0;
 }
 a.tabledrag-handle-hover .handle {
   background-position: 0 -20px;
@@ -134,7 +134,7 @@ a.tabledrag-handle-hover .handle {
   width: 15px;
   height: 15px;
   margin: 2px;
-  background: transparent url(../../../../misc/throbber.gif) no-repeat 0px -18px;
+  background: transparent url(../../../../../misc/throbber.gif) no-repeat 0px -18px;
   float: left; /* LTR */
 }
 tr .ahah-progress .throbber {

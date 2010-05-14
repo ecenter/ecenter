@@ -5,15 +5,110 @@
  * E-center Project: Site styles
  */
 
+/* --- Structure --- */
 /* Typography {{{ */
+/*
+ * The absolute base font size, just like Blueprint, is 16px. The effective
+ * base font size is 14px (87.5% of 16px).
+ */
 @font-face {
   font-family:'Raleway';
   src:url(../font/raleway_thin.otf) format('opentype');
 }
+html {
+  font-size:100.01%;
+}
+body {
+  font-size: 87.5%; /* 14px */
+  color: #222;
+  background: #fff;
+  font-family: "Helvetica Neue", Helvetica, Verdana, sans-serif;
+}
+/* }}} */
+/* Clearing {{{ */
+/**
+ * Based on How To Clear Floats Without Structural Markup
+ * http://www.positioniseverything.net/easyclearing.html
+ */
+.clearfix:after {
+  content: "\0020";
+  display: block;
+  height: 0;
+  clear: both;
+  visibility: hidden;
+  overflow: hidden;
+}
+.clearfix {
+  display: block;
+}
 /* }}} */
 
+/* --- Markup --- */
+/* Links {{{ */
+a {
+  color: #f00;
+  text-decoration: none;
+}
+a:hover {
+  color: #555;
+}
+/* }}} */
 /* Headers {{{ */
 h1,h2,h3,h4,h5,h6 {
-  font-family: Raleway, sans-serif;
+  color: #333;
+  font-weight: bold;
+  font-family: Raleway, "Helvetica Neue", Helvetica, Verdana, sans-serif;
+}
+
+h1 { font-size: 3em; line-height: 1; margin-bottom: 0.5em; }
+h2 { font-size: 2em; margin-bottom: 0.75em; }
+h3 { font-size: 1.5em; line-height: 1; margin-bottom: 1em; }
+h4 { font-size: 1.2em; line-height: 1.25; margin-bottom: 1.25em; }
+h5 { font-size: 1em; font-weight: bold; margin-bottom: 1.5em; }
+h6 { font-size: 1em; font-weight: bold; }
+/* }}} */
+
+/* --- Page elements --- */
+/* Page header {{{ */
+#header-wrapper {
+  padding: 10px 10px;
+  border-bottom: 1px solid #ccc;
+}
+h1#site-name {
+  float: left;
+  margin-bottom: 0;
+  font-size: 2.5em;
+}
+h1#site-name a {
+  text-decoration: none;
+}
+/* }}} */
+/* Content {{{ */
+#content-wrapper {
+  margin-top: 1em;
+  margin-left: 20px;
+  width: 940px;
+}
+/* }}} */
+/* Drupal tabs {{{ */
+.tasks-wrapper {
+  margin-bottom: 1.5em;
+}
+.tasks-wrapper ul.tabs li {
+  list-style-type: none;
+  float: left;
+  margin-right: 10px;
+}
+/* }}} */
+
+
+/* E-Center Custom Login Block {{{ */
+#block-ecenter_blocks-login {
+  float: right;
+}
+#block-ecenter_blocks-login li {
+  display: inline;
+  margin-right: 10px;
+  list-style-type: none;
 }
 /* }}} */

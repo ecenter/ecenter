@@ -1,0 +1,5 @@
+;$Id$
+name = E-Center Pages
+package = E-Center Project
+description = Provide custom page layouts (such as front page)
+core = 6.x

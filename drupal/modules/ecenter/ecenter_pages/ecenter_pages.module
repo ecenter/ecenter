@@ -2,5 +2,9 @@
 // $Id$
 
 /**
- * @file ecenter_pages.module
+ * @file
+ * Provides custom pages for E-Center project.
+ *
+ * Provides custom menu callbacks for important site displays (such as the
+ * front page).
  */

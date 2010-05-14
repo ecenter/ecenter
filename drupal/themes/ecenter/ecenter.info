@@ -4,6 +4,7 @@ version = 0.1
 core = 6.x
 
 regions[header] = Header
+regions[navigation] = Navigation bar
 regions[content] = Content
 regions[left] = Sidebar left
 regions[right] = Sidebar right

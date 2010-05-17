@@ -67,14 +67,16 @@ h4 { font-size: 1.2em; line-height: 1.25; margin-bottom: 1.25em; }
 h5 { font-size: 1em; font-weight: bold; margin-bottom: 1.5em; }
 h6 { font-size: 1em; font-weight: bold; }
 /* }}} */
+
+/* --- Content markup --- */
 /* Tables {{{ */
-table tr.odd {
+#content-body table tr.odd {
   background-color: #fafafa;
 }
-table tr.even {
+#content-body table tr.even {
   background-color: #eee;
 }
-table thead th {
+#content-body table thead th {
   text-align: center;
   background-color: #999;
   color: #fff;
@@ -82,11 +84,34 @@ table thead th {
   font-size: 0.875em;
 }
 /* }}} */
+/* Lists {{{ */
+#content-body li {
+  margin: 0 0 1.5em 1.5em;
+}
+/* }}} */
+/* Paragraph and text {{{ */
+#content-body p,
+#content-body blockquote {
+  margin-bottom: 1.5em;
+}
+/* }}} */
+
+/* --- Forms and administration --- */
+#content-body .form-item {
+  margin-bottom: 1.5em;
+}
+#content-body .form-item label {
+  font-weight: bold;
+}
+#content-body .form-item .description {
+  font-size: .875em;
+  color: #777;
+}
 
 /* --- Page elements --- */
 /* Page header {{{ */
 #header-wrapper {
-  padding: 10px 10px;
+  padding: 5px 8px;
   border-bottom: 1px solid #ccc;
 }
 h1#site-name {
@@ -107,6 +132,9 @@ h1#site-name a {
 /* }}} */
 /* Drupal tabs {{{ */
 .tasks-wrapper {
+  background-color: #444;
+}
+.tasks-wrapper {
   margin-bottom: 1.5em;
 }
 .tasks-wrapper ul.tabs li {
@@ -125,5 +153,15 @@ h1#site-name a {
   display: inline;
   margin-right: 10px;
   list-style-type: none;
+}
+/* }}} */
+
+/* --- Overrides and fixes --- */
+/* Fix vertical tabs {{{ */
+#content-body div.vertical-tabs ul.vertical-tabs-list li {
+  margin: 0;
+}
+#content-body div.vertical-tabs .vertical-tabs-panes fieldset.vertical-tabs-pane {
+  padding: .5em 1em;
 }
 /* }}} */

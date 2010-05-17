@@ -67,6 +67,21 @@ h4 { font-size: 1.2em; line-height: 1.25; margin-bottom: 1.25em; }
 h5 { font-size: 1em; font-weight: bold; margin-bottom: 1.5em; }
 h6 { font-size: 1em; font-weight: bold; }
 /* }}} */
+/* Tables {{{ */
+table tr.odd {
+  background-color: #fafafa;
+}
+table tr.even {
+  background-color: #eee;
+}
+table thead th {
+  text-align: center;
+  background-color: #999;
+  color: #fff;
+  font-weight: bold;
+  font-size: 0.875em;
+}
+/* }}} */
 
 /* --- Page elements --- */
 /* Page header {{{ */
@@ -101,7 +116,7 @@ h1#site-name a {
 }
 /* }}} */
 
-
+/* -- Extended styles --- */
 /* E-Center Custom Login Block {{{ */
 #block-ecenter_blocks-login {
   float: right;

@@ -4,11 +4,11 @@
 --    author: Maxim Grigoriev, 2010, maxim_at_fnal_dot_gov
 --
 --
-drop  database if exists ecenter;
-create database ecenter;
-grant all privileges on ecenter.* to ecenter@localhost identified by 'ecenter2010';
+drop  database if exists ecenter_data;
+create database ecenter_data;
+grant all privileges on ecenter_data.* to ecenter@localhost identified by 'ecenter2010';
 grant select on ecenter.* to www@localhost identified by 'www_user';
-use ecenter;
+use ecenter_data;
 --
 --   nodes - all of them
 --

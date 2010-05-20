@@ -7,7 +7,8 @@
 drop  database if exists ecenter_data;
 create database ecenter_data;
 grant all privileges on ecenter_data.* to ecenter@localhost identified by 'ecenter2010';
-grant select on ecenter.* to www@localhost identified by 'www_user';
+grant select on ecenter_data.* to www@localhost identified by 'www_user';
+flush privileges;
 use ecenter_data;
 --
 --   nodes - all of them
@@ -65,7 +66,7 @@ CREATE TABLE   eventtype  (
  service bigint unsigned  NOT NULL, 
  PRIMARY KEY  (ref_id),
  UNIQUE KEY eventtype_service (eventtype, service), 
- FOREIGN KEY fk_evnt_svc (service) REFERENCES  service (service)  on DELETE CASCADE ON UPDATE CASCADE
+ FOREIGN KEY  (service) REFERENCES  service (service)  on DELETE CASCADE ON UPDATE CASCADE
  )  ENGINE=InnoDB CHARSET=latin1 COMMENT='project keywords';
 --
 --  keywords_service for  many - many rel
@@ -78,8 +79,8 @@ keyword varchar(255) NOT NULL,
 service bigint  unsigned NOT NULL, 
 PRIMARY KEY  (ref_id),
 UNIQUE KEY key_service (keyword, service), 
-FOREIGN KEY fk_kws_keyword (keyword) REFERENCES keyword  (keyword) on DELETE CASCADE ON UPDATE CASCADE,
-FOREIGN KEY fk_kws_svc (service) REFERENCES  service (service)  on DELETE CASCADE ON UPDATE CASCADE
+FOREIGN KEY (keyword) REFERENCES keyword  (keyword) on DELETE CASCADE ON UPDATE CASCADE,
+FOREIGN KEY (service) REFERENCES  service (service)  on DELETE CASCADE ON UPDATE CASCADE
 )ENGINE=InnoDB CHARSET=latin1  COMMENT='many to many for keywords_services';
 --
 --  metadata for the service 
@@ -104,10 +105,10 @@ parameters varchar(1023) NULL,
 PRIMARY KEY  (metadata),
 KEY  (metaid),
 UNIQUE KEY metaid_service (metaid, service, src_ip),
-FOREIGN KEY fk_md_src_ip (src_ip) REFERENCES  node (ip_addr),
-FOREIGN KEY fk_md_dst_ip (dst_ip) REFERENCES  node (ip_addr),
-FOREIGN KEY fk_md_rtrt_ip (rtr_ip) REFERENCES  node (ip_addr),
-FOREIGN KEY fk_md_svc (service) REFERENCES  service (service)  on DELETE CASCADE ON UPDATE CASCADE
+FOREIGN KEY (src_ip) REFERENCES  node (ip_addr),
+FOREIGN KEY (dst_ip) REFERENCES  node (ip_addr),
+FOREIGN KEY (rtr_ip) REFERENCES  node (ip_addr),
+FOREIGN KEY (service) REFERENCES  service (service)  on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB CHARSET=latin1 COMMENT='ps-ps metadata provided by each service';
 --
 --  NEXT TABLES FOR THE  DATA CACHE
@@ -120,12 +121,12 @@ FOREIGN KEY fk_md_svc (service) REFERENCES  service (service)  on DELETE CASCADE
 drop  table if exists  data;
 CREATE TABLE   data (
 data  bigint  unsigned AUTO_INCREMENT NOT NULL, 
-metadata  varchar(255) NOT NULL,
-param    varchar(255) NOT NULL,
+metadata  bigint  unsigned  NOT NULL,
+param     varchar(255) NOT NULL,
 value   float NOT NULL, 
 PRIMARY KEY  (data),
 KEY  (param),
-FOREIGN KEY fk_dat_meta (metadata) REFERENCES  metadata (metadata)  on DELETE CASCADE ON UPDATE CASCADE
+FOREIGN KEY  (metadata) REFERENCES  metadata (metadata)  on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB CHARSET=latin1 COMMENT='ps-ps  data  cache';
 --
 --    pinger data storage   
@@ -146,12 +147,12 @@ CREATE TABLE   pinger_data  (
  duplicates tinyint(1) NOT NULL DEFAULT '0',
  outOfOrder  tinyint(1) NOT NULL DEFAULT '0',
  clp float NOT NULL DEFAULT '0.0',
- iqrIpd float  NOT NULL DEFAULT '0.0'
+ iqrIpd float  NOT NULL DEFAULT '0.0',
  lossPercent  float NOT NULL DEFAULT '0.0',
  PRIMARY KEY (pinger_data), 
  KEY (timestamp),
  INDEX (meanRtt, medianRtt, lossPercent, meanIpd, clp),
- FOREIGN KEY fk_ping_meta (metadata) references metadata (metadata) on DELETE CASCADE ON UPDATE CASCADE
+ FOREIGN KEY (metadata) references metadata (metadata) on DELETE CASCADE ON UPDATE CASCADE
  ) ENGINE=InnoDB CHARSET=latin1 COMMENT='ps-ps  pinger data  cache';
 --
 --    BWCTL data  storage 
@@ -169,7 +170,7 @@ CREATE TABLE  bwctl_data (
    sent  int unsigned default NULL,
    PRIMARY KEY  (bwctl_data),
    KEY (timestamp),
-   FOREIGN KEY fk_bwctl_meta (metadata) REFERENCES  metadata (metadata) on DELETE CASCADE ON UPDATE CASCADE
+   FOREIGN KEY (metadata) REFERENCES  metadata (metadata) on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps  bwctl data  cache';
 --
 --            OWAMP data  storage 
@@ -190,7 +191,7 @@ CREATE TABLE  owamp_data (
    maxerr float  NOT NULL DEFAULT  '0.0',
    PRIMARY KEY  (owamp_data),
    KEY  (timestamp),
-   FOREIGN KEY fk_owamp_meta (metadata) REFERENCES  metadata (metadata) on DELETE CASCADE ON UPDATE CASCADE
+   FOREIGN KEY  (metadata) REFERENCES  metadata (metadata) on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps  owamp  data  cache';
 --
 --            SNMP data  storage 
@@ -206,7 +207,7 @@ CREATE TABLE  snmp_data (
    drops int unsigned  NOT NULL DEFAULT  '0',
    PRIMARY KEY  (snmp_data),
    KEY  (timestamp),
-   FOREIGN KEY fk_snmp_meta (metadata) REFERENCES  metadata (metadata) on DELETE CASCADE ON UPDATE CASCADE
+   FOREIGN KEY (metadata) REFERENCES  metadata (metadata) on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps snmp data  cache';
 --
 --  traceroute data table - update only timestamp if nothing changed ( delay < 10% )
@@ -223,7 +224,7 @@ created bigint(20) unsigned NOT NULL,
 updated bigint(20) unsigned NOT NULL, 
 PRIMARY KEY (trace_id),
 KEY (created, updated),
-FOREIGN KEY fk_trace_meta (metadata) references metadata (metadata) on DELETE CASCADE ON UPDATE CASCADE
+FOREIGN KEY (metadata) references metadata (metadata) on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps traceroute';
 --
 --  per hop info
@@ -238,6 +239,6 @@ hop_ip  int unsigned NOT NULL,
 hop_num tinyint(3) NOT NULL DEFAULT '1', 
 hop_delay  float NOT NULL DEFAULT '0.0', 
 PRIMARY KEY (hop_id), 
-FOREIGN KEY CONSTRAINT fk_hop_tr (trace_id) REFERENCES traceroute(trace_id),
-FOREIGN KEY fk_hop_ip (hop_ip) REFERENCES  node (ip_addr)
+FOREIGN KEY (trace_id) REFERENCES traceroute_data(trace_id),
+FOREIGN KEY (hop_ip) REFERENCES  node(ip_addr)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps traceroute hops';

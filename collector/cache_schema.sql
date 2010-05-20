@@ -11,12 +11,20 @@ grant select on ecenter.* to www@localhost identified by 'www_user';
 use ecenter_data;
 --
 --   nodes - all of them
+--   ip_addr supports   ipv4 addresses in ATON format ( 32bit integer )
+--    
+--
+--    it set as INET_ATON('131.225.1.1') and essentially a 32bit representation of the IP
+--    it allows indexing and netblock search, to get original IP address - INET_NTOA(2322324344)
 --
 drop  table if exists node;
 CREATE TABLE  node (
- ip_addr  varchar(40)  NOT NULL,
+ ip_addr  int unsigned  NOT NULL,
  nodename varchar(255)  NULL,
- PRIMARY KEY  (ip_addr)
+ ipv4_dot  varchar(15)  NOT NULL, 
+ PRIMARY KEY  (ip_addr),
+ KEY (nodename),
+ KEY (ipv4_dot)
  )  ENGINE=InnoDB CHARSET=latin1  COMMENT='nodes';
 
 
@@ -86,9 +94,9 @@ drop  table if exists metadata;
 CREATE TABLE   metadata (
 metadata  bigint  unsigned AUTO_INCREMENT NOT NULL, 
 metaid  varchar(255) NOT NULL,
-src_ip  varchar(40) NOT NULL,
-rtr_ip  varchar(40) NULL,
-dst_ip  varchar(40) NULL,
+src_ip int unsigned NOT NULL,
+rtr_ip int unsigned  NULL,
+dst_ip int unsigned  NULL,
 capacity  bigint  unsigned   NULL,
 service bigint  unsigned  NOT NULL,
 subject varchar(1023) NOT NULL,
@@ -205,18 +213,16 @@ CREATE TABLE  snmp_data (
 --
 --
 drop table if exists  traceroute_data;
-create table traceroute_data (
-trace_id SERIAL,
-src_ip varchar(40) NOT NULL,
+CREATE TABLE traceroute_data (
+trace_id   bigint  unsigned AUTO_INCREMENT NOT NULL,
+metadata   BIGINT  unsigned  NOT NULL,
 number_hops tinyint(3) NOT NULL DEFAULT '1', 
 delay float NOT NULL DEFAULT '0.0', 
-dst_ip varchar(40) NOT NULL, 
 created bigint(20) unsigned NOT NULL, 
 updated bigint(20) unsigned NOT NULL, 
 PRIMARY KEY (trace_id),
 KEY (created, updated),
-FOREIGN KEY fk_trace_src (src_ip) REFERENCES  node (ip_addr),
-FOREIGN KEY fk_trace_dst (dst_ip) REFERENCES  node (ip_addr)
+FOREIGN KEY fk_trace_meta (metadata) references metadata (metadata)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps traceroute';
 --
 --  per hop info
@@ -224,10 +230,10 @@ FOREIGN KEY fk_trace_dst (dst_ip) REFERENCES  node (ip_addr)
 --
 --
 drop table if exists hops;
-create table hops (
-hop_id SERIAL,
+CREATE TABLE hops (
+hop_id  bigint  unsigned AUTO_INCREMENT  NOT NULL,
 trace_id bigint unsigned NOT NULL,
-hop_ip varchar(40) NOT NULL,
+hop_ip  int unsigned NOT NULL,
 hop_num tinyint(3) NOT NULL DEFAULT '1', 
 hop_delay  float NOT NULL DEFAULT '0.0', 
 PRIMARY KEY (hop_id), 

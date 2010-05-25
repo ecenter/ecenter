@@ -1,0 +1,14 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Provides hacks to Drupal content editing to match the E-center workflow.
+ */
+
+/**
+ * Implementation hook_form_alter().
+ */
+function ecenter_editing_form_alter(&$form, &$form_state, $form_id) {
+  dpm($form);
+}

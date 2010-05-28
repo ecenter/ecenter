@@ -89,12 +89,12 @@ FOREIGN KEY (service) REFERENCES  service (service)  on DELETE CASCADE ON UPDATE
 --   src - source or interface address depending on type of the service
 --   dst - destination address
 --   rtr - router address in caseof snmp 
---   All addresses allow  ipv6
+--    
 --
-drop  table if exists metadata;
+drop  table if exists  metadata;
 CREATE TABLE   metadata (
-metadata  bigint  unsigned AUTO_INCREMENT NOT NULL, 
-metaid  varchar(255) NOT NULL,
+metaid  bigint  unsigned AUTO_INCREMENT NOT NULL, 
+perfsonar_id  varchar(255) NOT NULL,
 src_ip int unsigned NOT NULL,
 rtr_ip int unsigned  NULL,
 dst_ip int unsigned  NULL,
@@ -102,14 +102,12 @@ capacity  bigint  unsigned   NULL,
 service bigint  unsigned  NOT NULL,
 subject varchar(1023) NOT NULL,
 parameters varchar(1023) NULL,
-PRIMARY KEY  (metadata),
+PRIMARY KEY  (metaid),
 KEY  (metaid),
-UNIQUE KEY metaid_service (metaid, service, src_ip),
+UNIQUE KEY metaid_service (perfsonar_id, service, src_ip),
 FOREIGN KEY (src_ip) REFERENCES  node (ip_addr),
-FOREIGN KEY (dst_ip) REFERENCES  node (ip_addr),
-FOREIGN KEY (rtr_ip) REFERENCES  node (ip_addr),
 FOREIGN KEY (service) REFERENCES  service (service)  on DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB CHARSET=latin1 COMMENT='ps-ps metadata provided by each service';
+) ENGINE=InnoDB CHARSET=latin1 COMMENT='ps-ps metaid provided by each service';
 --
 --  NEXT TABLES FOR THE  DATA CACHE
 --  we are going to store pinger, owamp, bwctl, snmp data
@@ -121,12 +119,12 @@ FOREIGN KEY (service) REFERENCES  service (service)  on DELETE CASCADE ON UPDATE
 drop  table if exists  data;
 CREATE TABLE   data (
 data  bigint  unsigned AUTO_INCREMENT NOT NULL, 
-metadata  bigint  unsigned  NOT NULL,
+metaid bigint  unsigned  NOT NULL,
 param     varchar(255) NOT NULL,
 value   float NOT NULL, 
 PRIMARY KEY  (data),
 KEY  (param),
-FOREIGN KEY  (metadata) REFERENCES  metadata (metadata)  on DELETE CASCADE ON UPDATE CASCADE
+FOREIGN KEY  (metaid) REFERENCES  metadata (metaid)  on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB CHARSET=latin1 COMMENT='ps-ps  data  cache';
 --
 --    pinger data storage   
@@ -135,7 +133,7 @@ FOREIGN KEY  (metadata) REFERENCES  metadata (metadata)  on DELETE CASCADE ON UP
 drop  table if exists  pinger_data;
 CREATE TABLE   pinger_data  (
  pinger_data bigint  unsigned AUTO_INCREMENT NOT NULL, 
- metadata   BIGINT  unsigned   NOT NULL,
+ metaid   BIGINT  unsigned   NOT NULL,
  minRtt float  NOT NULL DEFAULT  '0.0',
  meanRtt float NOT NULL DEFAULT  '0.0',
  medianRtt float NOT NULL DEFAULT  '0.0',
@@ -152,7 +150,7 @@ CREATE TABLE   pinger_data  (
  PRIMARY KEY (pinger_data), 
  KEY (timestamp),
  INDEX (meanRtt, medianRtt, lossPercent, meanIpd, clp),
- FOREIGN KEY (metadata) references metadata (metadata) on DELETE CASCADE ON UPDATE CASCADE
+ FOREIGN KEY (metaid) references  metadata  (metaid) on DELETE CASCADE ON UPDATE CASCADE
  ) ENGINE=InnoDB CHARSET=latin1 COMMENT='ps-ps  pinger data  cache';
 --
 --    BWCTL data  storage 
@@ -162,7 +160,7 @@ CREATE TABLE   pinger_data  (
 drop  table if exists  bwctl_data;
 CREATE TABLE  bwctl_data (
    bwctl_data  bigint  unsigned AUTO_INCREMENT NOT NULL, 
-   metadata    BIGINT  unsigned NOT NULL,
+   metaid    BIGINT  unsigned NOT NULL,
    timestamp   bigint(20) unsigned NOT NULL,
    throughput  float default NULL,
    jitter      float default NULL,
@@ -170,7 +168,7 @@ CREATE TABLE  bwctl_data (
    sent  int unsigned default NULL,
    PRIMARY KEY  (bwctl_data),
    KEY (timestamp),
-   FOREIGN KEY (metadata) REFERENCES  metadata (metadata) on DELETE CASCADE ON UPDATE CASCADE
+   FOREIGN KEY (metaid) REFERENCES   metadata  (metaid) on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps  bwctl data  cache';
 --
 --            OWAMP data  storage 
@@ -179,7 +177,7 @@ CREATE TABLE  bwctl_data (
 drop  table if exists owamp_data;
 CREATE TABLE  owamp_data (
    owamp_data  bigint unsigned AUTO_INCREMENT NOT NULL, 
-   metadata   BIGINT  unsigned  NOT NULL,
+   metaid   BIGINT  unsigned  NOT NULL,
    timestamp  bigint(20) unsigned NOT NULL,
    min float  NOT NULL DEFAULT  '0.0',
    max float  NOT NULL DEFAULT  '0.0',
@@ -191,7 +189,7 @@ CREATE TABLE  owamp_data (
    maxerr float  NOT NULL DEFAULT  '0.0',
    PRIMARY KEY  (owamp_data),
    KEY  (timestamp),
-   FOREIGN KEY  (metadata) REFERENCES  metadata (metadata) on DELETE CASCADE ON UPDATE CASCADE
+   FOREIGN KEY  (metaid) REFERENCES   metadata  (metaid) on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps  owamp  data  cache';
 --
 --            SNMP data  storage 
@@ -200,14 +198,14 @@ CREATE TABLE  owamp_data (
 drop  table if exists snmp_data;
 CREATE TABLE  snmp_data (
    snmp_data  bigint unsigned AUTO_INCREMENT NOT NULL, 
-   metadata   BIGINT  unsigned  NOT NULL,
+   metaid   BIGINT  unsigned  NOT NULL,
    timestamp  bigint(20) unsigned NOT NULL,
    utilization float  NOT NULL DEFAULT  '0.0',
    errors int unsigned NOT NULL DEFAULT  '0',
    drops int unsigned  NOT NULL DEFAULT  '0',
    PRIMARY KEY  (snmp_data),
    KEY  (timestamp),
-   FOREIGN KEY (metadata) REFERENCES  metadata (metadata) on DELETE CASCADE ON UPDATE CASCADE
+   FOREIGN KEY (metaid) REFERENCES metadata (metaid) on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps snmp data  cache';
 --
 --  traceroute data table - update only timestamp if nothing changed ( delay < 10% )
@@ -217,14 +215,14 @@ CREATE TABLE  snmp_data (
 drop table if exists  traceroute_data;
 CREATE TABLE traceroute_data (
 trace_id   bigint  unsigned AUTO_INCREMENT NOT NULL,
-metadata   BIGINT  unsigned  NOT NULL,
+metaid   BIGINT  unsigned  NOT NULL,
 number_hops tinyint(3) NOT NULL DEFAULT '1', 
 delay float NOT NULL DEFAULT '0.0', 
 created bigint(20) unsigned NOT NULL, 
 updated bigint(20) unsigned NOT NULL, 
 PRIMARY KEY (trace_id),
 KEY (created, updated),
-FOREIGN KEY (metadata) references metadata (metadata) on DELETE CASCADE ON UPDATE CASCADE
+FOREIGN KEY (metaid) references  metadata (metaid) on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps traceroute';
 --
 --  per hop info

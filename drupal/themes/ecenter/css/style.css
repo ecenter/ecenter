@@ -179,11 +179,29 @@ h1#site-name a {
 /* }}} */
 
 /* --- Overrides and fixes --- */
-/* Fix vertical tabs {{{ */
-#content-body div.vertical-tabs ul.vertical-tabs-list li {
+/* Fix vertical tabs and views vertical tabs {{{ */
+#content-body div.vertical-tabs ul.vertical-tabs-list li,
+#content-body .views-tabset .views-tabs ul li {
   margin: 0;
 }
 #content-body div.vertical-tabs .vertical-tabs-panes fieldset.vertical-tabs-pane {
   padding: .5em 1em;
+}
+/* }}} */
+/* Views quick links {{{ */
+#content-body .views-quick-links ul li {
+  display: inline;
+  margin: 0;
+}
+/* }}} */
+
+/* Node editing form:  @TODO split files {{{ */
+#node-form .body-wrapper .body-edit {
+  float: left;
+  width: 600px;
+}
+#node-form .body-wrapper .image-attachments-edit {
+  float: left;
+  width: 300px;
 }
 /* }}} */

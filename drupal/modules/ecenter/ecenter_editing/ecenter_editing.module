@@ -10,5 +10,41 @@
  * Implementation hook_form_alter().
  */
 function ecenter_editing_form_alter(&$form, &$form_state, $form_id) {
-  dpm($form);
+  // We are ONLY concerned with node forms, the kind with a node attached
+  if ($form['#id'] != 'node-form') {
+    return;
+  }
+
+  
+  $node = $form['#node'];
+
+  // Universal overrides
+
+
+  // Override revision log to be more wiki-like
+  unset($form['revision_information']['#title']);
+  $form['revision_information']['#type'] = 'markup';
+  $form['revision_information']['#collapsible'] = FALSE;
+
+  $form['revision_information']['log']['#title'] = t('Revision message');
+  $form['revision_information']['log']['#rows'] = 1;
+  $form['revision_information']['log']['#description'] = t(
+    'Provide a short description of the changes made to this @type.', 
+    array('@type' => strtolower(node_get_types('name', $node)))
+  );
+
+  // Remove options for internal Drupal workflow states
+  $form['options']['promote']['#type'] = 'value';
+  $form['options']['sticky']['#type'] = 'value';
+
+  // Node type specific overrides 
+  switch ($node->type) {
+    case 'wiki':
+      $form['revision_information']['revision']['#type'] = 'value';
+      $form['revision_information']['log']['#required'] = TRUE;
+      break;
+    case 'issue':
+      $form['revision_information']['#type'] = 'value';
+      break;
+  }
 }

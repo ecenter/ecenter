@@ -57,7 +57,7 @@
   </div>
 <?php endif; ?>
 
-<div id="content-wrapper">
+<div id="content-wrapper" class="clearfix">
 
   <?php if (!empty($left)): ?>
   <div id="sidebar-left" class="column sidebar">

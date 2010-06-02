@@ -21,7 +21,6 @@ function ecenter_preprocess_page(&$vars) {
   if (drupal_is_front_page()) {
     unset($vars['breadcrumb']);
   }
-  dsm('testing...');
 }
 
 function ecenter_preprocess_wiki_node_form(&$vars) {

@@ -58,11 +58,22 @@ body {
   display: block;
 }
 /* }}} */
+/* Columns {{{ */
+body.sidebar-right #content {
+  float: left;
+  width: 660px;
+  margin-right: 30px;
+}
+body.sidebar-right #sidebar-right {
+  float: left;
+  width: 250px;
+}
+/* }}} */
 
 /* --- Markup --- */
 /* Links {{{ */
 a {
-  color: #f00;
+  color: #b00;
   text-decoration: none;
 }
 a:hover {
@@ -105,7 +116,7 @@ h6 { font-size: 1em; font-weight: bold; }
 /* }}} */
 /* Lists {{{ */
 #content-body li {
-  margin: 0 0 1.5em 1.5em;
+  margin: .5em 0 .5em 1.5em;
 }
 /* }}} */
 /* Paragraph and text {{{ */
@@ -113,6 +124,31 @@ h6 { font-size: 1em; font-weight: bold; }
 #content-body p,
 #content-body blockquote {
   margin-bottom: 1.5em;
+}
+/* }}} */
+/* Text-like entities {{{ */
+.messages {
+  margin-bottom: 1.5em;
+}
+/* }}} */
+
+/* --- Sidebar markup --- */
+/* Lists {{{ */
+#content-wrapper .sidebar ul,
+#content-wrapper .sidebar ol {
+  margin: .75em 0;
+}
+#content-wrapper .sidebar ul ul,
+#content-wrapper .sidebar ol ol,
+#content-wrapper .sidebar ul ol,
+#content-wrapper .sidebar ol ul {
+  margin: 0
+}
+#content-wrapper .sidebar li {
+  margin: .1em 0 .1em 2em;
+}
+#content-wrapper .sidebar li li {
+  margin: .1em 0 .1em 1.5em;
 }
 /* }}} */
 
@@ -162,6 +198,7 @@ input.form-text {
 #header-wrapper {
   padding: 5px 20px;
   margin-bottom: 10px;
+  margin-top: 10px;
 }
 h1#site-name {
   float: left;
@@ -173,7 +210,7 @@ h1#site-name a {
   text-decoration: none;
 }
 h1#site-name a:hover {
-  color: #888;
+  color: #b00;
 }
 #header-wrapper .site-slogan {
   float: left;
@@ -239,7 +276,7 @@ h1#site-name a:hover {
   font-size: 1.07em;
   line-height: 1.6;
   padding: 1px 3px;
-  margin-right: 4px;
+  margin-right: 2px;
   width: 170px;
 }
 /* }}} */
@@ -273,10 +310,10 @@ h1#site-name a:hover {
 }
 /* }}} */
 
-
 /* -- Extended styles --- */
 /* E-Center Custom Login Block {{{ */
 #block-ecenter_blocks-login {
+  margin-top: .4em;
   float: right;
 }
 #block-ecenter_blocks-login li {
@@ -285,6 +322,8 @@ h1#site-name a:hover {
   list-style-type: none;
 }
 /* }}} */
+
+
 
 /* --- Overrides and fixes --- */
 /* Fix vertical tabs and views vertical tabs {{{ */
@@ -302,7 +341,12 @@ h1#site-name a:hover {
   margin: 0;
 }
 /* }}} */
-
+/* Table of contents {{{ */
+.toc ul {
+  color: #666;
+  list-style-type: square;
+}
+/* }}} */
 /* Node editing form:  @TODO split files {{{ */
 #node-form .body-wrapper .body-edit {
   float: left;

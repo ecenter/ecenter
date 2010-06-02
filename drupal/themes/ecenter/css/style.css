@@ -198,10 +198,11 @@ h1#site-name a {
 /* Node editing form:  @TODO split files {{{ */
 #node-form .body-wrapper .body-edit {
   float: left;
-  width: 600px;
+  width: 620px;
+  margin-right: 20px;
 }
 #node-form .body-wrapper .image-attachments-edit {
   float: left;
-  width: 300px;
+  width: 260px;
 }
 /* }}} */

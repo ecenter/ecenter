@@ -21,9 +21,17 @@
 <body class="<?php print $body_classes; ?>">
 
 <div id="header-wrapper" class="clearfix">
-  <h1 id="site-name">
-    <a href="<?php print $front_page; ?>" title="<?php print t('Home'); ?>" rel="home"><?php print $site_name; ?></a>
-  </h1>
+  <div class="logo">
+    <h1 id="site-name">
+      <a href="<?php print $front_page; ?>" title="<?php print t('Home'); ?>" rel="home"><?php print $site_name; ?></a>
+    </h1>
+
+    <?php if ($site_slogan): ?>
+    <div class="site-slogan">
+      <?php print $site_slogan; ?>
+    </div>
+    <?php endif; ?>
+  </div>
 
   <?php if (!empty($header)): ?>
   <div id="header">

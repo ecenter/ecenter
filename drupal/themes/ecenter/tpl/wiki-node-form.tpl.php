@@ -1,6 +1,6 @@
 <?php print $title; ?>
 
-<div class="body-wrapper">
+<div class="body-wrapper clearfix">
   <div class="body-edit">
     <?php print $body; ?>
   </div>

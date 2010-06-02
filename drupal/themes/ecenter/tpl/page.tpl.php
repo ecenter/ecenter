@@ -19,7 +19,6 @@
   <script type="text/javascript"><?php /* Needed to avoid Flash of Unstyled Content in IE */ ?> </script>
 </head>
 <body class="<?php print $body_classes; ?>">
-
 <div id="header-wrapper" class="clearfix">
   <div class="logo">
     <h1 id="site-name">
@@ -41,8 +40,14 @@
 </div>
 
 <?php if (!empty($navigation)): ?>
-<div id="navigation">
+<div id="navigation" class="clearfix">
   <?php print $navigation; ?>
+</div>
+<?php endif; ?>
+
+<?php if ($breadcrumb): ?>
+<div id="breadcrumb">
+  <?php print $breadcrumb; ?>
 </div>
 <?php endif; ?>
 

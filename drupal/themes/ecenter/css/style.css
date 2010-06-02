@@ -118,6 +118,33 @@ h6 { font-size: 1em; font-weight: bold; }
 
 /* --- Forms and administration --- */
 /* Form items {{{ */
+input.form-submit {
+  -moz-border-radius: 6px;
+  background-color: #ddd;
+  border: 1px solid #777;
+  text-shadow: 1px 1px #eee;
+  text-transform: uppercase;
+  font-family: "Droid Sans";
+  font-weight: bold;
+  padding: 1px 3px;
+  background-image: -webkit-gradient(
+    linear,
+    left bottom,
+    left top,
+    color-stop(0.22, rgb(204,204,204)),
+    color-stop(0.57, rgb(238,238,238))
+  );
+  background-image: -moz-linear-gradient(
+    center bottom,
+    rgb(204,204,204) 22%,
+    rgb(238,238,238) 57%
+  );
+}
+input.form-text {
+  border: 1px solid #aaa;
+  -moz-box-shadow: 1px 1px .1em 0 #ccc;
+}
+
 #content-body .form-item {
   margin-bottom: 1.5em;
 }
@@ -133,8 +160,8 @@ h6 { font-size: 1em; font-weight: bold; }
 /* --- Page elements --- */
 /* Page header {{{ */
 #header-wrapper {
-  padding: 5px 8px;
-  border-bottom: 1px solid #ccc;
+  padding: 5px 20px;
+  margin-bottom: 10px;
 }
 h1#site-name {
   float: left;
@@ -142,7 +169,18 @@ h1#site-name {
   font-size: 2.5em;
 }
 h1#site-name a {
+  color: #444;
   text-decoration: none;
+}
+h1#site-name a:hover {
+  color: #888;
+}
+#header-wrapper .site-slogan {
+  float: left;
+  margin-left: .75em;
+  margin-top: 1em;
+  color: #555;
+  font-family: "Droid Sans";
 }
 /* }}} */
 /* Content {{{ */
@@ -150,6 +188,59 @@ h1#site-name a {
   margin-top: 1em;
   margin-left: 20px;
   width: 940px;
+}
+/* }}} */
+/* Navigation tabs (primary links) {{{ */
+#navigation {
+  padding: 0 20px;
+  border-bottom: 1px solid #999;
+  margin-bottom: 8px;
+}
+#navigation ul li {
+  list-style-type: none;
+  float: left;
+}
+#navigation ul li a {
+  line-height: 1;
+  color: #fff;
+  background-color: #999;
+  font-family: "Droid Sans";
+  font-weight: bold;
+  font-size: 1.07em;
+  display: block;
+  padding: 6px 9px 4px 9px;
+  border: 1px solid #999;
+  -moz-border-radius-topright: 6px;
+  -moz-border-radius-topleft: 6px;
+  margin-right: 4px;
+  margin-bottom: -1px;
+}
+#navigation ul li a:hover {
+  background-color: #fff;
+  border-bottom: 1px solid #fff;
+  color: #222;
+}
+#navigation ul li.active-trail a {
+  color: #777;
+  background-color: #fff;
+  border-bottom: 1px solid #fff;
+  cursor: default;
+}
+/* }}} */
+/* Navigation search {{{ */
+#navigation .block-search {
+  float: right;
+  margin-top: -3px;
+}
+#navigation .block-search .form-item {
+  display: inline;
+}
+#navigation .block-search .form-text {
+  font-size: 1.07em;
+  line-height: 1.6;
+  padding: 1px 3px;
+  margin-right: 4px;
+  width: 170px;
 }
 /* }}} */
 /* Drupal tabs {{{ */
@@ -181,6 +272,7 @@ h1#site-name a {
   margin-right: 10px;
 }
 /* }}} */
+
 
 /* -- Extended styles --- */
 /* E-Center Custom Login Block {{{ */

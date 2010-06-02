@@ -15,6 +15,22 @@
   font-family:'Raleway';
   src:url(../font/raleway_thin.otf) format('opentype');
 }
+@font-face {
+  font-family: "Droid Sans";
+  src: local("Droid Sans"),
+       local("DroidSans"),
+       url(../font/DroidSans.ttf) format("truetype");
+}
+@font-face {
+  font-family: "Droid Sans";
+  font-weight: bold;
+  src: local("Droid Sans Bold"),
+       local("DroidSans-Bold"),
+       url(../font/DroidSans-Bold.ttf) format("truetype");
+}
+
+/* }}} */
+/* Document level elements {{{ */
 html {
   font-size:100.01%;
 }
@@ -57,7 +73,7 @@ a:hover {
 h1,h2,h3,h4,h5,h6 {
   color: #333;
   font-weight: bold;
-  font-family: Raleway, "Helvetica Neue", Helvetica, Verdana, sans-serif;
+  font-family: "Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif;
 }
 
 h1 { font-size: 3em; line-height: 1; margin-bottom: 0.5em; }

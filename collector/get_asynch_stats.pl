@@ -35,6 +35,7 @@ keyword to query
 =item --procs
 
 number of asynchronous procs to spawn ( requests to remote hLses)
+Max number is 40.
 Default: 10
    
 =item --help
@@ -68,10 +69,11 @@ use Time::HiRes qw(usleep);
 use XML::LibXML;
 use Getopt::Long;
 use Data::Dumper;
-use Data::Validate::IP qw(is_ipv4);
-use Data::Validate::Domain qw( is_domain );
+use Data::Validate::IP qw(is_ipv4 is_ipv6);
+use Data::Validate::Domain qw( is_domain is_hostname);
 use Net::IPv6Addr;
 use Net::CIDR;
+use Net::DNS;
 use POSIX qw(strftime);
 use Pod::Usage;
 use FindBin;
@@ -131,14 +133,23 @@ GetOptions( \%OPTIONS,
 $OPTIONS{debug}?Log::Log4perl->easy_init($DEBUG):Log::Log4perl->easy_init($INFO);
 my  $logger = Log::Log4perl->get_logger(__PACKAGE__);
 
-pod2usage(-verbose => 2) if ( $OPTIONS{help}  || !($OPTIONS{user} && $OPTIONS{password}));
 
+
+pod2usage(-verbose => 2) if ( $OPTIONS{help}    || ($OPTIONS{procs} && $OPTIONS{procs} !~ /^\d\d?$/));
+
+$MAX_THREADS = $OPTIONS{procs} if $OPTIONS{procs} > 0 && $OPTIONS{procs}  < 40;
+$OPTIONS{user} |= 'ecenter';
+unless($OPTIONS{password}) {
+  $OPTIONS{password} = `cat /etc/my_ecenter`;
+  chomp $OPTIONS{password};
+} 
 my $parser = XML::LibXML->new();
 my $hints  = "http://www.perfsonar.net/gls.root.hints";
 my @private_list = ( "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16" );
 my $pattern = '';
 my %hls = ();
 my $gls = perfSONAR_PS::Client::gLS->new( { url => $hints } );
+$logger->info(" MAX THREADS = $MAX_THREADS ");
 
 $logger->logdie("roots not found") unless ( $#{ $gls->{ROOTS} } > -1 );
  
@@ -173,20 +184,23 @@ for my $root ( @{ $gls->{ROOTS} } ) {
     my $result = $gls->getLSQueryRaw( { ls => $root, xquery =>   $hls_query } );
     
     if ( exists $result->{eventType} && $result->{eventType} !~ m/^error/ ) {
-        $logger->debug("\tEventType:\t$result->{eventType}");
+        $logger->debug("\tEvenType:\t$result->{eventType}");
         my $doc = $parser->parse_string( $result->{response} ) if exists $result->{response};
         my $service = find( $doc->getDocumentElement, ".//*[local-name()='service']", 0 );
         foreach my $s ( $service->get_nodelist ) {  
-	  ### run query/echo/ping async
+	  ### run query/echo/ping async	   
 	    pool_control();
 	    $threads{$thread_counter} = threads->new( sub {
 		my $now_str = strftime('%Y-%m-%d %H:%M:%S', localtime());
-		my $dbh =  Ecenter::Schema->connect('DBI:mysql:ecenter',  $OPTIONS{user}, $OPTIONS{password});
+		my $dbh =  Ecenter::Schema->connect('DBI:mysql:ecenter_data',  $OPTIONS{user}, $OPTIONS{password}, {RaiseError => 1, PrintError => 1});
+		$dbh->storage->debug(1);
+		
  		my $keyword_str = $pattern;
         	my $accessPoint = extract( find( $s, ".//*[local-name()='accessPoint']", 1 ), 0 );
 		my $serviceName = extract( find( $s, ".//*[local-name()='serviceName']", 1 ), 0 );
         	my $serviceType = extract( find( $s, ".//*[local-name()='serviceType']", 1 ), 0 );
         	my $serviceDescription = extract( find( $s, ".//*[local-name()='serviceDescription']", 1 ), 0 );
+		next if $serviceType =~ /^ping$/i;
         	try {
 		    if ( $accessPoint ) {
                 	$logger->debug("\t\thLS:\t$accessPoint");
@@ -206,7 +220,8 @@ for my $root ( @{ $gls->{ROOTS} } ) {
 		                                                        	     type => $serviceType,
 								        	     comments => $serviceDescription,
 								        	     is_alive => (!$status?'1':'0'), 
-								        	     updated =>  $now_str
+								        	     updated =>  $now_str,
+										     created =>  $now_str,
 								        	    },
 									      { key => 'service_url'}
 									     );
@@ -248,7 +263,7 @@ sub pool_control {
     my $logger = get_logger(__PACKAGE__);
     my @running =  threads->list(threads::running);
     my $num_threads = scalar   @running;
-    $logger->info("Threads::" . join(' : ', map {$_->tid}  @running));
+    $logger->debug("Threads::" . join(' : ', map {$_->tid}  @running));
     while( $num_threads >= $MAX_THREADS) {
   	foreach my $tidx (@running) {
   	    if( $tidx->is_running()) {
@@ -272,6 +287,7 @@ sub ls_store_request {
    my ($ls, $eventtype) = @_;
    my $h_query = qq|declare namespace perfsonar="http://ggf.org/ns/nmwg/tools/org/perfsonar/1.0/";
 	                  declare namespace nmwg="http://ggf.org/ns/nmwg/base/2.0/";
+			  declare namespace nmwgt="http://ggf.org/ns/nmwg/topology/2.0/";
 	                  declare namespace psservice="http://ggf.org/ns/nmwg/tools/org/perfsonar/service/1.0/";
 			  /nmwg:store[\@type="LSStore"]|;
    my $result = $ls->queryRequestLS(
@@ -300,6 +316,8 @@ main processing unit, returns nothing
 sub get_fromHLS {
     my ($hls_url, $now_str, $hls_obj, $dbh) = @_;
     my $logger = get_logger(__PACKAGE__);
+    my $resolver   = Net::DNS::Resolver->new;
+
     $logger->debug("hLS: $hls_url............");
     my $ls = new perfSONAR_PS::Client::LS( { instance => $hls_url } );
     my $result_disc  = ls_store_request($ls, $DISCOVERY_EVENTTYPE);
@@ -319,8 +337,7 @@ sub get_fromHLS {
         return;
     }
     my $md_query = find( $doc_query->getDocumentElement, "./nmwg:store/nmwg:metadata", 0 );
-    my $d_disc  = find( $doc_disc->getDocumentElement, "./nmwg:store/nmwg:data",     0 );
-   
+    my $d_disc   = find( $doc_disc->getDocumentElement, "./nmwg:store/nmwg:data",      0 );
     my $d_query  = find( $doc_query->getDocumentElement, "./nmwg:store/nmwg:data",     0 );
     # create lookup hash to avoid multiple array parsing
     my %look_data_query_id= ();
@@ -338,7 +355,7 @@ sub get_fromHLS {
 	next unless $param_exist{url};
 	$param_exist{is_alive} = 1;
 	$param_exist{updated} =  $now_str;
-	if(!$param_exist{type} || $param_exist{type} =~ /^(MA|MP)$/) {
+	if(!$param_exist{type} || $param_exist{type} =~ /^(MA|MP|TS)$/i) {
 	    ($param_exist{type}) = $param_exist{url} =~ /^http.+\/services\/(\w+)/; 
 	    $param_exist{type} = lc($param_exist{type});
 	    $param_exist{type} = 'bwctl' if  $param_exist{type} =~ /psb/;
@@ -346,6 +363,7 @@ sub get_fromHLS {
 	}
 	$param_exist{type} ||= 'N/A';
 	$param_exist{name} ||= 'N/A';
+	 
 	my $service_obj =  $dbh->resultset('Service')->update_or_create( \%param_exist,{ key => 'service_url' } ); 
       
 	##############  data part processing
@@ -367,10 +385,9 @@ sub get_fromHLS {
             $logger->debug("DATA $id  MD element:::" . $subj_md->toString) if $subj_md;
    	    # get the eventTypes
     	    foreach my  $keyword_str (keys %keyword_hash) {
-		my $keyword = $dbh->resultset('Keyword')->find_or_create({ keyword => $keyword_str,
-									   created => $now_str
-									});
-		 $dbh->resultset('Keywords_Service')->update_or_create( { keyword => $keyword_str,
+	        $logger->debug("KEYWORD=$keyword_str");
+		my $keyword = $dbh->resultset('Keyword')->find_or_create({ keyword => $keyword_str });
+		$dbh->resultset('Keywords_Service')->update_or_create( { keyword => $keyword_str,
 									  service =>  $hls_obj
 									},
 									{ key => 'keywords_service' }
@@ -383,6 +400,7 @@ sub get_fromHLS {
 	    }
 	    my $eventTypes = find( $d1_el , "./nmwg:metadata/nmwg:eventType", 0 );
 	    my $type_of_service =  $param_exist{type};
+	    my $snmp;
             foreach my $e ( $eventTypes->get_nodelist ) {
    		my $value = extract( $e, 0 );
 		if($SERVICE_LOOKUP{$value}) {
@@ -392,20 +410,113 @@ sub get_fromHLS {
 		$dbh->resultset('Eventtype')->update_or_create( { eventtype =>  $value,
 								  service =>  $service_obj
 								},
-								{key => 'eventtype_service'}
+								{ key => 'eventtype_service' }
 							      );
+	        $snmp ||= $SERVICE_LOOKUP{$value} if $SERVICE_LOOKUP{$value} && $SERVICE_LOOKUP{$value} eq 'snmp';
 	    }
-
-
-	    my $meta_rowid = $dbh->resultset('Metadata')->update_or_create( { metaid =>  $data_id ,
-								 service    => $service_obj,
-								 subject    => ($subj_md?$subj_md->toString:''),
-								 parameters => ($param_md?$param_md->toString:''),
-								},
-								{key => 'metaid_service'}
-	 					      );
+	    my $capacity = 0;
+	    my %ip_addr = ( rtr => '', src =>'', dst => '');
+            my $src;
+	    my $dst;
+	    my $src_addr;
+	    if($subj_md) {
+	        $subj_md->setNamespace('http://ggf.org/ns/nmwg/topology/2.0/','nmwgt');
+                ($src) = $subj_md->findnodes("//nmwgt:src");
+	        ($dst) = $subj_md->findnodes("//nmwgt:dst");
+		($src) = $subj_md->findnodes("//*[local-name()='address']") unless $src;
+		if($snmp) {
+                    ($src_addr) = $subj_md->findnodes("./nmwgt:interface/nmwgt:ipAddress");
+		    ($src_addr) = $subj_md->findnodes("./nmwgt:interface/nmwgt:ifAddress") unless $src_addr; 
+	            ($capacity) = $subj_md->findnodes("./nmwgt:interface/nmwgt:capacity");
+	            my ($rtr)  =  $subj_md->findnodes("./nmwgt:interface/nmwgt:hostName");
+	            $ip_addr{rtr}  = extract( $rtr, 0 ) if $rtr;
+		}
+		$src  = $src_addr if $src_addr && ! $src;
+		$ip_addr{src}  = extract( $src, 0 ) if $src;
+		$ip_addr{dst}  = extract( $dst, 0 ) if $dst;
+		###$logger->debug("Start ====== src= $ip_addr{src}  dst= $ip_addr{dst} ");
+              
+		foreach my $ip_key (qw/rtr src dst/) {
+	            my $ip_name = $ip_addr{$ip_key};
+		    my $ip_cidr='';
+		    if($ip_addr{$ip_key}) {
+		        $ip_addr{$ip_key} =~ s{^(https?|tcp)://|:\d+$}{}g;
+	                if( !is_ipv4($ip_addr{$ip_key}) && !is_ipv6($ip_addr{$ip_key}) && &is_hostname($ip_addr{$ip_key})) {
+		   	    my $query = $resolver->search($ip_addr{$ip_key});
+                	    if ($query) {
+                                foreach my $rr ($query->answer) {
+                        	    if($rr->type eq 'A') {
+                                        $ip_addr{$ip_key} = $rr->address;
+				        last;
+                        	    }
+                                }
+	        	     }
+		         }
+		         #$logger->debug(" $ip_key: IP=$ip_addr{ $ip_key}  ipv4=" .is_ipv4($ip_addr{$ip_key})  . " is_hostname=" . is_hostname($ip_addr{$ip_key})  );
+		         if( $ip_addr{$ip_key} && (is_ipv4($ip_addr{$ip_key}) || is_ipv6($ip_addr{$ip_key}))) {
+			     $ip_cidr = $ip_addr{$ip_key};
+                	     ####$ip_addr{$ip_key} = IP_N($ip_addr{$ip_key}  );
+		             ###$logger->debug("... $ip_key: IP_addr=$ip_addr{$ip_key} nodename=$ip_name ipv4_dot=$ip_cidr");
+	                     $ip_addr{$ip_key} = update_create_fixed($dbh->resultset('Node'),{'ip_addr' =>  \"=inet6_pton('$ip_addr{$ip_key}')"},
+			                                          {ip_addr => \"inet6_pton('$ip_addr{$ip_key}')",
+			                                           nodename => $ip_name,
+								   ip_noted => $ip_cidr }); 
+			 }
+		    }
+		}
+	        $logger->debug('End ======  MISSING:' . $subj_md->toString) unless $ip_addr{src};
+		   
+	    }
+	    eval {
+	    
+	               $dbh->resultset('Metadata')->update_or_create ({ perfsonar_id =>  $data_id, 
+							      service	 => $service_obj,
+							      src_ip	    =>   $ip_addr{src},
+							      dst_ip	    =>   ($ip_addr{dst}?$ip_addr{dst}->ip_addr:0),
+							      rtr_ip	    =>   ($ip_addr{rtr}?$ip_addr{rtr}->ip_addr:0),
+							      capacity   => $capacity,
+							      subject	 => ($subj_md?$subj_md->toString:''),
+							      parameters => ($param_md?$param_md->toString:''),
+							     },
+							     {key => 'metaid_service'}
+	                                                  ) if $ip_addr{src};
+	   };
+	   if($EVAL_ERROR) {
+	      $logger->error(" Catched $EVAL_ERROR");
+	   }
 	}
     }
+}
+#
+#  fixing broken DBIx::Class
+#
+sub update_create_fixed {
+    my ($rs, $search, $set) = @_;
+    my $row = $rs->find($search);
+    if (defined $row) {
+      $row->update($set);
+      return $row;
+   }
+   return $rs->create($set);
+}
+
+sub IP_N {
+    my $address = shift;
+    my($a, $b, $c, $d) = split '\.', $address;
+    $logger->error("Wrong address: $address") unless $address =~ /^[\d\.]+$/;
+    return  $d + ($c * 256) + ($b * 256**2) + ($a * 256**3);
+}
+sub N_IP {
+	my $addr = shift;	
+	my @dotted_arr;
+	foreach (1..3) {
+	   my $tmp = $addr % 256; 
+	   $addr -= $tmp; 
+	   $addr /= 256;
+	   push @dotted_arr, $tmp;
+	}  
+	push @dotted_arr, $addr;
+	return join('.',@dotted_arr);
 }
 
 __END__

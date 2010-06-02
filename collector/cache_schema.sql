@@ -12,22 +12,22 @@ flush privileges;
 use ecenter_data;
 --
 --   nodes - all of them
---   ip_addr supports   ipv4 addresses in ATON format ( 32bit integer )
+--   ip_addr supports   ipv4 and ipv6 addresses in binary form
 --    
 --
---    it set as INET_ATON('131.225.1.1') and essentially a 32bit representation of the IP
---    it allows indexing and netblock search, to get original IP address - INET_NTOA(2322324344)
+--    it set as INET6_PTON('131.225.1.1') and essentially a 16 byte representation of the IP
+--    it allows indexing and netblock search, to get original IP address - INET6_NTOP(ip_addr)
+--    to see dotted form of ipv4 or ipv6 - select ip_noted
 --
 drop  table if exists node;
 CREATE TABLE  node (
- ip_addr  int unsigned  NOT NULL,
- nodename varchar(255)  NULL,
- ipv4_dot  varchar(15)  NOT NULL, 
+ ip_addr  varbinary(16)  NOT NULL,
+ nodename  varchar(255)  NULL,
+ ip_noted  varchar(40)  NOT NULL,
  PRIMARY KEY  (ip_addr),
  KEY (nodename),
- KEY (ipv4_dot)
- )  ENGINE=InnoDB CHARSET=latin1  COMMENT='nodes';
-
+ KEY (ip_noted)
+)  ENGINE=InnoDB CHARSET=latin1  COMMENT='nodes';
 
 --
 --    list of keywords, stores most recent regexp used to obtain that keyword as well
@@ -50,6 +50,8 @@ CREATE TABLE   service (
  type varchar(32) NOT NULL DEFAULT 'hLS',
  comments  varchar(255) NULL, 
  is_alive boolean,
+ longitude float NULL,
+ latitude float NULL,
  created   DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
  updated   DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
  PRIMARY KEY  (service),
@@ -95,9 +97,9 @@ drop  table if exists  metadata;
 CREATE TABLE   metadata (
 metaid  bigint  unsigned AUTO_INCREMENT NOT NULL, 
 perfsonar_id  varchar(255) NOT NULL,
-src_ip int unsigned NOT NULL,
-rtr_ip int unsigned  NULL,
-dst_ip int unsigned  NULL,
+src_ip varbinary(16)  NOT NULL,
+rtr_ip varbinary(16)  NOT  NULL DEFAULT '0',
+dst_ip varbinary(16)  NOT  NULL DEFAULT '0',
 capacity  bigint  unsigned   NULL,
 service bigint  unsigned  NOT NULL,
 subject varchar(1023) NOT NULL,
@@ -191,10 +193,8 @@ CREATE TABLE  owamp_data (
    KEY  (timestamp),
    FOREIGN KEY  (metaid) REFERENCES   metadata  (metaid) on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps  owamp  data  cache';
---
---            SNMP data  storage 
---
---
+----            SNMP data  storage 
+----
 drop  table if exists snmp_data;
 CREATE TABLE  snmp_data (
    snmp_data  bigint unsigned AUTO_INCREMENT NOT NULL, 
@@ -233,7 +233,7 @@ drop table if exists hop;
 CREATE TABLE hop (
 hop_id  bigint  unsigned AUTO_INCREMENT  NOT NULL,
 trace_id bigint unsigned NOT NULL,
-hop_ip  int unsigned NOT NULL,
+hop_ip  varbinary(16) NOT NULL,
 hop_num tinyint(3) NOT NULL DEFAULT '1', 
 hop_delay  float NOT NULL DEFAULT '0.0', 
 PRIMARY KEY (hop_id), 

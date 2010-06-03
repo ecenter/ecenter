@@ -280,7 +280,7 @@ h1#site-name a:hover {
   width: 170px;
 }
 /* }}} */
-/* Drupal tabs {{{ */
+/* Page tasks {{{ */
 #tasks .tabs {
   width: 100%;
   float: left;
@@ -309,6 +309,12 @@ h1#site-name a:hover {
   margin-right: 10px;
 }
 /* }}} */
+/* Breadcrumbs {{{ */
+#breadcrumb {
+  margin-left: 20px;
+}
+/* }}} */
+
 
 /* -- Extended styles --- */
 /* E-Center Custom Login Block {{{ */

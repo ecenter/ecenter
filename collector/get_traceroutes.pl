@@ -22,13 +22,13 @@ use forks::shared
     detect => 1,
     resolve => 1
 };
-use Time::HiRes qw(usleep);
+
 use Getopt::Long;
 use Data::Dumper;
 use Log::Log4perl qw(:easy);
 use Pod::Usage;
 use Ecenter::Utils;
-use Digest::MD5;
+use Digest::MD5 qw(md5);
 
 use vars qw( $VERSION );
 $VERSION = '0.01';
@@ -83,16 +83,15 @@ while( my $service = $services->next) {
 	
         while( my $node = $nodes->next) {
 	    pool_control($MAX_THREADS, 0);
-	    my $metaid = $dbh->resultset('Metadata')->update_or_create({  perfsonar_id =>  md5( $service->ip_addr->ip_noted . $node->ip_noted), 
-							      service	 => $service->service,
-							      src_ip	    =>    $service->ip_addr->ip_addr,
-							      dst_ip	    =>    $node->ip_addr,
+	    my $metaid = $dbh->resultset('Metadata')->update_or_create({  
+	                                                                 perfsonar_id => md5( $service->ip_addr->ip_noted . $node->ip_noted), 
+							                 service      => $service->service,
+							                 src_ip	      => $service->ip_addr->ip_addr,
+							                 dst_ip	      => $node->ip_addr,
 							     },
 							     {key => 'metaid_service'}
 	                                                  );
-	    
-	    $threads{$thread_counter} = threads->new( sub {
-		my $now_str = strftime('%Y-%m-%d %H:%M:%S', localtime());
+	     threads->new( sub {
 		my $node_ip = $node->ip_noted;
 		my $dbh_node =  Ecenter::Schema->connect('DBI:mysql:ecenter_data', 
 		                $OPTIONS{user}, $OPTIONS{password}, 
@@ -107,35 +106,32 @@ while( my $service = $services->next) {
 	                my $trace = parse_trace($pre->as_text);
 			my $trace_data = $dbh->resultset('Traceroute_data')->find_or_new({ metaid =>  $metaid,
 		    								           number_hops  =>   $trace->{max_hops},
-		    								           updated =>  \"now()"
-											});
+		    								           updated =>   $now_str,
+											},
+											{key => 'updated_metaid'}
+											);
 			$trace_data->created(\"now()") unless ($trace_data->in_storage);
-                                         
-    							 
 										 
 			foreach my $hop (sort {$a <=> $b} keys %{$trace->{hops}}) {
-			    if($trace->{$hop}[1]) {
+			    if($trace->{$hop}{ip}) {
 			        update_create_fixed($dbh_node->resultset('Node'),
-		    					      { ip_addr =>  \"=inet6_pton('$trace->{hops}{$hop}[1]')"},
-		    					      { ip_addr => \"inet6_pton('$trace->{hops}{$hop}[1]')",
-		    					        nodename =>  $trace->{hops}{$hop}[2],
-		    					        ip_noted => $trace->{hops}{$hop}[1] 
+		    					      { ip_addr =>  \"=inet6_pton('$trace->{hops}{$hop}{ip}')"},
+		    					      { ip_addr => \"inet6_pton('$trace->{hops}{$hop}{ip}')",
+		    					        nodename =>  $trace->{hops}{$hop}{host},
+		    					        ip_noted => $trace->{hops}{$hop}{ip} 
 							      }
 					            ); 
 		    	        #$logger->info(" ip_addr " , sub {Dumper($ip_addr$ip_addr_obj )});
-		        	my $ip_addr_obj =  $dbh->resultset('Node')->find({ip_noted =>  $trace->{$hop}[1]});
-		    	        my $$hop = $dbh->resultset('Traceroute_data')->update_or_create({ name => $serviceName,
-		    								 url   =>   $accessPoint,
-		    								 type => $serviceType,
-		    								 ip_addr =>  $ip_addr_obj,
-		    								 comments => $serviceDescription,
-		    								 is_alive => (!$status?'1':'0'), 
-		    								 updated =>  $now_str,
-		    								 created =>  $now_str,
-		    								},
-		    							  { key => 'service_url'}
+		        	my $hop_addr_obj =  $dbh->resultset('Node')->find({ip_noted =>  $trace->{$hop}{ip}});
+		    	        my $hop = $dbh->resultset('Hop')->update_or_create({  
+				                                                     trace_id => $trace_data,
+										     hop_ip => $hop_addr_obj->ip_addr,
+										     hop_num => $hop,
+										     hop_delay => $trace->{hops}{$hop}{delay}
+		    								} 
 		    							 );
 			    }
+		        }
 	            } else {
 	                $logger->debug("NOT FOUND:: " . $tree->as_HTML);
 	            }
@@ -219,14 +215,17 @@ sub parse_trace {
 	    /^   ?([0-9.]+) ms/ && do {
 		$time += $1;
 		$counter++;
-		$result->{$hopno} = [ $CODE{TRACEROUTE_OK}, $addr, $nodename, $time];
+		$result->{$hopno}{code}=$CODE{TRACEROUTE_OK};
+		$result->{$hopno}{ip} = $addr;
+		$result->{$hopno}{host} = $nodename;
+		$result->{$hopno}{delay} = $time;
 		 
 		$_ = substr($_, length($MATCH));
 		next query;
 	    };
 	    # query timed out
 	    /^ +\*/ && do {
-		$result->{$hopno} = [  $CODE{TRACEROUTE_TIMEOUT},   inet_ntoa(INADDR_NONE), '', 0];
+		$result->{$hopno}{code}  = $CODE{TRACEROUTE_TIMEOUT};
 		$_ = substr($_, length($MATCH));
 		next query;
 	    };
@@ -234,15 +233,15 @@ sub parse_trace {
 		my $flag = $1;
 		my $matchlen = length($MATCH);
 		if($flag =~ /^!<\d>$/) {
-		    $result->{$hopno}[0] =  $CODE{TRACEROUTE_UNKNOWN};
+		    $result->{$hopno}{code} =  $CODE{TRACEROUTE_UNKNOWN};
 		} elsif($flag =~ /^!$/) {
-		    $result->{$hopno}[0] =  $CODE{TRACEROUTE_BSDBUG};
+		    $result->{$hopno}{code} =  $CODE{TRACEROUTE_BSDBUG};
 		} elsif($flag =~ /^!([NHPFSAX])$/) {
 		    my $icmp = $1;
 		    # Shouldn't happen
 		    $logger->logdie("Unable to traceroute output (flag $icmp)!")
 			unless(defined($icmp_map{$icmp}));
-		    $result->{$hopno}[0] =  $icmp_map{$icmp};
+		    $result->{$hopno}{code} =  $icmp_map{$icmp};
 		}
 		$_ = substr($_, $matchlen);
 		next query;
@@ -256,13 +255,13 @@ sub parse_trace {
 	    };
 	    last;
 	}
-	if(!$result->{$hopno}[1] || !$result->{$hopno}[2]) {
-	    my ($ip, $name) = (!$result->{$hopno}[1] && $result->{$hopno}[2])?get_ip_name($result->{$hopno}[2]):
-	                        get_ip_name($result->{$hopno}[1]);
-	    $result->{$hopno}[1] = $ip;
-	    $result->{$hopno}[2] = $name;		
+	if(!$result->{$hopno}{ip} || !$result->{$hopno}{host}) {
+	    my ($ip, $name) = (!$result->{$hopno}{ip} && $result->{$hopno}{host})?get_ip_name($result->{$hopno}{host}):
+	                        get_ip_name($result->{$hopno}{ip});
+	    $result->{$hopno}{ip} = $ip;
+	    $result->{$hopno}{host}= $name;		
 	}
-	$result->{$hopno}[3] = $counter?$result->{$hopno}[3]/$counter:0;
+	$result->{$hopno}{delay} = $counter?$result->{$hopno}{delay}/$counter:0;
    }
    return {hops => $result, maxhop => $hops};
 }

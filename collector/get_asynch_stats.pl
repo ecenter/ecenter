@@ -69,16 +69,11 @@ use Time::HiRes qw(usleep);
 use XML::LibXML;
 use Getopt::Long;
 use Data::Dumper;
-use Data::Validate::IP qw(is_ipv4 is_ipv6);
-use Data::Validate::Domain qw( is_domain is_hostname);
-use Net::IPv6Addr;
-use Net::CIDR;
-use Net::DNS;
 use POSIX qw(strftime);
 use Pod::Usage;
 use FindBin;
 use Log::Log4perl qw(:easy);
-use Benchmark;
+use Ecenter::Utils;
 
 use lib  "$FindBin::Bin";
 use Ecenter::Schema;
@@ -145,9 +140,8 @@ unless($OPTIONS{password}) {
 } 
 my $parser = XML::LibXML->new();
 my $hints  = "http://www.perfsonar.net/gls.root.hints";
-my @private_list = ( "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16" );
 my $pattern = '';
-my %hls = ();
+my %hls_cache = ();
 my $gls = perfSONAR_PS::Client::gLS->new( { url => $hints } );
 $logger->info(" MAX THREADS = $MAX_THREADS ");
 
@@ -189,49 +183,53 @@ for my $root ( @{ $gls->{ROOTS} } ) {
         my $service = find( $doc->getDocumentElement, ".//*[local-name()='service']", 0 );
         foreach my $s ( $service->get_nodelist ) {  
 	  ### run query/echo/ping async	   
-	    pool_control();
+	    
+	    pool_control($MAX_THREADS, 0);
 	    $threads{$thread_counter} = threads->new( sub {
 		my $now_str = strftime('%Y-%m-%d %H:%M:%S', localtime());
 		my $dbh =  Ecenter::Schema->connect('DBI:mysql:ecenter_data',  $OPTIONS{user}, $OPTIONS{password}, {RaiseError => 1, PrintError => 1});
-		$dbh->storage->debug(1);
+		$dbh->storage->debug(1); ## if $OPTIONS{debug};
 		
  		my $keyword_str = $pattern;
         	my $accessPoint = extract( find( $s, ".//*[local-name()='accessPoint']", 1 ), 0 );
 		my $serviceName = extract( find( $s, ".//*[local-name()='serviceName']", 1 ), 0 );
         	my $serviceType = extract( find( $s, ".//*[local-name()='serviceType']", 1 ), 0 );
         	my $serviceDescription = extract( find( $s, ".//*[local-name()='serviceDescription']", 1 ), 0 );
-		next if $serviceType =~ /^ping$/i;
-        	try {
-		    if ( $accessPoint ) {
-                	$logger->debug("\t\thLS:\t$accessPoint");
-                	my $test = $accessPoint;                
-                	$test =~ s/^http:\/\///;
-                	my ( $unt_test ) = $test =~ /^(.+):/;
-                	if ( $unt_test 
-			     and ( (is_ipv4( $unt_test ) && !Net::CIDR::cidrlookup( $unt_test, @private_list )) 
-		        	   or  &Net::IPv6Addr::is_ipv6( $unt_test ) 
-				   or  (is_domain( $unt_test ) &&  $unt_test !~ m/^localhost/ )
-				 ) 
-			    ) {
-			    my $echo_service = perfSONAR_PS::Client::Echo->new( $accessPoint );
-                	    my ( $status, $res ) = $echo_service->ping();
-			    my $hls = $dbh->resultset('Service')->update_or_create({ name => $serviceName,
-		                                                        	     url   =>   $accessPoint,
-		                                                        	     type => $serviceType,
-								        	     comments => $serviceDescription,
-								        	     is_alive => (!$status?'1':'0'), 
-								        	     updated =>  $now_str,
-										     created =>  $now_str,
-								        	    },
-									      { key => 'service_url'}
-									     );
-			    unless($status)  {
-		        	get_fromHLS($accessPoint, $now_str, $hls, $dbh);
-			    }
-                	 }  else  {
-                	    $logger->debug("\t\t\tReject:\t$unt_test");
-                	 }
-        	     }
+		return if exists $hls_cache{$accessPoint};
+		return  if !$accessPoint || $serviceType =~ /^ping$/i;
+		return unless $accessPoint =~ /ps1\.es/;
+        	try {		  
+                    $logger->debug("\t\thLS:\t$accessPoint");
+                    my ($ip_addr,$ip_name) = get_ip_name($accessPoint); 	       
+                    if($ip_addr) {
+		    	my $echo_service = perfSONAR_PS::Client::Echo->new( $accessPoint );
+                    	my ( $status, $res ) = $echo_service->ping();
+			 
+			$hls_cache{$accessPoint}++;
+		    	update_create_fixed($dbh->resultset('Node'),
+		    					      {ip_addr =>  \"=inet6_pton('$ip_addr')"},
+		    					      {ip_addr => \"inet6_pton('$ip_addr')",
+		    					       nodename => $ip_name,
+		    					       ip_noted => $ip_addr}); 
+		    	#$logger->info(" ip_addr " , sub {Dumper($ip_addr$ip_addr_obj )});
+		    	my $ip_addr_obj =  $dbh->resultset('Node')->find({ip_noted => $ip_addr});
+		    	my $hls = $dbh->resultset('Service')->update_or_create({ name => $serviceName,
+		    								 url   =>   $accessPoint,
+		    								 type => $serviceType,
+		    								 ip_addr =>  $ip_addr_obj,
+		    								 comments => $serviceDescription,
+		    								 is_alive => (!$status?'1':'0'), 
+		    								 updated =>  $now_str,
+		    								 created =>  $now_str,
+		    								},
+		    							  { key => 'service_url'}
+		    							 );
+		    	unless($status)  {
+		    	    get_fromHLS($accessPoint, $now_str, $hls, $dbh);
+		    	}
+                     }  else  {
+                    	$logger->debug("\t\t\tReject:\t$accessPoint)");
+                     }
 		} 
 		catch perfSONAR_PS::Error   with {
 		    $logger->error( shift);
@@ -252,29 +250,7 @@ for my $root ( @{ $gls->{ROOTS} } ) {
        $logger->debug("\tResult:\t" , sub{Dumper($result)});
    }
 }
-pool_control();
- 
-=head2 pool_control
-
-=cut
-
-sub pool_control {
-    my ($threads_h) = @_;  
-    my $logger = get_logger(__PACKAGE__);
-    my @running =  threads->list(threads::running);
-    my $num_threads = scalar   @running;
-    $logger->debug("Threads::" . join(' : ', map {$_->tid}  @running));
-    while( $num_threads >= $MAX_THREADS) {
-  	foreach my $tidx (@running) {
-  	    if( $tidx->is_running()) {
-  		usleep 10;
-  	    } else {
-  		$tidx->detach();
-  		$num_threads = threads->list(threads::running);
-  	    }
-  	}
-    }
-}
+pool_control($MAX_THREADS, 'finish_it');  
 
 
 =head2 ls_store_request
@@ -316,13 +292,20 @@ main processing unit, returns nothing
 sub get_fromHLS {
     my ($hls_url, $now_str, $hls_obj, $dbh) = @_;
     my $logger = get_logger(__PACKAGE__);
-    my $resolver   = Net::DNS::Resolver->new;
-
+   
     $logger->debug("hLS: $hls_url............");
     my $ls = new perfSONAR_PS::Client::LS( { instance => $hls_url } );
     my $result_disc  = ls_store_request($ls, $DISCOVERY_EVENTTYPE);
     my $result_query = ls_store_request($ls, $QUERY_EVENTTYPE);
-    return unless   ( exists $result_disc->{eventType} and not( $result_disc->{eventType} =~ m/^error/ ) );
+    
+    unless( exists $result_disc->{eventType} and not( $result_disc->{eventType} =~ m/^error/ ) ) {
+        $logger->error(" HLS:: $hls_url got an error when running discovery query", sub {Dumper($result_query)});
+	return;
+    }
+    unless( exists $result_query->{eventType} and not( $result_query->{eventType} =~ m/^error/ ) ) {
+        $logger->error(" HLS:: $hls_url got an error when running  query", sub {Dumper($result_query)});
+	return;
+    }
     $logger->debug("EventType: $result_disc->{eventType}");
     $result_disc->{response} = unescapeString( $result_disc->{response} );
     $result_query->{response} = unescapeString( $result_query->{response} );
@@ -342,7 +325,7 @@ sub get_fromHLS {
     # create lookup hash to avoid multiple array parsing
     my %look_data_query_id= ();
     foreach my $data_obj ($d_query->get_nodelist)  {
-       push @{$look_data_query_id{$data_obj->getAttribute("metadataIdRef")}}, $data_obj;
+        push @{$look_data_query_id{$data_obj->getAttribute("metadataIdRef")}}, $data_obj;
     }
     foreach my $m1 ( $md_query->get_nodelist ) {
    	my $id = $m1->getAttribute("id");  
@@ -363,9 +346,19 @@ sub get_fromHLS {
 	}
 	$param_exist{type} ||= 'N/A';
 	$param_exist{name} ||= 'N/A';
-	 
-	my $service_obj =  $dbh->resultset('Service')->update_or_create( \%param_exist,{ key => 'service_url' } ); 
-      
+	 my ( $ip_noted , $nodename) = get_ip_name(  $param_exist{url} );
+	   update_create_fixed($dbh->resultset('Node'),
+			                              {ip_addr =>  \"=inet6_pton('$ip_noted')"},
+			                              {ip_addr => \"inet6_pton('$ip_noted')",
+			                               nodename =>  $nodename,
+						       ip_noted => $ip_noted,
+						      }); 
+	  my   $ip_addr = $dbh->resultset('Node')->find({ip_noted => $ip_noted  });
+	 $param_exist{ip_addr}	 =  $ip_addr->ip_addr;						   
+	 my $service_obj =$dbh->resultset('Service')->find_or_create( \%param_exist,{ key => 'service_url' } ); 
+       ## my $service_obj =  $dbh->resultset('Service')->find({url => $param_exist{url}});
+	$logger->info(" Found for url $param_exist{url}" .$service_obj->service);
+	next unless $service_obj;
 	##############  data part processing
         ###my $d1_disc = $look_data_disc_id{$id};
 	next unless $look_data_query_id{$id};
@@ -393,7 +386,7 @@ sub get_fromHLS {
 									{ key => 'keywords_service' }
 								      );
  		 $dbh->resultset('Keywords_Service')->update_or_create( { keyword => $keyword_str,
-									  service =>  $service_obj
+									  service =>  $service_obj->service
 									},
 									{ key => 'keywords_service' } 
 								      );
@@ -408,7 +401,7 @@ sub get_fromHLS {
 		    $type_of_service = $SERVICE_LOOKUP{$value};
 		}
 		$dbh->resultset('Eventtype')->update_or_create( { eventtype =>  $value,
-								  service =>  $service_obj
+								  service =>  $service_obj->service
 								},
 								{ key => 'eventtype_service' }
 							      );
@@ -435,43 +428,28 @@ sub get_fromHLS {
 		$ip_addr{src}  = extract( $src, 0 ) if $src;
 		$ip_addr{dst}  = extract( $dst, 0 ) if $dst;
 		###$logger->debug("Start ====== src= $ip_addr{src}  dst= $ip_addr{dst} ");
-              
+                next unless $src;
 		foreach my $ip_key (qw/rtr src dst/) {
-	            my $ip_name = $ip_addr{$ip_key};
-		    my $ip_cidr='';
-		    if($ip_addr{$ip_key}) {
-		        $ip_addr{$ip_key} =~ s{^(https?|tcp)://|:\d+$}{}g;
-	                if( !is_ipv4($ip_addr{$ip_key}) && !is_ipv6($ip_addr{$ip_key}) && &is_hostname($ip_addr{$ip_key})) {
-		   	    my $query = $resolver->search($ip_addr{$ip_key});
-                	    if ($query) {
-                                foreach my $rr ($query->answer) {
-                        	    if($rr->type eq 'A') {
-                                        $ip_addr{$ip_key} = $rr->address;
-				        last;
-                        	    }
-                                }
-	        	     }
-		         }
-		         #$logger->debug(" $ip_key: IP=$ip_addr{ $ip_key}  ipv4=" .is_ipv4($ip_addr{$ip_key})  . " is_hostname=" . is_hostname($ip_addr{$ip_key})  );
-		         if( $ip_addr{$ip_key} && (is_ipv4($ip_addr{$ip_key}) || is_ipv6($ip_addr{$ip_key}))) {
-			     $ip_cidr = $ip_addr{$ip_key};
-                	     ####$ip_addr{$ip_key} = IP_N($ip_addr{$ip_key}  );
-		             ###$logger->debug("... $ip_key: IP_addr=$ip_addr{$ip_key} nodename=$ip_name ipv4_dot=$ip_cidr");
-	                     $ip_addr{$ip_key} = update_create_fixed($dbh->resultset('Node'),{'ip_addr' =>  \"=inet6_pton('$ip_addr{$ip_key}')"},
-			                                          {ip_addr => \"inet6_pton('$ip_addr{$ip_key}')",
-			                                           nodename => $ip_name,
-								   ip_noted => $ip_cidr }); 
-			 }
+		    my ($ip_cidr,$ip_name) = get_ip_name($ip_addr{$ip_key});
+		    if($ip_addr{$ip_key} && $ip_cidr) {
+	                  update_create_fixed(   $dbh->resultset('Node'),
+			                                             { ip_addr  =>  \"=inet6_pton('$ip_cidr')"},
+			                                             { ip_addr  => \"inet6_pton('$ip_cidr')",
+			                                               nodename => $ip_name,
+								       ip_noted => $ip_cidr 
+								     }
+								    );
+			  $ip_addr{$ip_key} = 	 $dbh->resultset('Node')->find({ip_noted => $ip_cidr });				    
 		    }
 		}
 	        $logger->debug('End ======  MISSING:' . $subj_md->toString) unless $ip_addr{src};
 		   
 	    }
 	    eval {
-	    
+	               
 	               $dbh->resultset('Metadata')->update_or_create ({ perfsonar_id =>  $data_id, 
-							      service	 => $service_obj,
-							      src_ip	    =>   $ip_addr{src},
+							      service	 => $service_obj->service,
+							      src_ip	    =>   $ip_addr{src}->ip_addr,
 							      dst_ip	    =>   ($ip_addr{dst}?$ip_addr{dst}->ip_addr:0),
 							      rtr_ip	    =>   ($ip_addr{rtr}?$ip_addr{rtr}->ip_addr:0),
 							      capacity   => $capacity,
@@ -486,37 +464,6 @@ sub get_fromHLS {
 	   }
 	}
     }
-}
-#
-#  fixing broken DBIx::Class
-#
-sub update_create_fixed {
-    my ($rs, $search, $set) = @_;
-    my $row = $rs->find($search);
-    if (defined $row) {
-      $row->update($set);
-      return $row;
-   }
-   return $rs->create($set);
-}
-
-sub IP_N {
-    my $address = shift;
-    my($a, $b, $c, $d) = split '\.', $address;
-    $logger->error("Wrong address: $address") unless $address =~ /^[\d\.]+$/;
-    return  $d + ($c * 256) + ($b * 256**2) + ($a * 256**3);
-}
-sub N_IP {
-	my $addr = shift;	
-	my @dotted_arr;
-	foreach (1..3) {
-	   my $tmp = $addr % 256; 
-	   $addr -= $tmp; 
-	   $addr /= 256;
-	   push @dotted_arr, $tmp;
-	}  
-	push @dotted_arr, $addr;
-	return join('.',@dotted_arr);
 }
 
 __END__

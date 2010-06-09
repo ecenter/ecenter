@@ -46,6 +46,7 @@ drop  table if exists service;
 CREATE TABLE   service (
  service  bigint  unsigned AUTO_INCREMENT NOT NULL, 
  name varchar(255) NOT NULL,
+ ip_addr varbinary(16) NOT NULL,
  url varchar(255) NOT NULL,
  type varchar(32) NOT NULL DEFAULT 'hLS',
  comments  varchar(255) NULL, 
@@ -56,7 +57,8 @@ CREATE TABLE   service (
  updated   DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
  PRIMARY KEY  (service),
  UNIQUE KEY url (url), 
- KEY is_alive (is_alive)
+ KEY is_alive (is_alive),
+ FOREIGN KEY (ip_addr) REFERENCES  node (ip_addr)
  ) ENGINE=InnoDB CHARSET=latin1 COMMENT='ps-ps services operational table';
 --
 --    list of eventtypes
@@ -217,11 +219,9 @@ CREATE TABLE traceroute_data (
 trace_id   bigint  unsigned AUTO_INCREMENT NOT NULL,
 metaid   BIGINT  unsigned  NOT NULL,
 number_hops tinyint(3) NOT NULL DEFAULT '1', 
-delay float NOT NULL DEFAULT '0.0', 
-created bigint(20) unsigned NOT NULL, 
 updated bigint(20) unsigned NOT NULL, 
-PRIMARY KEY (trace_id),
-KEY (created, updated),
+PRIMARY KEY (trace_id), 
+UNIQUE KEY updated_metaid (metaid, updated),
 FOREIGN KEY (metaid) references  metadata (metaid) on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps traceroute';
 --

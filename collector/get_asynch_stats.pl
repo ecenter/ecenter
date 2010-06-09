@@ -132,8 +132,8 @@ pod2usage(-verbose => 2) if ( $OPTIONS{help} || ($OPTIONS{procs} && $OPTIONS{pro
 
 $MAX_THREADS = $OPTIONS{procs} if $OPTIONS{procs} > 0 && $OPTIONS{procs}  < 40;
 
-$OPTIONS{db} |= 'ecenter_data';
-$OPTIONS{user} |= 'ecenter';
+$OPTIONS{db} ||= 'ecenter_data';
+$OPTIONS{user} ||= 'ecenter';
 unless($OPTIONS{password}) {
     $OPTIONS{password} = `cat /etc/my_ecenter`;
     chomp $OPTIONS{password};
@@ -187,8 +187,9 @@ for my $root ( @{ $gls->{ROOTS} } ) {
 	    pool_control($MAX_THREADS, 0);
 	    $threads{$thread_counter} = threads->new( sub {
 		my $now_str = strftime('%Y-%m-%d %H:%M:%S', localtime());
-		my $dbh =  Ecenter::Schema->connect("DBI:mysql:$OPTIONS{db}",  $OPTIONS{user}, $OPTIONS{password}, {RaiseError => 1, PrintError => 1});
-		$dbh->storage->debug(1); ## if $OPTIONS{debug};
+		$logger->debug("Connecting... 'DBI:mysql:$OPTIONS{db}");
+		my $dbh =  Ecenter::Schema->connect('DBI:mysql:' . $OPTIONS{db},  $OPTIONS{user}, $OPTIONS{password}, {RaiseError => 1, PrintError => 1});
+		$dbh->storage->debug(1) if $OPTIONS{debug};
 		
  		my $keyword_str = $pattern;
         	my $accessPoint = extract( find( $s, ".//*[local-name()='accessPoint']", 1 ), 0 );
@@ -457,7 +458,7 @@ sub get_fromHLS {
 							      parameters => ($param_md?$param_md->toString:''),
 							     },
 							     {key => 'metaid_service'}
-	                                                  ) if $ip_addr{src};
+	                                                  ) if $ip_addr{src} && ref $ip_addr{src};
 	   };
 	   if($EVAL_ERROR) {
 	      $logger->error(" Catched $EVAL_ERROR");

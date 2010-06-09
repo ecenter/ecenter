@@ -119,7 +119,7 @@ our $QUERY_EVENTTYPE     = 'http://ogf.org/ns/nmwg/tools/org/perfsonar/service/l
 
 
 my %OPTIONS;
-my @string_option_keys = qw/key password user procs/;
+my @string_option_keys = qw/key password user db procs/;
 GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
             qw/debug help/,
@@ -128,15 +128,15 @@ GetOptions( \%OPTIONS,
 $OPTIONS{debug}?Log::Log4perl->easy_init($DEBUG):Log::Log4perl->easy_init($INFO);
 my  $logger = Log::Log4perl->get_logger(__PACKAGE__);
 
-
-
-pod2usage(-verbose => 2) if ( $OPTIONS{help}    || ($OPTIONS{procs} && $OPTIONS{procs} !~ /^\d\d?$/));
+pod2usage(-verbose => 2) if ( $OPTIONS{help} || ($OPTIONS{procs} && $OPTIONS{procs} !~ /^\d\d?$/));
 
 $MAX_THREADS = $OPTIONS{procs} if $OPTIONS{procs} > 0 && $OPTIONS{procs}  < 40;
+
+$OPTIONS{db} |= 'ecenter_data';
 $OPTIONS{user} |= 'ecenter';
 unless($OPTIONS{password}) {
-  $OPTIONS{password} = `cat /etc/my_ecenter`;
-  chomp $OPTIONS{password};
+    $OPTIONS{password} = `cat /etc/my_ecenter`;
+    chomp $OPTIONS{password};
 } 
 my $parser = XML::LibXML->new();
 my $hints  = "http://www.perfsonar.net/gls.root.hints";
@@ -187,7 +187,7 @@ for my $root ( @{ $gls->{ROOTS} } ) {
 	    pool_control($MAX_THREADS, 0);
 	    $threads{$thread_counter} = threads->new( sub {
 		my $now_str = strftime('%Y-%m-%d %H:%M:%S', localtime());
-		my $dbh =  Ecenter::Schema->connect('DBI:mysql:ecenter_data',  $OPTIONS{user}, $OPTIONS{password}, {RaiseError => 1, PrintError => 1});
+		my $dbh =  Ecenter::Schema->connect("DBI:mysql:$OPTIONS{db}",  $OPTIONS{user}, $OPTIONS{password}, {RaiseError => 1, PrintError => 1});
 		$dbh->storage->debug(1); ## if $OPTIONS{debug};
 		
  		my $keyword_str = $pattern;
@@ -197,7 +197,7 @@ for my $root ( @{ $gls->{ROOTS} } ) {
         	my $serviceDescription = extract( find( $s, ".//*[local-name()='serviceDescription']", 1 ), 0 );
 		return if exists $hls_cache{$accessPoint};
 		return  if !$accessPoint || $serviceType =~ /^ping$/i;
-		return unless $accessPoint =~ /ps1\.es/;
+		#return unless $accessPoint =~ /ps\d+\.es|fnal\.gov/;
         	try {		  
                     $logger->debug("\t\thLS:\t$accessPoint");
                     my ($ip_addr,$ip_name) = get_ip_name($accessPoint); 	       

@@ -22,13 +22,13 @@ use forks::shared
     detect => 1,
     resolve => 1
 };
-
+use POSIX qw(strftime);
 use Getopt::Long;
 use Data::Dumper;
 use Log::Log4perl qw(:easy);
 use Pod::Usage;
 use Ecenter::Utils;
-use Digest::MD5 qw(md5);
+use Digest::MD5 qw(md5_hex);
 
 use vars qw( $VERSION );
 $VERSION = '0.01';
@@ -41,26 +41,29 @@ our $TRACE_CMD = 'gui/reverse_traceroute.cgi';
 
 
 my %OPTIONS;
-my @string_option_keys = qw/key password user procs/;
+my @string_option_keys = qw/key password db user procs/;
 GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
             qw/debug help/,
 ) or pod2usage(1);
 
 $OPTIONS{debug}?Log::Log4perl->easy_init($DEBUG):Log::Log4perl->easy_init($INFO);
-my  $logger = Log::Log4perl->get_logger(__PACKAGE__);
+our  $logger = Log::Log4perl->get_logger(__PACKAGE__);
 
 pod2usage(-verbose => 2) if ( $OPTIONS{help}    || ($OPTIONS{procs} && $OPTIONS{procs} !~ /^\d\d?$/));
 
 $MAX_THREADS = $OPTIONS{procs} if $OPTIONS{procs} &&  $OPTIONS{procs} > 0 && $OPTIONS{procs}  < 40;
+
+$OPTIONS{db} |= 'ecenter_data';
 $OPTIONS{user} |= 'ecenter';
+
 unless($OPTIONS{password}) {
     $OPTIONS{password} = `cat /etc/my_ecenter`;
     chomp $OPTIONS{password};
 } 
-$logger->info(" MAX THREADS = $MAX_THREADS ");
+$logger->debug(" MAX THREADS = $MAX_THREADS ");
 
-my $dbh =  Ecenter::Schema->connect('DBI:mysql:ecenter_test',  $OPTIONS{user},
+my $dbh =  Ecenter::Schema->connect("DBI:mysql:$OPTIONS{db}",  $OPTIONS{user},
                                      $OPTIONS{password}, 
 				    {RaiseError => 1, PrintError => 1});
 $dbh->storage->debug(1); ## if $OPTIONS{debug};
@@ -84,7 +87,7 @@ while( my $service = $services->next) {
         while( my $node = $nodes->next) {
 	    pool_control($MAX_THREADS, 0);
 	    my $metaid = $dbh->resultset('Metadata')->update_or_create({  
-	                                                                 perfsonar_id => md5( $service->ip_addr->ip_noted . $node->ip_noted), 
+	                                                                 perfsonar_id => md5_hex( $service->ip_addr->ip_noted . $node->ip_noted), 
 							                 service      => $service->service,
 							                 src_ip	      => $service->ip_addr->ip_addr,
 							                 dst_ip	      => $node->ip_addr,
@@ -93,7 +96,8 @@ while( my $service = $services->next) {
 	                                                  );
 	     threads->new( sub {
 		my $node_ip = $node->ip_noted;
-		my $dbh_node =  Ecenter::Schema->connect('DBI:mysql:ecenter_data', 
+		my $now_str = strftime('%Y-%m-%d %H:%M:%S', localtime());
+		my $dbh_node =  Ecenter::Schema->connect("DBI:mysql:$OPTIONS{db}", 
 		                $OPTIONS{user}, $OPTIONS{password}, 
 				{RaiseError => 1, PrintError => 1});
 		$dbh_node->storage->debug(1); ## if $OPTIONS{debug};          
@@ -104,16 +108,15 @@ while( my $service = $services->next) {
                     my ($pre) = $tree->findnodes('//pre');
 	            if($pre) {
 	                my $trace = parse_trace($pre->as_text);
-			my $trace_data = $dbh->resultset('Traceroute_data')->find_or_new({ metaid =>  $metaid,
+			my $trace_data = $dbh->resultset('Traceroute_data')->update_or_create({ metaid =>  $metaid,
 		    								           number_hops  =>   $trace->{max_hops},
 		    								           updated =>   $now_str,
 											},
 											{key => 'updated_metaid'}
 											);
-			$trace_data->created(\"now()") unless ($trace_data->in_storage);
-										 
+			 #$logger->debug(" HOPS: ", sub {Dumper ($trace->{hops})});
 			foreach my $hop (sort {$a <=> $b} keys %{$trace->{hops}}) {
-			    if($trace->{$hop}{ip}) {
+			    if($trace->{hops}{$hop}{ip}) {
 			        update_create_fixed($dbh_node->resultset('Node'),
 		    					      { ip_addr =>  \"=inet6_pton('$trace->{hops}{$hop}{ip}')"},
 		    					      { ip_addr => \"inet6_pton('$trace->{hops}{$hop}{ip}')",
@@ -122,7 +125,7 @@ while( my $service = $services->next) {
 							      }
 					            ); 
 		    	        #$logger->info(" ip_addr " , sub {Dumper($ip_addr$ip_addr_obj )});
-		        	my $hop_addr_obj =  $dbh->resultset('Node')->find({ip_noted =>  $trace->{$hop}{ip}});
+		        	my $hop_addr_obj =  $dbh->resultset('Node')->find({ip_noted =>  $trace->{hops}{$hop}{ip}});
 		    	        my $hop = $dbh->resultset('Hop')->update_or_create({  
 				                                                     trace_id => $trace_data,
 										     hop_ip => $hop_addr_obj->ip_addr,
@@ -263,7 +266,7 @@ sub parse_trace {
 	}
 	$result->{$hopno}{delay} = $counter?$result->{$hopno}{delay}/$counter:0;
    }
-   return {hops => $result, maxhop => $hops};
+   return {hops => $result, max_hops => $hops};
 }
 
 __END__

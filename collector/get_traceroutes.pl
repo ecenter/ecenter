@@ -42,7 +42,7 @@ our $TRACE_CMD = 'gui/reverse_traceroute.cgi';
 
 
 my %OPTIONS;
-my @string_option_keys = qw/key password db user procs/;
+my @string_option_keys = qw/match password db user procs/;
 GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
             qw/debug help/,
@@ -69,33 +69,36 @@ my $dbh =  Ecenter::Schema->connect("DBI:mysql:$OPTIONS{db}",  $OPTIONS{user},
 				    {RaiseError => 1, PrintError => 1});
 $dbh->storage->debug(1)  if $OPTIONS{debug};
 my $services = $dbh->resultset('Service')->search({},{join => 'ip_addr', group_by => 'ip_addr'});
+my $match = $OPTIONS{match}?qr/$OPTIONS{match}/:'';
 
 while( my $service = $services->next) {
-    my $nodename = $service->ip_addr->nodename;   
+    my $nodename = $service->ip_addr->nodename;
     next unless $nodename; 
-    my $mech = WWW::Mechanize->new(   agent  => 'Mozilla/5.0 (compatible; MSIE 7.0; Windows 2000; .NET CLR 1.1.4322)',
-          stack_depth => 1,
-          env_proxy   => 1,
-          cookie_jar  => {},
-          autocheck => 1, 
-	  timeout => 10,
-	  );
-	  
-    my $result;
-    eval {
-        $result = $mech->get("http://$nodename/$TRACE_CMD");
-    };
-    if($EVAL_ERROR) {
-        $logger->error(" Failed to get URL:  $nodename " );
-	next;
-    }
+    next if($match && $nodename !~  $match);
+   
     my $service_ip = $service->ip_addr->ip_noted;
     my $mask = ( $service_ip  =~ /^[\d\.]+$/)?'16':'64';
     my $where = "inet6_mask(me.ip_addr, $mask) != inet6_mask(inet6_pton('". $service->ip_addr->ip_noted ."'), $mask)";
-    
-    if($result->is_success) {
-       pool_control($MAX_THREADS, 0);
-       threads->new( sub {
+  
+    pool_control($MAX_THREADS, 0);
+    threads->new( sub {    
+	my $mech = WWW::Mechanize->new(   agent  => 'Mozilla/5.0 (compatible; MSIE 7.0; Windows 2000; .NET CLR 1.1.4322)',
+              stack_depth => 1,
+              env_proxy   => 1,
+              cookie_jar  => {},
+              autocheck => 1, 
+	      timeout => 10,
+	      );
+
+	my $result;
+	eval {
+            $result = $mech->get("http://$nodename/$TRACE_CMD");
+	};
+	if($EVAL_ERROR) {
+            $logger->error(" Failed to get URL:  $nodename " );
+	    threads->exit();
+	}
+	if($result->is_success) {
             my $dbh_node =  Ecenter::Schema->connect('DBI:mysql:' . $OPTIONS{db}, 
 	    			$OPTIONS{user}, $OPTIONS{password}, 
 	    			{RaiseError => 1, PrintError => 1});
@@ -156,10 +159,10 @@ while( my $service = $services->next) {
 		} 
             } 
 	    $dbh_node->storage->disconnect if $dbh_node;   
-	});  
-    } else {
-        $logger->error(" Failed to get URL:  $nodename- " . $result->status_line );
-    }
+        } else {
+            $logger->error(" Failed to get URL:  $nodename- " . $result->status_line );
+        }
+    });
 }	
 pool_control($MAX_THREADS, 'finish_it');
  

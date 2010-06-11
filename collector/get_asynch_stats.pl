@@ -5,7 +5,7 @@ use warnings;
 
 =head1 NAME
 
-get_async_stats.pl - cache program  with asynchronous calls to the perfSONAR-PS remote LSes and mysql backend
+get_asynch_stats.pl - cache program  with asynchronous calls to the perfSONAR-PS remote LSes and mysql backend
 
 =head1 DESCRIPTION
 
@@ -13,7 +13,7 @@ get_async_stats.pl - cache program  with asynchronous calls to the perfSONAR-PS 
 
 =head1 SYNOPSIS
 
-./get_lhs.pl --key=lhc --procs=20 --password=<db password> --user=<db username>
+./get_asynch_stats.pl  --key=lhc --procs=20 --password=<db password> --user=<db username>
 
 it will try to query fo all possible combinations:
 LHC, lhc, LHC-OPN, LHCOPN, lhcopn, lhc-opn
@@ -41,18 +41,25 @@ Default: 10
 =item --help
 
 print help
-   
-=item --user
+
+=item -db=[database name]
+
+backend DB name
+Default: ecenter_data
+
+
+=item --user=[db username]
 
 backend DB username
+Default: ecenter
 
-=item --password
+=item --password=[db password]
 
 backend DB password   
+Default: from /etc/my_ecenter
 
 =back
 
-=head1 FUNCTIONS
 
 =cut
 

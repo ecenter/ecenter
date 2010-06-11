@@ -5,6 +5,61 @@ use warnings;
 
 # $Id:$
 
+=head1 NAME
+
+get_traceroutes.pl -  asynchronous calls to the NPToolkit based reverse traceroute cgi scripts
+
+=head1 DESCRIPTION
+
+  it runs traceroutes remotely and parses resulted HTML page and stores all traceroute data.
+
+=head1 SYNOPSIS
+
+ ## get all ESnet traceroutes
+ 
+ >get_traceroutes.pl  --match='es\.net' --procs=20 --password=<db password> --user=<db username>
+ 
+=head1 OPTIONS
+
+=over
+
+=item --debug
+
+debugging info logged
+
+=item  --match=[regexp]
+
+match with service's nodename and filter only desired
+
+=item --procs
+
+number of asynchronous procs to spawn ( requests to remote hLses)
+Max number is 40.
+Default: 10
+   
+=item --help
+
+print help
+
+=item -db=[database name]
+
+backend DB name
+Default: ecenter_data
+
+=item --user=[db username]
+
+backend DB username
+Default: ecenter
+
+=item --password=[db password]
+
+backend DB password   
+Default: from /etc/my_ecenter
+
+=back
+
+=cut
+
   
 use WWW::Mechanize;
 use URI;
@@ -285,3 +340,39 @@ sub parse_trace {
 }
 
 __END__
+
+=head1 SEE ALSO
+
+L<XML::LibXML>, L<Carp>, L<Getopt::Long>, L<Data::Dumper>,
+L<Data::Validate::IP>, L<Data::Validate::Domain>, L<Net::IPv6Addr>,
+L<Net::CIDR>, <DBIx::Class>
+
+The E-center subversion repository is located at:
+ 
+   https://ecenter.googlecode.com/svn
+
+Questions and comments can be directed to the author, or the mailing list.  Bugs,
+feature requests, and improvements can be directed here:
+
+  http://code.google.com/p/ecenter/issues/list
+  
+=head1 VERSION
+
+$Id: $
+
+=head1 AUTHOR
+
+Maxim Grigoriev, maxim_at_fnal_dot_gov 
+
+=head1 LICENSE
+
+You should have received a copy of the  Fermitools license
+with this software.  If not, see <http://fermitools.fnal.gov/about/terms.html>
+
+=head1 COPYRIGHT
+
+Copyright (c) 2010, Fermitools
+
+All rights reserved.
+
+=cut

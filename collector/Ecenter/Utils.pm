@@ -33,6 +33,7 @@ Ecenter::Utils - utilities for ecenter scripts
 =head1 DESCRIPTION
 
 
+
 =head1 SYNOPSIS
 
 =cut
@@ -83,7 +84,10 @@ sub get_ip_name {
     return ();
 }
 
-=head2 pool_control
+=head2 pool_control(max_threads, finish_it)
+
+   limits number of threads to max_threads
+   when finish_it is set to 1 then just waits when all threads are done and returns
 
 =cut
 
@@ -120,7 +124,7 @@ sub pool_control {
 
 =head2 update_create_fixed
 
-   fixing broken DBIx::Class
+   fixing broken DBIx::Class, allows to use functions in the parameters
 
 =cut
 
@@ -134,7 +138,9 @@ sub update_create_fixed {
    return $rs->create($set);
 }
 
-=head2 ip_ton()
+=head2 ip_ton(ip address)
+
+converts  dotted ipv4 address into the decimal representation
 
 =cut
 
@@ -146,6 +152,8 @@ sub ip_ton{
 }
 
 =head2 nto_ip
+
+converts decimal representation of the ipv4 addres into the dotted one
 
 =cut
 
@@ -164,3 +172,43 @@ sub nto_ip {
 
 
 1;
+
+__END__
+
+
+=head1 SEE ALSO
+
+L<XML::LibXML>, L<Carp>, L<Getopt::Long>, L<Data::Dumper>,
+L<Data::Validate::IP>, L<Data::Validate::Domain>, L<Net::IPv6Addr>,
+L<Net::CIDR>, <DBIx::Class>
+
+The E-center subversion repository is located at:
+ 
+   https://ecenter.googlecode.com/svn
+
+Questions and comments can be directed to the author, or the mailing list.  Bugs,
+feature requests, and improvements can be directed here:
+
+  http://code.google.com/p/ecenter/issues/list
+  
+=head1 VERSION
+
+$Id: $
+
+=head1 AUTHOR
+
+Maxim Grigoriev, maxim_at_fnal_dot_gov 
+
+=head1 LICENSE
+
+You should have received a copy of the  Fermitools license
+with this software.  If not, see <http://fermitools.fnal.gov/about/terms.html>
+
+=head1 COPYRIGHT
+
+Copyright (c) 2010, Fermitools
+
+All rights reserved.
+
+=cut
+

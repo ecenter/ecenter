@@ -87,12 +87,34 @@ h1,h2,h3,h4,h5,h6 {
   font-family: "Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif;
 }
 
-h1 { font-size: 3em; line-height: 1; margin-bottom: 0.5em; }
-h2 { font-size: 2em; margin-bottom: 0.75em; }
-h3 { font-size: 1.5em; line-height: 1; margin-bottom: 1em; }
-h4 { font-size: 1.2em; line-height: 1.25; margin-bottom: 1.25em; }
-h5 { font-size: 1em; font-weight: bold; margin-bottom: 1.5em; }
-h6 { font-size: 1em; font-weight: bold; }
+h1 { 
+  font-size: 2.5em;
+  line-height: 1.2;
+  margin-bottom: .6em;
+}
+h2 {
+  font-size: 1.8em;
+  line-height: 1.6;
+  margin-bottom: 0.83em;
+}
+h3 {
+  font-size: 1.5em;
+  line-height: 1;
+  margin-bottom: 1em;
+}
+h4 {
+  font-size: 1.2em;
+  line-height: 1.25;
+  margin-bottom: 1.25em;
+}
+h5 {
+  font-size: 1em; 
+  font-weight: bold; 
+  margin-bottom: 1.5em;
+}
+h6 {
+  font-size: 1em; font-weight: bold;
+}
 /* }}} */
 
 /* --- Content markup --- */
@@ -115,6 +137,9 @@ h6 { font-size: 1em; font-weight: bold; }
 }
 /* }}} */
 /* Lists {{{ */
+#content-body ul {
+  margin-bottom: 1.5em;  
+}
 #content-body li {
   margin: .5em 0 .5em 1.5em;
 }
@@ -178,14 +203,11 @@ input.form-submit {
 }
 input.form-text {
   border: 1px solid #aaa;
-  -moz-box-shadow: 1px 1px .1em 0 #ccc;
+  -moz-box-shadow: 1px 1px .1em 0 #ddd;
 }
 
 #content-body .form-item {
   margin-bottom: 1.5em;
-}
-#content-body .form-item label {
-  font-weight: bold;
 }
 #content-body .form-item .description {
   font-size: .875em;
@@ -315,7 +337,6 @@ h1#site-name a:hover {
 }
 /* }}} */
 
-
 /* -- Extended styles --- */
 /* E-Center Custom Login Block {{{ */
 #block-ecenter_blocks-login {
@@ -328,8 +349,6 @@ h1#site-name a:hover {
   list-style-type: none;
 }
 /* }}} */
-
-
 
 /* --- Overrides and fixes --- */
 /* Fix vertical tabs and views vertical tabs {{{ */

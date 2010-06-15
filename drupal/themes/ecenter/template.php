@@ -39,6 +39,5 @@ function ecenter_preprocess_wiki_node_form(&$vars) {
 }
 
 function ecenter_insert_multiple_values($element) {
-    
   return drupal_render($element);
 }

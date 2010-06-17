@@ -41,6 +41,9 @@ body {
   background: #fff;
   font-family: "Helvetica Neue", Helvetica, Verdana, sans-serif;
 }
+:root {
+  overflow-y: scroll;
+}
 /* }}} */
 /* Clearing {{{ */
 /**
@@ -204,10 +207,14 @@ input.form-submit {
   );
 }
 input.form-text {
+  padding: 2px 3px;
   border: 1px solid #aaa;
   -moz-box-shadow: 1px 1px .1em 0 #ddd;
 }
-
+.form-required {
+  color: #c00;
+  font-weight: bold;
+}
 #content-body .form-item {
   margin-bottom: 1.5em;
 }
@@ -216,27 +223,72 @@ input.form-text {
   font-size: .875em;
   color: #555;
 }
+#content-body .form-item label {
+  font-weight: bold;
+}
+#content-body .form-radios {
+  margin-bottom: 1.5em;
+}
+#content-body .form-radios .form-item {
+  margin-bottom: 0;
+}
 /* }}} */
 /* Fieldsets {{{ */
 fieldset legend {
   font-size: 1.14em;
   font-weight: bold;
-  margin-bottom: .5em;
   padding: 0 8px 0 5px;
 }
 fieldset {
   margin-bottom: .5em;
   border: 1px solid #ccc;
-  padding: .25em .5em;
+  padding: 0 2.5em 0 0;
 }
 fieldset .description {
   margin-bottom: .5em;
 }
-fieldset.collapsed legend {
-  margin-bottom: 0;
+.fieldset-wrapper {
+  padding-top: .75em;
+  padding-left: 1em;
 }
 /* }}} */
-
+/* Autocomplete styles {{{ */
+/* Suggestion list */
+#autocomplete {
+  position: absolute;
+  border: 1px solid #aaa;
+  overflow: hidden;
+  z-index: 100;
+  background-color: #fff;
+  -moz-box-shadow: 1px 1px .1em 0 #999;
+}
+#autocomplete ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+#autocomplete li {
+  margin: 0;
+  padding: 0;
+  background: #fff;
+  color: #000;
+  white-space: pre;
+  cursor: default;
+}
+#autocomplete li.selected {
+  background: #0072b9;
+  color: #fff;
+}
+/* Animated throbber */
+html.js input.form-autocomplete {
+  background-image: url(../../../../../misc/throbber.gif);
+  background-repeat: no-repeat;
+  background-position: 100% 4px; /* LTR */
+}
+html.js input.throbbing {
+  background-position: 100% -16px; /* LTR */
+}
+/* }}} */
 
 /* --- Page elements --- */
 /* Page header {{{ */
@@ -322,7 +374,6 @@ h1#site-name a:hover {
 #navigation .block-search .form-text {
   font-size: 1.07em;
   line-height: 1.6;
-  padding: 2px 3px;
   margin-right: 2px;
   width: 170px;
 }

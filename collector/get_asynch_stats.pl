@@ -84,7 +84,8 @@ use Ecenter::Utils;
 
 use lib  "$FindBin::Bin";
 use Ecenter::Schema;
-
+use aliased 'perfSONAR_PS::PINGER_DATATYPES::v2_0::nmwgt::Message::Metadata::Subject::EndPointPair';
+use aliased 'perfSONAR_PS::PINGERTOPO_DATATYPES::v2_0::nmtl3::Topology::Domain::Node::Port';
 
 #use lib "/usr/local/perfSONAR-PS/lib";
 
@@ -333,7 +334,7 @@ sub get_fromHLS {
     # create lookup hash to avoid multiple array parsing
     my %look_data_query_id= ();
     foreach my $data_obj ($d_query->get_nodelist)  {
-        push @{$look_data_query_id{$data_obj->getAttribute("metadataIdRef")}}, $data_obj;
+        push @{$look_data_query_id{$data_obj->getAttribute("metadataIdRef")}}, $data_obj if $data_obj && ref $data_obj eq 'XML::LibXML::Element';
     }
     foreach my $m1 ( $md_query->get_nodelist ) {
    	my $id = $m1->getAttribute("id");  
@@ -354,24 +355,27 @@ sub get_fromHLS {
 	}
 	$param_exist{type} ||= 'N/A';
 	$param_exist{name} ||= 'N/A';
-	 my ( $ip_noted , $nodename) = get_ip_name(  $param_exist{url} );
-	   update_create_fixed($dbh->resultset('Node'),
+	my ( $ip_noted , $nodename) = get_ip_name(  $param_exist{url} );
+	next unless $ip_noted;
+	update_create_fixed($dbh->resultset('Node'),
 			                              {ip_addr =>  \"=inet6_pton('$ip_noted')"},
 			                              {ip_addr => \"inet6_pton('$ip_noted')",
 			                               nodename =>  $nodename,
 						       ip_noted => $ip_noted,
 						      }); 
+						      
 	  my   $ip_addr = $dbh->resultset('Node')->find({ip_noted => $ip_noted  });
 	 $param_exist{ip_addr}	 =  $ip_addr->ip_addr;						   
 	 my $service_obj =$dbh->resultset('Service')->find_or_create( \%param_exist,{ key => 'service_url' } ); 
        ## my $service_obj =  $dbh->resultset('Service')->find({url => $param_exist{url}});
-	$logger->info(" Found for url $param_exist{url}" .$service_obj->service);
+	$logger->info(" Found for url $param_exist{url} service=" .$service_obj->service);
+	
 	next unless $service_obj;
 	##############  data part processing
         ###my $d1_disc = $look_data_disc_id{$id};
 	next unless $look_data_query_id{$id};
 	my @d1_query = @{$look_data_query_id{$id}};
-	
+	$logger->info(" Found  something  ", sub{Dumper($look_data_query_id{$id})});
    	# get the keywords
 	foreach my $d1_el (@d1_query) {
 	    my $data_id =  $d1_el->getAttribute("id");
@@ -381,10 +385,8 @@ sub get_fromHLS {
 	        	       map {extract($_, 0)}  
 	        	       grep {$_->getAttribute("name") eq 'keyword'}
 	        	       $keywords->get_nodelist;
-            my ($subj_md) = @{$d1_el->findnodes("./nmwg:metadata/*[local-name()='subject']")};
-	    my ($param_md) =  @{$d1_el->findnodes('./nmwg:metadata/nmwg:parameters')};
-            $logger->debug("DATA $id  MD element:::" . $subj_md->toString) if $subj_md;
-   	    # get the eventTypes
+            my $param_md =  find( $d1_el, "./nmwg:metadata/nmwg:parameters", 1);
+             # get the eventTypes
     	    foreach my  $keyword_str (keys %keyword_hash) {
 	        $logger->debug("KEYWORD=$keyword_str");
 		my $keyword = $dbh->resultset('Keyword')->find_or_create({ keyword => $keyword_str });
@@ -415,31 +417,35 @@ sub get_fromHLS {
 							      );
 	        $snmp ||= $SERVICE_LOOKUP{$value} if $SERVICE_LOOKUP{$value} && $SERVICE_LOOKUP{$value} eq 'snmp';
 	    }
-	    my $capacity = 0;
-	    my %ip_addr = ( rtr => '', src =>'', dst => '');
-            my $src;
-	    my $dst;
-	    my $src_addr;
+	    
+	    my $subj_md =  find($d1_el, "./nmwg:metadata/*[local-name()='subject']", 1);
+	    $logger->info("TID=" .  threads->tid . "====DATA $id  MD element:::" . $subj_md->toString) if $subj_md;
+   	  
 	    if($subj_md) {
+	        my %ip_addr_h = ( rtr => '', src => '', dst => '');
+		my %ip_addr_rs = ( rtr => '', src => '', dst => '');
 	        $subj_md->setNamespace('http://ggf.org/ns/nmwg/topology/2.0/','nmwgt');
-                ($src) = $subj_md->findnodes("//nmwgt:src");
-	        ($dst) = $subj_md->findnodes("//nmwgt:dst");
-		($src) = $subj_md->findnodes("//*[local-name()='address']") unless $src;
-		if($snmp) {
-                    ($src_addr) = $subj_md->findnodes("./nmwgt:interface/nmwgt:ipAddress");
-		    ($src_addr) = $subj_md->findnodes("./nmwgt:interface/nmwgt:ifAddress") unless $src_addr; 
-	            ($capacity) = $subj_md->findnodes("./nmwgt:interface/nmwgt:capacity");
-	            my ($rtr)  =  $subj_md->findnodes("./nmwgt:interface/nmwgt:hostName");
-	            $ip_addr{rtr}  = extract( $rtr, 0 ) if $rtr;
+                foreach my $try_src ("./*[local-name()='endPointPair']/*[local-name()='src']", 
+		                     "./*[local-name()='node']/*[local-name()='port']/*[local-name()='address']",
+				     "./*[local-name()='interface']/*[local-name()='ipAddress']",
+				     "./*[local-name()='interface']/*[local-name()='ifAddress']", ) {
+		    
+		    my ($ips) = $subj_md->findnodes($try_src);
+		    if($ips) {
+		      $ip_addr_h{src} = extract(  $ips, 0);
+		      $logger->info("TID=" .  threads->tid . " ======  $try_src=$ip_addr_h{src} ------");
+		      last if  $ip_addr_h{src}; 
+		    }
 		}
-		$src  = $src_addr if $src_addr && ! $src;
-		$ip_addr{src}  = extract( $src, 0 ) if $src;
-		$ip_addr{dst}  = extract( $dst, 0 ) if $dst;
-		###$logger->debug("Start ====== src= $ip_addr{src}  dst= $ip_addr{dst} ");
-                next unless $src;
+	        my ($dst) =  $subj_md->findnodes( "./*[local-name()='endPointPair']/*[local-name()='dst']");
+	        $ip_addr_h{dst} =  extract(  $dst, 0) if $dst;  
+		my $capacity    =  extract( find( $subj_md, "./*[local-name()='interface']/*[local-name()='capacity']", 1), 0 );
+		$ip_addr_h{rtr} =  extract( find( $subj_md, "./*[local-name()='interface']/*[local-name()='hostName']", 1), 0 );
+	        $logger->info("TID=" .  threads->tid . " ====== src=$ip_addr_h{src}========== \n" . $subj_md->toString);
+                next unless $ip_addr_h{src};
 		foreach my $ip_key (qw/rtr src dst/) {
-		    my ($ip_cidr,$ip_name) = get_ip_name($ip_addr{$ip_key});
-		    if($ip_addr{$ip_key} && $ip_cidr) {
+		    my ($ip_cidr,$ip_name) = get_ip_name($ip_addr_h{$ip_key});
+		    if($ip_addr_h{$ip_key} && $ip_cidr) {
 	                  update_create_fixed(   $dbh->resultset('Node'),
 			                                             { ip_addr  =>  \"=inet6_pton('$ip_cidr')"},
 			                                             { ip_addr  => \"inet6_pton('$ip_cidr')",
@@ -447,29 +453,30 @@ sub get_fromHLS {
 								       ip_noted => $ip_cidr 
 								     }
 								    );
-			  $ip_addr{$ip_key} = 	 $dbh->resultset('Node')->find({ip_noted => $ip_cidr });				    
+			  $ip_addr_rs{$ip_key} =  $dbh->resultset('Node')->find({ip_noted => $ip_cidr });				    
 		    }
 		}
-	        $logger->debug('End ======  MISSING:' . $subj_md->toString) unless $ip_addr{src};
-		   
-	    }
-	    eval {
+	        ##$logger->debug('End ======  MISSING:' . $subj_md->toString) unless $ip_addr{src};
+	 
+	        eval {
 	               
 	               $dbh->resultset('Metadata')->update_or_create ({ perfsonar_id =>  $data_id, 
 							      service	 => $service_obj->service,
-							      src_ip	    =>   $ip_addr{src}->ip_addr,
-							      dst_ip	    =>   ($ip_addr{dst}?$ip_addr{dst}->ip_addr:0),
-							      rtr_ip	    =>   ($ip_addr{rtr}?$ip_addr{rtr}->ip_addr:0),
+							      src_ip	    =>   $ip_addr_rs{src}->ip_addr,
+							      dst_ip	    =>   ($ip_addr_rs{dst}?$ip_addr_rs{dst}->ip_addr:0),
+							      rtr_ip	    =>   ($ip_addr_rs{rtr}?$ip_addr_rs{rtr}->ip_addr:0),
 							      capacity   => $capacity,
 							      subject	 => ($subj_md?$subj_md->toString:''),
 							      parameters => ($param_md?$param_md->toString:''),
 							     },
 							     {key => 'metaid_service'}
-	                                                  ) if $ip_addr{src} && ref $ip_addr{src};
-	   };
-	   if($EVAL_ERROR) {
-	      $logger->error(" Catched $EVAL_ERROR");
-	   }
+	                                                  ) ;
+	        };
+	        if($EVAL_ERROR) {
+	            $logger->error(" Catched $EVAL_ERROR");
+	        }
+	         
+	    }
 	}
     }
 }

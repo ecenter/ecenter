@@ -20,7 +20,6 @@ class IPV6AddressField(models.Field):
         return "IPV6AddressField"
 
     def to_python(self, value):
-        #import pdb; pdb.set_trace();
         convert = util.inet6_ntop(value)
         if convert is not None: return convert
         return value
@@ -30,9 +29,3 @@ class IPV6AddressField(models.Field):
         if convert is not None: return convert
         return value
 
-    """
-    def get_prep_lookup(self, lookup_type, value):
-        convert = util.inet6_pton(value)
-        if convert is not None: return convert
-        return value
-    """

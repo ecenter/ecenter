@@ -19,7 +19,7 @@ class Service(models.Model):
     name = models.CharField(max_length=765)
     url = models.TextField(max_length=765)
     type = models.CharField(max_length=96)
-    ip_addr = IPV6AddressField(max_length=16, primary_key=True)
+    ip_addr = IPV6AddressField(max_length=16)
     comments = models.CharField(max_length=765, blank=True)
     is_alive = models.IntegerField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)

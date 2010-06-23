@@ -10,10 +10,41 @@ grant all privileges on ecenter_data.* to ecenter@localhost identified by 'ecent
 grant select on ecenter_data.* to www@localhost identified by 'www_user';
 flush privileges;
 use ecenter_data;
+
+--
+--  topology layer2 info
+--
+--
+drop table if exists l2_port;
+CREATE TABLE  l2_port (
+l2_id  bigint  unsigned AUTO_INCREMENT  NOT NULL,   
+urn varchar(512)   NOT NULL,
+description varchar(100)   NOT NULL,
+capacity   bigint  unsigned   NOT NULL,   
+name  varchar(512) NULL,
+longitude float NULL,
+latitude float NULL, 
+PRIMARY KEY  (l2_id)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps topology layer2 info';
+--
+--  topology layer2 linkage
+--
+--
+drop table if exists l2_link;
+CREATE TABLE  l2_link (
+l2_link  bigint  unsigned AUTO_INCREMENT  NOT NULL,   
+l2_id_src  bigint  unsigned  NOT NULL,   
+l2_id_dst  bigint  unsigned NOT NULL,   
+PRIMARY KEY  (l2_link),
+FOREIGN KEY ( l2_id_src ) REFERENCES l2_port ( l2_id ),
+FOREIGN KEY ( l2_id_dst ) REFERENCES l2_port ( l2_id )
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps topology layer2  links';
+
 --
 --   nodes - all of them
 --   ip_addr supports   ipv4 and ipv6 addresses in binary form
 --    
+--    it holds topology info as well via layer2 id ( as http://ogf.org/schema/network/topology/base/20070828/ schema describes)
 --
 --    it set as INET6_PTON('131.225.1.1') and essentially a 16 byte representation of the IP
 --    it allows indexing and netblock search, to get original IP address - INET6_NTOP(ip_addr)
@@ -24,9 +55,14 @@ CREATE TABLE  node (
  ip_addr  varbinary(16)  NOT NULL,
  nodename  varchar(255)  NULL,
  ip_noted  varchar(40)  NOT NULL,
+ description  varchar(100) NULL,
+ netmask varbinary(16)  NULL,
+ l2_id   bigint  unsigned  NULL,
  PRIMARY KEY  (ip_addr),
  KEY (nodename),
- KEY (ip_noted)
+ KEY (ip_noted),
+ KEY (netmask),
+ FOREIGN KEY ( l2_id ) REFERENCES l2_port ( l2_id )
 )  ENGINE=InnoDB CHARSET=latin1  COMMENT='nodes';
 
 --
@@ -51,10 +87,8 @@ CREATE TABLE   service (
  type varchar(32) NOT NULL DEFAULT 'hLS',
  comments  varchar(255) NULL, 
  is_alive boolean,
- longitude float NULL,
- latitude float NULL,
- created   DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
- updated   DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
+ created  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated  TIMESTAMP NOT NULL DEFAULT 0,
  PRIMARY KEY  (service),
  UNIQUE KEY url (url), 
  KEY is_alive (is_alive),
@@ -102,7 +136,6 @@ perfsonar_id  varchar(255) NOT NULL,
 src_ip varbinary(16)  NOT NULL,
 rtr_ip varbinary(16)  NOT  NULL DEFAULT '0',
 dst_ip varbinary(16)  NOT  NULL DEFAULT '0',
-capacity  bigint  unsigned   NULL,
 service bigint  unsigned  NOT NULL,
 subject varchar(1023) NOT NULL,
 parameters varchar(1023) NULL,
@@ -196,17 +229,20 @@ CREATE TABLE  owamp_data (
    FOREIGN KEY  (metaid) REFERENCES   metadata  (metaid) on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps  owamp  data  cache';
 ----            SNMP data  storage 
+-----             knows about layer2 topologies
 ----
 drop  table if exists snmp_data;
 CREATE TABLE  snmp_data (
    snmp_data  bigint unsigned AUTO_INCREMENT NOT NULL, 
    metaid   BIGINT  unsigned  NOT NULL,
+   l2_id    BIGINT  unsigned  NOT NULL,
    timestamp  bigint(20) unsigned NOT NULL,
    utilization float  NOT NULL DEFAULT  '0.0',
    errors int unsigned NOT NULL DEFAULT  '0',
    drops int unsigned  NOT NULL DEFAULT  '0',
    PRIMARY KEY  (snmp_data),
-   KEY  (timestamp),
+   KEY  (timestamp), 
+   FOREIGN KEY ( l2_id ) REFERENCES l2_port ( l2_id ),
    FOREIGN KEY (metaid) REFERENCES metadata (metaid) on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps snmp data  cache';
 --

@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-# $Id:$
+# $Id: $
 
 =head1 NAME
 
@@ -27,9 +27,15 @@ get_traceroutes.pl -  asynchronous calls to the NPToolkit based reverse tracerou
 
 debugging info logged
 
-=item  --match=[regexp]
+=item  --src_match=[regexp]
 
-match with service's nodename and filter only desired
+match with service's nodename and filter only desired nodenames 
+(for example 'es.net' will run traceroute only within the ESnet domain)
+
+=item  --dst_match=[key]
+
+match with  destination nodename via SQL like '%xxx%'
+
 
 =item --procs
 
@@ -97,7 +103,7 @@ our $TRACE_CMD = 'gui/reverse_traceroute.cgi';
 
 
 my %OPTIONS;
-my @string_option_keys = qw/match password db user procs/;
+my @string_option_keys = qw/dst_match src_match password db user procs/;
 GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
             qw/debug help/,
@@ -124,16 +130,17 @@ my $dbh =  Ecenter::Schema->connect("DBI:mysql:$OPTIONS{db}",  $OPTIONS{user},
 				    {RaiseError => 1, PrintError => 1});
 $dbh->storage->debug(1)  if $OPTIONS{debug};
 my $services = $dbh->resultset('Service')->search({},{join => 'ip_addr', group_by => 'ip_addr'});
-my $match = $OPTIONS{match}?qr/$OPTIONS{match}/:'';
+my $src_match = $OPTIONS{src_match}?qr/$OPTIONS{src_match}/:'';
+my $dst_match = $OPTIONS{dst_match}?" and me.nodename   like '\%$OPTIONS{dst_match}\%' ":'';
 
 while( my $service = $services->next) {
     my $nodename = $service->ip_addr->nodename;
     next unless $nodename; 
-    next if($match && $nodename !~  $match);
+    next if($src_match && $nodename !~  $src_match);
    
     my $service_ip = $service->ip_addr->ip_noted;
-    my $mask = ( $service_ip  =~ /^[\d\.]+$/)?'16':'64';
-    my $where = "inet6_mask(me.ip_addr, $mask) != inet6_mask(inet6_pton('". $service->ip_addr->ip_noted ."'), $mask)";
+    my $mask = ( $service_ip  =~ /^[\d\.]+$/)?'31':'64';
+    my $where = "inet6_mask(me.ip_addr, $mask) != inet6_mask(inet6_pton('". $service->ip_addr->ip_noted ."'), $mask) $dst_match";
   
     pool_control($MAX_THREADS, 0);
     threads->new( sub {    

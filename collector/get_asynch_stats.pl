@@ -228,9 +228,8 @@ for my $root ( @{ $gls->{ROOTS} } ) {
 		    								 ip_addr =>  $ip_addr_obj,
 		    								 comments => $serviceDescription,
 		    								 is_alive => (!$status?'1':'0'), 
-		    								 updated =>  $now_str,
-		    								 created =>  $now_str,
-		    								},
+		    								 updated =>  \"NOW()",
+										},
 		    							  { key => 'service_url'}
 		    							 );
 		    	unless($status)  {

@@ -1,6 +1,6 @@
 use warnings;
 use strict;    
-use Test::More tests => 11;
+use Test::More tests => 10;
 use Log::Log4perl qw(:easy);
 use English qw( -no_match_vars );
 use Data::Dumper;
@@ -14,7 +14,7 @@ Log::Log4perl->easy_init($INFO);
 
 my $obj1 = undef;
 my $url ='http://xenmon.fnal.gov:8075/perfSONAR_PS/services/pinger/ma';
-my %params = (type =>  'pinger', 
+my %params = (
               url =>  $url,
               ma   =>  perfSONAR_PS::Client::PingER->new( { instance =>  $url}),
 	      src_regexp => 'fnal',
@@ -29,7 +29,7 @@ $EVAL_ERROR = undef;
 #3-10
 ok($obj1->logger , " Logger check ...  ") or diag("  $ERRNO " . Dumper($obj1));
 ok($obj1->ma, " MA check ...  ") or diag("  $ERRNO ". Dumper($obj1));
-foreach (qw/type url src_regexp dst_regexp/) {
+foreach (qw/url  src_regexp dst_regexp/) {
   ok($obj1->$_ eq $params{$_} , " $_ check ...  ") or diag("  $ERRNO". Dumper($obj1));
 } 
 my $self = $obj1->get_metadata;

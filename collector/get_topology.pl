@@ -55,10 +55,13 @@ use Pod::Usage;
 use Log::Log4perl qw(:easy);
 use Getopt::Long;
 use XML::LibXML;
+
+use perfSONAR_PS::Client::MA;
 use perfSONAR_PS::Client::Topology;
 use perfSONAR_PS::Common qw(  extract find unescapeString escapeString );
 use perfSONAR_PS::Error_compat qw/:try/;
 use perfSONAR_PS::Error;
+use Ecenter::Data::Snmp;
 
 use Ecenter::Schema;
 our %ESNET_HUB = (
@@ -122,7 +125,7 @@ foreach my $service ( qw/ps1 ps2 ps3/ ) {
         my $urn = "domain=$domain";
         my ($status, $res) = $client->xQuery("//*[matches(\@id, '$urn', 'xi')]", 'encoded');
         throw  perfSONAR_PS::Error if $status;
-	parse_dom($res);
+	parse_dom($dbh, $res);
     }
     catch perfSONAR_PS::Error   with {
        $logger->error( shift);
@@ -140,31 +143,46 @@ foreach my $service ( qw/ps1 ps2 ps3/ ) {
 
 =head2  parse_dom
 
- parse esnet topology service
+ parse esnet topology service, translation from PerfsonarTP.java
 
 =cut
 
 sub parse_dom {
-   my $xml = shift;
-   $xml->setNamespace("http://ogf.org/schema/network/topology/base/20070828/", "nmtopo");
-   $xml->setNamespace("http://ogf.org/schema/network/topology/base/20070828/", "nmtb");
-   $xml->setNamespace("http://ogf.org/schema/network/topology/l2/20070828/", "nmtl2");
-   $xml->setNamespace("http://ogf.org/schema/network/topology/l3/20070828/", "nmtl3");
+    my ($dbh, $xml) = @_;
   
-   my $nodes =   find( $xml, "./nmtb:domain/nmtb:node", 0 );
-   foreach my $node ($nodes->get_nodelist) {
-      
-      my $l2_ports =   find( $node, "./nmtl2:port", 0 );
-      foreach my $port ($l2_ports->get_nodelist) {
-          my $l2_link = find($port, );
-      }
-       my $l3_ports =   find( $node, "./nmtl3:port", 0 );
-      foreach my $port ($l3_ports->get_nodelist) {
-          
-	 
-      }
-   }
+    $xml->setNamespace("http://ogf.org/schema/network/topology/base/20070828/", "nmtb");
+    my %node_table = ();
+    foreach my $node ($nodes->get_nodelist) {
+        my $name = extract( find( $node, "./nmtb:name", 0), 1);
+        $node_table{$name}{longitude}  =  extract( find( $node, "./nmtb:longitude", 0), 1);
+        $node_table{$name}{latitude} =  extract( find( $node, "./nmtb:latitude", 0), 1);
+        $node_table{$name}{urn} = $node->getAttribute('id');
+    }
+
+    my $nodes =   find( $xml, "./nmtb:domain/nmtb:node", 0 );
+    foreach my $node ($nodes->get_nodelist) {
+        my $name = extract( find( $node, "./nmtb:name", 0), 1);
+        $node_table{$name}{longitude}  =  extract( find( $node, "./nmtb:longitude", 0), 1);
+        $node_table{$name}{latitude} =  extract( find( $node, "./nmtb:latitude", 0), 1);
+        $node_table{$name}{urn} = $node->getAttribute('id');
+        
+        $xml->setNamespace("http://ogf.org/schema/network/topology/l2/20070828/", "nmtl2");
+        my $l2_ports =   find( $node, "./nmtl2:port", 0 );
+        foreach my $port2 ($l2_ports->get_nodelist) {
+           $node_table{$name} my $urn2 = $port2->getAttribute('id');
+	    my $capacity =  extract( find( $node, "./nmtl2:capacity", 0), 1);
+            my $l2_links = find($port2, "./nmtl2:link");
+	   foreach my $link2 ($l2_links->get_nodelist) {
+	        
+	   
+	   }
+        }  
+        $xml->setNamespace("http://ogf.org/schema/network/topology/l3/20070828/", "nmtl3");
+        my $l3_ports =   find( $node, "./nmtl3:port", 0 );
+        foreach my $port3 ($l3_ports->get_nodelist) {
+        
+        }
+    }
 }
 
-
-
+ 

@@ -8,7 +8,9 @@ use FindBin qw($RealBin);
 use lib  "$FindBin::Bin";
 
 use Log::Log4perl qw(get_logger);
+use DateTime;
 
+use Ecenter::Types qw(IP_addr PositiveInt);
 use English qw( -no_match_vars );
 
 =head1 NAME
@@ -55,25 +57,26 @@ use English qw( -no_match_vars );
 =cut
 
 has 'ma'         => (is => 'rw', isa => 'Object' );
-has 'type'       => (is => 'rw', isa => 'Str');
-has 'src_regexp' => (is => 'rw', isa => 'Str'); 
-has 'dst_regexp' => (is => 'rw', isa => 'Str'); 
 has 'data'       => (is => 'rw', isa => 'ArrayRef');
 has 'metadata'   => (is => 'rw', isa => 'HashRef');
 has 'url'        => (is => 'rw', isa => 'Str' );
+has 'start'      => (is => 'rw', isa => 'DateTime');
+has 'end'        => (is => 'rw', isa => 'DateTime');
 has 'logger'     => (is => 'rw', isa => 'Log::Log4perl::Logger');
-
+has 'resolution' => (is => 'rw', isa => 'Ecenter::Types::PositiveInt', default => '1');
+has 'cf'         => (is => 'rw', isa => 'Str', default => 'AVERAGE');
 
  
 
-sub get_data {
-    my  $self  = shift;
-
+sub get_data { 
+    my ( $self, $params ) = @_;
+    map {$self->$_($params->{$_}) if $self->can($_)} keys %$params if $params && ref $params eq ref {};
+    
 }
 
 sub get_metadata {
-    my  $self = shift;
-
+    my ( $self, $params ) = @_;
+    map {$self->$_($params->{$_}) if $self->can($_)} keys %$params if $params && ref $params eq ref {};
 }
 
 __PACKAGE__->meta->make_immutable;

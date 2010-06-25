@@ -11,8 +11,8 @@ use English qw( -no_match_vars );
 use Log::Log4perl qw(get_logger); 
 use Data::Dumper;
 use perfSONAR_PS::Client::PingER; 
-use Ecenter::Types qw(IP_addr );
- 
+use Ecenter::Types qw(IP_addr PositiveInt);
+use DateTime; 
 
 =head1 NAME
 
@@ -42,9 +42,9 @@ perfSONAR-PS - pinger  data retrieval API,see L<Ecenter::Data::Requester> fro mo
 
 =over
 
-=item  src
+=item  src_regexp
 
-=item  dst
+=item  dst_regexp
 
 =item  metadata
 
@@ -53,13 +53,10 @@ perfSONAR-PS - pinger  data retrieval API,see L<Ecenter::Data::Requester> fro mo
 =cut
 
 
-has 'packetsize'  => (is => 'rw', isa => 'PositiveInt');
+has 'packetsize'  => (is => 'rw', isa => 'Ecenter::Types::PositiveInt', default => '1000');
+has 'src_regexp' => (is => 'rw', isa => 'Str'); 
+has 'dst_regexp' => (is => 'rw', isa => 'Str');
 has 'meta_keys'  => (is => 'rw', isa => 'ArrayRef');
-has 'start'      => (is => 'rw', isa => 'DateTime');
-has 'end'        => (is => 'rw', isa => 'DateTime');
-has 'resolution' => (is => 'rw', isa => 'PositiveInt' );
-has 'cf'         => (is => 'rw', isa => 'Str', default => 'AVERAGE');
-
 
 sub BUILD {
       my $self = shift;
@@ -71,7 +68,6 @@ sub BUILD {
 
 after 'url' => sub {
     my ( $self, $arg ) = @_;
-    $self->type('pinger');
     if($arg) {
         $self->ma(new perfSONAR_PS::Client::PingER( { instance => $arg } ));
         $self->logger->debug(' MA ' .  $arg  .  ' connected ');
@@ -81,7 +77,7 @@ after 'url' => sub {
 
 after 'get_metadata' => sub  {
     my ( $self,  $args ) = @_; 
-    map {$self->$_($args->{$_})}  keys %$args if $args && ref $args eq ref {};
+    map {$self->$_($args->{$_}) if $self->can($_)}  keys %$args if $args && ref $args eq ref {};
     my $metaids = {};
     my $metad_hr = {};
     my $params = {};
@@ -112,7 +108,7 @@ after 'get_metadata' => sub  {
 
 after 'get_data' => sub  {
     my ( $self, $params ) = @_;
-    map {$self->$_($params->{$_})} keys %$params if $params && ref $params eq ref {};
+    map {$self->$_($params->{$_})  if $self->can($_)} keys %$params if $params && ref $params eq ref {};
    
     my $dresult = $self->ma->setupDataRequest(
         {
@@ -120,7 +116,7 @@ after 'get_data' => sub  {
             end   => $self->end->epoch,
             keys  => $self->meta_keys,
             resolution => $self->resolution,
-            cf => "AVERAGE",
+            cf =>  $self->cf,
         }
     );
     my $metaids    = $self->ma->getData($dresult);   
@@ -138,7 +134,6 @@ after 'get_data' => sub  {
     return $self->data(\@data);
 };  
 
- 
 1;
 
 =head1   AUTHOR

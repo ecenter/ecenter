@@ -97,8 +97,6 @@ has service     => (is => 'rw', isa => 'Int');
 has src         => (is => 'rw', isa => 'Str');
 has dst         => (is => 'rw', isa => 'Str');
 has type        => (is => 'rw', isa => 'Str');
-has from        => (is => 'rw', isa => 'DateTime');
-has to          => (is => 'rw', isa => 'DateTime');
 
 
 

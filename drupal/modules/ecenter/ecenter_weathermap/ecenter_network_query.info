@@ -1,0 +1,7 @@
+;$Id$
+name = E-Center Network Query
+package = E-Center Project
+description = Provides primary user interface for E-center network diagnostic tools
+core = 6.x
+
+dependencies[] = quickselect

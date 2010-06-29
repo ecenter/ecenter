@@ -12,19 +12,30 @@ flush privileges;
 use ecenter_data;
 
 --
+--  topology hub ( something with coordinates, name )
+--
+--
+drop table if exists hub;
+CREATE TABLE  hub (
+hub  varchar(10) NOT NULL,
+description varchar(100)   NOT NULL,
+longitude float NULL,
+latitude float NULL,
+PRIMARY KEY  (hub)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='topology hub (esnet)';
+
+--
 --  topology layer2 info
 --
 --
 drop table if exists l2_port;
 CREATE TABLE  l2_port (
-l2_id  bigint  unsigned AUTO_INCREMENT  NOT NULL,   
-urn varchar(512)   NOT NULL,
+l2_urn varchar(512)   NOT NULL,
 description varchar(100)   NOT NULL,
 capacity   bigint  unsigned   NOT NULL,   
-name  varchar(512) NULL,
-longitude float NULL,
-latitude float NULL, 
-PRIMARY KEY  (l2_id)
+hub varchar(10) NOT NULL,
+PRIMARY KEY  (l2_urn ),
+FOREIGN KEY ( hub ) REFERENCES hub ( hub )
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps topology layer2 info';
 --
 --  topology layer2 linkage
@@ -33,13 +44,12 @@ PRIMARY KEY  (l2_id)
 drop table if exists l2_link;
 CREATE TABLE  l2_link (
 l2_link  bigint  unsigned AUTO_INCREMENT  NOT NULL,   
-l2_id_src  bigint  unsigned  NOT NULL,   
-l2_id_dst  bigint  unsigned NOT NULL,   
+l2_src_urn varchar(512)   NOT NULL,   
+l2_dst_urn varchar(512)   NOT NULL,   
 PRIMARY KEY  (l2_link),
-FOREIGN KEY ( l2_id_src ) REFERENCES l2_port ( l2_id ),
-FOREIGN KEY ( l2_id_dst ) REFERENCES l2_port ( l2_id )
+FOREIGN KEY ( l2_src_urn ) REFERENCES l2_port ( l2_urn),
+FOREIGN KEY ( l2_dst_urn ) REFERENCES l2_port ( l2_urn )
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps topology layer2  links';
-
 --
 --   nodes - all of them
 --   ip_addr supports   ipv4 and ipv6 addresses in binary form
@@ -49,21 +59,33 @@ FOREIGN KEY ( l2_id_dst ) REFERENCES l2_port ( l2_id )
 --    it set as INET6_PTON('131.225.1.1') and essentially a 16 byte representation of the IP
 --    it allows indexing and netblock search, to get original IP address - INET6_NTOP(ip_addr)
 --    to see dotted form of ipv4 or ipv6 - select ip_noted
+--    
 --
 drop  table if exists node;
 CREATE TABLE  node (
  ip_addr  varbinary(16)  NOT NULL,
  nodename  varchar(255)  NULL,
  ip_noted  varchar(40)  NOT NULL,
- description  varchar(100) NULL,
  netmask varbinary(16)  NULL,
- l2_id   bigint  unsigned  NULL,
  PRIMARY KEY  (ip_addr),
  KEY (nodename),
  KEY (ip_noted),
- KEY (netmask),
- FOREIGN KEY ( l2_id ) REFERENCES l2_port ( l2_id )
+ KEY (netmask)
 )  ENGINE=InnoDB CHARSET=latin1  COMMENT='nodes';
+--
+--  topology layer3 mapping to layer2, 
+--  use netmask from the node table to get all addresses from the block
+--
+--
+drop table if exists l2_l3_map;
+CREATE TABLE  l2_l3_map (
+l2_l3_map  bigint  unsigned AUTO_INCREMENT  NOT NULL,
+ip_addr   varbinary(16)  NOT NULL,
+l2_urn    varchar(512)    NOT NULL,  
+PRIMARY KEY  (l2_l3_id),
+FOREIGN KEY (l2_urn) REFERENCES l2_port ( l2_urn ),
+FOREIGN KEY ( ip_addr ) REFERENCES node ( ip_addr )
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps topology layer2-layer3 mapping';
 
 --
 --    list of keywords, stores most recent regexp used to obtain that keyword as well
@@ -133,6 +155,7 @@ drop  table if exists  metadata;
 CREATE TABLE   metadata (
 metaid  bigint  unsigned AUTO_INCREMENT NOT NULL, 
 perfsonar_id  varchar(255) NOT NULL,
+l2_urn  varchar(512)  NULL,
 src_ip varbinary(16)  NOT NULL,
 rtr_ip varbinary(16)  NOT  NULL DEFAULT '0',
 dst_ip varbinary(16)  NOT  NULL DEFAULT '0',
@@ -142,7 +165,7 @@ parameters varchar(1023) NULL,
 PRIMARY KEY  (metaid),
 KEY  (metaid),
 UNIQUE KEY metaid_service (perfsonar_id, service, src_ip),
-FOREIGN KEY (src_ip) REFERENCES  node (ip_addr),
+FOREIGN KEY (src_ip) REFERENCES  node (ip_addr), 
 FOREIGN KEY (service) REFERENCES  service (service)  on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB CHARSET=latin1 COMMENT='ps-ps metaid provided by each service';
 --
@@ -235,14 +258,12 @@ drop  table if exists snmp_data;
 CREATE TABLE  snmp_data (
    snmp_data  bigint unsigned AUTO_INCREMENT NOT NULL, 
    metaid   BIGINT  unsigned  NOT NULL,
-   l2_id    BIGINT  unsigned  NOT NULL,
    timestamp  bigint(20) unsigned NOT NULL,
    utilization float  NOT NULL DEFAULT  '0.0',
    errors int unsigned NOT NULL DEFAULT  '0',
    drops int unsigned  NOT NULL DEFAULT  '0',
    PRIMARY KEY  (snmp_data),
-   KEY  (timestamp), 
-   FOREIGN KEY ( l2_id ) REFERENCES l2_port ( l2_id ),
+   KEY  (timestamp),
    FOREIGN KEY (metaid) REFERENCES metadata (metaid) on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps snmp data  cache';
 --

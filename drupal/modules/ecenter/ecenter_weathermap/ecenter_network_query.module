@@ -5,3 +5,129 @@
  * @file
  * E-Center network query interface.
  */
+
+function ecenter_network_query_menu() {
+  $items['weathermap'] = array(
+    'title' => 'E-Center Weather Map',
+    'page callback' => 'ecenter_network_query',
+    //'page arguments' => array(),
+    'access arguments' => array('access ecenter weathermap'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['weathermap/js/services']  = array(
+    'title' => 'E-Center Weather Map',
+    'page callback' => 'ecenter_network_query_services',
+    //'page arguments' => array(3),
+    'access arguments' => array('access ecenter weathermap'),
+  );
+  return $items;
+}
+
+function ecenter_network_query_services() {
+  $client = ecenter_network_query_get_client();
+  $services = $client->getServices($_POST['src_ip']);
+  drupal_set_header('HTTP/1.1 '. $services['code']);
+
+  if ($services['code'] == 200) {
+    foreach ($services['response']->services as $service) {
+      $options[$service->ip_addr] = theme('ecenter_network_query_service_option', $service);
+    }
+
+    $form = ecenter_network_query_select_form(array(), array());
+    $element = $form['dst_ip'];
+    $element['#options'] = $options;
+    $element['#name'] = 'edit-dst-ip';
+    $element['#id'] = 'edit-dst-ip';
+    $element['#parents'] = array();
+    echo theme('quickselect', $element);
+  }
+  exit;
+}
+
+function ecenter_network_query_perm() {
+  return array('access ecenter weathermap');
+}
+
+function ecenter_network_query_select_form($form_state, $services, $src_ip = False, $dst_ip = False, $start = False, $end = False) {
+  $quickselect_options = array(
+    'emulateDropdown' => TRUE,
+    'maxHeight' => '400px',
+    'exactMatch' => TRUE,
+  );
+
+  $form = array(
+    'src_ip' => array(
+      '#title'               => t('Source IP'),
+      '#type'                => 'quickselect',
+      '#options'             => $services,
+      '#cols'                => 50,
+      '#quickselect_options' => $quickselect_options,
+      '#required'            => TRUE,
+    ),
+    'dst_ip' => array(
+      '#title'               => t('Destination IP'),
+      '#type'                => 'quickselect',
+      '#options'             => array(),
+      '#cols'                => 50,
+      '#disabled'            => TRUE,
+      '#quickselect_options' => $quickselect_options,
+      '#required'            => TRUE,
+    ),
+    'submit' => array(
+      '#value' => t('Submit'),
+      '#type' => 'submit',
+    ),
+  );
+
+  return $form;
+}
+
+function ecenter_network_query_select_form_submit($form, &$form_state) {
+  $form_state['redirect'] = array('weathermap', 'src_ip=foo&dst_ip=bar');
+}
+
+function ecenter_network_query() {
+  // We need quickselect to get added to behaviors first, so it executes first
+  drupal_add_js(drupal_get_path('module', 'quickselect') .'/js/quickselect-behavior.js');
+  drupal_add_js(drupal_get_path('module', 'ecenter_network_query') .'/js/query.js');
+
+  // Get services
+  $client = ecenter_network_query_get_client();
+  $services = $client->getServices();
+
+  //$options = array('0' => 'Start typing the name of a node or select from list');
+  foreach ($services['response']->services as $service) {
+    $options[$service->ip_addr] = theme('ecenter_network_query_service_option', $service);
+  }
+
+  //dpm($_REQUEST);
+
+  $form = drupal_get_form('ecenter_network_query_select_form', $options);
+
+  return $form;
+}
+
+function ecenter_network_query_get_client() {
+  static $client = False;
+  if (!$client) {
+    require_once(dirname(__FILE__) . '/client.php');
+    $host = variable_get('ecenter_network_query_host', 'localhost');
+    $port = variable_get('ecenter_network_query_port', 8000);
+    $dir = variable_get('ecenter_network_query_directory', 'ecenter');
+    $client = new Ecenter_Data_Service_Client($host, $port, $dir);
+  }
+  return $client;
+}
+
+function ecenter_network_query_theme() {
+  return array(
+    'ecenter_network_query_service_option' => array('arguments' => array('service' => NULL),),
+  );
+}
+
+/**
+ * Theme services for use in options list.  Should always return plaintext!
+ */
+function theme_ecenter_network_query_service_option($service) {
+  return $service->name .' ('. $service->ip_addr .')';
+}

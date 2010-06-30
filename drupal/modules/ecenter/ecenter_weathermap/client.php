@@ -65,7 +65,7 @@ class Ecenter_Data_Service_Client {
    *   An array of search/filter parameters, if required.
    */
   protected function query($path, $parameters) {
-    $url = $this->_url .'/'. $path .'/';
+    $url = $this->_url .'/'. $path;
     $querystring = http_build_query($parameters);
     if (!empty($querystring)) {
       $url .= '?'. $querystring;
@@ -150,7 +150,7 @@ class Ecenter_Data_Service_Client {
    * @param $end_date
    *   The end date for data, formatted as YYYY-MM-DD HH:mm:ss
    *
-   * @param $debug
+   G* @param $debug
    *   Include query debugging information in the response.
    */
   public function getPathData($src_ip, $dst_ip, $start_date, $end_date, $debug=FALSE) {
@@ -180,4 +180,24 @@ class Ecenter_Data_Service_Client {
     }
     return $this->query('service/'. $service_id, $parameters);
   }
+
+  /**
+   * @param $debug
+   *   Include query debugging information in the response.
+   */
+  public function getServices($src_ip=FALSE, $debug=FALSE) {
+    $parameters = array();
+    $path = 'services/';
+    if ($src_ip) {
+      $parameters['src_ip'] = $src_ip;
+    }
+    else {
+      $path .= 'all/';
+    }
+    if ($debug) {
+      $parameters['debug'] = TRUE;
+    }
+    return $this->query($path, $parameters);
+  }
+
 }

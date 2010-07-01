@@ -38,6 +38,7 @@ function template_preprocess_ecenter_blocks_login(&$vars) {
   if ($user->uid > 0) {
     $links[] = t('Logged in as <span class="bold">@user</span>', array('@user' => $user->name));
     $links[] = l('Settings', 'user');
+    $links[] = l(t('Logout'), 'logout');
   }
   else {
     $links[] = l(t('Login to E-center'), 'user');

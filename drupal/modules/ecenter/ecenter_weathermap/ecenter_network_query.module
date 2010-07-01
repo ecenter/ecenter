@@ -19,6 +19,7 @@ function ecenter_network_query_menu() {
     'page callback' => 'ecenter_network_query_services',
     //'page arguments' => array(3),
     'access arguments' => array('access ecenter weathermap'),
+    'type' => MENU_CALLBACK,
   );
   return $items;
 }

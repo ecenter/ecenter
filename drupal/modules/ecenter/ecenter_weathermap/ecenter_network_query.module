@@ -25,7 +25,7 @@ function ecenter_network_query_menu() {
 
 function ecenter_network_query_services() {
   $client = ecenter_network_query_get_client();
-  $services = $client->getServices($_POST['src_ip']);
+  $services = $client->getDestinationServices($_POST['src_ip']);
   drupal_set_header('HTTP/1.1 '. $services['code']);
 
   if ($services['code'] == 200) {
@@ -36,7 +36,7 @@ function ecenter_network_query_services() {
     $form = ecenter_network_query_select_form(array(), array());
     $element = $form['dst_ip'];
     $element['#options'] = $options;
-    $element['#name'] = 'edit-dst-ip';
+    $element['#name'] = 'dst_ip';
     $element['#id'] = 'edit-dst-ip';
     $element['#parents'] = array();
     echo theme('quickselect', $element);
@@ -67,11 +67,10 @@ function ecenter_network_query_select_form($form_state, $services, $src_ip = Fal
     'dst_ip' => array(
       '#title'               => t('Destination IP'),
       '#type'                => 'quickselect',
-      '#options'             => array(),
+      '#options'             => $services,
       '#cols'                => 50,
-      '#disabled'            => TRUE,
-      '#quickselect_options' => $quickselect_options,
       '#required'            => TRUE,
+      '#quickselect_options' => $quickselect_options,
     ),
     'submit' => array(
       '#value' => t('Submit'),
@@ -83,7 +82,7 @@ function ecenter_network_query_select_form($form_state, $services, $src_ip = Fal
 }
 
 function ecenter_network_query_select_form_submit($form, &$form_state) {
-  $form_state['redirect'] = array('weathermap', 'src_ip=foo&dst_ip=bar');
+  $form_state['redirect'] = array('weathermap', 'ajax=1&src_ip='. $form_state['values']['src_ip'] .'&dst_ip='. $form_state['values']['dst_ip']);
 }
 
 function ecenter_network_query() {
@@ -95,14 +94,22 @@ function ecenter_network_query() {
   $client = ecenter_network_query_get_client();
   $services = $client->getServices();
 
-  //$options = array('0' => 'Start typing the name of a node or select from list');
+  $options = array('' => 'Select a node');
   foreach ($services['response']->services as $service) {
     $options[$service->ip_addr] = theme('ecenter_network_query_service_option', $service);
   }
 
-  //dpm($_REQUEST);
-
   $form = drupal_get_form('ecenter_network_query_select_form', $options);
+
+  list($src_ip, $dst_ip) = array($_REQUEST['src_ip'], $_REQUEST['dst_ip']);
+  if ($src_ip && $dst_ip) {
+    $data = $client->getPathData($src_ip, $dst_ip, '2009-06-01 12:00:00', '2010-07-01 12:00:00');
+    dpm($data);
+  }
+
+  if ($_REQUEST['ajax']) {
+    // ...
+  }
 
   return $form;
 }
@@ -121,7 +128,7 @@ function ecenter_network_query_get_client() {
 
 function ecenter_network_query_theme() {
   return array(
-    'ecenter_network_query_service_option' => array('arguments' => array('service' => NULL),),
+    'ecenter_network_query_service_option' => array('arguments' => array('service' => NULL))
   );
 }
 

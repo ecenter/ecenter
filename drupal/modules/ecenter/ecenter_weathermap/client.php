@@ -64,17 +64,16 @@ class Ecenter_Data_Service_Client {
    * @param $parameters
    *   An array of search/filter parameters, if required.
    */
-  protected function query($path, $parameters) {
-    $url = $this->_url .'/'. $path;
-    $querystring = http_build_query($parameters);
+  protected function query($path, $parameters = FALSE) {
+    $url = $this->_url .'/'. $path .'/';
+    $querystring = ($parameters) ? http_build_query($parameters) : FALSE;
     if (!empty($querystring)) {
       $url .= '?'. $querystring;
     }
-
     $handle = curl_init();
 
     curl_setopt($handle, CURLOPT_URL, $url);
-    curl_setopt($handle, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($handle, CURLOPT_RETURNTRANSFER, TRUE);
 
     $response = curl_exec($handle);
     $code = curl_getinfo($handle, CURLINFO_HTTP_CODE);
@@ -150,7 +149,7 @@ class Ecenter_Data_Service_Client {
    * @param $end_date
    *   The end date for data, formatted as YYYY-MM-DD HH:mm:ss
    *
-   G* @param $debug
+   * @param $debug
    *   Include query debugging information in the response.
    */
   public function getPathData($src_ip, $dst_ip, $start_date, $end_date, $debug=FALSE) {
@@ -185,19 +184,25 @@ class Ecenter_Data_Service_Client {
    * @param $debug
    *   Include query debugging information in the response.
    */
-  public function getServices($src_ip=FALSE, $debug=FALSE) {
+  public function getServices($debug=FALSE) {
     $parameters = array();
-    $path = 'services/';
-    if ($src_ip) {
-      $parameters['src_ip'] = $src_ip;
-    }
-    else {
-      $path .= 'all/';
-    }
     if ($debug) {
       $parameters['debug'] = TRUE;
     }
-    return $this->query($path, $parameters);
+    return $this->query('services', $parameters);
   }
 
+  /**
+   * @param $src_ip
+   *   Source IP
+   *
+   * @param $debug
+   *   Include query debugging information in the response.
+   */
+  public function getDestinationServices($src_ip, $debug=FALSE) {
+    if ($debug) {
+      $parameters['debug'] = TRUE;
+    }
+    return $this->query('destination-services/'. $src_ip, $parameters);
+  }
 }

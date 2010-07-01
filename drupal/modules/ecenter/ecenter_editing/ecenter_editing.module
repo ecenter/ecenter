@@ -21,7 +21,7 @@ function ecenter_editing_form_alter(&$form, &$form_state, $form_id) {
     return;
   }
 
-  dpm($form);
+  //dpm($form);
 
   $node = $form['#node'];
 
@@ -35,8 +35,8 @@ function ecenter_editing_form_alter(&$form, &$form_state, $form_id) {
   $form['revision_information']['log']['#title'] = t('Revision message');
   $form['revision_information']['log']['#rows'] = 1;
   $form['revision_information']['log']['#description'] = t(
-    'Provide a short description of the changes made to this @type.', 
-    array('@type' => strtolower(node_get_types('name', $node)))
+    'Provide a short description of the changes made to this @type.',
+    array('@type' => drupal_strtolower(node_get_types('name', $node)))
   );
 
   // Remove options for internal Drupal workflow states
@@ -48,7 +48,7 @@ function ecenter_editing_form_alter(&$form, &$form_state, $form_id) {
 
   _ecenter_editing_process_field_image($form['field_image']);
 
-  // Node type specific overrides 
+  // Node type specific overrides
   switch ($node->type) {
     case 'wiki':
       $form['revision_information']['revision']['#type'] = 'value';

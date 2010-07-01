@@ -81,6 +81,7 @@ use Pod::Usage;
 use FindBin;
 use Log::Log4perl qw(:easy);
 use Ecenter::Utils;
+use Net::Netmask;
 
 use lib  "$FindBin::Bin";
 use Ecenter::Schema;
@@ -205,8 +206,8 @@ for my $root ( @{ $gls->{ROOTS} } ) {
         	my $serviceType = extract( find( $s, ".//*[local-name()='serviceType']", 1 ), 0 );
         	my $serviceDescription = extract( find( $s, ".//*[local-name()='serviceDescription']", 1 ), 0 );
 		return if exists $hls_cache{$accessPoint};
-		return  if !$accessPoint || $serviceType =~ /^ping$/i;
-		#return unless $accessPoint =~ /ps\d+\.es|fnal\.gov/;
+		return  if !$accessPoint || $serviceType =~ /^ping$/i ||  $accessPoint =~ /^tcp\:/;
+		return unless $accessPoint =~ /ps\d+\.es|fnal\.gov/;
         	try {		  
                     $logger->debug("\t\thLS:\t$accessPoint");
                     my ($ip_addr,$ip_name) = get_ip_name($accessPoint); 	       
@@ -421,8 +422,8 @@ sub get_fromHLS {
 	    $logger->info("TID=" .  threads->tid . "====DATA $id  MD element:::" . $subj_md->toString) if $subj_md;
    	  
 	    if($subj_md) {
-	        my %ip_addr_h = ( rtr => '', src => '', dst => '');
-		my %ip_addr_rs = ( rtr => '', src => '', dst => '');
+	        my %ip_addr_h = (   src => '', dst => '');
+		my %ip_addr_rs = (   src => '', dst => '');
 	        $subj_md->setNamespace('http://ggf.org/ns/nmwg/topology/2.0/','nmwgt');
                 foreach my $try_src ("./*[local-name()='endPointPair']/*[local-name()='src']", 
 		                     "./*[local-name()='node']/*[local-name()='port']/*[local-name()='address']",
@@ -439,11 +440,14 @@ sub get_fromHLS {
 	        my ($dst) =  $subj_md->findnodes( "./*[local-name()='endPointPair']/*[local-name()='dst']");
 	        $ip_addr_h{dst} =  extract(  $dst, 0) if $dst;  
 		my $capacity    =  extract( find( $subj_md, "./*[local-name()='interface']/*[local-name()='capacity']", 1), 0 );
-		$ip_addr_h{rtr} =  extract( find( $subj_md, "./*[local-name()='interface']/*[local-name()='hostName']", 1), 0 );
+		my $host_ip     =  extract( find( $subj_md, "./*[local-name()='interface']/*[local-name()='hostName']", 1), 0 );
+		
 	        $logger->info("TID=" .  threads->tid . " ====== src=$ip_addr_h{src}========== \n" . $subj_md->toString);
-                next unless $ip_addr_h{src};
-		foreach my $ip_key (qw/rtr src dst/) {
-		    my ($ip_cidr,$ip_name) = get_ip_name($ip_addr_h{$ip_key});
+                next unless $ip_addr_h{src} and ref $ip_addr_h{src};
+		
+		foreach my $ip_key (qw/src dst/) {
+		    my ($ip_cidr, $ip_name) = get_ip_name($ip_addr_h{$ip_key});
+		   
 		    if($ip_addr_h{$ip_key} && $ip_cidr) {
 	                  update_create_fixed(   $dbh->resultset('Node'),
 			                                             { ip_addr  =>  \"=inet6_pton('$ip_cidr')"},
@@ -455,16 +459,13 @@ sub get_fromHLS {
 			  $ip_addr_rs{$ip_key} =  $dbh->resultset('Node')->find({ip_noted => $ip_cidr });				    
 		    }
 		}
-	        ##$logger->debug('End ======  MISSING:' . $subj_md->toString) unless $ip_addr{src};
+	        $logger->error(' !!! End ======  MISSING:' . $subj_md->toString) unless $ip_addr_rs{src};
 	 
 	        eval {
-	               
-	               $dbh->resultset('Metadata')->update_or_create ({ perfsonar_id =>  $data_id, 
-							      service	 => $service_obj->service,
+	               $dbh->resultset('Metadata')->update_or_create ({ 
+							      service	    => $service_obj->service,
 							      src_ip	    =>   $ip_addr_rs{src}->ip_addr,
 							      dst_ip	    =>   ($ip_addr_rs{dst}?$ip_addr_rs{dst}->ip_addr:0),
-							      rtr_ip	    =>   ($ip_addr_rs{rtr}?$ip_addr_rs{rtr}->ip_addr:0),
-							      capacity   => $capacity,
 							      subject	 => ($subj_md?$subj_md->toString:''),
 							      parameters => ($param_md?$param_md->toString:''),
 							     },
@@ -503,7 +504,7 @@ feature requests, and improvements can be directed here:
   
 =head1 VERSION
 
-$Id: $
+$Id:$
 
 =head1 AUTHOR
 

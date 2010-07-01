@@ -17,7 +17,8 @@ use ecenter_data;
 --
 drop table if exists hub;
 CREATE TABLE  hub (
-hub  varchar(10) NOT NULL,
+hub  varchar(32) NOT NULL,
+hub_name  varchar(32) NOT NULL,
 description varchar(100)   NOT NULL,
 longitude float NULL,
 latitude float NULL,
@@ -33,7 +34,7 @@ CREATE TABLE  l2_port (
 l2_urn varchar(512)   NOT NULL,
 description varchar(100)   NOT NULL,
 capacity   bigint  unsigned   NOT NULL,   
-hub varchar(10) NOT NULL,
+hub varchar(32) NOT NULL,
 PRIMARY KEY  (l2_urn ),
 FOREIGN KEY ( hub ) REFERENCES hub ( hub )
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps topology layer2 info';
@@ -66,7 +67,7 @@ CREATE TABLE  node (
  ip_addr  varbinary(16)  NOT NULL,
  nodename  varchar(255)  NULL,
  ip_noted  varchar(40)  NOT NULL,
- netmask varbinary(16)  NULL,
+ netmask  smallint(3) NOT NULL default '32',
  PRIMARY KEY  (ip_addr),
  KEY (nodename),
  KEY (ip_noted),
@@ -82,7 +83,7 @@ CREATE TABLE  l2_l3_map (
 l2_l3_map  bigint  unsigned AUTO_INCREMENT  NOT NULL,
 ip_addr   varbinary(16)  NOT NULL,
 l2_urn    varchar(512)    NOT NULL,  
-PRIMARY KEY  (l2_l3_id),
+PRIMARY KEY  (l2_l3_map),
 FOREIGN KEY (l2_urn) REFERENCES l2_port ( l2_urn ),
 FOREIGN KEY ( ip_addr ) REFERENCES node ( ip_addr )
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps topology layer2-layer3 mapping';
@@ -153,18 +154,15 @@ FOREIGN KEY (service) REFERENCES  service (service)  on DELETE CASCADE ON UPDATE
 --
 drop  table if exists  metadata;
 CREATE TABLE   metadata (
-metaid  bigint  unsigned AUTO_INCREMENT NOT NULL, 
-perfsonar_id  varchar(255) NOT NULL,
-l2_urn  varchar(512)  NULL,
-src_ip varbinary(16)  NOT NULL,
-rtr_ip varbinary(16)  NOT  NULL DEFAULT '0',
-dst_ip varbinary(16)  NOT  NULL DEFAULT '0',
+metaid  bigint  unsigned AUTO_INCREMENT NOT NULL,
+src_ip  varbinary(16)  NOT NULL,
+dst_ip  varbinary(16)  NOT  NULL DEFAULT '0',
+direction   enum('in','out') NOT NULL default 'in', 
 service bigint  unsigned  NOT NULL,
-subject varchar(1023) NOT NULL,
+subject varchar(1023) NULL,
 parameters varchar(1023) NULL,
 PRIMARY KEY  (metaid),
 KEY  (metaid),
-UNIQUE KEY metaid_service (perfsonar_id, service, src_ip),
 FOREIGN KEY (src_ip) REFERENCES  node (ip_addr), 
 FOREIGN KEY (service) REFERENCES  service (service)  on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB CHARSET=latin1 COMMENT='ps-ps metaid provided by each service';
@@ -251,9 +249,10 @@ CREATE TABLE  owamp_data (
    KEY  (timestamp),
    FOREIGN KEY  (metaid) REFERENCES   metadata  (metaid) on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps  owamp  data  cache';
-----            SNMP data  storage 
------             knows about layer2 topologies
-----
+--
+--            SNMP data  storage 
+--            knows about layer2 topologies
+--
 drop  table if exists snmp_data;
 CREATE TABLE  snmp_data (
    snmp_data  bigint unsigned AUTO_INCREMENT NOT NULL, 

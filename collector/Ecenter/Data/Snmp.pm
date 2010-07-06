@@ -11,6 +11,8 @@ use English qw( -no_match_vars );
 use Log::Log4perl qw(get_logger); 
 use Data::Dumper;
 use perfSONAR_PS::Client::MA;  
+use perfSONAR_PS::Common qw( find findvalue extract);
+ 
 
 =head1 NAME
 
@@ -25,10 +27,12 @@ perfSONAR-PS - snmp  data retrieval API,see L<Ecenter::Data::Requester> fro more
      ## initiate remote query object for the service based on url provided
     my $snmp = E-Center::Data::Snmp( {  url => 'http://xxxxxxxxx' } );
     
-    ##  get_metadata is not implemented
-    
-    ## send request for bwctl data from time to time for interface IP address
-    $snmp->get_data({  ifAddress => '131.225.8.10', start => '01-03-2010' , end => '01-05-2010'});
+    ## send request for metadata related to ip
+    my $metadata_hashref = $snmp->get_metadata({  ifAddress => '131.225.8.10'});
+     
+   
+    ## send request for snmp data from time to time for interface IP address
+    my $data_arr_ref = $snmp->get_data({  ifAddress => '131.225.8.10', start => '01-03-2010' , end => '01-05-2010'});
      
    
    
@@ -47,6 +51,10 @@ perfSONAR-PS - snmp  data retrieval API,see L<Ecenter::Data::Requester> fro more
 
 =item  ifIndex
 
+=item subject
+ 
+=item eventtypes
+
 =back
 
 =cut
@@ -58,14 +66,16 @@ has 'ifName'     => (is => 'rw', isa => 'Str');
 has 'ifIndex'    => (is => 'rw', isa => 'Str');
 has 'ifAddress'  => (is => 'rw', isa => 'Str');
 has 'hostName'   => (is => 'rw', isa => 'Str');
-
-
+has 'subject'    => (is => 'rw', isa => 'Str');
+has 'eventtypes'    => (is => 'rw', isa => 'ArrayRef');
 
 sub BUILD {
       my $self = shift;
       my $args = shift; 
       $self->logger(get_logger(__PACKAGE__));
+      $self->eventtypes([("http://ggf.org/ns/nmwg/characteristic/utilization/2.0")]);
       return  $self->url($args->{url}) if $args->{url};
+      
 };
 
 
@@ -77,37 +87,45 @@ after 'url' => sub {
     }
 }; 
 
- 
+after 'get_metadata' => sub  {
+    my ( $self, $params ) = @_;
+    $self->parse_params($params);
+    # Standard eventType, we could add more
+    my $ma_result =  $self->ma->metadataKeyRequest(
+        {
+            subject               => $self->subject,
+            eventTypes            => $self->eventtypes
+        }
+    );
+    $self->parse_metadata($ma_result); 
+};
+
 after 'get_data' => sub  {
     my ( $self, $params ) = @_;
-    map {$self->$_($params->{$_}) if $self->can($_)}  keys %$params if $params && ref $params eq ref {};
-   
-    my @datum = ();
-    return unless $self->hostName or $self->ifAddress;
-    my $subject = qq|  <nmwg:subject id="s-in-16"><nmwgt:interface xmlns:nmwgt="http://ggf.org/ns/nmwg/topology/2.0/">|;
-    foreach my $key (qw/ifName ifIndex hostName direction  ifAddress/) {
-        $subject .=    "<nmwgt:$key>" . $self->$key . "</nmwgt:$key>\n" if  $self->$key;
-    }
-    $subject .=  q|</nmwgt:interface></nmwg:subject>|;
-
-    # Standard eventType, we could add more
-    my @eventTypes = ("http://ggf.org/ns/nmwg/characteristic/utilization/2.0");
-    my $ma_result =  $self->ma->setupDataRequest(
-        {
+    $self->parse_params($params);
+    my $ma_result;
+    eval  { 
+        $ma_result =  $self->ma->setupDataRequest(
+            {
             consolidationFunction => $self->cf,
             resolution            => $self->resolution,
             start                 => $self->start->epoch,
             end                   => $self->end->epoch,
-            subject               => $subject,
-            eventTypes            => \@eventTypes
-        }
-    );
-
+            subject               => $self->subject,
+            eventTypes            => $self->eventtypes
+            }
+        );
+        $self->parse_metadata($ma_result); 
+    };
+    if($EVAL_ERROR){
+     	$self->logger->error("Unhandled exception or crash: $EVAL_ERROR");
+    }
+    return unless $ma_result;
     my $parser = XML::LibXML->new();
- 
+    my @datum = ();
     foreach my $d ( @{ $ma_result->{"data"} } ) {
         my $data = $parser->parse_string($d);
-
+        my $idref = $data->getDocumentElement->getAttribute('metadataIdRef'); 
         # Extract the datum elements.
         foreach my $dt ( $data->getDocumentElement->getChildrenByTagNameNS( "http://ggf.org/ns/nmwg/base/2.0/", "datum" ) ) {
 
@@ -128,11 +146,44 @@ after 'get_data' => sub  {
                 }
             }
         }
+	
     }
-
    return $self->data(\@datum);
 };
 
+sub parse_metadata {
+  my ($self, $xml) = @_;
+  my $mds = {};
+  my $parser = XML::LibXML->new();
+  foreach my $md (@{$xml->{"metadata"}}){
+        my $metadata = $parser->parse_string($md); 
+	my $id = $metadata->getDocumentElement->getAttribute('id'); 
+	my $xpath     = "./*[local-name()='subject']/*[local-name()='interface']";
+	my $port      =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='ifName']",    1), 0);
+ 	my $ip        =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='ifAddress']", 1), 0);
+ 	my $name      =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='hostName']",  1), 0);
+ 	my $direction =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='direction']", 1), 0);
+ 	my $capacity  =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='capacity']",  1), 0);
+ 	$mds->{$id} = {port => $port, ip => $ip, name => $name, direction => $direction, capacity => $capacity};
+    }
+    $self->metadata($mds); 
+}
+
+sub parse_params {
+   my ($self, $params) = @_;
+   map {$self->$_($params->{$_}) if $self->can($_)}  keys %$params if $params && ref $params eq ref {};
+   return unless $self->hostName or $self->ifAddress;
+   my $subject = qq|  <nmwg:subject id="s-in-16"><nmwgt:interface xmlns:nmwgt="http://ggf.org/ns/nmwg/topology/2.0/">|;
+   foreach my $key (qw/ifName ifIndex hostName direction  ifAddress/) {
+      $subject .=    "<nmwgt:$key>" . $self->$key . "</nmwgt:$key>\n" if  $self->$key;
+   }
+   $subject .=  q|</nmwgt:interface></nmwg:subject>|;
+
+   $self->subject($subject);
+}
+
+no Moose;
+__PACKAGE__->meta->make_immutable;
 
 1;
 

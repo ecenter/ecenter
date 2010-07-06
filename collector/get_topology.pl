@@ -244,26 +244,49 @@ sub parse_topo {
 sub get_snmp { 
      my ($dbh ) = @_; 
      my $services = $dbh->resultset('Service')->search({type => 'snmp', url => {like => '%es.net%'}});
+     # harcoded fix for miserable  ESnet services
+     unless($services->count) {
+        my $ps3_node =   $dbh->resultset('Node')->find({nodename => 'ps3.es.net'});
+        $dbh->resultset('Service')->update_or_create({name => 'ESnet SNMP MA',
+	                                    type => 'snmp', 
+	                                    ip_addr => $ps3_node, 
+					    comments => 'ESnet SNMP MA',
+					    is_alive => 1,
+					    updated =>  \"NOW()",
+					    url =>  'http://ps3.es.net:8080/perfSONAR_PS/services/snmpMA'});
+	 $services = $dbh->resultset('Service')->search({type => 'snmp', url => {like => '%es.net%'}});
+     }
      my $ports = $dbh->resultset('L2_port')->search({ }, { 'join'  =>  'l2_src_links'  });
 
      while( my $service = $services->next) {
      	 my $snmp_ma =  Ecenter::Data::Snmp->new({ url => $service->url});
-     	 foreach my $port ($ports->next) {
+	 unless($ports->count) {
+	     $logger->error(" !!! NO Ports !!! ");
+	     next;
+	 }
+     	 while( my  $port = $ports->next) {
      	    my $ifAddresses = $dbh->resultset('L2_l3_map')->search( { l2_urn => $port->l2_urn }, 
      								    { 'join' => 'ip_addr', '+select' => ['ip_addr.ip_noted'] }
      								  );
-     	    foreach my $l3 ($ifAddresses->next) {
+     	     unless ($ifAddresses->count) {
+	         $logger->error(" !!! NO Addresses !!! ");
+	        next;
+	     }
+	     while( my    $l3 = $ifAddresses->next) {
+	         $logger->debug("=====---------------===== \n ifAddress::" .$l3->ip_addr->ip_noted . " URN:" . $port->l2_urn );
      		 foreach my $direction (qw/in out/) {
-     		     my $data_arr = $snmp_ma->get_data({ direction =>  $direction, 
+     		     $snmp_ma->get_data({ direction =>  $direction, 
 		                                         ifAddress => $l3->ip_addr->ip_noted, 
-		                                         start =>  DateTime->from_epoch( epoch => (time() - 3600)),
+		                                         start =>  DateTime->from_epoch( epoch => (time() -  3600)),
 							 end => DateTime->now()   });
+		     $logger->debug("Data :: ", sub{Dumper( $snmp_ma->data)});
      		     my $meta = $dbh->resultset('Metadata')->update_or_create({ src_ip =>  $l3->ip_addr->ip_noted ,
      								     service	 => $service,
      								     src_ip	 =>    $l3->ip_addr,
-     								     direction => $direction
-     								  });
-     		     foreach my $data (@$data_arr) { 
+     								     direction => $direction 
+     								  }
+								  );
+     		     foreach my $data (@{ $snmp_ma->data}) { 
      			 $dbh->resultset('Snmp_data')->update_or_create({ metaid =>  $meta,
      									  timestamp => $data->[0],
      									  utilization => $data->[1],

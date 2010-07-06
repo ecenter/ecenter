@@ -66,7 +66,7 @@ sub get_ip_name {
 	    return ();
 	 }
     }
-    if(is_hostname( $unt_test ) &&  $unt_test !~ m/^localhost/) {
+    if(is_hostname( $unt_test ) &&  $unt_test !~ m/^changeme|localhost/i) {
         my $query = $resolver->search(  $unt_test );
 	my $ip_addr2;
 	$logger->debug(" Its HOST: $unt_test  "); 

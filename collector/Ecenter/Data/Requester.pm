@@ -79,6 +79,7 @@ sub get_metadata {
     map {$self->$_($params->{$_}) if $self->can($_)} keys %$params if $params && ref $params eq ref {};
 }
 
+no Moose;
 __PACKAGE__->meta->make_immutable;
 
 1;

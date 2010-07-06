@@ -134,6 +134,9 @@ after 'get_data' => sub  {
     return $self->data(\@data);
 };  
 
+no Moose;
+__PACKAGE__->meta->make_immutable;
+
 1;
 
 =head1   AUTHOR

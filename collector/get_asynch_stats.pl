@@ -207,7 +207,7 @@ for my $root ( @{ $gls->{ROOTS} } ) {
         	my $serviceDescription = extract( find( $s, ".//*[local-name()='serviceDescription']", 1 ), 0 );
 		return if exists $hls_cache{$accessPoint};
 		return  if !$accessPoint || $serviceType =~ /^ping$/i ||  $accessPoint =~ /^tcp\:/;
-		return unless $accessPoint =~ /ps\d+\.es|fnal\.gov/;
+		return unless $accessPoint =~ /ps1\.es|fnal\.gov/;
         	try {		  
                     $logger->debug("\t\thLS:\t$accessPoint");
                     my ($ip_addr,$ip_name) = get_ip_name($accessPoint); 	       
@@ -237,17 +237,17 @@ for my $root ( @{ $gls->{ROOTS} } ) {
 		    	    get_fromHLS($accessPoint, $now_str, $hls, $dbh);
 		    	}
                      }  else  {
-                    	$logger->debug("\t\t\tReject:\t$accessPoint)");
+                    	$logger->debug("TID=" .  threads->tid ."\t\t\tReject:\t$accessPoint)");
                      }
 		} 
 		catch perfSONAR_PS::Error   with {
-		    $logger->error( shift);
+		    $logger->error("TID=" .  threads->tid . " ... " .  shift);
 		} catch perfSONAR_PS::Error_compat with {
-                    $logger->error( shift);
+                    $logger->error("TID=" .  threads->tid . " ... " .   shift);
         	}
         	otherwise {
                     my $ex  = shift; 
-                    $logger->error("Unhandled exception or crash: $ex");
+                    $logger->error("TID=" .  threads->tid ."Unhandled exception or crash: $ex");
         	}
 		finally {
 	            $dbh->storage->disconnect if $dbh;
@@ -307,15 +307,15 @@ sub get_fromHLS {
     my $result_disc  = ls_store_request($ls, $DISCOVERY_EVENTTYPE);
     my $result_query = ls_store_request($ls, $QUERY_EVENTTYPE);
     
-    unless( exists $result_disc->{eventType} and not( $result_disc->{eventType} =~ m/^error/ ) ) {
-        $logger->error(" HLS:: $hls_url got an error when running discovery query", sub {Dumper($result_query)});
+   if( ! (exists $result_disc->{eventType}) || $result_disc->{eventType} =~ m/^error/ ) {
+        $logger->error("TID=" .  threads->tid ." HLS:: $hls_url got an error when running discovery query", sub {Dumper($result_disc)});
 	return;
     }
-    unless( exists $result_query->{eventType} and not( $result_query->{eventType} =~ m/^error/ ) ) {
-        $logger->error(" HLS:: $hls_url got an error when running  query", sub {Dumper($result_query)});
+    if( ! (exists $result_query->{eventType}) ||   $result_query->{eventType} =~ m/^error/ ) {
+        $logger->error("TID=" .  threads->tid ." HLS:: $hls_url got an error when running  query", sub {Dumper($result_query)});
 	return;
     }
-    $logger->debug("EventType: $result_disc->{eventType}");
+    $logger->debug("TID=" .  threads->tid ."EventType: $result_disc->{eventType}");
     $result_disc->{response} = unescapeString( $result_disc->{response} );
     $result_query->{response} = unescapeString( $result_query->{response} );
     my ($doc_disc,$doc_query);
@@ -324,7 +324,7 @@ sub get_fromHLS {
 	$doc_query = $parser->parse_string( $result_query->{response} ) if exists $result_query->{response};
     };
     if($EVAL_ERROR) {
-        $logger->error("This hls $hls_url failed ");
+        $logger->error("TID=" .  threads->tid ."This hls $hls_url failed ");
         $hls_obj->is_alive(0);
         return;
     }
@@ -344,7 +344,10 @@ sub get_fromHLS {
 	        $param_exist{$param} ||=   extract( find( $m1, "./*[local-name()='subject']//*[local-name()='$try']", 1 ), 0 );
 	    }
         }
-	next unless $param_exist{url};
+	 unless($param_exist{url}) {
+	    $logger->error("TID=" .  threads->tid ." !!!! URL is missing in MD ---: "  . $m1->toString );
+	    next;
+	 }
 	$param_exist{is_alive} = 1;
 	$param_exist{updated} =  $now_str;
 	if(!$param_exist{type} || $param_exist{type} =~ /^(MA|MP|TS)$/i) {
@@ -356,7 +359,10 @@ sub get_fromHLS {
 	$param_exist{type} ||= 'N/A';
 	$param_exist{name} ||= 'N/A';
 	my ( $ip_noted , $nodename) = get_ip_name(  $param_exist{url} );
-	next unless $ip_noted;
+	unless($ip_noted) {
+	    $logger->error("TID=" .  threads->tid ." !!!! Unable to extract IP from $param_exist{url}   ");
+	    next;
+	}
 	update_create_fixed($dbh->resultset('Node'),
 			                              {ip_addr =>  \"=inet6_pton('$ip_noted')"},
 			                              {ip_addr => \"inet6_pton('$ip_noted')",
@@ -368,14 +374,17 @@ sub get_fromHLS {
 	 $param_exist{ip_addr}	 =  $ip_addr->ip_addr;						   
 	 my $service_obj =$dbh->resultset('Service')->find_or_create( \%param_exist,{ key => 'service_url' } ); 
        ## my $service_obj =  $dbh->resultset('Service')->find({url => $param_exist{url}});
-	$logger->info(" Found for url $param_exist{url} service=" .$service_obj->service);
+	$logger->info("TID=" .  threads->tid ." Found for url $param_exist{url} service=" .$service_obj->service);
 	
 	next unless $service_obj;
 	##############  data part processing
         ###my $d1_disc = $look_data_disc_id{$id};
-	next unless $look_data_query_id{$id};
+	unless($look_data_query_id{$id}) {
+	    $logger->error("TID=" .  threads->tid ." !!!! Malformed responec, no data element for $id");
+	    next; 
+	}
 	my @d1_query = @{$look_data_query_id{$id}};
-	$logger->info(" Found  something  ", sub{Dumper($look_data_query_id{$id})});
+	$logger->info("TID=" .  threads->tid ." +++++++++ Found  something  ", sub{Dumper($look_data_query_id{$id})});
    	# get the keywords
 	foreach my $d1_el (@d1_query) {
 	    my $data_id =  $d1_el->getAttribute("id");
@@ -388,7 +397,7 @@ sub get_fromHLS {
             my $param_md =  find( $d1_el, "./nmwg:metadata/nmwg:parameters", 1);
              # get the eventTypes
     	    foreach my  $keyword_str (keys %keyword_hash) {
-	        $logger->debug("KEYWORD=$keyword_str");
+	        $logger->debug("TID=" .  threads->tid ."KEYWORD=$keyword_str");
 		my $keyword = $dbh->resultset('Keyword')->find_or_create({ keyword => $keyword_str });
 		$dbh->resultset('Keywords_Service')->update_or_create( { keyword => $keyword_str,
 									  service =>  $hls_obj
@@ -430,20 +439,24 @@ sub get_fromHLS {
 				     "./*[local-name()='interface']/*[local-name()='ipAddress']",
 				     "./*[local-name()='interface']/*[local-name()='ifAddress']", ) {
 		    
-		    my ($ips) = $subj_md->findnodes($try_src);
+		    my $ips =  find($subj_md, $try_src, 1);
 		    if($ips) {
 		      $ip_addr_h{src} = extract(  $ips, 0);
-		      $logger->info("TID=" .  threads->tid . " ======  $try_src=$ip_addr_h{src} ------");
+		      $logger->info("TID=" .  threads->tid . " ======  $try_src=$ip_addr_h{src} ------" . $ips->toString);
 		      last if  $ip_addr_h{src}; 
 		    }
+		    
 		}
 	        my ($dst) =  $subj_md->findnodes( "./*[local-name()='endPointPair']/*[local-name()='dst']");
 	        $ip_addr_h{dst} =  extract(  $dst, 0) if $dst;  
 		my $capacity    =  extract( find( $subj_md, "./*[local-name()='interface']/*[local-name()='capacity']", 1), 0 );
 		my $host_ip     =  extract( find( $subj_md, "./*[local-name()='interface']/*[local-name()='hostName']", 1), 0 );
 		
-	        $logger->info("TID=" .  threads->tid . " ====== src=$ip_addr_h{src}========== \n" . $subj_md->toString);
-                next unless $ip_addr_h{src} and ref $ip_addr_h{src};
+	        $logger->info("TID=" .  threads->tid . " ====== src=$ip_addr_h{src}========== \n");
+                unless($ip_addr_h{src}) {
+		    $logger->error("!!! FAILED To extract IP from subject !!!");
+		    next;
+		}
 		
 		foreach my $ip_key (qw/src dst/) {
 		    my ($ip_cidr, $ip_name) = get_ip_name($ip_addr_h{$ip_key});
@@ -459,7 +472,7 @@ sub get_fromHLS {
 			  $ip_addr_rs{$ip_key} =  $dbh->resultset('Node')->find({ip_noted => $ip_cidr });				    
 		    }
 		}
-	        $logger->error(' !!! End ======  MISSING:' . $subj_md->toString) unless $ip_addr_rs{src};
+	        $logger->error("TID=" .  threads->tid .' !!! End ======  MISSING:' . $subj_md->toString) unless $ip_addr_rs{src};
 	 
 	        eval {
 	               $dbh->resultset('Metadata')->update_or_create ({ 
@@ -468,12 +481,11 @@ sub get_fromHLS {
 							      dst_ip	    =>   ($ip_addr_rs{dst}?$ip_addr_rs{dst}->ip_addr:0),
 							      subject	 => ($subj_md?$subj_md->toString:''),
 							      parameters => ($param_md?$param_md->toString:''),
-							     },
-							     {key => 'metaid_service'}
+							     }
 	                                                  ) ;
 	        };
 	        if($EVAL_ERROR) {
-	            $logger->error(" Catched $EVAL_ERROR");
+	            $logger->error("TID=" .  threads->tid ." Catched $EVAL_ERROR");
 	        }
 	         
 	    }

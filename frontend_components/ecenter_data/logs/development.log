@@ -1,0 +1,5 @@
+[13756]  warn @0.000682> [hit #6] Dancer::Logger in /usr/lib/perl5/site_perl/5.8.8/Dancer/Route.pm l. 228
+[13756]  warn @0.000662> [hit #7] Dancer::Logger in /usr/lib/perl5/site_perl/5.8.8/Dancer/Route.pm l. 228
+[13756]  warn @0.000626> [hit #11] Dancer::Logger in /usr/lib/perl5/site_perl/5.8.8/Dancer/Route.pm l. 228
+[13756]  warn @0.000586> [hit #14] Dancer::Logger in /usr/lib/perl5/site_perl/5.8.8/Dancer/Route.pm l. 228
+[15112]  warn @0.000703> [hit #1] Dancer::Logger in /usr/lib/perl5/site_perl/5.8.8/Dancer/Route.pm l. 228

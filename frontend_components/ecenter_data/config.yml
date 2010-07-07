@@ -1,0 +1,14 @@
+layout: "main"
+logger: "console"
+plugins:
+   Plugin::DBIx:
+     driver: mysql
+     database: ecenter_data
+     host: localhost
+     username: ecenter
+     pass_file: /etc/my_ecenter
+     connectivity-check-threshold: 30
+     debug: 1
+     dbi_params:
+        RaiseError: 1
+        AutoCommit: 1

@@ -6,7 +6,7 @@ __PACKAGE__->add_columns(qw/trace_id metaid number_hops  updated/);
 __PACKAGE__->set_primary_key('trace_id');
 
 __PACKAGE__->add_unique_constraint( updated_metaid  => [ qw/metaid updated/ ]);
-__PACKAGE__->belongs_to(metaid => 'Ecenter::Schema::Result::Metadata', 'metaid');
+__PACKAGE__->belongs_to(metadata => 'Ecenter::Schema::Result::Metadata', 'metaid');
 __PACKAGE__->has_many(hops => 'Ecenter::Schema::Result::Hop', 'hop_id');
 
 

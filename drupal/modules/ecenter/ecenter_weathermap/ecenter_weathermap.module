@@ -21,6 +21,16 @@ function ecenter_network_query_menu() {
     'access arguments' => array('access ecenter weathermap'),
     'type' => MENU_CALLBACK,
   );
+  $items['admin/settings/ecenter/weathermap'] = array(
+    'title' => 'E-Center Network Query Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ecenter_network_query_admin_form'),
+    'access callback' => 'user_access',
+    'access arguments' => array('administer ecenter weathermap'),
+    'description' => 'Configure ',
+    'file' => 'includes/ecenter_network_query.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
   return $items;
 }
 

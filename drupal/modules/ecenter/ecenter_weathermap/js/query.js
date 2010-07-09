@@ -7,13 +7,10 @@ Drupal.behaviors.EcenterNetworkQuery = function(context) {
 
   // Submit when destination is filled in
   $('#edit-src-ip_quickselect').blur(function(e) {
+    $('#edit-dst-ip_quickselect').attr('disabled', true);
     $.ajax({
-      url: Drupal.settings.basePath + 'weathermap/js/services/',
+      url: Drupal.settings.basePath + 'weathermap/data/js/hub-select/' + $('#edit-src-ip').val(),
       dataType: 'html',
-      type: 'POST',
-      data: {
-        src_ip: $('#edit-src-ip').val()
-      },
       success: function(data) {
         $('#edit-dst-ip-wrapper').replaceWith(data);
         Drupal.behaviors.QuickSelect();

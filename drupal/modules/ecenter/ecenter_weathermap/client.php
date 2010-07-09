@@ -27,6 +27,11 @@ class Ecenter_Data_Service_Client {
   protected $_url;
 
   /**
+   * Provide a backdoor method for returning other data types than json
+   */
+  public $data_type = 'json';
+
+  /**
    * @param $host
    *   The hostname of the network data web service.
    *
@@ -36,7 +41,7 @@ class Ecenter_Data_Service_Client {
    * @param $path
    *   The base path of the query service.
    */
-  public function __construct($host = 'localhost', $port = 9190, $path = 'ecenter') {
+  public function __construct($host = 'localhost', $port = 8099, $path = '') {
     $this->_host = $host;
     $this->_port = $port;
     $this->_path = $path;
@@ -44,7 +49,7 @@ class Ecenter_Data_Service_Client {
     $this->_url .= ($path) ? '/'. $path : '';
 
     // create our shared get and post stream contexts
-    $this->_getContext = stream_context_create();
+    //$this->_getContext = stream_context_create();
     //$this->_postContext = stream_context_create();
 
     // determine our default http timeout from ini settings
@@ -65,7 +70,7 @@ class Ecenter_Data_Service_Client {
    *   An array of search/filter parameters, if required.
    */
   protected function query($path, $parameters = FALSE) {
-    $url = $this->_url .'/'. $path .'/';
+    $url = $this->_url .'/'. $path .'.'. $this->data_type;
     $querystring = ($parameters) ? http_build_query($parameters) : FALSE;
     if (!empty($querystring)) {
       $url .= '?'. $querystring;
@@ -84,6 +89,14 @@ class Ecenter_Data_Service_Client {
       'code' => $code,
       'response' => json_decode($response),
     );
+  }
+
+  public function getHubs($src_ip='') {
+    $q = 'hub';
+    if (!empty($src_ip)) {
+      $q .= '/src_ip/'. $src_ip;
+    }
+    return $this->query($q);
   }
 
   /**

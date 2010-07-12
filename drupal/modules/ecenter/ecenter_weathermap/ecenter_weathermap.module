@@ -12,27 +12,29 @@
 function ecenter_weathermap_menu() {
   $items['weathermap'] = array(
     'title' => 'E-Center Weather Map',
-    'page callback' => 'ecenter_weathermap',
+    //'page callback' => 'ecenter_weathermap',
     //'page arguments' => array(),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ecenter_weathermap_select_form'),
     'access arguments' => array('access ecenter weathermap'),
     'type' => MENU_CALLBACK,
   );
-  $items['weathermap/data/%/hub-select']  = array(
+  $items['weathermap/ajax']  = array(
+    'title' => 'E-Center Weather Map',
+    'page callback' => 'ecenter_weathermap_ajax',
+    //'page arguments' => array(2, 3),
+    'access arguments' => array('access ecenter weathermap'),
+    'file' => 'includes/ecenter_weathermap.ajax.inc',
+    'type' => MENU_CALLBACK,
+  );
+  /*$items['weathermap/data/%/data']  = array(
     'title' => 'E-Center Weather Map',
     'page callback' => 'ecenter_weathermap_ajax',
     'page arguments' => array(2, 3),
     'access arguments' => array('access ecenter weathermap'),
     'file' => 'includes/ecenter_weathermap.ajax.inc',
     'type' => MENU_CALLBACK,
-  );
-  $items['weathermap/data/%/data']  = array(
-    'title' => 'E-Center Weather Map',
-    'page callback' => 'ecenter_weathermap_ajax',
-    'page arguments' => array(2, 3),
-    'access arguments' => array('access ecenter weathermap'),
-    'file' => 'includes/ecenter_weathermap.ajax.inc',
-    'type' => MENU_CALLBACK,
-  );
+  );*/
   $items['admin/settings/ecenter'] = array(
     'title' => 'E-Center Network Query Settings',
     'page callback' => 'drupal_get_form',
@@ -84,39 +86,83 @@ function ecenter_weathermap_theme() {
 }
 
 /**
+ * Implementation of hook_init().
+ */
+function ecenter_weathermap_init() {
+  if (arg(0) == 'weathermap' && !arg(1)) {
+    // We need quickselect to get added to behaviors first, so when ensure it executes first
+    drupal_add_js(drupal_get_path('module', 'quickselect') .'/js/quickselect-behavior.js');
+
+    // Also need the jquery form library
+    drupal_add_js('misc/jquery.form.js');
+
+    // Query UI behavior
+    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/query.js');
+
+    // Add jqPlot
+    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/lib/jqplot/excanvas.min.js');
+    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/lib/jqplot/jquery.jqplot.min.js');
+
+    // jqPlot plugins
+    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/lib/jqplot/plugins/jqplot.dateAxisRenderer.min.js');
+    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/lib/jqplot/plugins/jqplot.highlighter.min.js');
+    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/lib/jqplot/plugins/jqplot.cursor.min.js');
+
+    // Additional CSS overrides
+    drupal_add_css(drupal_get_path('module', 'ecenter_weathermap') .'/css/plot.css');
+  }
+}
+
+/**
  * Primary selection form for weathermap diagnostic UI.
  */
-function ecenter_weathermap_select_form($form_state, $services, $src_ip = False, $dst_ip = False, $start = False, $end = False) {
+function ecenter_weathermap_select_form($form_state) {
+  // Quick select options
   $quickselect_options = array(
     'emulateDropdown' => TRUE,
     'maxHeight' => '400px',
     'exactMatch' => TRUE,
   );
 
+  // Get hubs
+  $client = ecenter_weathermap_get_client();
+  $hops = $client->getHubs();
+  $options = array('' => 'Select a node');
+  foreach ($hops['response'] as $hop) {
+    $options[$hop->ip_noted] = theme('ecenter_weathermap_hop_option', $hop);
+  }
+
   $form = array(
-    'select_box' => array(
-      '#type' => 'fieldset',
-      '#description' => t('Select a source IP.'),
-      'src_ip' => array(
-        '#title'               => t('Source IP'),
-        '#type'                => 'quickselect',
-        '#options'             => $services,
-        '#cols'                => 50,
-        '#quickselect_options' => $quickselect_options,
-        '#required'            => TRUE,
-      ),
-      'dst_ip' => array(
-        '#title'               => t('Destination IP'),
-        '#type'                => 'quickselect',
-        '#options'             => array(),
-        '#cols'                => 50,
-        '#disabled'            => TRUE,
-        '#quickselect_options' => $quickselect_options,
-      ),
+    'map' => array(
+      '#prefix' => '<div id="ecenter-weathermap-map">',
+      '#value' => '<p>MAP STUB</p>',
+      '#suffix' => '</div>',
+    ),
+    'src_ip' => array(
+      '#title' => t('Source IP'),
+      '#type' => 'quickselect',
+      '#options' => $options,
+      '#cols' => 50,
+      '#required' => TRUE,
+      '#quickselect_options' => $quickselect_options,
+    ),
+    'dst_ip' => array(
+      '#title' => t('Destination IP'),
+      '#type' => 'quickselect',
+      '#options' => array(),
+      '#cols' => 50,
+      '#disabled' => TRUE,
+      '#required' => TRUE,
+      '#quickselect_options' => $quickselect_options,
     ),
     'submit' => array(
       '#value' => t('Next'),
       '#type' => 'submit',
+    ),
+    'diagnosis' => array(
+      '#prefix' => '<div id="ecenter-weathermap-data">',
+      '#value' => '<p>DATA STUB</p>',
+      '#suffix' => '</div>',
     ),
   );
 
@@ -127,8 +173,11 @@ function ecenter_weathermap_select_form($form_state, $services, $src_ip = False,
  * Form submission call back for weathermap diagnostic UI.
  */
 function ecenter_weathermap_select_form_submit($form, &$form_state) {
-  dpm($form_state);
-  dpm($form);
+  $values = $form_state['values'];
+  unset($form_state['submit_handlers']);
+  form_execute_handlers('submit', $form, $form_state);
+  //$form_state['musician'] = $musician;
+  $form_state['rebuild'] = TRUE;
   //$form_state['redirect'] = array('weathermap', '&src_ip='. $form_state['values']['src_ip'] .'&dst_ip='. $form_state['values']['dst_ip']);
 }
 
@@ -136,21 +185,6 @@ function ecenter_weathermap_select_form_submit($form, &$form_state) {
  * Page callback for weather map
  */
 function ecenter_weathermap() {
-  // We need quickselect to get added to behaviors first, so it executes first
-  drupal_add_js(drupal_get_path('module', 'quickselect') .'/js/quickselect-behavior.js');
-  drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/query.js');
-
-  // Add jqPlot
-  drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/lib/jqplot/excanvas.min.js');
-  drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/lib/jqplot/jquery.jqplot.min.js');
-
-  // jqPlot plugins
-  drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/lib/jqplot/plugins/jqplot.dateAxisRenderer.min.js');
-  drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/lib/jqplot/plugins/jqplot.highlighter.min.js');
-  drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/lib/jqplot/plugins/jqplot.cursor.min.js');
-
-  // Additional CSS overrides
-  drupal_add_css(drupal_get_path('module', 'ecenter_weathermap') .'/css/plot.css');
 
   // Get hubs
   $client = ecenter_weathermap_get_client();

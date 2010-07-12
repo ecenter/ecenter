@@ -75,6 +75,10 @@ class Ecenter_Data_Service_Client {
     if (!empty($querystring)) {
       $url .= '?'. $querystring;
     }
+
+    // @TODO Dancer does not support encoded ampersands in the querystring
+    $url = str_replace('&amp;', '&', $url);
+
     $handle = curl_init();
 
     curl_setopt($handle, CURLOPT_URL, $url);
@@ -98,6 +102,18 @@ class Ecenter_Data_Service_Client {
     }
     return $this->query($q);
   }
+
+  public function getData($src_ip, $dst_ip, $start, $end) {
+    $parameters = array(
+      'src_ip' => $src_ip,
+      'dst_ip' => $dst_ip,
+      'start' => $start,
+      'end' => $end,
+    );
+    return $this->query('data', $parameters);
+  }
+
+  /* -- The rest of these should probably get removed... -- */
 
   /**
    * @param $src_ip
@@ -137,7 +153,7 @@ class Ecenter_Data_Service_Client {
    * @param $debug
    *   Include query debugging information in the response.
    */
-  public function getData($meta_id, $type, $start_date, $end_date, $debug=FALSE) {
+  /*public function getData($meta_id, $type, $start_date, $end_date, $debug=FALSE) {
     $parameters = array(
       'start' => $start_date,
       'end' => $end_date,
@@ -146,7 +162,7 @@ class Ecenter_Data_Service_Client {
       $parameters += array('debug' => TRUE);
     }
     return $this->query($type .'_data/'. $meta_id, $parameters);
-  }
+  }*/
 
 
   /**

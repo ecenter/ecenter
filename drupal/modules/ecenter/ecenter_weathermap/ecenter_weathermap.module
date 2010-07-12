@@ -63,8 +63,23 @@ function ecenter_weathermap_theme() {
     'file' => 'ecenter_weathermap.theme.inc'
   );
   return array(
-    'ecenter_weathermap_hop_option' => 
-      array('arguments' => array('hop' => NULL)) + $path,
+    'ecenter_weathermap_hop_option' => array(
+      'arguments' => array(
+        'hop' => NULL,
+      )
+    ) + $path,
+   'ecenter_weathermap' => array(
+      //'template' => 'ecenter-weathermap',
+      'arguments' => array(
+        'traceroute' => NULL,
+      )
+    ) + $path,
+   'ecenter_weathermap_traceroute' => array(
+      'template' => 'ecenter-weathermap-traceroute',
+      'arguments' => array(
+        'hops' => NULL,
+      )
+    ) + $path,
   );
 }
 
@@ -79,24 +94,28 @@ function ecenter_weathermap_select_form($form_state, $services, $src_ip = False,
   );
 
   $form = array(
-    'src_ip' => array(
-      '#title'               => t('Source IP'),
-      '#type'                => 'quickselect',
-      '#options'             => $services,
-      '#cols'                => 50,
-      '#quickselect_options' => $quickselect_options,
-      '#required'            => TRUE,
-    ),
-    'dst_ip' => array(
-      '#title'               => t('Destination IP'),
-      '#type'                => 'quickselect',
-      '#options'             => $services,
-      '#cols'                => 50,
-      '#required'            => TRUE,
-      '#quickselect_options' => $quickselect_options,
+    'select_box' => array(
+      '#type' => 'fieldset',
+      '#description' => t('Select a source IP.'),
+      'src_ip' => array(
+        '#title'               => t('Source IP'),
+        '#type'                => 'quickselect',
+        '#options'             => $services,
+        '#cols'                => 50,
+        '#quickselect_options' => $quickselect_options,
+        '#required'            => TRUE,
+      ),
+      'dst_ip' => array(
+        '#title'               => t('Destination IP'),
+        '#type'                => 'quickselect',
+        '#options'             => array(),
+        '#cols'                => 50,
+        '#disabled'            => TRUE,
+        '#quickselect_options' => $quickselect_options,
+      ),
     ),
     'submit' => array(
-      '#value' => t('Submit'),
+      '#value' => t('Next'),
       '#type' => 'submit',
     ),
   );
@@ -108,7 +127,9 @@ function ecenter_weathermap_select_form($form_state, $services, $src_ip = False,
  * Form submission call back for weathermap diagnostic UI.
  */
 function ecenter_weathermap_select_form_submit($form, &$form_state) {
-  $form_state['redirect'] = array('weathermap', '&src_ip='. $form_state['values']['src_ip'] .'&dst_ip='. $form_state['values']['dst_ip']);
+  dpm($form_state);
+  dpm($form);
+  //$form_state['redirect'] = array('weathermap', '&src_ip='. $form_state['values']['src_ip'] .'&dst_ip='. $form_state['values']['dst_ip']);
 }
 
 /**

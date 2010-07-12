@@ -65,6 +65,36 @@ function ecenter_weathermap_ajax_hub_select($client, $filter, $src_ip = '') {
  * Get data
  */
 function ecenter_weathermap_ajax_data($client, $filter) {
-  $output = 'hello world';
-  return $output;
+  extract($client->getData('131.243.24.11', '198.32.44.130', '2010-07-02 10:01:02', '2010-07-09 11:02:01'));
+  $data = _ecenter_weathermap_object_to_array($response);
+
+  // Traceroute should be split from everything else
+  $traceroutes = $data['traceroute'];
+  unset($data['traceroute']);
+
+  foreach ($traceroutes as $tid => $traceroute) {
+    // Add source / dst to traceroute
+    //
+  }
+
+  // Visualize / theme FIRST traceroute
+  //$traceroute = theme('ecenter_weathermap_traceroute', $response->traceroute[0]);
+  return theme('ecenter_weathermap', $traceroute);
+}
+
+// Traverse an object, turning all members into arrays or preserving their
+// values
+function _ecenter_weathermap_object_to_array($obj) {
+  if (is_object($obj)) {
+    $obj = get_object_vars($obj);
+  }
+  foreach ($obj as $k => $v) {
+    if (is_object($v) || is_array($v)) {
+      $obj[$k] = _ecenter_weathermap_object_to_array($v);
+    }
+    else {
+      $obj[$k] = $v;
+    }
+  }
+  return $obj;
 }

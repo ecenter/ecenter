@@ -67,6 +67,7 @@ any ['get', 'post'] =>  '/data/:data.:format' =>
 #########   get data - all ----------------------------------------------------------
 any ['get', 'post'] =>  '/data.:format' => 
     sub {
+        debug "Request:" . Dumper(request->params);
         return process_data( params('query'));
     };
 
@@ -95,7 +96,7 @@ sub process_hub {
     foreach my $ip (keys %$hash_ref) {
     	push @hubs, $hash_ref->{$ip};
     }
-    debug Dumper(\@hubs);
+    #debug Dumper(\@hubs);
     return \@hubs;
 }
 
@@ -120,7 +121,10 @@ sub process_service {
     debug Dumper(\@services);
     return \@services;
 }
-
+#
+#   get  end to end traceroute data and reverse and then associated data - per hop (utilization) and end to end
+#  if data is not in the db then get it from remote site
+#
 sub process_data {
     my %params = validate(@_, { data => {type => SCALAR, regex => qr/^(snmp|bwctl|owamp|pinger)$/, optional => 1}, 
                                id     => {type => SCALAR, regex => qr/^\d+$/, optional => 1}, 
@@ -155,6 +159,7 @@ sub process_data {
        } 
     }
     my $dst_cond = $params{dst_ip}?"md.dst_ip = inet6_pton('$params{dst_ip}')":"md.dst_ip = '0'";
+   
     my $traces_ref =  database->selectall_hashref(qq|select  td.updated, td.trace_id, md.metaid, td.number_hops,
                                                              h.hop_id, h.hop_delay, inet6_ntop(h.hop_ip) as hop_ip, h.hop_num 
 					             from
@@ -164,18 +169,32 @@ sub process_data {
 						     where  
 						            md.src_ip = inet6_pton('$params{src_ip}') 
 							and $dst_cond order by   h.hop_id asc|, 'hop_id');
-							
-    my %hops = ();
-    my $last_trace_id = 0;
-    foreach my $hop_id (sort {$a<=>$b} keys %$traces_ref) {
-        $last_trace_id =   $traces_ref->{$hop_id}{trace_id} if $last_trace_id < $traces_ref->{$hop_id}{trace_id};
-    	push @{$data->{traceroute}{$traces_ref->{$hop_id}{trace_id}}}, $traces_ref->{$hop_id};
-	$hops{$traces_ref->{$hop_id}{hop_ip}} = $traces_ref->{$hop_id}{hop_id} 
-	                                            if !(exists $hops{$traces_ref->{$hop_id}{hop_ip}}) ||
-	                                                $hops{$traces_ref->{$hop_id}{hop_ip}} < $traces_ref->{$hop_id}{hop_id};
-    }
+    my $traceroute  = get_traceroute($traces_ref);
+    $data->{traceroute} = $traceroute->{traceroute} 
+                              if($traceroute && $traceroute->{traceroute} && 
+			         ref $traceroute->{traceroute} &&  %{$traceroute->{traceroute}});
+    
+    my $rev_traceroute;
+    if($params{dst_ip}) {
+        my $rev_traces_ref =  database->selectall_hashref(qq|select  td.updated, td.trace_id, md.metaid, td.number_hops,
+                                                             h.hop_id, h.hop_delay, inet6_ntop(h.hop_ip) as hop_ip, h.hop_num 
+					             from
+						            hop h 
+						       join traceroute_data td using(trace_id) 
+						       join metadata md       using(metaid) 
+						     where  
+						            md.dst_ip = inet6_pton('$params{src_ip}') 
+							and  md.src_ip = inet6_pton('$params{dst_ip}') order by   h.hop_id asc|, 'hop_id');
+        $rev_traceroute = get_traceroute($rev_traces_ref);
+        $data->{reverse_traceroute} = $rev_traceroute->{traceroute} 
+	                                  if($rev_traceroute && $rev_traceroute->{traceroute} && 
+					     ref $rev_traceroute->{traceroute} &&  %{$rev_traceroute->{traceroute}});
+    }	
+   
+   
     ### snmp data for each hop
-    foreach my $hop_ip (keys %hops) {
+    my %allhops = (%{$traceroute->{hops}}, %{$rev_traceroute->{hops}});
+    foreach my $hop_ip (keys %allhops) {
         my $data_ref =  database->selectall_hashref(qq|select   l2.capacity,  sd.timestamp, AVG(sd.utilization) as utilization  
 	                                               from 
 						            snmp_data sd 
@@ -188,13 +207,26 @@ sub process_data {
 						 'timestamp');
       
         foreach my $time (sort {$a<=>$b} keys %$data_ref) { 
-	   push @{$data->{snmp}{$hops{$hop_ip}}},   $data_ref ->{$time};
+	    push @{$data->{snmp}{$allhops{$hop_ip}}},   $data_ref ->{$time};
 	}
     }
     # end to end data 
      
-    debug Dumper($data);
+    #debug Dumper($data);
     return $data;
 }
 
+
+sub get_traceroute {
+    my $trace_ref = shift;
+    my %traces = ();
+    my %hops = ();
+    foreach my $hop_id (sort {$a<=>$b} keys %$trace_ref) {
+        push @{$traces{$trace_ref->{$hop_id}{trace_id}}}, $trace_ref->{$hop_id};
+	$hops{$trace_ref->{$hop_id}{hop_ip}} = $trace_ref->{$hop_id}{hop_id} 
+	                                            if !(exists $hops{$trace_ref->{$hop_id}{hop_ip}}) ||
+	                                                $hops{$trace_ref->{$hop_id}{hop_ip}} < $trace_ref->{$hop_id}{hop_id};
+    }
+    return {traceroute => \%traces, hops => \%hops};
+}
 dance;

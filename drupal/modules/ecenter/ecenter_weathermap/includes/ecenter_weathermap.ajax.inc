@@ -60,3 +60,11 @@ function ecenter_weathermap_ajax_hub_select($client, $filter, $src_ip = '') {
   }
   return $output;
 }
+
+/**
+ * Get data
+ */
+function ecenter_weathermap_ajax_data($client, $filter) {
+  $output = 'hello world';
+  return $output;
+}

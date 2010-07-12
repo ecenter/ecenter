@@ -25,6 +25,14 @@ function ecenter_weathermap_menu() {
     'file' => 'includes/ecenter_weathermap.ajax.inc',
     'type' => MENU_CALLBACK,
   );
+  $items['weathermap/data/%/data']  = array(
+    'title' => 'E-Center Weather Map',
+    'page callback' => 'ecenter_weathermap_ajax',
+    'page arguments' => array(2, 3),
+    'access arguments' => array('access ecenter weathermap'),
+    'file' => 'includes/ecenter_weathermap.ajax.inc',
+    'type' => MENU_CALLBACK,
+  );
   $items['admin/settings/ecenter'] = array(
     'title' => 'E-Center Network Query Settings',
     'page callback' => 'drupal_get_form',
@@ -111,16 +119,27 @@ function ecenter_weathermap() {
   drupal_add_js(drupal_get_path('module', 'quickselect') .'/js/quickselect-behavior.js');
   drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/query.js');
 
+  // Add jqPlot
+  drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/lib/jqplot/excanvas.min.js');
+  drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/lib/jqplot/jquery.jqplot.min.js');
+
+  // jqPlot plugins
+  drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/lib/jqplot/plugins/jqplot.dateAxisRenderer.min.js');
+  drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/lib/jqplot/plugins/jqplot.highlighter.min.js');
+  drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/lib/jqplot/plugins/jqplot.cursor.min.js');
+
+  // Additional CSS overrides
   drupal_add_css(drupal_get_path('module', 'ecenter_weathermap') .'/css/plot.css');
 
-  // Get services
+  // Get hubs
   $client = ecenter_weathermap_get_client();
   $hops = $client->getHubs();
   $options = array('' => 'Select a node');
   foreach ($hops['response'] as $hop) {
     $options[$hop->ip_noted] = theme('ecenter_weathermap_hop_option', $hop);
   }
-  $form = drupal_get_form('ecenter_weathermap_select_form', $options);
+
+  return drupal_get_form('ecenter_weathermap_select_form', $options);
 
   /*list($src_ip, $dst_ip) = array($_REQUEST['src_ip'], $_REQUEST['dst_ip']);
   if ($src_ip && $dst_ip) {
@@ -131,8 +150,6 @@ function ecenter_weathermap() {
   if ($_REQUEST['ajax']) {
     // ...
   }*/
-
-  return $form;
 }
 
 /**

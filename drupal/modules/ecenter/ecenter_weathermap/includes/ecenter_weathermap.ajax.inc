@@ -7,49 +7,20 @@
  * POST to this...
  */
 function ecenter_weathermap_ajax() {
-  /*if (empty($dispatch) || ($js != 'js' && $js != 'nojs')) {
-    drupal_not_found();
-  }*/
-  // Simple slugify of dispatch
-  //$dispatch = str_replace('-', '_', $dispatch);
-
-  /*$args = func_get_args();
-  unset($args[0], $args[1]); // Unset first two args
-  array_unshift($args, ecenter_weathermap_sanitize_get()); // Add _GET as first argument
-  array_unshift($args, ecenter_weathermap_get_client());
-
-  $output = call_user_func_array("ecenter_weathermap_ajax_$dispatch", $args);*/
-
-  // We're starting in step #3, preparing for #4.
-  $form_state = array('storage' => NULL, 'submitted' => FALSE);
+  $form_state = array('storage' =>  NULL, 'rebuild' => TRUE);
   $form_build_id = $_POST['form_build_id'];
-  // Step #4.
   $form = form_get_cache($form_build_id, $form_state);
-
-  // Preparing for #5.
   $args = $form['#parameters'];
-  $form_id = array_shift($args);
-  $form_state['post'] = $form['#post'] = $_POST;
-  $form['#programmed'] = $form['#redirect'] = FALSE;
-
-  // Step #5.
+  $form_id = $_POST['form_id'];
+  $form['#post'] = $_POST;
+  $form['#redirect'] = FALSE;
+  $form['#programmed'] = TRUE;
+  $form_state['post'] = $_POST;
+  $form_state['values'] = $_POST;
   drupal_process_form($form_id, $form, $form_state);
-  // Step #6 and #7 and #8.
+  form_execute_handlers('submit', $form, $form_state);
   $form = drupal_rebuild_form($form_id, $form_state, $args, $form_build_id);
-
-  // Step #9.
-  //$choice_form = $form['choice_wrapper']['choice'];
-  //unset($choice_form['#prefix'], $choice_form['#suffix']);
-  //$output = theme('status_messages') . drupal_render($choice_form);
-
-  // Final rendering callback.
-  //drupal_json(array('status' => TRUE, 'data' => $output));
-
-  $ouput = $form['src_ip'];
-  $output .= '<pre>'. print_r($form, true) .'</pre>';
-  /*$output .= '<pre>---</pre>';
-  $output .= '<pre>'. print_r(array_keys($form), true) .'</pre>';*/
-  echo $output;
+  print drupal_render($form['dst_ip']);
   exit();
 }
 

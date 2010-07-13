@@ -113,10 +113,7 @@ function ecenter_weathermap_init() {
   }
 }
 
-/**
- * Primary selection form for weathermap diagnostic UI.
- */
-function ecenter_weathermap_select_form(&$form_state) {
+function _ecenter_weathermap_select_form() {
   // Quick select options
   $quickselect_options = array(
     'emulateDropdown' => TRUE,
@@ -124,109 +121,97 @@ function ecenter_weathermap_select_form(&$form_state) {
     'exactMatch' => TRUE,
   );
 
-  
-
-  // Always get source hubs
-  $client = ecenter_weathermap_get_client();
-  $hops = $client->getHubs();
-  $options = array('' => 'Select a source');
-  foreach ($hops['response'] as $hop) {
-    $options[$hop->ip_noted] = theme('ecenter_weathermap_hop_option', $hop);
-  }
-
-  // Base form
-  $form = array(
-    'map' => array(
-      '#prefix' => '<div id="ecenter-weathermap-map">',
-      '#value' => '<p>MAP STUB</p>',
-      '#suffix' => '</div>',
-    ),
-    'src_ip' => array(
-      '#title' => t('Source IP'),
-      '#type' => 'quickselect',
-      '#options' => $options,
-      '#cols' => 50,
-      '#required' => TRUE,
-      '#quickselect_options' => $quickselect_options,
-    ),
-    'dst_ip' => array(
-      '#title' => t('Destination IP'),
-      '#type' => 'quickselect',
-      '#options' => array('' => 'Select a destination'),
-      '#cols' => 50,
-      '#disabled' => TRUE,
-      //'#required' => TRUE,
-      '#quickselect_options' => $quickselect_options,
-    ),
-    'submit' => array(
-      '#value' => t('Submit'),
-      '#type' => 'submit',
-    ),
-    'diagnosis' => array(
-      '#prefix' => '<div id="ecenter-weathermap-data">',
-      '#value' => '<p>DATA STUB</p>',
-      '#suffix' => '</div>',
-    ),
+  $form['map'] = array(
+    '#prefix' => '<div id="ecenterweathermapmap">',
+    '#value' => '<p>MAP STUB</p>',
+    '#suffix' => '</div>',
   );
-
-  if ($form_state['storage']['populate_dst'] || $_GET['src_ip']) {
-    $src_ip = (!empty($form_state['values']['src_ip'])) ? $form_state['values']['src_ip'] : $_GET['src_ip'];
-    $form['src_ip']['#default_value'] = $src_ip;
-    $hops = $client->getHubs($form_state['values']['src_ip']);
-    $options = array('' => 'Select a destination');
-    foreach ($hops['response'] as $hop) {
-      $options[$hop->ip_noted] = theme('ecenter_weathermap_hop_option', $hop);
-    }
-    $form['dst_ip']['#disabled'] = FALSE;
-    $form['dst_ip']['#options'] = $options;
-  }
-
-  if ($form_state['storage']['get_diagnostics'] || $_GET['src_ip']) {
-
-  }
-
-
+  $form['src_ip'] = array(
+    '#title' => t('Source IP'),
+    '#type' => 'quickselect',
+    '#options' => array('' => 'Select a source'),
+    '#cols' => 50,
+    '#required' => TRUE,
+    '#quickselect_options' => $quickselect_options,
+  );
+  $form['dst_ip'] = array(
+    '#title' => t('Destination IP'),
+    '#type' => 'quickselect',
+    '#options' => array('' => 'Select a destination'),
+    '#cols' => 50,
+    '#required' => FALSE,
+    '#disabled' => TRUE,
+    '#quickselect_options' => $quickselect_options,
+  );
+  $form['data'] = array(
+    '#prefix' => '<div id="data-shit">',
+    '#value' => '<p>DATA STUB</p>',
+    '#suffix' => '</div>',
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit'),
+  );
   return $form;
 }
 
 /**
- * Form submission call back for weathermap diagnostic UI.
+ * Primary selection form.
+ *
+ * The basic form is defined in another constructor function.  This function
+ * primarily processes the form.
  */
+function ecenter_weathermap_select_form(&$form_state) {
+  // Base form
+  $form = _ecenter_weathermap_select_form();
+
+  // Services client
+  $client = ecenter_weathermap_get_client();
+
+  // Always get source hubs
+  $src_hops = $client->getHubs();
+  $src_options = array('' => 'Select a source');
+  foreach ($src_hops['response'] as $hop) {
+    $src_options[$hop->ip_noted] = theme('ecenter_weathermap_hop_option', $hop);
+  }
+  $form['src_ip']['#options'] += $src_options;
+ 
+  // Populate destination values
+  if (!empty($form_state['values']['src_ip'])) {
+    $form['src_ip']['#default_value'] = $form_state['values']['src_ip'];
+
+    $dst_hops = $client->getHubs($form_state['values']['src_ip']);
+    $dst_options = array('' => 'Select a source');
+    foreach ($dst_hops['response'] as $hop) {
+      $dst_options[$hop->ip_noted] = theme('ecenter_weathermap_hop_option', $hop);
+    }
+    $form['dst_ip']['#options'] += $dst_options;
+    $form['dst_ip']['#disabled'] = FALSE;
+    $form['dst_ip']['#required'] = TRUE;
+  }
+
+  if (!empty($form_state['values']['dst_ip'])) {
+    $form['dst_ip']['#default_value'] = $form_state['values']['dst_ip'];
+    $form['test'] = array('#value' => '<p>HI!</p>');
+  }
+  //print '<pre> form state incoming: '. print_r($form_state, TRUE) .'</pre>';
+  //$form['#submit'][] = '_ecenter_weathermap_select_form_submit';
+  return $form;
+}
+
+
 function ecenter_weathermap_select_form_submit($form, &$form_state) {
-  if ($form_state['values']['src_ip'] && !$form_state['values']['dst_ip']) {
-    $form_state['storage']['populate_dst'] = 1;
-  }
-  else ($form_state['values']['src_ip'] && $form_state['values']['dst_ip']) {
-    unset($form_state['storage']['populate_dst'] = 1);
-    $form_state['storage']['get_diagnostics'] = 1;
-  }
+  //dpm($form);
+  //unset($form_state['submit_handlers']);
+  //form_execute_handlers('submit', $form, $form_state);
+  print 'submit called!!!!';
+  $form_state['src_ip'] = $form_state['values']['src_ip'];
+  $form_state['dst_ip'] = $form_state['values']['dst_ip'];
   $form_state['rebuild'] = TRUE;
 }
 
-/**
- * Page callback for weather map
- */
-function ecenter_weathermap() {
-
-  // Get hubs
-  $client = ecenter_weathermap_get_client();
-  $hops = $client->getHubs();
-  $options = array('' => 'Select a node');
-  foreach ($hops['response'] as $hop) {
-    $options[$hop->ip_noted] = theme('ecenter_weathermap_hop_option', $hop);
-  }
-
-  return drupal_get_form('ecenter_weathermap_select_form', $options);
-
-  /*list($src_ip, $dst_ip) = array($_REQUEST['src_ip'], $_REQUEST['dst_ip']);
-  if ($src_ip && $dst_ip) {
-    $data = $client->getPathData($src_ip, $dst_ip, '2009-06-01 12:00:00', '2010-07-01 12:00:00');
-    dpm($data);
-  }
-
-  if ($_REQUEST['ajax']) {
-    // ...
-  }*/
+function _ecenter_weathermap_select_form_submit($form, &$form_state) {
+  print 'custom submit called';
 }
 
 /**

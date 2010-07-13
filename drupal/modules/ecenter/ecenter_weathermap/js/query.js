@@ -2,33 +2,33 @@ Drupal.behaviors.EcenterNetworkQuery = function(context) {
 
   // Hide submit form
   //$('#ecenter-network-query-select-form #edit-submit').hide();
-  /*$('#edit-dst-ip_quickselect').attr('disabled', true);
-  $('#edit-dst-ip_quickselect_dropdown').addClass('disabled');
+  //$('#edit-dst-ip_quickselect').attr('disabled', true);
+  //$('#edit-dst-ip_quickselect_dropdown').addClass('disabled');
 
   // Submit when destination is filled in
   $('#edit-src-ip_quickselect').blur(function(e) {
     var form = $(this).parents('form:first');
+    var button = $('#edit-submit-src');
     $('#edit-dst-ip_quickselect').attr('disabled', true);
-    $(form).ajaxSubmit({
-      url: Drupal.settings.basePath + 'weathermap/ajax',
-      dataType: 'html',
-      success: function(data) {
-        console.log(data);
-        $('#edit-dst-ip-wrapper').replaceWith(data);
-        Drupal.behaviors.QuickSelect();
-      },
-      error: function(request, textStatus, error) {
-        if (request.status == 404) {
-          $('#edit-dst-ip_quickselect').attr('disabled', true);
-          $('#edit-dst-ip_quickselect_dropdown').addClass('disabled');
-          $('#edit-dst-ip_quickselect').val(Drupal.t('No destinations available for this source'));
+      $(form).ajaxSubmit({
+        url: Drupal.settings.basePath + 'weathermap/ajax',
+        dataType: 'html',
+        success: function(data) {
+          $('#edit-dst-ip-wrapper').replaceWith(data);
+          Drupal.behaviors.QuickSelect();
+        },
+        error: function(request, textStatus, error) {
+          if (request.status == 404) {
+            $('#edit-dst-ip_quickselect').attr('disabled', true);
+            $('#edit-dst-ip_quickselect_dropdown').addClass('disabled');
+            $('#edit-dst-ip_quickselect').val(Drupal.t('No destinations available for this source'));
+          }
+          else {
+            alert(Drupal.t('The network query failed. Please contact your administrator.'));
+          }
         }
-        else {
-          alert(Drupal.t('The network query failed. Please contact your administrator.'));
-        }
-      }
-    });
-  });*/
+      });
+  });
 
   // Submit when destination is filled in
   /*$('#edit-dst-ip_quickselect').live('blur', function() {

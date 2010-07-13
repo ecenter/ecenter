@@ -116,7 +116,7 @@ function ecenter_weathermap_init() {
 /**
  * Primary selection form for weathermap diagnostic UI.
  */
-function ecenter_weathermap_select_form($form_state) {
+function ecenter_weathermap_select_form(&$form_state) {
   // Quick select options
   $quickselect_options = array(
     'emulateDropdown' => TRUE,
@@ -124,14 +124,17 @@ function ecenter_weathermap_select_form($form_state) {
     'exactMatch' => TRUE,
   );
 
-  // Get hubs
+  
+
+  // Always get source hubs
   $client = ecenter_weathermap_get_client();
   $hops = $client->getHubs();
-  $options = array('' => 'Select a node');
+  $options = array('' => 'Select a source');
   foreach ($hops['response'] as $hop) {
     $options[$hop->ip_noted] = theme('ecenter_weathermap_hop_option', $hop);
   }
 
+  // Base form
   $form = array(
     'map' => array(
       '#prefix' => '<div id="ecenter-weathermap-map">',
@@ -149,14 +152,14 @@ function ecenter_weathermap_select_form($form_state) {
     'dst_ip' => array(
       '#title' => t('Destination IP'),
       '#type' => 'quickselect',
-      '#options' => array(),
+      '#options' => array('' => 'Select a destination'),
       '#cols' => 50,
       '#disabled' => TRUE,
-      '#required' => TRUE,
+      //'#required' => TRUE,
       '#quickselect_options' => $quickselect_options,
     ),
     'submit' => array(
-      '#value' => t('Next'),
+      '#value' => t('Submit'),
       '#type' => 'submit',
     ),
     'diagnosis' => array(
@@ -166,6 +169,23 @@ function ecenter_weathermap_select_form($form_state) {
     ),
   );
 
+  if ($form_state['storage']['populate_dst'] || $_GET['src_ip']) {
+    $src_ip = (!empty($form_state['values']['src_ip'])) ? $form_state['values']['src_ip'] : $_GET['src_ip'];
+    $form['src_ip']['#default_value'] = $src_ip;
+    $hops = $client->getHubs($form_state['values']['src_ip']);
+    $options = array('' => 'Select a destination');
+    foreach ($hops['response'] as $hop) {
+      $options[$hop->ip_noted] = theme('ecenter_weathermap_hop_option', $hop);
+    }
+    $form['dst_ip']['#disabled'] = FALSE;
+    $form['dst_ip']['#options'] = $options;
+  }
+
+  if ($form_state['storage']['get_diagnostics'] || $_GET['src_ip']) {
+
+  }
+
+
   return $form;
 }
 
@@ -173,12 +193,14 @@ function ecenter_weathermap_select_form($form_state) {
  * Form submission call back for weathermap diagnostic UI.
  */
 function ecenter_weathermap_select_form_submit($form, &$form_state) {
-  $values = $form_state['values'];
-  unset($form_state['submit_handlers']);
-  form_execute_handlers('submit', $form, $form_state);
-  //$form_state['musician'] = $musician;
+  if ($form_state['values']['src_ip'] && !$form_state['values']['dst_ip']) {
+    $form_state['storage']['populate_dst'] = 1;
+  }
+  else ($form_state['values']['src_ip'] && $form_state['values']['dst_ip']) {
+    unset($form_state['storage']['populate_dst'] = 1);
+    $form_state['storage']['get_diagnostics'] = 1;
+  }
   $form_state['rebuild'] = TRUE;
-  //$form_state['redirect'] = array('weathermap', '&src_ip='. $form_state['values']['src_ip'] .'&dst_ip='. $form_state['values']['dst_ip']);
 }
 
 /**

@@ -2,7 +2,7 @@ Drupal.behaviors.EcenterNetworkQuery = function(context) {
 
   // Hide submit form
   //$('#ecenter-network-query-select-form #edit-submit').hide();
-  $('#edit-dst-ip_quickselect').attr('disabled', true);
+  /*$('#edit-dst-ip_quickselect').attr('disabled', true);
   $('#edit-dst-ip_quickselect_dropdown').addClass('disabled');
 
   // Submit when destination is filled in
@@ -28,7 +28,7 @@ Drupal.behaviors.EcenterNetworkQuery = function(context) {
         }
       }
     });
-  });
+  });*/
 
   // Submit when destination is filled in
   /*$('#edit-dst-ip_quickselect').live('blur', function() {

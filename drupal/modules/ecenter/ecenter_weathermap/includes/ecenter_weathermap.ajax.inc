@@ -64,7 +64,8 @@ function ecenter_weathermap_ajax_hub_select($client, $filter, $src_ip = '') {
       $options[] = theme('ecenter_weathermap_hop_option', $hop);
     }
 
-    $form = ecenter_weathermap_select_form(array(), array());
+    $form_state = array();
+    $form = ecenter_weathermap_select_form($form_state);
     $element = $form['dst_ip'];
     $element['#options'] = $options;
     $element['#name'] = 'dst_ip';

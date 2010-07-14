@@ -1,5 +1,6 @@
 layout: "main"
 logger: "console"
+max_threads: 10
 plugins:
    Plugin::DBIx:
      driver: mysql

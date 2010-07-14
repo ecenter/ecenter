@@ -31,7 +31,7 @@ function ecenter_weathermap_menu() {
 }
 
 /**
- * Implementation of hook_menu().
+ * Implementation of hook_perm().
  */
 function ecenter_weathermap_perm() {
   return array('access ecenter weathermap', 'administer ecenter weathermap');
@@ -43,9 +43,9 @@ function ecenter_weathermap_perm() {
 function ecenter_weathermap_theme() {
   //$options = array('file' => drupal_get_path('module', 'ecenter_weathermap') .'/includes/ecenter_weathermap.theme.inc');
   $path = array(
-    'path' => drupal_get_path('module', 'ecenter_weathermap') .'/includes',
+    'path' => drupal_get_path('module', 'ecenter_weathermap') .'/tpl',
   );
-  return array(
+  $registry = array(
     'ecenter_weathermap_hop_option' => array(
       'arguments' => array(
         'hop' => NULL,
@@ -64,6 +64,14 @@ function ecenter_weathermap_theme() {
       )
     ) + $path,
   );
+  foreach (_ecenter_weathermap_get_data_types() as $type) {
+    $registry['ecenter_weathermap_render_data_'. $type] = array(
+      'arguments' => array(
+        'data' => NULL,
+      ),
+    ) + $path;
+  }
+  return $registry;
 }
 
 /**
@@ -229,8 +237,8 @@ function ecenter_weathermap_select_form(&$form_state) {
   $start = $start - $start % $unix_inc;
 
 
-  $form['date_wrapper']['start_date']['#default_value'] = date('Y-M-d g:i', $start);
-  $form['date_wrapper']['end_date']['#default_value'] = date('Y-M-d g:i', $end);
+  $form['date_wrapper']['start_date']['#default_value'] = format_date($start, 'custom', 'Y-M-d g:i');
+  $form['date_wrapper']['end_date']['#default_value'] = format_date($end, 'custom', 'Y-M-d g:i');
 
   // Always get source hubs
   $src_hops = $client->getHubs();
@@ -336,28 +344,6 @@ function ecenter_weathermap_sanitize_get() {
   return $get;
 }
 
-/* -- Theme -- */
-
-function template_preprocess_ecenter_weathermap(&$vars) {
-  dpm($vars);
-}
-
-function theme_ecenter_weathermap_traceroute($hops) {
-  $output = '';
-  foreach ($hops as $hop) {
-    $output .= ' '. $hop->hop_ip;
-  }
-  return $output;
-}
-// function template_preprocess_ecenter_weathermap_traceroute(&$vars) {}
-
-/**
- * Theme services for use in options list.  Should always return plaintext!
- */
-function theme_ecenter_weathermap_hop_option($hop) {
-  return $hop->nodename .' ('. $hop->ip_noted .')';
-}
-
 /**
  * Traverse an object, turning all members into arrays or preserving their
  * values.
@@ -377,6 +363,16 @@ function _ecenter_weathermap_object_to_array($obj) {
   return $obj;
 }
 
+/**
+ * Return allowed data types
+ */
+function _ecenter_weathermap_get_data_types() {
+  return array('snmp', 'pinger', 'owamp', 'bwctl');
+}
+
+/**
+ * Parse data
+ */
 function ecenter_weathermap_parse_data($data) {
   $data = _ecenter_weathermap_object_to_array($data);
 
@@ -399,4 +395,47 @@ function ecenter_weathermap_parse_data($data) {
     }
   }
   return $parsed;
+}
+
+/* --- Theme --- */
+
+function template_preprocess_ecenter_weathermap(&$vars) {
+  dpm($vars);
+}
+
+function theme_ecenter_weathermap_traceroute($hops) {
+  $output = '';
+  foreach ($hops as $hop) {
+    $output .= ' '. $hop->hop_ip;
+  }
+  return $output;
+}
+// function template_preprocess_ecenter_weathermap_traceroute(&$vars) {}
+
+/**
+ * Theme services for use in options list.  Should always return plaintext!
+ */
+function theme_ecenter_weathermap_hop_option($hop) {
+  return $hop->nodename .' ('. $hop->ip_noted .')';
+}
+
+function theme_ecenter_weathermap_render_data_snmp($data) {
+  $headers = array(t('Time'), t('Percent utilization'));
+  $table = array();
+  $min = 0;
+  $max = 0;
+  foreach ($data as $item) {
+    $utilization = ($item['utilization'] / $item['capacity']) * 100;
+    $max = ($utilization > $max) ? $utilization : $max;
+    $min = ($utilization < $min || $min == 0) ? $utilization : $min;
+    
+    $table[] = array(
+      'time' => array(
+        'data' => format_date($item['timestamp'], 'custom', 'Y-m-d G:i:s'),
+        'header' => TRUE,
+      ),
+      'utilization' => $utilization, 
+    );
+  }
+  return theme('table', $headers, $table);
 }

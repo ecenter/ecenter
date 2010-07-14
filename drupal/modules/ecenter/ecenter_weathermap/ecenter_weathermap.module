@@ -12,29 +12,11 @@
 function ecenter_weathermap_menu() {
   $items['weathermap'] = array(
     'title' => 'E-Center Weather Map',
-    //'page callback' => 'ecenter_weathermap',
-    //'page arguments' => array(),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('ecenter_weathermap_select_form'),
     'access arguments' => array('access ecenter weathermap'),
     'type' => MENU_CALLBACK,
   );
-  $items['weathermap/ajax']  = array(
-    'title' => 'E-Center Weather Map',
-    'page callback' => 'ecenter_weathermap_ajax',
-    //'page arguments' => array(2, 3),
-    'access arguments' => array('access ecenter weathermap'),
-    'file' => 'includes/ecenter_weathermap.ajax.inc',
-    'type' => MENU_CALLBACK,
-  );
-  /*$items['weathermap/data/%/data']  = array(
-    'title' => 'E-Center Weather Map',
-    'page callback' => 'ecenter_weathermap_ajax',
-    'page arguments' => array(2, 3),
-    'access arguments' => array('access ecenter weathermap'),
-    'file' => 'includes/ecenter_weathermap.ajax.inc',
-    'type' => MENU_CALLBACK,
-  );*/
   $items['admin/settings/ecenter'] = array(
     'title' => 'E-Center Network Query Settings',
     'page callback' => 'drupal_get_form',
@@ -42,7 +24,7 @@ function ecenter_weathermap_menu() {
     'access callback' => 'user_access',
     'access arguments' => array('administer ecenter weathermap'),
     'description' => 'Configure the E-Center weather map.',
-    'file' => 'includes/ecenter_weathermap.admin.inc',
+    'file' => 'ecenter_weathermap.admin.inc',
     'type' => MENU_NORMAL_ITEM,
   );
   return $items;
@@ -62,7 +44,6 @@ function ecenter_weathermap_theme() {
   //$options = array('file' => drupal_get_path('module', 'ecenter_weathermap') .'/includes/ecenter_weathermap.theme.inc');
   $path = array(
     'path' => drupal_get_path('module', 'ecenter_weathermap') .'/includes',
-    'file' => 'ecenter_weathermap.theme.inc'
   );
   return array(
     'ecenter_weathermap_hop_option' => array(
@@ -117,6 +98,8 @@ function ecenter_weathermap_init() {
  * Primary selection form definition.
  */
 function _ecenter_weathermap_select_form() {
+  $inc = variable_get('ecenter_weathermap_time_increment', 5);
+
   // Quick select options
   $quickselect_options = array(
     'emulateDropdown' => TRUE,
@@ -132,15 +115,19 @@ function _ecenter_weathermap_select_form() {
     '#value' => '<p>MAP STUB</p>',
     '#suffix' => '</div>',
   );
-  $form['start_date'] = array(
-    '#type' => 'date_text',
-    '#title' => t('Start date'),
-    '#default_value' => '2010-07-1 12:00',
+  $form['date_wrapper'] = array(
+    '#prefix' => '<div id="date-wrapper">',
+    '#suffix' => '</div>',
   );
-  $form['end_date'] = array(
-    '#type' => 'date_text',
+  $form['date_wrapper']['start_date'] = array(
+    '#type' => 'date_popup',
+    '#title' => t('Start date'),
+    '#date_increment' => $inc,
+  );
+  $form['date_wrapper']['end_date'] = array(
+    '#type' => 'date_popup',
     '#title' => t('End date'),
-    '#default_value' => '2010-07-13 15:00',
+    '#date_increment' => $inc,
   );
   $form['src_ip_wrapper'] = array(
     '#prefix' => '<div id="src-ip-wrapper">',
@@ -188,7 +175,7 @@ function _ecenter_weathermap_select_form() {
   );
   $form['submit'] = array(
     '#type' => 'submit',
-    '#value' => t('Submit'),
+    '#value' => t('Next'),
     '#attributes' => array('class' => 'no-js'),
   );
   $form['#tree'] = TRUE;
@@ -202,16 +189,11 @@ function _ecenter_weathermap_select_form() {
  * primarily processes the form.
  */
 function ecenter_weathermap_select_form(&$form_state) {
-  $form = array();
-  ahah_helper_register($form, $form_state);
-
-  // Base form
-  $form = _ecenter_weathermap_select_form();
-
-  // Services client
   $client = ecenter_weathermap_get_client();
 
+  // Check if something is wrong and bail before doing anything else.
   if (!$client->checkStatus()) {
+    watchdog('ecenter', 'E-Center web service was not available.', array(), WATCHDOG_ERROR);
     return array(
       'error' => array(
         '#value' => '<p class="error">'. t('The E-Center data service is currently experiencing difficulties. Please check back shortly.') .'</p>',
@@ -219,42 +201,110 @@ function ecenter_weathermap_select_form(&$form_state) {
     );
   }
 
-  // Get query string or POSTed (manually or via AJAX) values
-  // Form values "beat" query string values
-  $src_ip = (!empty($form_state['storage']['src_ip_wrapper']['src_ip'])) ? $form_state['storage']['src_ip_wrapper']['src_ip'] : $_REQUEST['src_ip'];
-  $dst_ip = (!empty($form_state['storage']['dst_ip_wrapper']['dst_ip'])) ? $form_state['storage']['dst_ip_wrapper']['dst_ip'] : $_REQUEST['dst_ip'];
-  $start_date = (!empty($form_state['storage']['start_date'])) ? $form_state['storage']['start_date'] : $_REQUEST['start_date'];
-  $end_date = (!empty($form_state['storage']['end_date'])) ? $form_state['storage']['end_date'] : $_REQUEST['end_date'];
+  // Get base form and register with ahah_helper
+  $form = _ecenter_weathermap_select_form();
+  ahah_helper_register($form, $form_state);
 
+  // Get query string or POSTed (manually or via AJAX) values.
+  // Form values "beat" query string values
+  $src_ip = (!empty($form_state['storage']['src_ip_wrapper']['src_ip'])) ?
+    $form_state['storage']['src_ip_wrapper']['src_ip'] : $_REQUEST['src_ip'];
+
+  $dst_ip = (!empty($form_state['storage']['dst_ip_wrapper']['dst_ip'])) ?
+    $form_state['storage']['dst_ip_wrapper']['dst_ip'] : $_REQUEST['dst_ip'];
+
+  $start_date = (!empty($form_state['storage']['date_wrapper']['start_date'])) ?
+    $form_state['storage']['date_wrapper']['start_date']['date'] .' '. $form_state['storage']['date_wrapper']['start_date']['time'] : $_REQUEST['start_date'];
+
+  $end_date = (!empty($form_state['storage']['date_wrapper']['end_date'])) ?
+    $form_state['storage']['date_wrapper']['end_date']['date'] .' '. $form_state['storage']['date_wrapper']['end_date']['time'] : $_REQUEST['end_date'];
+
+
+  // Set sane values for start / end by converting and rounding
+  $inc = variable_get('ecenter_weathermap_time_increment', 5);
+  $unix_inc = 60 * $inc;
+  $end = (!empty($end_date)) ? strtotime($end_date) : time();
+  $end = $end - $end % $unix_inc;
+  $start = (!empty($start_date)) ? strtotime($start_date) : $end - variable_get('ecenter_weathermap_time_window', 3600);
+  $start = $start - $start % $unix_inc;
+
+
+  $form['date_wrapper']['start_date']['#default_value'] = date('Y-M-d g:i', $start);
+  $form['date_wrapper']['end_date']['#default_value'] = date('Y-M-d g:i', $end);
 
   // Always get source hubs
   $src_hops = $client->getHubs();
-  $src_options = array('' => 'Select a source');
+  $src_options = array('' => t('Select a source'));
   foreach ($src_hops['response'] as $hop) {
     $src_options[$hop->ip_noted] = theme('ecenter_weathermap_hop_option', $hop);
   }
   $form['src_ip_wrapper']['src_ip']['#options'] = $src_options;
 
+  // Get allowed destinations for a given source IP
   if ($src_ip) {
     if (array_key_exists($src_ip, $form['src_ip_wrapper']['src_ip']['#options'])) {
-      //$form['src_ip_wrapper']['src_ip']['#default_value'] = $src_ip;
+      $form['src_ip_wrapper']['src_ip']['#default_value'] = $src_ip;
+    }
+    else {
+      unset($src_ip);
     }
 
     $dst_hops = $client->getHubs($form_state['storage']['src_ip_wrapper']['src_ip']);
-    $dst_options = array('' => 'Select a source');
+    $dst_options = array('' => t('Select a destination'));
     foreach ($dst_hops['response'] as $hop) {
       $dst_options[$hop->ip_noted] = theme('ecenter_weathermap_hop_option', $hop);
     }
+
     $form['dst_ip_wrapper']['dst_ip']['#options'] += $dst_options;
     $form['dst_ip_wrapper']['dst_ip']['#disabled'] = FALSE;
-    $form['dst_ip_wrapper']['dst_ip']['#required'] = TRUE30
+    $form['dst_ip_wrapper']['dst_ip']['#required'] = TRUE;
+
+
   }
- 
+
+  // See if provided destination is actually allowed
+  if ($src_ip && $dst_ip) {
+    if (array_key_exists($dst_ip, $form['dst_ip_wrapper']['dst_ip']['#options'])) {
+      $form['dst_ip_wrapper']['dst_ip']['#default_value'] = $dst_ip;
+    }
+    else {
+      unset($dst_ip);
+    }
+  }
+
   if ($src_ip && $dst_ip && $start_date && $end_date) {
-    $data = $client->getData($form_state['storage']['src_ip_wrapper']['src_ip'], $form_state['storage']['dst_ip_wrapper']['dst_ip'], $form_state['storage']['start_date'], $form_state['storage']['end_date']);
-    $form['data_wrapper']['data']['#value'] = print_r($data['response'], true);
+    $data = $client->getData($src_ip, $dst_ip, $start_date, $end_date);
+
+    $query_params = array(
+      'src_ip' => $src_ip,
+      'dst_ip' => $dst_ip,
+      'start_date' => $start_date,
+      'end_date' => $end_date
+    );
+    $query = http_build_query($query_params);
+
+    // If we've got the data, delegate to rendering functions...
+    if ($data['code'] == 200 && !empty($data['response'])) {
+      $permalink = l(t('Permalink'), 'weathermap', array('query' => $query_params));
+      dpm($data); // @TODO... RENDER!!!
+    }
+    else {
+      watchdog('ecenter', 'Query returned no results: <code>@query</code>', array('@query' => $query), WATCHDOG_INFO);
+      $form['data_wrapper']['data']['#value'] = '<p>'. t('Whoops! No data was available for this query. If you believe there should be data for this query, send the site administrator feedback along with executed query, provided below:') .'</p>';
+      $form['data_wrapper']['data']['#value'] .= '<pre>'. $query .'</pre>';
+      $form['data_wrapper']['data']['#value'] .= '<p>'. l(t('Permalink'), 'weathermap', array('query' => $query_params)) .'</p>';
+    }
   }
   return $form;
+}
+
+/**
+ * Default submit handler for weathermap form
+ */
+function ecenter_weathermap_select_form_submit($form, &$form_state) {
+  // Do what AHAH helper would do, to make form constructor a little less crazy
+  $form_state['storage'] = $form_state['values'];
+  $form_state['rebuild'] = TRUE;
 }
 
 /**
@@ -285,3 +335,26 @@ function ecenter_weathermap_sanitize_get() {
   }
   return $get;
 }
+
+/* -- Theme -- */
+
+function template_preprocess_ecenter_weathermap(&$vars) {
+  dpm($vars);
+}
+
+function theme_ecenter_weathermap_traceroute($hops) {
+  $output = '';
+  foreach ($hops as $hop) {
+    $output .= ' '. $hop->hop_ip;
+  }
+  return $output;
+}
+// function template_preprocess_ecenter_weathermap_traceroute(&$vars) {}
+
+/**
+ * Theme services for use in options list.  Should always return plaintext!
+ */
+function theme_ecenter_weathermap_hop_option($hop) {
+  return $hop->nodename .' ('. $hop->ip_noted .')';
+}
+

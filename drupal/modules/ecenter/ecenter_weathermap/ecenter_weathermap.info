@@ -4,5 +4,6 @@ package = E-Center Project
 description = Provides primary user interface for E-center network diagnostic tools and integration with the Ecenter web service.
 core = 6.x
 
-dependencies[] = quickselect
 dependencies[] = date
+dependencies[] = date_popup
+dependencies[] = quickselect

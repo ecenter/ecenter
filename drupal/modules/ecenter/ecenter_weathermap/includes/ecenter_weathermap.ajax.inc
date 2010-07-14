@@ -7,7 +7,7 @@
  * POST to this...
  */
 function ecenter_weathermap_ajax() {
-  $form_state = array('storage' =>  NULL, 'rebuild' => TRUE);
+  /*$form_state = array('storage' =>  NULL, 'rebuild' => TRUE);
   $form_build_id = $_POST['form_build_id'];
   $form = form_get_cache($form_build_id, $form_state);
   $args = $form['#parameters'];
@@ -21,6 +21,8 @@ function ecenter_weathermap_ajax() {
   form_execute_handlers('submit', $form, $form_state);
   $form = drupal_rebuild_form($form_id, $form_state, $args, $form_build_id);
   print drupal_render($form['dst_ip']);
+  exit();*/
+  print 'foo bar';
   exit();
 }
 

@@ -11,11 +11,6 @@
 class Ecenter_Data_Service_Client {
 
   /**
-   * Default timeout for requests
-   */
-  protected $_defaultTimeout;
-
-  /**
    * Stream contexts for GET and POST
    */
   protected $_getContext, $_postContext;
@@ -23,8 +18,7 @@ class Ecenter_Data_Service_Client {
   /**
    * Connection options
    */
-  protected $_host, $_port, $_path;
-  protected $_url;
+  protected $_host, $_port, $_path, $_timeout, $_url;
 
   /**
    * Provide a backdoor method for returning other data types than json
@@ -41,25 +35,13 @@ class Ecenter_Data_Service_Client {
    * @param $path
    *   The base path of the query service.
    */
-  public function __construct($host = 'localhost', $port = 8099, $path = '') {
+  public function __construct($host = 'localhost', $port = 8099, $path = '', $timeout = 30) {
     $this->_host = $host;
     $this->_port = $port;
     $this->_path = $path;
     $this->_url = 'http://'. $host .':'. $port;
     $this->_url .= ($path) ? '/'. $path : '';
-
-    // create our shared get and post stream contexts
-    //$this->_getContext = stream_context_create();
-    //$this->_postContext = stream_context_create();
-
-    // determine our default http timeout from ini settings
-    $this->_defaultTimeout = (int) ini_get('default_socket_timeout');
-
-    // double check we didn't get 0 for a timeout
-    if ($this->_defaultTimeout <= 0)
-    {
-      $this->_defaultTimeout = 60;
-    }
+    $this->_timeout = $timeout;
   }
 
   /**
@@ -83,16 +65,34 @@ class Ecenter_Data_Service_Client {
 
     curl_setopt($handle, CURLOPT_URL, $url);
     curl_setopt($handle, CURLOPT_RETURNTRANSFER, TRUE);
+    curl_setopt($handle, CURLOPT_TIMEOUT, $this->_timeout);
 
     $response = curl_exec($handle);
-    $code = curl_getinfo($handle, CURLINFO_HTTP_CODE);
+
+    if (!empty($response)) {
+      $code = curl_getinfo($handle, CURLINFO_HTTP_CODE);
+      $response = json_decode($response);
+    }
+    else {
+      $code = 0;
+      $response = 'Timed out after '. $this->_timeout .' seconds.';
+    }
 
     curl_close($handle);
 
     return array(
       'code' => $code,
-      'response' => json_decode($response),
+      'response' => $response,
     );
+  }
+
+  public function checkStatus() {
+    $q = 'status';
+    $status = $this->query($q);
+    if ($status['response']->status) {
+      return TRUE;
+    }
+    return FALSE;
   }
 
   public function getHubs($src_ip='') {

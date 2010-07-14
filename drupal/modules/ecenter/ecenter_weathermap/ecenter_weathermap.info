@@ -5,3 +5,4 @@ description = Provides primary user interface for E-center network diagnostic to
 core = 6.x
 
 dependencies[] = quickselect
+dependencies[] = date

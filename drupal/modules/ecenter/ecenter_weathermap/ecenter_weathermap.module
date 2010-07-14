@@ -273,7 +273,7 @@ function ecenter_weathermap_select_form(&$form_state) {
   }
 
   if ($src_ip && $dst_ip && $start_date && $end_date) {
-    $data = $client->getData($src_ip, $dst_ip, $start_date, $end_date);
+    $data = $client->getData($src_ip, $dst_ip, $start_date .':00', $end_date .':00');
 
     $query_params = array(
       'src_ip' => $src_ip,
@@ -358,3 +358,45 @@ function theme_ecenter_weathermap_hop_option($hop) {
   return $hop->nodename .' ('. $hop->ip_noted .')';
 }
 
+/**
+ * Traverse an object, turning all members into arrays or preserving their
+ * values.
+ */
+function _ecenter_weathermap_object_to_array($obj) {
+  if (is_object($obj)) {
+    $obj = get_object_vars($obj);
+  }
+  foreach ($obj as $k => $v) {
+    if (is_object($v) || is_array($v)) {
+      $obj[$k] = _ecenter_weathermap_object_to_array($v);
+    }
+    else {
+      $obj[$k] = $v;
+    }
+  }
+  return $obj;
+}
+
+function ecenter_weathermap_parse_data($data) {
+  $data = _ecenter_weathermap_object_to_array($data);
+
+  // @TODO need a way to account for reverse traceroute
+  $traceroutes = $data['traceroute'];
+  unset($data['traceroute']);
+
+  $parsed = array();
+  foreach ($traceroutes as $trace_id => $traceroute) {
+    $parsed[$trace_id] = array();
+    foreach ($traceroute as $hop) {
+      $hop_data = array();
+      foreach ($data as $type => $values) {
+        $hop_data[$type] = $values[$hop['hop_id']];
+      }
+      $parsed[$trace_id][] = array(
+        'hop' => $hop,
+        'data' => $hop_data,
+      );
+    }
+  }
+  return $parsed;
+}

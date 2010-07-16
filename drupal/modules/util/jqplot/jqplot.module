@@ -8,53 +8,35 @@
  */
 
 /**
- * Implementation of hook_theme().
+ * Register a "tablechart"
  */
-function quickselect_theme() {
-  return array(
-    'quickselect' => array('arguments' => array('element' => NULL)),
-  );
+function jqplot_register_tablechart($selector, $settings = array()) {
+  $path = drupal_get_path('module', 'jqplot');
+
+  // Core library
+  drupal_add_js($path .'/jqplot/excanvas.min.js');
+  drupal_add_js($path .'/jqplot/jquery.jqplot.min.js');
+
+  // Our libraries and behaviors
+  drupal_add_js($path .'/js/jquery.uuid.js');
+  drupal_add_js($path .'/js/jquery.tablechart.js');
+  drupal_add_js($path .'/js/tablechart-behaviors.js');
+
+  if (!empty($settings['highlighter'])) {
+    drupal_add_js($path .'/jqplot/plugins/jqplot.highlighter.min.js');
+  }
+  if (!empty($settings['cursor'])) {
+    drupal_add_js($path .'/jqplot/plugins/jqplot.cursor.min.js');
+  }
+
+  // Plugins...
+  /*drupal_add_js(drupal_get_path('module', 'ecenter_test') .'/jqplot/plugins/jqplot.dateAxisRenderer.js');
+  drupal_add_js(drupal_get_path('module', 'ecenter_test') .'/jqplot/plugins/jqplot.highlighter.min.js');
+  drupal_add_js(drupal_get_path('module', 'ecenter_test') .'/jqplot/plugins/jqplot.cursor.min.js');*/
+
+  $behavior = array();
+  $behavior[$selector] = $settings;
+  drupal_add_js($behavior, 'setting');
 }
 
-/**
- * Implementation of hook_elements().
- */
-function quickselect_elements() {
-  return array(
-    'quickselect' => array(
-      '#input' => TRUE,
-      '#size' => 0,
-      '#multiple' => FALSE,
-      '#attributes' => array('class' => 'form-quickselect'),
-      '#process' => array('form_expand_ahah'),
-    ),
-  );
-}
 
-/**
- * Theme quickselect element
- *
- * This acts as a wrapper to theme_select.  If you override the select theme to
- * render as, say, checkboxes, you will probably break quickselect unless you
- * provide alternative rendering here.
- */
-function theme_quickselect($element) {
-  jq_add('quicksilver');
-  jq_add('jquery.quickselect');
-
-  // A dummy settings array is required, otherwise Drupal's array_merge behavior
-  // while adding settings will mess up the data structure.
-  $options = (is_array($element['#quickselect_options'])) ? $element['#quickselect_options'] : array('delay' => 400);
-
-  drupal_add_js(drupal_get_path('module', 'quickselect') .'/js/quickselect-behavior.js');
-  drupal_add_js(array('QuickSelect' => array($element['#id'] => $options)), 'setting');
-
-  drupal_add_css(drupal_get_path('module', 'quickselect') .'/css/quickselect.css');
-
-  // "Borrowed" from the theme_select function
-  $select = '';
-  $size = $element['#size'] ? ' size="'. $element['#size'] .'"' : '';
-  _form_set_class($element, array('form-quickselect'));
-  $multiple = $element['#multiple'];
-  return theme('form_element', $element, '<select name="'. $element['#name'] .''. ($multiple ? '[]' : '') .'"'. ($multiple ? ' multiple="multiple" ' : '') . drupal_attributes($element['#attributes']) .' id="'. $element['#id'] .'" '. $size .'>'. form_select_options($element) .'</select>');
-}

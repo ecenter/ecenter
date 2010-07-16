@@ -4,39 +4,45 @@
 /**
  * @file
  *
- * Integrates jqPlot library with Drupal.
+ * Integrates jqPlot library with Drupal with help of "tablechart" plugin.
+
  */
 
 /**
  * Register a "tablechart"
+ * 
+ * Only the first function which registers a table chart is respected
  */
 function jqplot_register_tablechart($selector, $settings = array()) {
-  $path = drupal_get_path('module', 'jqplot');
+  static $selectors = array();
 
-  // Core library
-  drupal_add_js($path .'/jqplot/excanvas.min.js');
-  drupal_add_js($path .'/jqplot/jquery.jqplot.min.js');
+  if (empty($selectors[$selector])) {
+    $path = drupal_get_path('module', 'jqplot');
 
-  // Our libraries and behaviors
-  drupal_add_js($path .'/js/jquery.uuid.js');
-  drupal_add_js($path .'/js/jquery.tablechart.js');
-  drupal_add_js($path .'/js/tablechart-behaviors.js');
+    // Core library
+    drupal_add_js($path .'/jqplot/excanvas.min.js');
+    //drupal_add_js($path .'/jqplot/jquery.jqplot.js');
+    drupal_add_js($path .'/jqplot/jquery.jqplot.min.js');
 
-  if (!empty($settings['highlighter'])) {
-    drupal_add_js($path .'/jqplot/plugins/jqplot.highlighter.min.js');
+    // Our libraries and behaviors
+    drupal_add_js($path .'/js/jquery.uuid.js');
+    drupal_add_js($path .'/js/jquery.tablechart.js');
+    drupal_add_js($path .'/js/jqplot-behaviors.js');
+
+    // Plugins...
+    drupal_add_js($path .'/jqplot/plugins/jqplot.dateAxisRenderer.js');
+
+    // @TODO:  Support ALL plugins...
+    if (!empty($settings['plotOptions']['highlighter'])) {
+      drupal_add_js($path .'/jqplot/plugins/jqplot.highlighter.min.js');
+    }
+    if (!empty($settings['plotOptions']['cursor'])) {
+      drupal_add_js($path .'/jqplot/plugins/jqplot.cursor.min.js');
+    }
+
+    $behavior = array();
+    $behavior['jqPlot'][$selector] = $settings;
+    drupal_add_js($behavior, 'setting');
+    $selectors[$selector] = $behavior;
   }
-  if (!empty($settings['cursor'])) {
-    drupal_add_js($path .'/jqplot/plugins/jqplot.cursor.min.js');
-  }
-
-  // Plugins...
-  /*drupal_add_js(drupal_get_path('module', 'ecenter_test') .'/jqplot/plugins/jqplot.dateAxisRenderer.js');
-  drupal_add_js(drupal_get_path('module', 'ecenter_test') .'/jqplot/plugins/jqplot.highlighter.min.js');
-  drupal_add_js(drupal_get_path('module', 'ecenter_test') .'/jqplot/plugins/jqplot.cursor.min.js');*/
-
-  $behavior = array();
-  $behavior[$selector] = $settings;
-  drupal_add_js($behavior, 'setting');
 }
-
-

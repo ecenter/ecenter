@@ -5,7 +5,7 @@ $.fn.tablechart = function(options) {
   var o = $.extend(true, {}, $.fn.tablechart.defaults, options);
 
   this.each(function(i) {
-    var table = $(this), redraw = false;
+    var table = $(this);
     var tabledata = $.fn.tablechart.scrapeTable(table);
     var chart = table.data('chart');
 
@@ -35,7 +35,7 @@ $.fn.tablechart = function(options) {
       if (o.hideTable) {
         table.hide();
       }
-      
+
       // Draw, store chart
       chart = $.jqplot(chartId, tabledata.data, o.plotOptions);
       table.data('chart', chart);

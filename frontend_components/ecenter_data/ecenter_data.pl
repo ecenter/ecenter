@@ -18,8 +18,9 @@ use Params::Validate qw(:all);
 use Dancer::Plugin::Database;
 use Dancer::Logger;
 use Log::Log4perl qw(:easy); 
- use Ecenter::Data::Snmp;
- 
+use Ecenter::Data::Snmp;
+use Ecenter::Data::PingER;
+
 my $REG_IP = qr/^[\d\.]+|[a-f\d\:]+$/i;
 my $REG_DATE = qr/^\d{4}\-\d{2}\-\d{2}\s+\d{2}\:\d{2}\:\d{2}$/;
 
@@ -130,7 +131,7 @@ sub process_hub {
 
     
 sub process_service {
-    my %params = validate(@_, {value => SCALAR, mapping =>  SCALAR });
+    my %params = validate(@_, {value =>  {type => SCALAR, optional => 1}, mapping =>  {type => SCALAR, optional => 1}});
  
     
     my @services = ();
@@ -213,21 +214,92 @@ sub process_data {
    
     ### snmp data for each hop - all unique hop IPs
     my %allhops = (%{$traceroute->{hops}}, %{$rev_traceroute->{hops}});
-    $data->{snmp} = get_snmp(\%allhops, \%params );
+    #$data->{snmp} = get_snmp(\%allhops, \%params );
     # end to end data  stats if available
-    return $data;
-    foreach my $e2e (qw/pinger bwctl owamp/) {
-        foreach my $ip_name (qw/src_ip dst_ip/) {
-	    next unless $params{$ip_name};
-	    if($e2e eq 'pinger') {
-                $data->{$ip_name}{pinger} = get_pinger( $params{$ip_name}, \%params );
-	    } elsif($e2e eq 'bwctl') {
-	        $data->{$ip_name}{bwctl} = get_bwctl( $params{$ip_name}, \%params );
-	    } elsif($e2e eq 'owamp') {
-	        $data->{$ip_name}{owamp} = get_owamp( $params{$ip_name}, \%params );
-	    } 
-        }
+    ## return $data unless $params{src_ip} && $params{dst_ip};
+    ##foreach my $e2e (qw/pinger bwctl owamp/) {
+    my $src_node = dbix->resultset('Node')->find({ ip_addr =>  \"=inet6_pton('$params{src_ip}')"});
+    my $dst_node = dbix->resultset('Node')->find({ ip_addr =>  \"=inet6_pton('$params{dst_ip}')"});    
+    foreach my $e2e (qw/pinger/)  {
+	if($e2e eq 'pinger') {
+            get_pinger( $data, 'src_ip', \%params,  $src_node, $dst_node );
+	    get_pinger( $data, 'dst_ip', \%params, $dst_node, $src_node );
+	} elsif($e2e eq 'bwctl') {
+	    get_bwctl( $data , 'src_ip', \%params, $src_node, $dst_node );
+	    get_bwctl( $data,  'dst_ip', \%params, $dst_node, $src_node );
+	} elsif($e2e eq 'owamp') {
+	    get_owamp( $data, 'src_ip', \%params, $src_node, $dst_node );
+	    get_owamp( $data, 'dst_ip', \%params, $dst_node, $src_node );
+	}
     }
+    return $data;
+}
+#
+#  get pinger data for end2end, first for the src_ip, then for the dst_ip
+#
+sub get_pinger {
+   my ( $data, $keyname,  $params, $src_node, $dst_node ) = @_;
+   my ($md) = dbix->resultset('Metadata')->search({ src_ip => $src_node->ip_addr, 
+                                                    dst_ip => $dst_node->ip_addr, 
+                                                    'service.type' => 'pinger' },
+                                                 { join => 'service', '+select ' => [qw/service.url service.service/]});						 
+   my @result = ();
+   my @datas = dbix->resultset('Pinger_data')->search({ metaid => $md->metaid, 
+                                                        timestamp => { '>=' => $params->{start}, '<=' => $params->{end}} 
+   						     });
+   my $end_time = -1; 
+   my $start_time =  4000000000; 
+
+   foreach my $datum (@datas) {
+       push @result, {timestamp => $datum->timestamp, meanRtt => $datum->meanRtt};
+       $end_time =   $datum->timestamp if $datum->timestamp > $end_time;
+       $start_time =  $datum->timestamp if  $datum->timestamp < $start_time;
+   } 
+   debug "PINGER::  Times: start= $start_time  start_dif=" . ($start_time - $params->{start}) . 
+   	     "... end=$end_time   end_dif=" . ( $params->{end} -  $end_time );
+   if( !@result || 
+       ( $end_time  < ($params->{end} - 1800) ||
+   	 $start_time> ($params->{start} + 1800) ) ) {
+         @result = ();
+   	 eval {
+   	    debug " params to ma: ip=" . $md->service->url . " . start=$params->{start} end=$params->{end} ";
+   	    my $ma =  Ecenter::Data::PingER->new({ url =>  $md->service->url  });
+
+   	    $ma->get_data({ 
+   	 			 src_name =>   $src_node->nodename, 
+   	 			 dst_name =>   $dst_node->nodename, 
+   	 			 start =>  DateTime->from_epoch( epoch =>  $params->{start}),
+   	 			 end =>  DateTime->from_epoch( epoch => $params->{end}),
+   	 			 cf => 'AVERAGE',
+   	 			 resolution => '300',
+   	 		      });
+   	    debug "Data :: " .Dumper( $ma->data);
+   	    return;
+   	    if($ma->data && @{$ma->data}) {
+   	     	foreach my $data (@{$ma->data}) { 
+   	 	    dbix->resultset('Pinger_data')->update_or_create({  metaid => $md->metaid,
+   	 							        timestamp => $data->[0],
+   	 							   },
+   	 							   { key => 'meta_time'}
+   	 							   );
+   	 	 }
+   	    }
+   	 };
+   	 if($EVAL_ERROR) {
+   	     error " Remote MA  " .  $md->service->url . " failed $EVAL_ERROR";
+   	     return;
+   	 }
+    }
+   
+    unless (@result) {
+ 	 my @datas = dbix->resultset('Pinger_data')->search({ metaid => $md->metaid, 
+	                                                     timestamp => { '>=' => $params->{start}, '<=' => $params->{end}} 
+         						   });
+        map {  push @result, {timestamp => $_->timestamp, meanRtt => $_->meanRtt} } @datas;
+    }
+    $data->{$keyname}{ip_noted} = $src_node->ip_noted;
+    $data->{$keyname}{pinger} = \@result;
+    debug "PINGER - $keyname=::" . $src_node->ip_noted ." DATA :: " . Dumper($data);
     return $data;
 }
 #
@@ -330,17 +402,22 @@ sub get_snmp {
      	     }
 	}
     }
-    pool_control(config->{max_threads}, 'finish_it') if $thread_counter;
     
-    foreach my $hop_ip  (keys %{$hops_ref}) {
-       # debug "Data for $snmp{$hops_ref->{$hop_ip}}:: " .Dumper( $snmp{$hops_ref->{$hop_ip}});
-       next if @{$snmp{$hops_ref->{$hop_ip}}} && @{$snmp{$hops_ref->{$hop_ip}}}>0;
-       my $data_ref  =  _get_snmp_from_db($hop_ip, $date_cond);
-       my $packed = _pack_snmp_data($data_ref);
-       $snmp{$hops_ref->{$hop_ip}} = $packed->{data};
+    if ( $thread_counter ) {
+        pool_control(config->{max_threads}, 'finish_it');
+	foreach my $hop_ip  (keys %{$hops_ref}) {
+	   # debug "Data for $snmp{$hops_ref->{$hop_ip}}:: " .Dumper( $snmp{$hops_ref->{$hop_ip}});
+	   next if @{$snmp{$hops_ref->{$hop_ip}}} && @{$snmp{$hops_ref->{$hop_ip}}}>0;
+	   my $data_ref  =  _get_snmp_from_db($hop_ip, $date_cond);
+	   my $packed = _pack_snmp_data($data_ref);
+	   $snmp{$hops_ref->{$hop_ip}} = $packed->{data};
+	}
     }
     return \%snmp;
 }
+#
+#   pack snmp data into the array and get start/end times
+#
 
 sub _pack_snmp_data {
     my ($data_ref) = @_;
@@ -355,7 +432,9 @@ sub _pack_snmp_data {
     }
     return { data => \@result, start_time => $start_time, end_time => $end_time };
 }
-
+#
+#  get snmp data from the database with some conditions
+#
 sub _get_snmp_from_db{
    my ($hop_ip,  $date_cond) = @_;
    my $data_ref =  database->selectall_hashref(qq|select  inet6_ntop(m.src_ip) as snmp_ip,m.metaid, m.src_ip, s.url, s.service,  
@@ -364,7 +443,7 @@ sub _get_snmp_from_db{
 						        	  snmp_data sd 
 					        	    join  metadata m  on(sd.metaid = m.metaid) 
                                                 	    join  node n on(m.src_ip = n.ip_addr) 
-							    join  l2_l3_map llm on(n.ip_addr = llm.ip_addr) 
+							    join  l2_l3_map llm on(m.src_ip = llm.ip_addr) 
 							    join  l2_port l2 using(l2_urn) 
 							    join  hub h using(hub) 
 							    join service s on (m.service = s.service)

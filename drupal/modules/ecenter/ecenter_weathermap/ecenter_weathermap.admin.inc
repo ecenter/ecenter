@@ -40,5 +40,28 @@ function ecenter_weathermap_admin_form() {
     '#description' => t('Specify default window of time to query over, in seconds (i.e. 1 hour is 3600 seconds).'),
     '#default_value' => variable_get('ecenter_weathermap_time_window', 3600),
   );
+
+  $form['thresholds'] = array(
+    '#title' => t('Threshold values'),
+    '#type' => 'fieldset',
+    '#description' => t('Set threshold values for data diagnostics'),
+  );
+  $form['thresholds']['snmp'] = array(
+    '#title' => t('SNMP'),
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $form['thresholds']['snmp']['critical'] = array(
+    '#title' => t('Critical utilization'),
+    '#type' => 'textfield',
+    '#default_value' => variable_get('ecenter_weathermap_threshold_critical_snmp_utilization', 90),
+  );
+  $form['thresholds']['snmp']['marginal'] = array(
+    '#title' => t('Marginal utilization'),
+    '#type' => 'textfield',
+    '#default_value' => variable_get('ecenter_weathermap_threshold_marginal_snmp_utilization', 70),
+  );
+
   return system_settings_form($form);
 }

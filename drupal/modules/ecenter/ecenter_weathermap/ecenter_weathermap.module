@@ -55,6 +55,7 @@ function ecenter_weathermap_theme() {
       'template' => 'ecenter-weathermap-data',
       'arguments' => array(
         'data' => NULL,
+        'permalink' => NULL,
       )
     ) + $path,
     'ecenter_weathermap_traceroute' => array(
@@ -85,17 +86,24 @@ function ecenter_weathermap_init() {
     // Also need the jquery form library
     drupal_add_js('misc/jquery.form.js');
 
-    // Query UI behavior
-    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/query.js');
-
     // Add jqPlot
-    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/lib/jqplot/excanvas.min.js');
-    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/lib/jqplot/jquery.jqplot.min.js');
+    $jq_path = drupal_get_path('module', 'jqplot');
+    drupal_add_js($jq_path .'/jqplot/excanvas.min.js');
+    drupal_add_js($jq_path .'/jqplot/jquery.jqplot.min.js');
 
     // jqPlot plugins
-    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/lib/jqplot/plugins/jqplot.dateAxisRenderer.min.js');
-    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/lib/jqplot/plugins/jqplot.highlighter.min.js');
-    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/lib/jqplot/plugins/jqplot.cursor.min.js');
+    drupal_add_js($jq_path .'/jqplot/plugins/jqplot.dateAxisRenderer.min.js');
+    drupal_add_js($jq_path .'/jqplot/plugins/jqplot.highlighter.min.js');
+    drupal_add_js($jq_path .'/jqplot/plugins/jqplot.cursor.min.js');
+
+    // Our libraries and behaviors
+    drupal_add_js($jq_path .'/js/jquery.uuid.js');
+    drupal_add_js($jq_path .'/js/jquery.tablechart.js');
+    drupal_add_js($jq_path .'/js/jqplot-behaviors.js');
+
+    // Query UI behavior
+    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/query.js');
+    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/display.js');
 
     // Additional CSS overrides
     drupal_add_css(drupal_get_path('module', 'ecenter_weathermap') .'/css/plot.css');
@@ -136,6 +144,10 @@ function _ecenter_weathermap_select_form() {
     '#type' => 'date_popup',
     '#title' => t('End date'),
     '#date_increment' => $inc,
+    '#ahah' => array(
+      'event' => 'blur',
+      'path' => ahah_helper_path(array('date_wrapper', 'end_date')),
+    ),
   );
   $form['src_ip_wrapper'] = array(
     '#prefix' => '<div id="src-ip-wrapper">',
@@ -291,11 +303,10 @@ function ecenter_weathermap_select_form(&$form_state) {
     );
     $query = http_build_query($query_params);
 
-    // If we've got the data, delegate to rendering functions...
-    if ($data['code'] == 200 && !empty($data['response'])) {
+    // If we've got the data (at bare minimum, a traceroute), delegate to rendering function
+    if ($data['code'] == 200 && !empty($data['response']->traceroute)) {
       $permalink = l(t('Permalink'), 'weathermap', array('query' => $query_params));
-      //dpm($data); // @TODO... RENDER!!!
-      $form['data_wrapper']['data']['#value'] = theme('ecenter_weathermap_data', $data);
+      $form['data_wrapper']['data']['#value'] = theme('ecenter_weathermap_data', $data, $permalink);
     }
     else {
       watchdog('ecenter', 'Query returned no results: <code>@query</code>', array('@query' => $query), WATCHDOG_INFO);
@@ -404,6 +415,19 @@ function ecenter_weathermap_parse_data($data) {
  * Theme main data display
  */
 function template_preprocess_ecenter_weathermap_data(&$vars) {
+  $data = ecenter_weathermap_parse_data($vars['data']['response']);
+
+  foreach ($data as $trace_id => $traceroute) {
+    foreach ($traceroute as $hop) {
+      $output .= '<div id="hop-'. $hop['hop']['hop_id'] .'-wrapper" class="hop-wrapper">';
+      $output .= '<h2>'. $hop['hop']['hop_id'] .' ('. $hop['hop']['hop_ip'] .')</h2>';
+      foreach ($hop['data'] as $type => $hop_data) {
+        $output .= theme('ecenter_weathermap_render_data_'. $type, $hop_data); 
+      }
+      $output .= '</div>';
+    }
+  }
+  $vars['traceroute'] = $output;
 }
 
 /**
@@ -415,18 +439,49 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
   $min = 0;
   $max = 0;
   foreach ($data as $item) {
+    $class = '';
     $utilization = ($item['utilization'] / $item['capacity']) * 100;
     $max = ($utilization > $max) ? $utilization : $max;
     $min = ($utilization < $min || $min == 0) ? $utilization : $min;
 
+    if ($utilization > variable_get('ecenter_weathermap_threshold_critical_snmp_utilization', 40)) {
+      $class = 'critical',
+    }
+    if ($utilization > variable_get('ecenter_weathermap_threshold_marginal_snmp_utilization', 20)) {
+      $class = 'marginal',
+    }
+
     $table[] = array(
-      'time' => array(
+      'label' => array(
         'data' => format_date($item['timestamp'], 'custom', 'Y-m-d G:i:s'),
         'header' => TRUE,
       ),
-      'utilization' => sprintf('%01.2f', $utilization),
+      'utilization' => array(
+        'data' => sprintf('%01.2f', $utilization),
+        'attributes' => array('class' => $class),
+      ),
     );
   }
+  
+  $aggregate_table = array(
+    'max' => array(
+      'label' => array('data' => t('Max'), 'header' => TRUE,),
+      'value' => array('data' => sprintf('%01.2f', $max),
+    ),
+    'min' => array(
+      'label' => array('data' => t('Min'), 'header' => TRUE,),
+      'value' => array('data' => sprintf('%01.2f', $min),),
+    ),
+  );
+
+  if ($max > variable_get('ecenter_weathermap_threshold_critical_snmp_utilization', 40)) {
+    $aggregate_data['max']['value']['attributes'] = array('class' => 'critical');
+  }
+  else if ($max > variable_get('ecenter_weathermap_threshold_marginal_snmp_utilization', 20)) {
+    $aggregate_data['max']['value']['attributes'] = array('class' => 'marginal');
+  }
+
+
 
   jqplot_register_tablechart('.snmp-chart', array(
     'width' => 600,
@@ -467,10 +522,12 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
       'cursor' => array('show' => FALSE),
     )
   ));
-
-  return theme('table', $headers, $table, array('class' => 'snmp-chart'));
+  return theme('table', NULL, $aggregate_table) . theme('table', $headers, $table, array('class' => 'snmp-chart'));
 }
 
+/**
+ * Theme traceroute
+ */
 function theme_ecenter_weathermap_traceroute($hops) {
   $output = '';
   foreach ($hops as $hop) {
@@ -485,4 +542,3 @@ function theme_ecenter_weathermap_traceroute($hops) {
 function theme_ecenter_weathermap_hop_option($hop) {
   return $hop->nodename .' ('. $hop->ip_noted .')';
 }
-

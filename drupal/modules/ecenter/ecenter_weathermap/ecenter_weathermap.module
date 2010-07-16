@@ -51,14 +51,14 @@ function ecenter_weathermap_theme() {
         'hop' => NULL,
       )
     ) + $path,
-   'ecenter_weathermap' => array(
-      //'template' => 'ecenter-weathermap',
+   'ecenter_weathermap_data' => array(
+      'template' => 'ecenter-weathermap-data',
       'arguments' => array(
-        'traceroute' => NULL,
+        'data' => NULL,
       )
     ) + $path,
-   'ecenter_weathermap_traceroute' => array(
-      'template' => 'ecenter-weathermap-traceroute',
+    'ecenter_weathermap_traceroute' => array(
+      //'template' => 'ecenter-weathermap-traceroute',
       'arguments' => array(
         'hops' => NULL,
       )
@@ -294,7 +294,8 @@ function ecenter_weathermap_select_form(&$form_state) {
     // If we've got the data, delegate to rendering functions...
     if ($data['code'] == 200 && !empty($data['response'])) {
       $permalink = l(t('Permalink'), 'weathermap', array('query' => $query_params));
-      dpm($data); // @TODO... RENDER!!!
+      //dpm($data); // @TODO... RENDER!!!
+      $form['data_wrapper']['data']['#value'] = theme('ecenter_weathermap_data', $data);
     }
     else {
       watchdog('ecenter', 'Query returned no results: <code>@query</code>', array('@query' => $query), WATCHDOG_INFO);
@@ -399,26 +400,15 @@ function ecenter_weathermap_parse_data($data) {
 
 /* --- Theme --- */
 
-function template_preprocess_ecenter_weathermap(&$vars) {
-  dpm($vars);
+/**
+ * Theme main data display
+ */
+function template_preprocess_ecenter_weathermap_data(&$vars) {
 }
-
-function theme_ecenter_weathermap_traceroute($hops) {
-  $output = '';
-  foreach ($hops as $hop) {
-    $output .= ' '. $hop->hop_ip;
-  }
-  return $output;
-}
-// function template_preprocess_ecenter_weathermap_traceroute(&$vars) {}
 
 /**
- * Theme services for use in options list.  Should always return plaintext!
+ * Theme SNMP data
  */
-function theme_ecenter_weathermap_hop_option($hop) {
-  return $hop->nodename .' ('. $hop->ip_noted .')';
-}
-
 function theme_ecenter_weathermap_render_data_snmp($data) {
   $headers = array(t('Time'), t('Percent utilization'));
   $table = array();
@@ -428,14 +418,71 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
     $utilization = ($item['utilization'] / $item['capacity']) * 100;
     $max = ($utilization > $max) ? $utilization : $max;
     $min = ($utilization < $min || $min == 0) ? $utilization : $min;
-    
+
     $table[] = array(
       'time' => array(
         'data' => format_date($item['timestamp'], 'custom', 'Y-m-d G:i:s'),
         'header' => TRUE,
       ),
-      'utilization' => $utilization, 
+      'utilization' => sprintf('%01.2f', $utilization),
     );
   }
-  return theme('table', $headers, $table);
+
+  jqplot_register_tablechart('.snmp-chart', array(
+    'width' => 600,
+    'height' => 200,
+    'hideTable' => TRUE,
+    'plotOptions' => array(
+      'seriesDefaults' => array(
+        'lineWidth' => 1.5,
+        'shadow' => FALSE,
+        'fillAndStroke' => TRUE,
+        'markerOptions' => array(
+          'show' => FALSE,
+        ),
+      ),
+      'axes' => array(
+        'xaxis' => array(
+          'renderer' => '$.jqplot.DateAxisRenderer',
+          'tickOptions' => array(
+            'formatString' => "%H:%M",
+          ),
+        ),
+        'yaxis' => array(
+          'min' => 0,
+        ),
+      ),
+      'grid' => array(
+        'shadow' => FALSE,
+        'borderWidth' => 0,
+        'background' => '#eeeeee',
+        'gridLineColor' => '#ffffff',
+      ),
+      'highlighter' => array(
+        'sizeAdjust' => 1.5,
+        'tooltipLocation' => 'n',
+        'tooltipOffset' => 10,
+        'tooltipSeparator' => ': ',
+      ),
+      'cursor' => array('show' => FALSE),
+    )
+  ));
+
+  return theme('table', $headers, $table, array('class' => 'snmp-chart'));
 }
+
+function theme_ecenter_weathermap_traceroute($hops) {
+  $output = '';
+  foreach ($hops as $hop) {
+    $output .= ' '. $hop->hop_ip;
+  }
+  return $output;
+}
+
+/**
+ * Theme services for use in options list.  Should always return plaintext!
+ */
+function theme_ecenter_weathermap_hop_option($hop) {
+  return $hop->nodename .' ('. $hop->ip_noted .')';
+}
+

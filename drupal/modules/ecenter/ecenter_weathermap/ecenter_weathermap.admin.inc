@@ -46,6 +46,28 @@ function ecenter_weathermap_admin_form() {
     '#type' => 'fieldset',
     '#description' => t('Set threshold values for data diagnostics'),
   );
+  $form['thresholds']['colors'] = array(
+    '#title' => t('Colors'),
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
+  );
+  $form['thresholds']['colors']['critical'] = array(
+    '#title' => t('Critical color'),
+    '#type' => 'textfield',
+    '#default_value' => variable_get('ecenter_weathermap_threshold_critical_color', '#cc0000'),    
+  );
+  $form['thresholds']['colors']['marginal'] = array(
+    '#title' => t('Marginal color'),
+    '#type' => 'textfield',
+    '#default_value' => variable_get('ecenter_weathermap_threshold_marginal_color', '#fe890c'),    
+  );
+  $form['thresholds']['colors']['good'] = array(
+    '#title' => t('Marginal color'),
+    '#type' => 'textfield',
+    '#default_value' => variable_get('ecenter_weathermap_threshold_good_color', '#1c8a24'),    
+  );
+
+
   $form['thresholds']['snmp'] = array(
     '#title' => t('SNMP'),
     '#type' => 'fieldset',

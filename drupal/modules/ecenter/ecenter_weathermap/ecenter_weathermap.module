@@ -445,10 +445,10 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
     $min = ($utilization < $min || $min == 0) ? $utilization : $min;
 
     if ($utilization > variable_get('ecenter_weathermap_threshold_critical_snmp_utilization', 40)) {
-      $class = 'critical',
+      $class = 'critical';
     }
     if ($utilization > variable_get('ecenter_weathermap_threshold_marginal_snmp_utilization', 20)) {
-      $class = 'marginal',
+      $class = 'marginal';
     }
 
     $table[] = array(
@@ -466,7 +466,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
   $aggregate_table = array(
     'max' => array(
       'label' => array('data' => t('Max'), 'header' => TRUE,),
-      'value' => array('data' => sprintf('%01.2f', $max),
+      'value' => array('data' => sprintf('%01.2f', $max)),
     ),
     'min' => array(
       'label' => array('data' => t('Min'), 'header' => TRUE,),
@@ -474,16 +474,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
     ),
   );
 
-  if ($max > variable_get('ecenter_weathermap_threshold_critical_snmp_utilization', 40)) {
-    $aggregate_data['max']['value']['attributes'] = array('class' => 'critical');
-  }
-  else if ($max > variable_get('ecenter_weathermap_threshold_marginal_snmp_utilization', 20)) {
-    $aggregate_data['max']['value']['attributes'] = array('class' => 'marginal');
-  }
-
-
-
-  jqplot_register_tablechart('.snmp-chart', array(
+  $plot_options = array(
     'width' => 600,
     'height' => 200,
     'hideTable' => TRUE,
@@ -520,8 +511,23 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
         'tooltipSeparator' => ': ',
       ),
       'cursor' => array('show' => FALSE),
-    )
-  ));
+    ),
+  );
+
+  if ($max > variable_get('ecenter_weathermap_threshold_critical_snmp_utilization', 40)) {
+    $aggregate_data['max']['value']['attributes'] = array('class' => 'critical');
+    //$plot_options 
+    $plot_options['plotOptions']['seriesDefaults']['color'] = variable_get('ecenter_weathermap_threshold_critical_color', '#cc0000');
+  }
+  else if ($max > variable_get('ecenter_weathermap_threshold_marginal_snmp_utilization', 20)) {
+    $aggregate_data['max']['value']['attributes'] = array('class' => 'marginal');
+    $plot_options['plotOptions']['seriesDefaults']['color'] = variable_get('ecenter_weathermap_threshold_marginal_color', '#fe890c');
+  }
+  else {
+    $plot_options['plotOptions']['seriesDefaults']['color'] = variable_get('ecenter_weathermap_threshold_good_color', '#1c8a24');
+  }
+
+  jqplot_register_tablechart('.snmp-chart', $plot_options);
   return theme('table', NULL, $aggregate_table) . theme('table', $headers, $table, array('class' => 'snmp-chart'));
 }
 

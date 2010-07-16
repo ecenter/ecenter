@@ -27,6 +27,11 @@ debugging info logged
 
 print help
 
+=item --past=<N seconds>
+
+ get SNMP data for the past N seconds, limited by 10000 seconds
+ Default: 1800 seconds
+ 
 =item --snmp
 
  get SNMP data as well
@@ -35,6 +40,12 @@ print help
 
 backend DB name
 Default: ecenter_data
+
+=item --procs
+
+number of asynchronous procs to spawn ( requests to remote MAs)
+Max number is 40.
+Default: 10
 
 =item --user=[db username]
 
@@ -49,7 +60,13 @@ Default: from /etc/my_ecenter
 =back
 
 =cut
- 
+use forks;
+use forks::shared 
+    deadlock => {
+    detect => 1,
+    resolve => 1
+};
+
 use FindBin qw($Bin);
 use lib "$Bin/../lib";
 
@@ -98,8 +115,12 @@ our %ESNET_HUB = (
         "srs-rt1"   =>  "SRS",
 	);
 
+# Maximum working threads
+my $MAX_THREADS = 10;
+my $PAST_SECS = 1800;
+
 my %OPTIONS;
-my @string_option_keys = qw/password user db/;
+my @string_option_keys = qw/password user db procs past/;
 GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
             qw/debug help  snmp no_topo/,
@@ -108,7 +129,10 @@ GetOptions( \%OPTIONS,
 $OPTIONS{debug}?Log::Log4perl->easy_init($DEBUG):Log::Log4perl->easy_init($INFO);
 my  $logger = Log::Log4perl->get_logger(__PACKAGE__);
 
-pod2usage(-verbose => 2) if ( $OPTIONS{help} );
+pod2usage(-verbose => 2) if ( $OPTIONS{help} || ($OPTIONS{procs} && $OPTIONS{procs} !~ /^\d\d?$/));
+
+$MAX_THREADS = $OPTIONS{procs} if $OPTIONS{procs} > 0 && $OPTIONS{procs}  < 40;
+$PAST_SECS = $OPTIONS{past} if $OPTIONS{past} > 0 && $OPTIONS{past}  <  10000;
 
 $OPTIONS{db} ||= 'ecenter_data';
 $OPTIONS{user} ||= 'ecenter';
@@ -257,7 +281,8 @@ sub get_snmp {
 	 $services = $dbh->resultset('Service')->search({type => 'snmp', url => {like => '%es.net%'}});
      }
      my $ports = $dbh->resultset('L2_port')->search({ }, { 'join'  =>  'l2_src_links'  });
-
+     my %threads;
+     my $thread_counter = 0;
      while( my $service = $services->next) {
      	 my $snmp_ma =  Ecenter::Data::Snmp->new({ url => $service->url});
 	 unless($ports->count) {
@@ -266,36 +291,41 @@ sub get_snmp {
 	 }
      	 while( my  $port = $ports->next) {
      	    my $ifAddresses = $dbh->resultset('L2_l3_map')->search( { l2_urn => $port->l2_urn }, 
-     								    { 'join' => 'ip_addr', '+select' => ['ip_addr.ip_noted'] }
+     								    { 'join' => 'node', '+select' => ['node.ip_noted'] }
      								  );
      	     unless ($ifAddresses->count) {
 	         $logger->error(" !!! NO Addresses !!! ");
 	        next;
 	     }
 	     while( my    $l3 = $ifAddresses->next) {
-	         $logger->debug("=====---------------===== \n ifAddress::" .$l3->ip_addr->ip_noted . " URN:" . $port->l2_urn );
+	         $logger->debug("=====---------------===== \n ifAddress::" .$l3->node->ip_noted . " URN:" . $port->l2_urn );
      		 foreach my $direction (qw/in out/) {
-     		     $snmp_ma->get_data({ direction =>  $direction, 
-		                                         ifAddress => $l3->ip_addr->ip_noted, 
-		                                         start =>  DateTime->from_epoch( epoch => (time() -  3600)),
-							 end => DateTime->now()   });
-		     $logger->debug("Data :: ", sub{Dumper( $snmp_ma->data)});
-     		     my $meta = $dbh->resultset('Metadata')->update_or_create({ src_ip =>  $l3->ip_addr->ip_noted ,
+		      pool_control($MAX_THREADS, 0);
+	              $threads{$thread_counter++} = threads->new( sub {
+     		            $snmp_ma->get_data({ direction =>  $direction, 
+		                                 ifAddress => $l3->node->ip_noted, 
+		                                 start =>  DateTime->from_epoch( epoch => (time() - $PAST_SECS )),
+						 end => DateTime->now()   });
+		            $logger->debug("Data :: ", sub{Dumper( $snmp_ma->data)});
+     		            my $meta = $dbh->resultset('Metadata')->update_or_create({
      								     service	 => $service,
-     								     src_ip	 =>    $l3->ip_addr,
-     								     direction => $direction 
+     								     src_ip	 => $l3->ip_addr,
+     								     direction   => $direction 
      								  }
 								  );
-     		     foreach my $data (@{ $snmp_ma->data}) { 
-     			 $dbh->resultset('Snmp_data')->update_or_create({ metaid =>  $meta,
+     		            foreach my $data (@{ $snmp_ma->data}) { 
+     			        $dbh->resultset('Snmp_data')->update_or_create({ metaid =>  $meta,
      									  timestamp => $data->[0],
      									  utilization => $data->[1],
-     								      });
-     		     }       
+     								             },
+									     { key => 'meta_time'});
+     		           } 
+		      });      
      		 }				  
      	     }
      	 }
      }
+     pool_control($MAX_THREADS, 'finish_it');
 }
 __END__
 

@@ -57,6 +57,8 @@ has 'packetsize'  => (is => 'rw', isa => 'Ecenter::Types::PositiveInt', default 
 has 'src_regexp' => (is => 'rw', isa => 'Str'); 
 has 'dst_regexp' => (is => 'rw', isa => 'Str');
 has 'meta_keys'  => (is => 'rw', isa => 'ArrayRef');
+has 'src_name' => (is => 'rw', isa => 'Str');
+has 'dst_name' => (is => 'rw', isa => 'Str');
 
 sub BUILD {
       my $self = shift;
@@ -109,16 +111,17 @@ after 'get_metadata' => sub  {
 after 'get_data' => sub  {
     my ( $self, $params ) = @_;
     map {$self->$_($params->{$_})  if $self->can($_)} keys %$params if $params && ref $params eq ref {};
-   
-    my $dresult = $self->ma->setupDataRequest(
-        {
+    return unless  $self->meta_keys  || ( $self->src_name && $self->dst_name );
+    my $request =  {
             start => $self->start->epoch,
             end   => $self->end->epoch,
-            keys  => $self->meta_keys,
             resolution => $self->resolution,
-            cf =>  $self->cf,
-        }
-    );
+            cf =>  $self->cf
+        };
+    $request->{keys}     =   $self->meta_keys if $self->meta_keys;
+    $request->{src_name} =   $self->src_name  if $self->src_name;
+    $request->{dst_name} =   $self->dst_name  if $self->dst_name;
+    my $dresult = $self->ma->setupDataRequest( $request );
     my $metaids    = $self->ma->getData($dresult);   
     my @data = ();
     $self->logger->debug(" DATA :: ", sub{ Dumper $metaids  } );

@@ -62,17 +62,15 @@ Default: from /etc/my_ecenter
 
 
 =cut
-
-use English;
-
 use forks;
 use forks::shared 
     deadlock => {
     detect => 1,
     resolve => 1
 };
-use Time::HiRes qw(usleep);
 
+use English;
+use Time::HiRes qw(usleep);
 use XML::LibXML;
 use Getopt::Long;
 use Data::Dumper;
@@ -207,7 +205,7 @@ for my $root ( @{ $gls->{ROOTS} } ) {
         	my $serviceDescription = extract( find( $s, ".//*[local-name()='serviceDescription']", 1 ), 0 );
 		return if exists $hls_cache{$accessPoint};
 		return  if !$accessPoint || $serviceType =~ /^ping$/i ||  $accessPoint =~ /^tcp\:/;
-		return unless $accessPoint =~ /ps1\.es|fnal\.gov/;
+		return unless $accessPoint =~ /\.gov|\.net/;
         	try {		  
                     $logger->debug("\t\thLS:\t$accessPoint");
                     my ($ip_addr,$ip_name) = get_ip_name($accessPoint); 	       
@@ -226,7 +224,7 @@ for my $root ( @{ $gls->{ROOTS} } ) {
 		    	my $hls = $dbh->resultset('Service')->update_or_create({ name => $serviceName,
 		    								 url   =>   $accessPoint,
 		    								 type => $serviceType,
-		    								 ip_addr =>  $ip_addr_obj,
+		    								 ip_addr =>  $ip_addr_obj->ip_addr,
 		    								 comments => $serviceDescription,
 		    								 is_alive => (!$status?'1':'0'), 
 		    								 updated =>  \"NOW()",

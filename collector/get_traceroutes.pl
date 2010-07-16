@@ -129,18 +129,18 @@ my $dbh =  Ecenter::Schema->connect("DBI:mysql:$OPTIONS{db}",  $OPTIONS{user},
                                      $OPTIONS{password}, 
 				    {RaiseError => 1, PrintError => 1});
 $dbh->storage->debug(1)  if $OPTIONS{debug};
-my $services = $dbh->resultset('Service')->search({},{join => 'ip_addr', group_by => 'ip_addr'});
+my $services = $dbh->resultset('Service')->search({},{join => 'node', group_by => 'ip_addr'});
 my $src_match = $OPTIONS{src_match}?qr/$OPTIONS{src_match}/:'';
 my $dst_match = $OPTIONS{dst_match}?" and me.nodename   like '\%$OPTIONS{dst_match}\%' ":'';
 
 while( my $service = $services->next) {
-    my $nodename = $service->ip_addr->nodename;
+    my $nodename = $service->node->nodename;
     next unless $nodename; 
     next if($src_match && $nodename !~  $src_match);
    
-    my $service_ip = $service->ip_addr->ip_noted;
+    my $service_ip = $service->node->ip_noted;
     my $mask = ( $service_ip  =~ /^[\d\.]+$/)?'31':'64';
-    my $where = "inet6_mask(me.ip_addr, $mask) != inet6_mask(inet6_pton('". $service->ip_addr->ip_noted ."'), $mask) $dst_match";
+    my $where = "inet6_mask(me.ip_addr, $mask) != inet6_mask(inet6_pton('". $service->node->ip_noted ."'), $mask) $dst_match";
   
     pool_control($MAX_THREADS, 0);
     threads->new( sub {    
@@ -169,12 +169,11 @@ while( my $service = $services->next) {
 
             while( my $node = $nodes->next) {
 		my $metaid = $dbh_node->resultset('Metadata')->update_or_create({  
-	                                                        	 perfsonar_id => md5_hex( $service_ip . $node->ip_noted), 
+	                                                        	 subject => md5_hex( $service_ip . $node->ip_noted), 
 	    								 service	  => $service->service,
-	    								 src_ip	  => $service->ip_addr->ip_addr,
+	    								 src_ip	  => $service->node->ip_addr,
 	    								 dst_ip	  => $node->ip_addr,
-	    						     },
-	    						     {key => 'metaid_service'}
+	    						     }
 	    						  );
 		my $node_ip = $node->ip_noted;
 		my $now_sec = floor(Time::HiRes::time() * 1000);

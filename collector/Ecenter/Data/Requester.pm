@@ -63,7 +63,7 @@ has 'url'        => (is => 'rw', isa => 'Str' );
 has 'start'      => (is => 'rw', isa => 'DateTime');
 has 'end'        => (is => 'rw', isa => 'DateTime');
 has 'logger'     => (is => 'rw', isa => 'Log::Log4perl::Logger');
-has 'resolution' => (is => 'rw', isa => 'Ecenter::Types::PositiveInt', default => '1');
+has 'resolution' => (is => 'rw', isa => 'Ecenter::Types::PositiveInt', default => '300');
 has 'cf'         => (is => 'rw', isa => 'Str', default => 'AVERAGE');
 
  

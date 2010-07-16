@@ -114,7 +114,7 @@ sub pool_control {
   	    if( $tidx->is_running() ) {
   		usleep 10;
   	    } else {
-  		$tidx->detach();
+  		$tidx->join();
   		$num_threads = threads->list(threads::running);
   	    }
   	}

@@ -67,7 +67,7 @@ has 'ifIndex'    => (is => 'rw', isa => 'Str');
 has 'ifAddress'  => (is => 'rw', isa => 'Str');
 has 'hostName'   => (is => 'rw', isa => 'Str');
 has 'subject'    => (is => 'rw', isa => 'Str');
-has 'eventtypes'    => (is => 'rw', isa => 'ArrayRef');
+has 'eventtypes' => (is => 'rw', isa => 'ArrayRef');
 
 sub BUILD {
       my $self = shift;

@@ -67,7 +67,6 @@ function ecenter_weathermap_admin_form() {
     '#default_value' => variable_get('ecenter_weathermap_threshold_good_color', '#1c8a24'),    
   );
 
-
   $form['thresholds']['snmp'] = array(
     '#title' => t('SNMP'),
     '#type' => 'fieldset',

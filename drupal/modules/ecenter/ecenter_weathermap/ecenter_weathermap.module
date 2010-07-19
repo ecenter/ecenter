@@ -107,6 +107,13 @@ function ecenter_weathermap_init() {
 
     // Additional CSS overrides
     drupal_add_css(drupal_get_path('module', 'ecenter_weathermap') .'/css/plot.css');
+
+    $inline_css = array(
+      '.ecenter-critical' => array('color' => variable_get('ecenter_weathermap_threshold_critical_color', '#cc0000'),),    
+      '.ecenter-marginal' => array('color' => variable_get('ecenter_weathermap_threshold_marginal;_color', '#fe890c'),),    
+      '.ecenter-good' => array('color' => variable_get('ecenter_weathermap_threshold_marginal;_color', '#1c8a24'),),    
+    );
+    ecenter_weathermap_add_inline_css($inline_css);
   }
 }
 
@@ -234,11 +241,10 @@ function ecenter_weathermap_select_form(&$form_state) {
     $form_state['storage']['dst_ip_wrapper']['dst_ip'] : $_REQUEST['dst_ip'];
 
   $start_date = (!empty($form_state['storage']['date_wrapper']['start_date'])) ?
-    $form_state['storage']['date_wrapper']['start_date']['date'] .' '. $form_state['storage']['date_wrapper']['start_date']['time'] : $_REQUEST['start_date'];
+    $form_state['storage']['date_wrapper']['start_date']['date'] .' '. $form_state['storage']['date_wrapper']['start_date']['time'] : $_REQUEST['start'];
 
   $end_date = (!empty($form_state['storage']['date_wrapper']['end_date'])) ?
-    $form_state['storage']['date_wrapper']['end_date']['date'] .' '. $form_state['storage']['date_wrapper']['end_date']['time'] : $_REQUEST['end_date'];
-
+    $form_state['storage']['date_wrapper']['end_date']['date'] .' '. $form_state['storage']['date_wrapper']['end_date']['time'] : $_REQUEST['end'];
 
   // Set sane values for start / end by converting and rounding
   $inc = variable_get('ecenter_weathermap_time_increment', 5);
@@ -248,6 +254,10 @@ function ecenter_weathermap_select_form(&$form_state) {
   $start = (!empty($start_date)) ? strtotime($start_date) : $end - variable_get('ecenter_weathermap_time_window', 3600);
   $start = $start - $start % $unix_inc;
 
+  dpm($start);
+  dpm(format_date($start, 'custom', 'Y-M-d g:i'));
+  dpm($end);
+  dpm(format_date($end, 'custom', 'Y-M-d g:i'));
 
   $form['date_wrapper']['start_date']['#default_value'] = format_date($start, 'custom', 'Y-M-d g:i');
   $form['date_wrapper']['end_date']['#default_value'] = format_date($end, 'custom', 'Y-M-d g:i');
@@ -269,7 +279,7 @@ function ecenter_weathermap_select_form(&$form_state) {
       unset($src_ip);
     }
 
-    $dst_hops = $client->getHubs($form_state['storage']['src_ip_wrapper']['src_ip']);
+    $dst_hops = $client->getHubs($src_ip);
     $dst_options = array('' => t('Select a destination'));
     foreach ($dst_hops['response'] as $hop) {
       $dst_options[$hop->ip_noted] = theme('ecenter_weathermap_hop_option', $hop);
@@ -298,8 +308,8 @@ function ecenter_weathermap_select_form(&$form_state) {
     $query_params = array(
       'src_ip' => $src_ip,
       'dst_ip' => $dst_ip,
-      'start_date' => $start_date,
-      'end_date' => $end_date
+      'start' => $start_date,
+      'end' => $end_date
     );
     $query = http_build_query($query_params);
 
@@ -445,10 +455,10 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
     $min = ($utilization < $min || $min == 0) ? $utilization : $min;
 
     if ($utilization > variable_get('ecenter_weathermap_threshold_critical_snmp_utilization', 40)) {
-      $class = 'critical';
+      $class = 'ecenter-critical';
     }
     if ($utilization > variable_get('ecenter_weathermap_threshold_marginal_snmp_utilization', 20)) {
-      $class = 'marginal';
+      $class = 'ecenter-marginal';
     }
 
     $table[] = array(
@@ -458,7 +468,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
       ),
       'utilization' => array(
         'data' => sprintf('%01.2f', $utilization),
-        'attributes' => array('class' => $class),
+        'class' => $class,
       ),
     );
   }
@@ -514,17 +524,29 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
     ),
   );
 
-  if ($max > variable_get('ecenter_weathermap_threshold_critical_snmp_utilization', 40)) {
-    $aggregate_data['max']['value']['attributes'] = array('class' => 'critical');
-    //$plot_options 
+  // Set colors...
+  if ($max > variable_get('ecenter_weathermap_threshold_critical_snmp_utilization', 60)) {
     $plot_options['plotOptions']['seriesDefaults']['color'] = variable_get('ecenter_weathermap_threshold_critical_color', '#cc0000');
+    $aggregate_table['max']['value']['class'] = 'ecenter-critical';
   }
-  else if ($max > variable_get('ecenter_weathermap_threshold_marginal_snmp_utilization', 20)) {
-    $aggregate_data['max']['value']['attributes'] = array('class' => 'marginal');
+  else if ($max > variable_get('ecenter_weathermap_threshold_marginal_snmp_utilization', 40)) {
     $plot_options['plotOptions']['seriesDefaults']['color'] = variable_get('ecenter_weathermap_threshold_marginal_color', '#fe890c');
+    $aggregate_table['max']['value']['class'] = 'ecenter-marginal';
   }
   else {
     $plot_options['plotOptions']['seriesDefaults']['color'] = variable_get('ecenter_weathermap_threshold_good_color', '#1c8a24');
+    $aggregate_table['max']['value']['class'] = 'ecenter-good';
+  }
+
+  // @TODO loop through non max aggregate measures?
+  if ($min > variable_get('ecenter_weathermap_threshold_critical_snmp_utilization', 60)) {
+    $aggregate_table['min']['value']['class'] = 'ecenter-critical';
+  }
+  else if ($min > variable_get('ecenter_weathermap_threshold_marginal_snmp_utilization', 40)) {
+    $aggregate_table['min']['value']['class'] = 'ecenter-marginal';
+  }
+  else {
+    $aggregate_table['min']['value']['class'] = 'ecenter-good';
   }
 
   jqplot_register_tablechart('.snmp-chart', $plot_options);
@@ -547,4 +569,27 @@ function theme_ecenter_weathermap_traceroute($hops) {
  */
 function theme_ecenter_weathermap_hop_option($hop) {
   return $hop->nodename .' ('. $hop->ip_noted .')';
+}
+
+function ecenter_weathermap_preprocess_page(&$vars) {
+  $vars['inline_css'] = ecenter_weathermap_get_inline_css();
+}
+
+function ecenter_weathermap_add_inline_css($css=array()) {
+  static $inline_css = array();
+  $inline_css += $css;
+  return $inline_css;
+}
+
+function ecenter_weathermap_get_inline_css() {
+  $css = ecenter_weathermap_add_inline_css();
+  $output = '';
+  foreach ($css as $selector => $rules) {
+    $output .= "\n". $selector ." {\n";
+    foreach ($rules as $rule => $value) {
+      $output .= ' '. $rule .": ". $value . ";\n";
+    }
+    $output .= "}\n";
+  }
+  return $output;
 }

@@ -123,6 +123,9 @@ h6 {
 
 /* --- Content markup --- */
 /* Tables {{{ */
+#content-body table {
+  border-collapse: collapse;
+}
 #content-body table tr.odd {
   background-color: #fafafa;
 }
@@ -131,13 +134,14 @@ h6 {
 }
 #content-body table thead th {
   text-align: center;
-  background-color: #999;
+  background-color: #555;
   color: #fff;
-  font-weight: bold;
+  font-weight: normal;
   font-size: 0.875em;
 }
-#content-body table td {
-  padding: .2em 1em .2em .2em;
+#content-body table td, #content-body table th {
+  border: 1px solid #999;
+  padding: .2em .5em;
 }
 /* }}} */
 /* Lists {{{ */
@@ -185,6 +189,7 @@ h6 {
 /* Form items {{{ */
 input.form-submit {
   -moz-border-radius: 6px;
+  -webkit-border-radius: 6px;
   background-color: #ddd;
   border: 1px solid #777;
   text-shadow: 1px 1px #eee;
@@ -206,7 +211,39 @@ input.form-submit {
     rgb(238,238,238) 57%
   );
 }
-input.form-text {
+span.form-quickselect_dropdown {
+  position: relative;
+  top: 2px;
+  background-color: #ddd;
+  border-right: 1px solid #aaa;
+  border-top: 1px solid #aaa;
+  border-bottom: 1px solid #aaa;
+  padding: 0 3px;
+  color: #777;
+  cursor: pointer;
+  margin-left: -1px;
+  -moz-box-shadow: 1px 1px .1em 0 #ddd;
+  background-image: -webkit-gradient(
+    linear,
+    left bottom,
+    left top,
+    color-stop(0.22, rgb(204,204,204)),
+    color-stop(0.57, rgb(238,238,238))
+  );
+  background-image: -moz-linear-gradient(
+    center bottom,
+    rgb(204,204,204) 22%,
+    rgb(238,238,238) 57%
+  );
+}
+span.form-quickselect_dropdown:hover {
+  color: #111;
+}
+span.form-quickselect_dropdown.disabled:hover {
+  cursor: default;
+  color: #777;
+}
+input.form-text, input.form-quickselect {
   padding: 2px 3px;
   border: 1px solid #aaa;
   -moz-box-shadow: 1px 1px .1em 0 #ddd;
@@ -423,6 +460,19 @@ h1#site-name a:hover {
   display: inline;
   margin-right: 10px;
   list-style-type: none;
+}
+/* }}} */
+
+/* -- Weathermap -- */
+/* Progress throbbers {{{ */
+#ecenter-weathermap-select-form .progress-disabled {
+  float: none;
+}
+/* }}} */
+/* Date selector {{{ */
+.container-inline-date label {
+  float: left;
+  margin-right: 6px;
 }
 /* }}} */
 

@@ -15,6 +15,11 @@
   <?php print $head; ?>
   <title><?php print $head_title; ?></title>
   <?php print $styles; ?>
+  <?php if (!empty($inline_css)): ?>
+    <style>
+      <?php print $inline_css; ?>
+    </style>
+  <?php endif; ?>
   <?php print $scripts; ?>
   <script type="text/javascript"><?php /* Needed to avoid Flash of Unstyled Content in IE */ ?> </script>
 </head>

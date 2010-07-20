@@ -323,15 +323,16 @@ function ecenter_weathermap_select_form(&$form_state) {
 
     //$adjusted_start_date = 
 
-
     //$data = $client->getData($src_ip, $dst_ip, $adjusted_start_date, $adjusted_end_date);
+
+    // @TODO time handling needs work!
     $data = $client->getData($src_ip, $dst_ip, $start_date .':00', $end_date .':00');
 
     $query_params = array(
       'src_ip' => $src_ip,
       'dst_ip' => $dst_ip,
-      'start' => $start_date,
-      'end' => $end_date
+      'start' => $start_date .':00',
+      'end' => $end_date .':00',
     );
     $query = http_build_query($query_params);
 

@@ -1,15 +1,4 @@
-// @TODO Currently REALLY ROUGH!!!
-/*Drupal.behaviors.EcenterTraceroute = function(context) {
-   $('.hop-wrapper div').hide(); 
-   $('.hop-wrapper').hover(function() {
-     $('div', $(this)).show();
-   }, function() {
-     $('div', $(this)).hide();
-   });
-}*/
-
-// A very light wrapper around jqplot that scrapes tables for data to plot
-
+// jQuery plugin to create a "subway map" of a traceroute
 (function($) {
 
 $.fn.traceroute = function(options) {
@@ -17,19 +6,21 @@ $.fn.traceroute = function(options) {
 
   return this.each(function(i) {
     trace = new TraceRoute(this, opt);
-    //trace.draw();
   });
 
 };
 
 // Defaults
 $.fn.traceroute.defaults = {
-  'height' : 500,
-  'width' : 100,
-  'linkLength' : 10,
-  'linkWidth' : 10,
-  'hopRadius' : 5,
-  'hopStrokeColor' : '#cccccc',
+  'linkLength' : 12,
+  'linkWidth' : 9,
+  'linkColor' : '#cccccc',
+  'hopRadius' : 6,
+  'labelLocation' : 'right', // 'left',
+  'labelWidth' : 200,
+  'labelMargin' : 5,
+  'hopStrokeColor' : '#555555',
+  'hopFillColor' : '#ffffff',
   'hopStrokeWidth' : 4,
   'wrapperClass' : 'hop-wrapper',
   'infoClass' : 'hop-info',
@@ -48,40 +39,86 @@ function TraceRoute(el, options) {
   var num_hops = this.hops.size();
 
   // Initialize canvas
-  var cv = this.cv = $('<canvas>');
-  this.ctx = cv.get(0).getContext('2d');
+  var cv = this.cv = $('<canvas class="traceroute-graph">');
+  var ctx = this.ctx = cv.get(0).getContext('2d');
 
+  // Set canvas size
+  var cv_height = (num_hops * ((options.hopRadius * 2) + options.hopStrokeWidth)) + (options.linkLength * (num_hops - 1));
+  var cv_width = (options.hopRadius * 2) + options.hopStrokeWidth;
+  cv.attr('width', cv_width).attr('height', cv_height);
+  cv.css('position', 'absolute');
 
-  // Size canvas
-  var cv_height = ((options.hopRadius * 2) + (options.hopStrokeWidth/2) + options.linkLength) * num_hops;
-  this.cv.attr('width', options.width);
-  this.cv.attr('height', cv_height);
+  // Some calculations
+  var width = cv_width + options.labelWidth + options.labelMargin;
+
+  // Initialize container
+  var container = this.container = $('<div class="traceroute-graph-wrapper">');
+  container.css('position', 'relative');
+  container.height(cv_height).width(width);
+
+  // Initialize label container
+  var label_container = this.label_container = $('<div class="traceroute-labels">');
+  label_container.css('position', 'absolute');
+  label_container.css('left', 0);
+  label_container.height(cv_height).width(width);
+
+  container.append(cv).append(label_container);
+
+  if (options.labelLocation == 'left') {
+    cv.css('right', 0);
+    label_container.addClass('labels-left');
+    var label_css = {'padding-right': cv_width + options.labelMargin};
+  } else {
+    cv.css('left', 0);
+    label_container.addClass('labels-right');
+    var label_css = {'padding-left': cv_width + options.labelMargin};
+  }
+
+  var segment_x = options.hopRadius + (options.hopStrokeWidth / 2) - (options.linkWidth / 2);
+  var hop_x = options.hopRadius + (options.hopStrokeWidth / 2);
+  var segment_h = options.linkLength + (2 * options.hopRadius);
 
   this.hops.each(function(i) {
-    var hop_offset = (((options.hopRadius * 2) + (options.hopStrokeWidth/2) + options.linkLength) * i) + options.hopRadius + (options.hopStrokeWidth/2);
-    trace.drawCircle(15, hop_offset, options.hopRadius, options.hopStrokeWidth, '#999999');
-    
+    var hop_y = (((options.hopRadius * 2) + options.hopStrokeWidth + options.linkLength) * i) + options.hopRadius + (options.hopStrokeWidth / 2);
     if (i < (num_hops - 1)) {
-      trace.drawSegment(10, hop_offset + 7, 5, 10, '#bbbbbb');
+      trace.drawSegment(segment_x, hop_y, options.linkWidth, segment_h, '#bbbbbb');
     }
-    
+    trace.drawHop(hop_x, hop_y, options.hopRadius, options.hopStrokeWidth, options.hopStrokeColor, options.hopFillColor);
+
+    var label_y = (((options.hopRadius * 2) + options.hopStrokeWidth + options.linkLength) * i);
+    var name = $('.' + options.nameClass, this).text()
+
+    var label = $('<div class="traceroute-label">');
+    label.text(name);
+    label.width(options.labelWidth);
+    label.css({'position' : 'absolute', 'top' : label_y});
+    label.css(label_css);
+
+    label.hover(function() {
+      $(this).css('color', 'red');
+    }, function() {
+      $(this).css('color', 'black');
+    });
+
+    label_container.append(label);
   });
 
   // Add canvas
-  $(el).prepend(this.cv);
+  $(el).before(container);
 
   $(this.el).data('TraceRoute', this);
 }
 
-TraceRoute.prototype.drawCircle = function(x, y, r, width, color) {
+TraceRoute.prototype.drawHop = function(x, y, r, strokeWidth, strokeColor, fillColor) {
   this.ctx.beginPath();
   this.ctx.arc(x, y, r, 0, Math.PI*2, true);
-  this.ctx.strokeStyle = color;
-  this.ctx.lineWidth = width;
+  this.ctx.fillStyle = fillColor;
+  this.ctx.strokeStyle = strokeColor;
+  this.ctx.lineWidth = strokeWidth;
   this.ctx.closePath();
+  this.ctx.fill();
   this.ctx.stroke();
 }
-
 
 TraceRoute.prototype.drawSegment = function(x,y,w,h, color) {
   this.ctx.beginPath();
@@ -92,28 +129,3 @@ TraceRoute.prototype.drawSegment = function(x,y,w,h, color) {
 }
 
 })(jQuery);
-
-/*
-    $('.' + o.infoClass).hide();
-    $('.' + o.dataClass).hide();
-
-    /*var hops = $('.' + o.nameClass);
-    var cv = $('<canvas>').css('background-color', '#eeeeee').width(o.width).height(cv_height);
-    var ctx = cv[0].getContext('2d');
-
-
-    y = 0;
-    x = o.hopRadius + o.hopStrokeWidth;
-    hops.each(function(i) {
-      y = (o.linkLength * i) + o.hopRadius + o.hopStrokeWidth;
-      ctx.beginPath();
-      ctx.strokeStyle = o.hopStrokeColor;
-      ctx.lineWidth = 4;
-      ctx.arc(20, y, 5, 0, Math.PI*2, true);
-      ctx.closePath();
-      ctx.stroke();
-      //$.fn.traceroute.circle(ctx, 10, 20, o.hopRadius, o.hopStrokeColor, o.hopStrokeWidth);
-    });
-
-    $(this).prepend(cv);
-*/

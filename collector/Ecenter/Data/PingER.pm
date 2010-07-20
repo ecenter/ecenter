@@ -82,9 +82,12 @@ after 'get_metadata' => sub  {
     map {$self->$_($args->{$_}) if $self->can($_)}  keys %$args if $args && ref $args eq ref {};
     my $metaids = {};
     my $metad_hr = {};
-    my $params = {};
-    $params =  { parameters => { packetSize => $self->packetsize} } if $self->packetsize;
- 
+    unless( $self->src_name && $self->dst_name ) {
+        $self->logger->logdie(" Missed src_name and  dst_name ");
+    } 
+    my $params = {src_name => $self->src_name, dst_name => $self->dst_name};
+    $params->{parameters}{packetSize} = $self->packetsize if $self->packetsize;
+    $self->logger->info(" -------------------METADATA REQUEST:: ", sub{ Dumper  $params } );    
     eval {
         my $result = $self->ma->metadataKeyRequest($params);
         $metaids = $self->ma->getMetaData($result);
@@ -104,27 +107,34 @@ after 'get_metadata' => sub  {
 							   (!$self->packetsize  ||  $metaids->{$meta}->{packetSize} == $self->packetsize) 
 							  );	    
     }
-    $self->meta_keys([keys %{$metad_hr}]);
+    $self->meta_keys([ map {@{$metad_hr->{$_}{keys}}} keys %{$metad_hr}]);
     $self->metadata($metad_hr);
 };
 
 after 'get_data' => sub  {
     my ( $self, $params ) = @_;
     map {$self->$_($params->{$_})  if $self->can($_)} keys %$params if $params && ref $params eq ref {};
-    return unless  $self->meta_keys  || ( $self->src_name && $self->dst_name );
+    unless($self->meta_keys || ($self->src_name && $self->dst_name )) {
+        $self->logger->logdie(" Missed src_name and  dst_name or meta_keys parameter ");
+    } 
+   
+    my $md_result = $self->get_metadata();
+    $self->logger->info(" -------------------METADATA :: ", sub{ Dumper $self->meta_keys } );
+    unless($self->meta_keys) {
+          $self->logger->error(" No metadata returned !!! ");
+	  return;
+    }
     my $request =  {
             start => $self->start->epoch,
             end   => $self->end->epoch,
+	    keys =>   $self->meta_keys,
             resolution => $self->resolution,
             cf =>  $self->cf
         };
-    $request->{keys}     =   $self->meta_keys if $self->meta_keys;
-    $request->{src_name} =   $self->src_name  if $self->src_name;
-    $request->{dst_name} =   $self->dst_name  if $self->dst_name;
     my $dresult = $self->ma->setupDataRequest( $request );
     my $metaids    = $self->ma->getData($dresult);   
     my @data = ();
-    $self->logger->debug(" DATA :: ", sub{ Dumper $metaids  } );
+    $self->logger->info(" DATA :: ", sub{ Dumper $metaids  } );
     foreach my $key_id  (keys %{$metaids}) {
 	foreach my $id ( keys %{$metaids->{$key_id}{data}}) {
 	   foreach my $timev   (sort {$a <=> $b} keys %{$metaids->{$key_id}{data}{$id}}) {

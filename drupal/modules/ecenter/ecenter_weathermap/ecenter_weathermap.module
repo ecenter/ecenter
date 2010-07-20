@@ -121,7 +121,7 @@ function ecenter_weathermap_init() {
  * Primary selection form definition.
  */
 function _ecenter_weathermap_select_form() {
-  $inc = variable_get('ecenter_weathermap_time_increment', 5);
+  //$inc = variable_get('ecenter_weathermap_time_increment', 5);
 
   // Quick select options
   $quickselect_options = array(
@@ -138,17 +138,24 @@ function _ecenter_weathermap_select_form() {
     '#value' => '<p>MAP STUB</p>',
     '#suffix' => '</div>',
   );
-  $form['date_wrapper'] = array(
+
+  $form['date_select'] = array(
+    '#title' => t('Date select'), 
+    '#type' => 'date_combo',
+    '#columns' => array('value', 'value2'),
+  );
+    
+  $form['date_wrapper']['start_date'] = array(
     '#prefix' => '<div id="date-wrapper">',
     '#suffix' => '</div>',
   );
   $form['date_wrapper']['start_date'] = array(
-    '#type' => 'date_popup',
+    '#type' => 'date_text',
     '#title' => t('Start date'),
     '#date_increment' => $inc,
   );
   $form['date_wrapper']['end_date'] = array(
-    '#type' => 'date_popup',
+    '#type' => 'date_text',
     '#title' => t('End date'),
     '#date_increment' => $inc,
     '#ahah' => array(
@@ -253,14 +260,17 @@ function ecenter_weathermap_select_form(&$form_state) {
   $end = $end - $end % $unix_inc;
   $start = (!empty($start_date)) ? strtotime($start_date) : $end - variable_get('ecenter_weathermap_time_window', 3600);
   $start = $start - $start % $unix_inc;
+  /*dpm(date_timezone_names());
+  dpm(date_default_timezone_get());
+  dpm(date_default_timezone_name());
+  dpm(date_default_timezone());*/
 
-  dpm($start);
-  dpm(format_date($start, 'custom', 'Y-M-d g:i'));
-  dpm($end);
-  dpm(format_date($end, 'custom', 'Y-M-d g:i'));
+  $form['date_wrapper']['start_date']['#default_value'] = format_date($start, 'custom', 'Y-m-d H:i');
+  $form['date_wrapper']['end_date']['#default_value'] = format_date($end, 'custom', 'Y-m-d H:i');
 
-  $form['date_wrapper']['start_date']['#default_value'] = format_date($start, 'custom', 'Y-M-d g:i');
-  $form['date_wrapper']['end_date']['#default_value'] = format_date($end, 'custom', 'Y-M-d g:i');
+
+  //$form['date_wrapper']['start_date']['#default_value'] = $start_date;
+  //$form['date_wrapper']['end_date']['#default_value'] = $end_date;
 
   // Always get source hubs
   $src_hops = $client->getHubs();
@@ -303,6 +313,18 @@ function ecenter_weathermap_select_form(&$form_state) {
   }
 
   if ($src_ip && $dst_ip && $start_date && $end_date) {
+
+    //dpm($timezone);
+
+    //$adjusted_start_date = $start_date + $timezone;
+    //dpm($adjusted_start_date);
+    //$adjusted_start_date = date('Y-m-d H:i:s', strtotime($start_date) + $timezone);
+    //$adjusted_end_date = date('Y-m-d H:i:s', strtotime($end_date) + $timezone);
+
+    //$adjusted_start_date = 
+
+
+    //$data = $client->getData($src_ip, $dst_ip, $adjusted_start_date, $adjusted_end_date);
     $data = $client->getData($src_ip, $dst_ip, $start_date .':00', $end_date .':00');
 
     $query_params = array(
@@ -428,14 +450,19 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
   $data = ecenter_weathermap_parse_data($vars['data']['response']);
 
   foreach ($data as $trace_id => $traceroute) {
+    $output .= '<div class="traceroute">';
     foreach ($traceroute as $hop) {
       $output .= '<div id="hop-'. $hop['hop']['hop_id'] .'-wrapper" class="hop-wrapper">';
-      $output .= '<h2>'. $hop['hop']['hop_id'] .' ('. $hop['hop']['hop_ip'] .')</h2>';
+      $output .= '<h2 class="hop-name">'. $hop['hop']['hop_id'] .' ('. $hop['hop']['hop_ip'] .')</h2>';
+      $output .= '<div class="hop-info">Stub for hop info</div>';
+      $output .= '<div class="hop-data">';
       foreach ($hop['data'] as $type => $hop_data) {
         $output .= theme('ecenter_weathermap_render_data_'. $type, $hop_data); 
       }
       $output .= '</div>';
+      $output .= '</div>';
     }
+    $output .= '</div>';
   }
   $vars['traceroute'] = $output;
 }
@@ -461,9 +488,22 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
       $class = 'ecenter-marginal';
     }
 
+    //dpm('------------------');
+    //dpm($item['timestamp']);
+    //dpm(date('Y-m-d H:i:s', $item['timestamp']));  
+    global $user;
+    if (variable_get('configurable_timezones', 1) && $user->uid && strlen($user->timezone)) {
+      $timezone = $user->timezone;
+    }
+    else {
+      $timezone = variable_get('date_default_timezone', 0);
+    }
+
+
     $table[] = array(
       'label' => array(
-        'data' => format_date($item['timestamp'], 'custom', 'Y-m-d G:i:s'),
+        //'data' => format_date($item['timestamp'], 'custom', 'Y-m-d H:i:s'),
+        'data' => date('Y-m-d H:i:s', $item['timestamp'] + $timezone),
         'header' => TRUE,
       ),
       'utilization' => array(
@@ -487,7 +527,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
   $plot_options = array(
     'width' => 600,
     'height' => 200,
-    'hideTable' => TRUE,
+    //'hideTable' => TRUE,
     'plotOptions' => array(
       'seriesDefaults' => array(
         'lineWidth' => 1.5,

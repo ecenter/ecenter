@@ -214,9 +214,9 @@ sub process_data {
    
     ### snmp data for each hop - all unique hop IPs
     my %allhops = (%{$traceroute->{hops}}, %{$rev_traceroute->{hops}});
-    #$data->{snmp} = get_snmp(\%allhops, \%params );
+    $data->{snmp} = get_snmp(\%allhops, \%params );
     # end to end data  stats if available
-    ## return $data unless $params{src_ip} && $params{dst_ip};
+    return $data unless $params{src_ip} && $params{dst_ip};
     ##foreach my $e2e (qw/pinger bwctl owamp/) {
     my $src_node = dbix->resultset('Node')->find({ ip_addr =>  \"=inet6_pton('$params{src_ip}')"});
     my $dst_node = dbix->resultset('Node')->find({ ip_addr =>  \"=inet6_pton('$params{dst_ip}')"});    
@@ -244,11 +244,12 @@ sub get_pinger {
                                                     'service.type' => 'pinger' },
                                                  { join => 'service', '+select ' => [qw/service.url service.service/]});						 
    my @result = ();
+   return unless $md && $md->metaid;
    my @datas = dbix->resultset('Pinger_data')->search({ metaid => $md->metaid, 
                                                         timestamp => { '>=' => $params->{start}, '<=' => $params->{end}} 
    						     });
    my $end_time = -1; 
-   my $start_time =  4000000000; 
+   my $start_time =  40000000000; 
 
    foreach my $datum (@datas) {
        push @result, {timestamp => $datum->timestamp, meanRtt => $datum->meanRtt};
@@ -264,24 +265,24 @@ sub get_pinger {
    	 eval {
    	    debug " params to ma: ip=" . $md->service->url . " . start=$params->{start} end=$params->{end} ";
    	    my $ma =  Ecenter::Data::PingER->new({ url =>  $md->service->url  });
-
-   	    $ma->get_data({ 
+           
+	    my $request = { 
    	 			 src_name =>   $src_node->nodename, 
-   	 			 dst_name =>   $dst_node->nodename, 
+   	 			 dst_name =>   $dst_node->ip_noted, 
    	 			 start =>  DateTime->from_epoch( epoch =>  $params->{start}),
    	 			 end =>  DateTime->from_epoch( epoch => $params->{end}),
    	 			 cf => 'AVERAGE',
    	 			 resolution => '300',
-   	 		      });
+   	 		      };
+   	    $ma->get_data($request);
    	    debug "Data :: " .Dumper( $ma->data);
-   	    return;
    	    if($ma->data && @{$ma->data}) {
    	     	foreach my $data (@{$ma->data}) { 
-   	 	    dbix->resultset('Pinger_data')->update_or_create({  metaid => $md->metaid,
-   	 							        timestamp => $data->[0],
-   	 							   },
-   	 							   { key => 'meta_time'}
-   	 							   );
+		    my $sql_datum = {  metaid => $md->metaid,  timestamp => $data->[0]};
+		    foreach my $data_id (keys %{$data->[1]}) {
+		        $sql_datum->{$data_id} = $data->[1]{$data_id};
+		    }
+   	 	    dbix->resultset('Pinger_data')->update_or_create( $sql_datum,  { key => 'meta_time'}  );
    	 	 }
    	    }
    	 };

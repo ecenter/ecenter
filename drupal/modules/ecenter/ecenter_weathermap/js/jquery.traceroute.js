@@ -35,7 +35,8 @@ function TraceRoute(el, options) {
   this.el = el;
 
   // Get individual hops
-  this.hops = $('.' + options.wrapperClass, el);
+  var hops = this.hops = $('.' + options.wrapperClass, el);
+  hops.hide();
   var num_hops = this.hops.size();
 
   // Initialize canvas
@@ -94,13 +95,25 @@ function TraceRoute(el, options) {
     label.css({'position' : 'absolute', 'top' : label_y});
     label.css(label_css);
 
-    label.hover(function() {
-      $(this).css('color', 'red');
-    }, function() {
-      $(this).css('color', 'black');
-    });
 
     label_container.append(label);
+    label.data('HopData', this);
+
+    label.hover(function() {
+      hopdata = label.data('HopData');
+      $(hopdata).css({
+        'position': 'absolute',
+        'top': 600,
+        'left': 300,
+        'z-index': 10,
+        'background-color': '#ffffff',
+      });
+      $(hopdata).show();
+    }, function() {
+      hopdata = label.data('HopData');
+      $(hopdata).hide();
+    });
+
   });
 
   // Add canvas

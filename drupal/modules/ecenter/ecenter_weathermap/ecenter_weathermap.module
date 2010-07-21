@@ -101,9 +101,9 @@ function ecenter_weathermap_init() {
     drupal_add_js($jq_path .'/js/jquery.tablechart.js');
     drupal_add_js($jq_path .'/js/jqplot-behaviors.js');
 
-    // Query UI behavior
-    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/query.js');
-    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/display.js');
+    // Query UI behaviors and libraries
+    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/jquery.traceroute.js');
+    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/behaviors.js');
 
     // Additional CSS overrides
     drupal_add_css(drupal_get_path('module', 'ecenter_weathermap') .'/css/plot.css');
@@ -163,6 +163,7 @@ function _ecenter_weathermap_select_form() {
       'path' => ahah_helper_path(array('date_wrapper', 'end_date')),
     ),
   );
+
   $form['src_ip_wrapper'] = array(
     '#prefix' => '<div id="src-ip-wrapper">',
     '#suffix' => '</div>',
@@ -213,6 +214,7 @@ function _ecenter_weathermap_select_form() {
     '#attributes' => array('class' => 'no-js'),
   );
   $form['#tree'] = TRUE;
+
   return $form;
 }
 
@@ -268,7 +270,6 @@ function ecenter_weathermap_select_form(&$form_state) {
   $form['date_wrapper']['start_date']['#default_value'] = format_date($start, 'custom', 'Y-m-d H:i');
   $form['date_wrapper']['end_date']['#default_value'] = format_date($end, 'custom', 'Y-m-d H:i');
 
-
   //$form['date_wrapper']['start_date']['#default_value'] = $start_date;
   //$form['date_wrapper']['end_date']['#default_value'] = $end_date;
 
@@ -302,7 +303,6 @@ function ecenter_weathermap_select_form(&$form_state) {
 
   }
 
-  // See if provided destination is actually allowed
   if ($src_ip && $dst_ip) {
     if (array_key_exists($dst_ip, $form['dst_ip_wrapper']['dst_ip']['#options'])) {
       $form['dst_ip_wrapper']['dst_ip']['#default_value'] = $dst_ip;
@@ -528,7 +528,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
   $plot_options = array(
     'width' => 600,
     'height' => 200,
-    //'hideTable' => TRUE,
+    'hideTable' => TRUE,
     'plotOptions' => array(
       'seriesDefaults' => array(
         'lineWidth' => 1.5,

@@ -103,7 +103,7 @@ function TraceRoute(el, options) {
       hopdata = label.data('HopData');
       $(hopdata).css({
         'position': 'absolute',
-        'top': 500,
+        'top': 450,
         'left': 300,
         'z-index': 10,
         'background-color': '#ffffff',

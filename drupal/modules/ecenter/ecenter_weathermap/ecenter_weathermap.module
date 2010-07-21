@@ -273,7 +273,7 @@ function ecenter_weathermap_select_form(&$form_state) {
     $start_date = $_REQUEST['start'];
   }
   else {
-    $start_date = format_date(time() - 3600, 'custom', 'Y-m-d H:i');
+    $start_date = format_date(time() - 4500, 'custom', 'Y-m-d H:i');
   }
 
   if (is_array($form_state['storage']['date_wrapper']['end_date'])) {
@@ -286,7 +286,7 @@ function ecenter_weathermap_select_form(&$form_state) {
     $end_date = $_REQUEST['end'];
   }
   else {
-    $end_date = format_date(time(), 'custom', 'Y-m-d H:i');
+    $end_date = format_date(time() - 900, 'custom', 'Y-m-d H:i');
   }
 
   // Set sane values for start / end by converting and rounding
@@ -340,8 +340,18 @@ function ecenter_weathermap_select_form(&$form_state) {
 
   if ($src_ip && $dst_ip && $start_date && $end_date) {
 
+    $tz = date_default_timezone_name(TRUE);
+
+    $start_date_adjusted = date_create($start_date, timezone_open($tz));
+    date_timezone_set($start_date_adjusted, timezone_open('UTC'));
+    $start_date_adjusted = date_format($start_date_adjusted, 'Y-m-d H:i:s');
+
+    $end_date_adjusted = date_create($end_date, timezone_open($tz));
+    date_timezone_set($end_date_adjusted, timezone_open('UTC'));
+    $end_date_adjusted = date_format($end_date_adjusted, 'Y-m-d H:i:s');
+
     // @TODO time handling needs work!
-    $data = $client->getData($src_ip, $dst_ip, $start_date .':00', $end_date .':00');
+    $data = $client->getData($src_ip, $dst_ip, $start_date_adjusted, $end_date_adjusted);
 
     $query_params = array(
       'src_ip' => $src_ip,
@@ -505,9 +515,6 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
       $class = 'ecenter-marginal';
     }
 
-    //dpm('------------------');
-    //dpm($item['timestamp']);
-    //dpm(date('Y-m-d H:i:s', $item['timestamp']));  
     global $user;
     if (variable_get('configurable_timezones', 1) && $user->uid && strlen($user->timezone)) {
       $timezone = $user->timezone;
@@ -516,11 +523,9 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
       $timezone = variable_get('date_default_timezone', 0);
     }
 
-
     $table[] = array(
       'label' => array(
-        //'data' => format_date($item['timestamp'], 'custom', 'Y-m-d H:i:s'),
-        'data' => date('Y-m-d H:i:s', $item['timestamp'] + $timezone),
+        'data' => format_date($item['timestamp'], 'custom', 'Y-m-d H:i:s'),
         'header' => TRUE,
       ),
       'utilization' => array(
@@ -529,7 +534,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
       ),
     );
   }
-  
+
   $aggregate_table = array(
     'max' => array(
       'label' => array('data' => t('Max'), 'header' => TRUE,),

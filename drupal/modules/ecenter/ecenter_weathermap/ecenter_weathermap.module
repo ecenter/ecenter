@@ -289,14 +289,6 @@ function ecenter_weathermap_select_form(&$form_state) {
     $end_date = format_date(time() - 900, 'custom', 'Y-m-d H:i');
   }
 
-  // Set sane values for start / end by converting and rounding
-  /*$inc = variable_get('ecenter_weathermap_time_increment', 5);
-  $unix_inc = 60 * $inc;
-  $end = (!empty($end_date)) ? strtotime($end_date) : time();
-  $end = $end - $end % $unix_inc;
-  $start = (!empty($start_date)) ? strtotime($start_date) : $end - variable_get('ecenter_weathermap_time_window', 3600);
-  $start = $start - $start % $unix_inc;*/
-
   // Set dates
   $form['date_wrapper']['start_date']['#default_value'] = $start_date;
   $form['date_wrapper']['end_date']['#default_value'] = $end_date;

@@ -25,7 +25,7 @@ $.fn.traceroute.defaults = {
   'wrapperClass' : 'hop-wrapper',
   'infoClass' : 'hop-info',
   'nameClass' : 'hop-name',
-  'dataClass' : 'hop-data',
+  'dataClass' : 'hop-data'
 };
 
 // Traceroute constructor
@@ -39,8 +39,18 @@ function TraceRoute(el, options) {
   hops.hide();
   var num_hops = this.hops.size();
 
+  var canv = document.createElement('canvas');
+  // borrowed from flot by Ole Laursen
+  if ($.browser.msie) {
+    window.G_vmlCanvasManager.init_(document);
+    canv = window.G_vmlCanvasManager.initElement(canv);
+  }
+
   // Initialize canvas
-  var cv = this.cv = $('<canvas class="traceroute-graph">');
+  //var cv = this.cv = $('<canvas class="traceroute-graph">');
+
+  var cv = $(canv);
+  cv.addClass('traceroute-graph');
   var ctx = this.ctx = cv.get(0).getContext('2d');
 
   // Set canvas size
@@ -99,6 +109,7 @@ function TraceRoute(el, options) {
     label_container.append(label);
     label.data('HopData', this);
 
+    // Replace with better hover
     label.hover(function() {
       hopdata = label.data('HopData');
       $(hopdata).css({
@@ -106,7 +117,7 @@ function TraceRoute(el, options) {
         'top': 450,
         'left': 300,
         'z-index': 10,
-        'background-color': '#ffffff',
+        'background-color': '#ffffff'
       });
       $(hopdata).show();
     }, function() {

@@ -15,7 +15,7 @@ $.fn.datehide.defaults = {
   'startDateSelector' : '#start-date',
   'startTimeSelector' : '#start-time',
   'endDateSelector' : '#end-date',
-  'endTimeSelector' : '#end-time',
+  'endTimeSelector' : '#end-time'
 };
 
 function DateHide(el, opt) {

@@ -7,7 +7,7 @@ Drupal.behaviors.EcenterDatehide = function(context) {
     'startDateSelector' : '#edit-date-wrapper-start-date-datepicker-popup-0',
     'startTimeSelector' : '#edit-date-wrapper-start-date-timeEntry-popup-1',
     'endDateSelector' : '#edit-date-wrapper-end-date-datepicker-popup-0',
-    'endTimeSelector' : '#edit-date-wrapper-end-date-timeEntry-popup-1',
+    'endTimeSelector' : '#edit-date-wrapper-end-date-timeEntry-popup-1'
   });
 }
 

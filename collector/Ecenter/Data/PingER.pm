@@ -82,10 +82,10 @@ after 'get_metadata' => sub  {
     map {$self->$_($args->{$_}) if $self->can($_)}  keys %$args if $args && ref $args eq ref {};
     my $metaids = {};
     my $metad_hr = {};
-    unless( $self->src_name && $self->dst_name ) {
+    unless( ($self->src_name && $self->dst_name ) || $self->subject) {
         $self->logger->logdie(" Missed src_name and  dst_name ");
     } 
-    my $params = {src_name => $self->src_name, dst_name => $self->dst_name};
+    my $params = $self->subject?{subject => $self->subject}:{src_name => $self->src_name, dst_name => $self->dst_name};
     $params->{parameters}{packetSize} = $self->packetsize if $self->packetsize;
     $self->logger->info(" -------------------METADATA REQUEST:: ", sub{ Dumper  $params } );    
     eval {
@@ -114,7 +114,7 @@ after 'get_metadata' => sub  {
 after 'get_data' => sub  {
     my ( $self, $params ) = @_;
     map {$self->$_($params->{$_})  if $self->can($_)} keys %$params if $params && ref $params eq ref {};
-    unless($self->meta_keys || ($self->src_name && $self->dst_name )) {
+    unless($self->meta_keys || ($self->src_name && $self->dst_name )  || $self->subject) {
         $self->logger->logdie(" Missed src_name and  dst_name or meta_keys parameter ");
     } 
    

@@ -60,13 +60,7 @@ Default: from /etc/my_ecenter
 =back
 
 =cut
-use forks;
-use forks::shared 
-    deadlock => {
-    detect => 1,
-    resolve => 1
-};
-
+ 
 use FindBin qw($Bin);
 use lib "$Bin/../lib";
 
@@ -77,6 +71,8 @@ use Getopt::Long;
 use Data::Dumper;
 use XML::LibXML;
 use Net::Netmask;
+
+use Parallel::ForkManager;
 
 use perfSONAR_PS::Client::MA;
 use perfSONAR_PS::Client::Topology;
@@ -134,6 +130,8 @@ pod2usage(-verbose => 2) if ( $OPTIONS{help} || ($OPTIONS{procs} && $OPTIONS{pro
 $MAX_THREADS = $OPTIONS{procs} if $OPTIONS{procs} > 0 && $OPTIONS{procs}  < 40;
 $PAST_SECS = $OPTIONS{past} if $OPTIONS{past} > 0 && $OPTIONS{past}  <  10000;
 
+my $pm  =   new Parallel::ForkManager($MAX_THREADS);
+
 $OPTIONS{db} ||= 'ecenter_data';
 $OPTIONS{user} ||= 'ecenter';
 unless($OPTIONS{password}) {
@@ -159,7 +157,7 @@ foreach my $service ( qw/ps3/ ) {
             throw  perfSONAR_PS::Error if $status;
 	    parse_topo($dbh, $res);
 	}
-	get_snmp($dbh) if $OPTIONS{snmp};
+	get_snmp($dbh, $pm) if $OPTIONS{snmp};
     }
     catch perfSONAR_PS::Error   with {
         $logger->error( shift);
@@ -174,6 +172,9 @@ foreach my $service ( qw/ps3/ ) {
         $dbh->storage->disconnect if $dbh;
     };
 }
+$pm->wait_all_children;
+
+ 
 
 =head2  parse_topo
 
@@ -266,10 +267,10 @@ sub parse_topo {
 }
 
 sub get_snmp { 
-     my ($dbh ) = @_; 
-     my $services = $dbh->resultset('Service')->search({type => 'snmp', url => {like => '%es.net%'}});
-     # harcoded fix for miserable  ESnet services
-     unless($services->count) {
+    my ($dbh ) = @_; 
+    my $services = $dbh->resultset('Service')->search({type => 'snmp', url => {like => '%es.net%'}});
+    # harcoded fix for miserable  ESnet services
+    unless($services->count) {
         my $ps3_node =   $dbh->resultset('Node')->find({nodename => 'ps3.es.net'});
         $dbh->resultset('Service')->update_or_create({name => 'ESnet SNMP MA',
 	                                    type => 'snmp', 
@@ -278,30 +279,30 @@ sub get_snmp {
 					    is_alive => 1,
 					    updated =>  \"NOW()",
 					    url =>  'http://ps3.es.net:8080/perfSONAR_PS/services/snmpMA'});
-	 $services = $dbh->resultset('Service')->search({type => 'snmp', url => {like => '%es.net%'}});
-     }
-     my $ports = $dbh->resultset('L2_port')->search({ }, { 'join'  =>  'l2_src_links'  });
-     my %threads;
-     my $thread_counter = 0;
-     while( my $service = $services->next) {
-     	 my $snmp_ma =  Ecenter::Data::Snmp->new({ url => $service->url});
-	 unless($ports->count) {
-	     $logger->error(" !!! NO Ports !!! ");
-	     next;
-	 }
-     	 while( my  $port = $ports->next) {
+	$services = $dbh->resultset('Service')->search({type => 'snmp', url => {like => '%es.net%'}});
+    }
+    my $ports = $dbh->resultset('L2_port')->search({ }, { 'join'  =>  'l2_src_links'  });
+    my %threads;
+    my $thread_counter = 0;
+    while( my $service = $services->next) {
+     	my $snmp_ma =  Ecenter::Data::Snmp->new({ url => $service->url});
+	unless($ports->count) {
+	    $logger->error(" !!! NO Ports !!! ");
+	    next;
+	}
+     	while( my  $port = $ports->next) {
      	    my $ifAddresses = $dbh->resultset('L2_l3_map')->search( { l2_urn => $port->l2_urn }, 
      								    { 'join' => 'node', '+select' => ['node.ip_noted'] }
      								  );
-     	     unless ($ifAddresses->count) {
-	         $logger->error(" !!! NO Addresses !!! ");
+     	    unless ($ifAddresses->count) {
+	        $logger->error(" !!! NO Addresses !!! ");
 	        next;
-	     }
-	     while( my    $l3 = $ifAddresses->next) {
-	         $logger->debug("=====---------------===== \n ifAddress::" .$l3->node->ip_noted . " URN:" . $port->l2_urn );
-     		 foreach my $direction (qw/in out/) {
-		      pool_control($MAX_THREADS, 0);
-	              $threads{$thread_counter++} = threads->new( sub {
+	    }
+	    while( my    $l3 = $ifAddresses->next) {
+	        $logger->debug("=====---------------===== \n ifAddress::" .$l3->node->ip_noted . " URN:" . $port->l2_urn );
+     		foreach my $direction (qw/in out/) {
+		   
+	                my $pid = $pm->start and next; 
      		            $snmp_ma->get_data({ direction =>  $direction, 
 		                                 ifAddress => $l3->node->ip_noted, 
 		                                 start =>  DateTime->from_epoch( epoch => (time() - $PAST_SECS )),
@@ -319,8 +320,8 @@ sub get_snmp {
      									  utilization => $data->[1],
      								             },
 									     { key => 'meta_time'});
-     		           } 
-		      });      
+     		            } 
+		        $pm->finish;    
      		 }				  
      	     }
      	 }

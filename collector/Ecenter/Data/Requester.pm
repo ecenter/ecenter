@@ -58,12 +58,13 @@ use English qw( -no_match_vars );
 
 has 'ma'         => (is => 'rw', isa => 'Object' );
 has 'data'       => (is => 'rw', isa => 'ArrayRef');
+has 'subject'    => (is => 'rw', isa => 'Str');
 has 'metadata'   => (is => 'rw', isa => 'HashRef');
 has 'url'        => (is => 'rw', isa => 'Str' );
 has 'start'      => (is => 'rw', isa => 'DateTime');
 has 'end'        => (is => 'rw', isa => 'DateTime');
 has 'logger'     => (is => 'rw', isa => 'Log::Log4perl::Logger');
-has 'resolution' => (is => 'rw', isa => 'Ecenter::Types::PositiveInt', default => '300');
+has 'resolution' => (is => 'rw', isa => 'Ecenter::Types::PositiveInt', default => '100');
 has 'cf'         => (is => 'rw', isa => 'Str', default => 'AVERAGE');
 
  

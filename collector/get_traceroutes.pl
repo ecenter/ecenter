@@ -74,15 +74,10 @@ use English;
 use FindBin;
 use lib  "$FindBin::Bin";
 
+use Parallel::ForkManager;
 use Ecenter::Schema;
 use HTML::TreeBuilder::XPath;
-
-use forks;
-use forks::shared 
-    deadlock => {
-    detect => 1,
-    resolve => 1
-};
+ 
 use Getopt::Long;
 use Data::Dumper;
 use Log::Log4perl qw(:easy);
@@ -116,6 +111,8 @@ pod2usage(-verbose => 2) if ( $OPTIONS{help}    || ($OPTIONS{procs} && $OPTIONS{
 
 $MAX_THREADS = $OPTIONS{procs} if $OPTIONS{procs} &&  $OPTIONS{procs} > 0 && $OPTIONS{procs}  < 40;
 
+my $pm  =   new Parallel::ForkManager($MAX_THREADS);
+
 $OPTIONS{db} ||= 'ecenter_data';
 $OPTIONS{user} ||= 'ecenter';
 
@@ -142,8 +139,7 @@ while( my $service = $services->next) {
     my $mask = ( $service_ip  =~ /^[\d\.]+$/)?'31':'64';
     my $where = "inet6_mask(me.ip_addr, $mask) != inet6_mask(inet6_pton('". $service->node->ip_noted ."'), $mask) $dst_match";
   
-    pool_control($MAX_THREADS, 0);
-    threads->new( sub {    
+    my $pid = $pm->start and next; 
 	my $mech = WWW::Mechanize->new(   agent  => 'Mozilla/5.0 (compatible; MSIE 7.0; Windows 2000; .NET CLR 1.1.4322)',
               stack_depth => 1,
               env_proxy   => 1,
@@ -158,7 +154,7 @@ while( my $service = $services->next) {
 	};
 	if($EVAL_ERROR) {
             $logger->error(" Failed to get URL:  $nodename " );
-	    threads->exit();
+	    $pm->finish;
 	}
 	if($result->is_success) {
             my $dbh_node =  Ecenter::Schema->connect('DBI:mysql:' . $OPTIONS{db}, 
@@ -184,7 +180,7 @@ while( my $service = $services->next) {
             	    my ($pre) = $tree->findnodes('//pre');
 	    	    if($pre) {
 	    		my $trace = parse_trace($pre->as_text);
-	    		my $trace_data = $dbh->resultset('Traceroute_data')->update_or_create({ metaid =>  $metaid,
+	    		my $trace_data = $dbh->resultset('Traceroute_data')->update_or_create({ metaid =>  $metaid->metaid,
 	    										   number_hops  =>   $trace->{max_hops},
 	    										   updated =>   $now_sec,
 	    										},
@@ -203,7 +199,7 @@ while( my $service = $services->next) {
 	    			#$logger->info(" ip_addr " , sub {Dumper($ip_addr$ip_addr_obj )});
 	    			my $hop_addr_obj =  $dbh->resultset('Node')->find({ip_noted =>  $trace->{hops}{$hop}{ip}});
 	    			my $hop = $dbh->resultset('Hop')->update_or_create({  
-	    									     trace_id => $trace_data,
+	    									     trace_id => $trace_data->trace_id,
 	    									     hop_ip => $hop_addr_obj->ip_addr,
 	    									     hop_num => $hop,
 	    									     hop_delay => $trace->{hops}{$hop}{delay}
@@ -223,9 +219,10 @@ while( my $service = $services->next) {
         } else {
             $logger->error(" Failed to get URL:  $nodename- " . $result->status_line );
         }
-    });
+    $pm->finish;
 }	
-pool_control($MAX_THREADS, 'finish_it');
+$pm->wait_all_children;
+
  
 
 

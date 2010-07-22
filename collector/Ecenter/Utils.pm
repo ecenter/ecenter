@@ -97,9 +97,7 @@ sub pool_control {
 	while(my @running = threads->list(threads::running) ) {
 	    foreach my $tidx (@running) {
   		if( $tidx->is_running() ) {
-  		    usleep 10;
-  		} else {
-  		    $tidx->detach();
+  		    $tidx->join();
   		}
   	    }
 	}
@@ -107,14 +105,12 @@ sub pool_control {
     }
     my @running =  threads->list(threads::running);
     my $num_threads = scalar   @running;
-    $logger->debug("Threads::" . join(' : ', map {$_->tid}  @running) );
+    $logger->info("Threads::" . join(' : ', map {$_->tid}  @running) );
     
     while( $num_threads >= $max_threads) {
   	foreach my $tidx (@running) {
   	    if( $tidx->is_running() ) {
   		usleep 10;
-  	    } else {
-  		$tidx->join();
   		$num_threads = threads->list(threads::running);
   	    }
   	}

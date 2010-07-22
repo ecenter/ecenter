@@ -1,0 +1,202 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Provides functional tests for the E-Center project
+ */
+
+function ecenter_test_menu() {
+  $items['admin/ecenter/tests/select-ui'] = array(
+    'title' => 'Test form behaviors',
+    'page callback' => 'ecenter_test_select_ui',
+    'access arguments' => array('access ecenter test pages'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['admin/ecenter/tests/jqplot'] = array(
+    'title' => 'E-Center: Test jqPlot charting library',
+    'page callback' => 'ecenter_test_jqplot',
+    'access arguments' => array('access ecenter test pages'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['admin/ecenter/tests/element'] = array(
+    'title' => 'HTML Element Test',
+    'page callback' => 'theme',
+    'page arguments' => array('ecenter_html_test'),
+    'access arguments' => array('access ecenter test pages'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['admin/ecenter/tests/service-render'] = array(
+    'title' => 'Test Weathermap theming',
+    'page callback' => 'ecenter_test_service_render',
+    'access arguments' => array('access ecenter test pages'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['admin/ecenter/tests/traceroute-render'] = array(
+    'title' => 'Test traceroute rendering',
+    'page callback' => 'ecenter_test_traceroute_render',
+    'access arguments' => array('access ecenter test pages'),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+function ecenter_test_theme() {
+  $path = drupal_get_path('module', 'ecenter_test') .'/tpl';
+  return array(
+    'ecenter_html_test' => array('arguments' => array(), 'template' => 'ecenter-html-test', 'path' => $path),
+    'ecenter_jqplot_test' => array('arguments' => array(), 'template' => 'ecenter-jqplot-test', 'path' => $path),
+  );
+}
+
+function ecenter_test_forms($form_id, $args) {
+  return array(
+    'ecenter_test_select_form1' => array('callback' => 'ecenter_test_select_form'),
+    'ecenter_test_select_form2' => array(
+      'callback' => 'ecenter_test_select_form',
+      'callback arguments' => array(array(
+        'emulateDropdown' => TRUE,
+        'maxHeight' => '400px',
+        'exactMatch' => TRUE,
+      )),
+    ),
+  );
+}
+
+function ecenter_test_perm() {
+  return array('access ecenter test pages');
+}
+
+function ecenter_test_select_ui() {
+  return drupal_get_form('ecenter_test_select_form1') . drupal_get_form('ecenter_test_select_form2');
+}
+
+function ecenter_test_select_form($form_state, $quickselect_options = NULL) {
+
+  $options = _ecenter_test_fake_services();
+
+  // Try to guess proper selection, VERY simple minded currently
+  /*$remote_ip = explode('.', $_SERVER['REMOTE_ADDR']);
+  foreach ($options as $ip => $option) {
+    $row_ip = explode('.', $ip);
+    if ($row_ip[0] == $remote_ip[0] && $row_ip[1] == $remote_ip[1]) {
+      $default = $ip;
+      break;
+    }
+  }*/
+
+  $form = array(
+    'quickselect' => array(
+      '#title'         => t('Test select UI and address detection'),
+      '#type'          => 'quickselect',
+      '#options'       => $options,
+      '#cols'          => 50,
+      //'#default_value' => $default,
+      '#quickselect_options' => $quickselect_options,
+    )
+  );
+  return $form;
+}
+
+function ecenter_test_jqplot() {
+  // Get some data!
+  db_set_active('data');
+  $result = db_query('SELECT FROM_UNIXTIME(s.timestamp) as timestamp, s.utilization as utilization, s.errors as error, s.drops as drops FROM {snmp_data} s WHERE metaid=4690 ORDER BY s.timestamp');
+  db_set_active('default');
+
+  $table = array();
+  $i = 0;
+  while ($row = db_fetch_array($result)) {
+    $data = array();
+    foreach ($row as $key=>$value) {
+      $new_data = array('data' => $value, 'class' => $key);
+      if ($key == 'timestamp') {
+        $new_data['header'] = TRUE;
+      }
+      $data[] = $new_data;
+    }
+    $table[] = $data;
+  }
+
+  // Add JS
+  drupal_add_js(drupal_get_path('module', 'ecenter_test') .'/jqplot/excanvas.min.js');
+  drupal_add_js(drupal_get_path('module', 'ecenter_test') .'/jqplot/jquery.jqplot.js');
+
+  // Plugins...
+  drupal_add_js(drupal_get_path('module', 'ecenter_test') .'/jqplot/plugins/jqplot.dateAxisRenderer.js');
+  drupal_add_js(drupal_get_path('module', 'ecenter_test') .'/jqplot/plugins/jqplot.highlighter.min.js');
+  drupal_add_js(drupal_get_path('module', 'ecenter_test') .'/jqplot/plugins/jqplot.cursor.min.js');
+
+  // Libraries and behaviors
+  drupal_add_js(drupal_get_path('module', 'ecenter_test') .'/js/jquery.uuid.js');
+  drupal_add_js(drupal_get_path('module', 'ecenter_test') .'/js/tablechart.js');
+
+  // Add CSS
+  drupal_add_css(drupal_get_path('module', 'ecenter_test') .'/jqplot/jquery.jqplot.css');
+  drupal_add_css(drupal_get_path('module', 'ecenter_weathermap') .'/css/plot.css');
+
+  return theme('table', array('Timestamp', 'Utilization', 'Errors', 'Drops'), $table, array('class' => 'graph-me'));
+}
+
+function template_preprocess_ecenter_jqplot_test() {}
+
+/* Return straight HTML */
+function template_preprocess_ecenter_html_test() {}
+
+/* Return array of fake stuff */
+function _ecenter_test_fake_services() {
+  require_once 'lib/LoremIpsum.class.php';
+  $generator = new LoremIpsumGenerator;
+
+  $i = 0;
+  $output = array();
+  while ($i < 225) {
+    $i++;
+    $max = $i + 24;
+    $ip = rand(1, $max) .'.'. rand(1, $max) .'.'. rand(1, $max) .'.'. rand(1, $max);
+    $output[$ip] = $generator->getContent(3, 'plain', FALSE) .'('. $ip . ')';
+  }
+  shuffle($output);
+  return $output;
+}
+
+function ecenter_test_service_render() {
+  $client = ecenter_weathermap_get_client();
+  $response = $client->getData('131.243.24.11', '198.32.44.130', '2010-07-09 10:00:00', '2010-07-09 12:00:00');
+  $data = ecenter_weathermap_parse_data($response['response']);
+
+  $output = '';
+
+  foreach ($data as $traceroute=>$hops) {
+    foreach ($hops as $hop) {
+      foreach ($hop['data'] as $type => $hop_data) {
+        $output .= '<h2>'. $hop['hop']['hop_id'] .'</h2>';
+        if (!empty($hop_data)) {
+          $output .= theme('ecenter_weathermap_render_data_'. $type, $hop_data);
+        }
+      }
+    }
+    //$output .= '<h2>'. $hops[0]['hop']['hop_id'] .'</h2>';
+    //$output .= theme('ecenter_weathermap_render_data_'. 'snmp', $hops[0]['data']['snmp']);
+  }
+
+  return $output;
+}
+
+function ecenter_test_traceroute_render() {
+  drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/display.js');
+
+  $i = 0;
+  $output = '<div class="traceroute">';
+  while ($i < 10) {
+    $output .= '<div class="hop-wrapper">';
+    $output .= '  <h2 class="hop-name">Hop '. $i .'</h2>';
+    $output .= '  <div class="hop-info">FAKE INFO</div>';
+    $output .= '  <div class="hop-data">FAKE DATA</div>';
+    $output .= '</div>';
+    $i += 1;
+  }
+  $output .= '</div>';
+  return $output;
+}

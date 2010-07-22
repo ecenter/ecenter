@@ -1,0 +1,27 @@
+<?php
+
+/**
+ * Implementation of hook_install().
+ */
+function theming_hacks_install() {
+  db_query("UPDATE {system} SET weight = %d WHERE name = 'theming_hacks'", 9999);
+}
+
+function theming_hacks_update_6101() {
+  $ret = array();
+
+  $ret[] = update_sql("UPDATE {blocks} SET cache = " . BLOCK_CACHE_GLOBAL . " WHERE module = 'theming_hacks' AND delta = 'site_name'");
+  $ret[] = update_sql("UPDATE {blocks} SET cache = " . BLOCK_CACHE_GLOBAL . " WHERE module = 'theming_hacks' AND delta = 'site_slogan'");
+  $ret[] = update_sql("UPDATE {blocks} SET cache = " . BLOCK_CACHE_GLOBAL . " WHERE module = 'theming_hacks' AND delta = 'site_mission'");
+  $ret[] = update_sql("UPDATE {blocks} SET cache = " . BLOCK_CACHE_GLOBAL . " WHERE module = 'theming_hacks' AND delta = 'site_footer'");
+
+  $ret[] = update_sql("UPDATE {blocks} SET cache = " . BLOCK_CACHE_PER_PAGE . " WHERE module = 'theming_hacks' AND delta = 'primary_links'");
+  $ret[] = update_sql("UPDATE {blocks} SET cache = " . BLOCK_CACHE_PER_PAGE . " WHERE module = 'theming_hacks' AND delta = 'secondary_links'");
+  $ret[] = update_sql("UPDATE {blocks} SET cache = " . BLOCK_CACHE_PER_PAGE . " WHERE module = 'theming_hacks' AND delta = 'tertiary_links'");
+  $ret[] = update_sql("UPDATE {blocks} SET cache = " . BLOCK_CACHE_PER_PAGE . " WHERE module = 'theming_hacks' AND delta = 'tertiary_links_expanded'");
+
+  $ret[] = update_sql("UPDATE {blocks} SET cache = " . BLOCK_NO_CACHE . " WHERE module = 'theming_hacks' AND delta = 'local_tasks'");
+
+  return $ret;
+}
+

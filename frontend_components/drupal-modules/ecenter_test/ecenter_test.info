@@ -1,0 +1,5 @@
+;$Id$
+name = E-Center Test
+package = E-Center Project
+description = Functional testing pages for E-Center project
+core = 6.x

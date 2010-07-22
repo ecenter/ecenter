@@ -1,0 +1,36 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Integrates with the nodehierarchy module to automatically generate a node
+ * hierarchy based on the path assigned by the user.
+ *
+ * The goal of this module is to integrate with the wikitools and/or
+ * freelinking modules to allow automatic creation of node hierarchy based on
+ * node path.
+ */
+
+/*function path_hierarchy_menu() {
+  $items['node/%node/
+}*/
+
+
+function path_hierarchy_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
+  if ($op == 'presave') {
+    dpm('presave called');
+    dpm($node);
+  }
+}
+
+function path_hierarchy_nodehierarchyapi($op, &$node) {
+  switch ($op) {
+    case 'node_form':
+      explode('/', $node->path);
+
+      dpm('nodehierarchyapi called...');
+      dpm($node);
+      break;
+  }
+}
+

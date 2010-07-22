@@ -1,0 +1,7 @@
+;$Id$
+name = QuickSelect
+package = Utilties
+description = Add QuickSelect FAPI element type
+core = 6.x
+
+dependencies[] = jq

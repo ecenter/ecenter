@@ -1,0 +1,17 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * E-Center forms hacks
+ */
+
+/**
+ * Implementation hook_form_alter().
+ */
+function ecenter_forms_form_alter(&$form, &$form_state, $form_id) {
+  switch ($form_id) {
+    case 'search_block_form':
+      unset($form['search_block_form']['#title']);
+  }
+}

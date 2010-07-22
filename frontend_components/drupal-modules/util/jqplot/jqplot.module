@@ -1,0 +1,45 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ *
+ * Integrates jqPlot library with Drupal with help of "tablechart" plugin.
+ */
+
+/**
+ * Register a "tablechart"
+ *
+ * ONLY the first call's settings for a given selector will be respected.
+ */
+function jqplot_register_tablechart($selector, $settings = array()) {
+  static $selectors = array();
+
+  if (empty($selectors[$selector])) {
+    $path = drupal_get_path('module', 'jqplot');
+
+    // Core library
+    drupal_add_js($path .'/jqplot/excanvas.min.js');
+    drupal_add_js($path .'/jqplot/jquery.jqplot.min.js');
+
+    // Our libraries and behaviors
+    drupal_add_js($path .'/js/jquery.uuid.js');
+    drupal_add_js($path .'/js/jquery.tablechart.js');
+    drupal_add_js($path .'/js/jqplot-behaviors.js');
+
+    // @TODO:  Support ALL plugins, with more intelligence!
+    drupal_add_js($path .'/jqplot/plugins/jqplot.dateAxisRenderer.js');
+
+    if (!empty($settings['plotOptions']['highlighter'])) {
+      drupal_add_js($path .'/jqplot/plugins/jqplot.highlighter.min.js');
+    }
+    if (!empty($settings['plotOptions']['cursor'])) {
+      drupal_add_js($path .'/jqplot/plugins/jqplot.cursor.min.js');
+    }
+
+    $behavior = array();
+    $behavior['jqPlot'][$selector] = $settings;
+    drupal_add_js($behavior, 'setting');
+    $selectors[$selector] = $behavior;
+  }
+}

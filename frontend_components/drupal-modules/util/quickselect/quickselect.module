@@ -1,0 +1,68 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Integrates the QuickSelect query library with Drupal
+ *
+ * To install, download the QuickSelect jQuery library from
+ * http://github.com/dcparker/jquery_plugins/ and copy
+ * jquery.quickselect.js, jquery.quickselect.css, and fuzzy-string.js to your
+ * jQuery plugins directory (sites/example.com/plugins).
+ *
+ * To use, set the FAPI #type for a form element to 'quickselect' anywhere you
+ * would normally use the 'select' type.
+ *
+ */
+
+/**
+ * Implementation of hook_theme().
+ */
+function quickselect_theme() {
+  return array(
+    'quickselect' => array('arguments' => array('element' => NULL)),
+  );
+}
+
+/**
+ * Implementation of hook_elements().
+ */
+function quickselect_elements() {
+  return array(
+    'quickselect' => array(
+      '#input' => TRUE,
+      '#size' => 0,
+      '#multiple' => FALSE,
+      '#attributes' => array('class' => 'form-quickselect'),
+      '#process' => array('form_expand_ahah'),
+    ),
+  );
+}
+
+/**
+ * Theme quickselect element
+ *
+ * This acts as a wrapper to theme_select.  If you override the select theme to
+ * render as, say, checkboxes, you will probably break quickselect unless you
+ * provide alternative rendering here.
+ */
+function theme_quickselect($element) {
+  jq_add('quicksilver');
+  jq_add('jquery.quickselect');
+
+  // A dummy settings array is required, otherwise Drupal's array_merge behavior
+  // while adding settings will mess up the data structure.
+  $options = (is_array($element['#quickselect_options'])) ? $element['#quickselect_options'] : array('delay' => 400);
+
+  drupal_add_js(drupal_get_path('module', 'quickselect') .'/js/quickselect-behavior.js');
+  drupal_add_js(array('QuickSelect' => array($element['#id'] => $options)), 'setting');
+
+  drupal_add_css(drupal_get_path('module', 'quickselect') .'/css/quickselect.css');
+
+  // "Borrowed" from the theme_select function
+  $select = '';
+  $size = $element['#size'] ? ' size="'. $element['#size'] .'"' : '';
+  _form_set_class($element, array('form-quickselect'));
+  $multiple = $element['#multiple'];
+  return theme('form_element', $element, '<select name="'. $element['#name'] .''. ($multiple ? '[]' : '') .'"'. ($multiple ? ' multiple="multiple" ' : '') . drupal_attributes($element['#attributes']) .' id="'. $element['#id'] .'" '. $size .'>'. form_select_options($element) .'</select>');
+}

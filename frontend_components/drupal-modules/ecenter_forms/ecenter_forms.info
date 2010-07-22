@@ -1,0 +1,5 @@
+;$Id$
+name = E-Center Forms
+package = E-Center Project
+description = E-Center forms overrides
+core = 6.x

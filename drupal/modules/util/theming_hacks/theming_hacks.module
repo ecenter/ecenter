@@ -1,7 +1,8 @@
 <?php
 
 /**
- * @file theming_hacks.module
+ * @file
+ * Auto-detect CSS without registration in a theme's .info file.
  *
  * Auto-detect and override CSS files without registration in a theme's
  * .info file.  This is a simple convenience, but it is fast and makes
@@ -17,23 +18,29 @@
  *
  * Overrides CSS.
  */
-function theming_hacks_preprocess_page(&$variables, $hook) {
-  $variables['styles'] = theming_hacks_get_css();
+function theming_hacks_preprocess_page(&$vars) {
+  $vars['styles'] = theming_hacks_get_css();
+  if (module_exists('conditional_styles')) {
+    $vars['styles'] .= $vars['conditional_styles'];
+  }
 }
 
 /**
- * This function overrides the default Drupal CSS setting behavior.  If a CSS
- * file of the same name as a module or system CSS file exists in the current
- * theme under the 'css' folder, then we use it *instead* of the 
- * Drupal/module-provided CSS file.  
+ * Overrides how Drupal discovers and delivers CSS to the page_preprocess
+ * function.
+ *
+ * If a CSS file of the same name as a module or system CSS file exists in the
+ * current theme under the 'css' folder, then we use it *instead* of the
+ * Drupal/module-provided CSS file.
  *
  * If the CSS file does not exist and the current theme is a subtheme, we
  * search up the base theme tree to see if it exists in a parent theme.
  *
  * Becase this can be accomplished by registering CSS files with the same names as
- * the module-provided CSS files in your .info file, this is only for convenience.
+ * the module-provided CSS files in your .info file, this module is faintly
+ * useless.
  *
- * @return 
+ * @return
  *   Rendered Drupal CSS
  */
 function theming_hacks_get_css() {
@@ -49,7 +56,7 @@ function theming_hacks_get_css() {
   foreach ($old_css as $section=>$type) {
     foreach ($type as $type_name=>$css_file) {
       foreach ($css_file as $path=>$enabled) {
-        $file = array_pop(explode('/', $path));  
+        $file = array_pop(explode('/', $path));
 
         // Find override in current theme
         $override = file_scan_directory($path_to_theme .'/css', '^'. $file .'$', array('.', '..', 'CVS'));

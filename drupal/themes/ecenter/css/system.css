@@ -157,3 +157,8 @@ div.warning {
   background-color: #ffb6c1;
 }
 /* }}} */
+/* Javascript {{{ */
+html.js .no-js {
+  display: none;
+}
+/* }}} */

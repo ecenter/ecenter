@@ -18,7 +18,7 @@ class Ecenter_Data_Service_Client {
   /**
    * Connection options
    */
-  protected $_host, $_port, $_path, $_timeout, $_url;
+  protected $_host, $_port, $_path, $_timeout, $_url, $_status_timeout;
 
   /**
    * Provide a backdoor method for returning other data types than json
@@ -35,13 +35,14 @@ class Ecenter_Data_Service_Client {
    * @param $path
    *   The base path of the query service.
    */
-  public function __construct($host = 'localhost', $port = 8099, $path = '', $timeout = 30) {
+  public function __construct($host = 'localhost', $port = 8099, $path = '', $timeout = 30, $status_timeout = 2) {
     $this->_host = $host;
     $this->_port = $port;
     $this->_path = $path;
     $this->_url = 'http://'. $host .':'. $port;
     $this->_url .= ($path) ? '/'. $path : '';
     $this->_timeout = $timeout;
+    $this->_status_timeout = $status_timeout;
   }
 
   /**
@@ -51,9 +52,14 @@ class Ecenter_Data_Service_Client {
    * @param $parameters
    *   An array of search/filter parameters, if required.
    */
-  protected function query($path, $parameters = FALSE) {
+  protected function query($path, $parameters = NULL, $timeout = NULL) {
+    static $results = array();
+
+    $timeout = ($timeout) ? $timeout : $this->_timeout;
+
     $url = $this->_url .'/'. $path .'.'. $this->data_type;
     $querystring = ($parameters) ? http_build_query($parameters) : FALSE;
+
     if (!empty($querystring)) {
       $url .= '?'. $querystring;
     }
@@ -61,34 +67,38 @@ class Ecenter_Data_Service_Client {
     // @TODO Dancer does not support encoded ampersands in the querystring
     $url = str_replace('&amp;', '&', $url);
 
-    $handle = curl_init();
+    if (empty($results[$url])) {
+      $handle = curl_init();
 
-    curl_setopt($handle, CURLOPT_URL, $url);
-    curl_setopt($handle, CURLOPT_RETURNTRANSFER, TRUE);
-    curl_setopt($handle, CURLOPT_TIMEOUT, $this->_timeout);
+      curl_setopt($handle, CURLOPT_URL, $url);
+      curl_setopt($handle, CURLOPT_RETURNTRANSFER, TRUE);
+      curl_setopt($handle, CURLOPT_TIMEOUT, $timeout);
 
-    $response = curl_exec($handle);
+      $response = curl_exec($handle);
 
-    if (!empty($response)) {
-      $code = curl_getinfo($handle, CURLINFO_HTTP_CODE);
-      $response = json_decode($response);
+      if (!empty($response)) {
+        $code = curl_getinfo($handle, CURLINFO_HTTP_CODE);
+        $response = json_decode($response);
+      }
+      else {
+        $code = 0;
+        $response = 'Timed out after '. $this->_timeout .' seconds.';
+      }
+
+      curl_close($handle);
+
+      $results[$url] = array(
+        'code' => $code,
+        'response' => $response,
+      );
     }
-    else {
-      $code = 0;
-      $response = 'Timed out after '. $this->_timeout .' seconds.';
-    }
 
-    curl_close($handle);
-
-    return array(
-      'code' => $code,
-      'response' => $response,
-    );
+    return $results[$url];
   }
 
   public function checkStatus() {
     $q = 'status';
-    $status = $this->query($q);
+    $status = $this->query($q, NULL, $this->_status_timeout);
     if ($status['response']->status) {
       return TRUE;
     }
@@ -135,35 +145,6 @@ class Ecenter_Data_Service_Client {
     }
     return $this->query('metadata', $parameters);
   }
-
-  /**
-   * @param $meta_id
-   *   The metadata id that describes the test the returned
-   *   data comes from.
-   *
-   * @param $type
-   *   The type of data requested.
-   *
-   * @param $start_date
-   *   The start date for data, formatted as YYYY-MM-DD HH:mm:ss
-   *
-   * @param $end_date
-   *   The end date for data, formatted as YYYY-MM-DD HH:mm:ss
-   *
-   * @param $debug
-   *   Include query debugging information in the response.
-   */
-  /*public function getData($meta_id, $type, $start_date, $end_date, $debug=FALSE) {
-    $parameters = array(
-      'start' => $start_date,
-      'end' => $end_date,
-    );
-    if ($debug) {
-      $parameters += array('debug' => TRUE);
-    }
-    return $this->query($type .'_data/'. $meta_id, $parameters);
-  }*/
-
 
   /**
    * @param $src_ip

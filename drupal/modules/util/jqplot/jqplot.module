@@ -5,13 +5,12 @@
  * @file
  *
  * Integrates jqPlot library with Drupal with help of "tablechart" plugin.
-
  */
 
 /**
  * Register a "tablechart"
- * 
- * Only the first function which registers a table chart is respected
+ *
+ * ONLY the first call's settings for a given selector will be respected.
  */
 function jqplot_register_tablechart($selector, $settings = array()) {
   static $selectors = array();
@@ -21,7 +20,6 @@ function jqplot_register_tablechart($selector, $settings = array()) {
 
     // Core library
     drupal_add_js($path .'/jqplot/excanvas.min.js');
-    //drupal_add_js($path .'/jqplot/jquery.jqplot.js');
     drupal_add_js($path .'/jqplot/jquery.jqplot.min.js');
 
     // Our libraries and behaviors
@@ -29,10 +27,9 @@ function jqplot_register_tablechart($selector, $settings = array()) {
     drupal_add_js($path .'/js/jquery.tablechart.js');
     drupal_add_js($path .'/js/jqplot-behaviors.js');
 
-    // Plugins...
+    // @TODO:  Support ALL plugins, with more intelligence!
     drupal_add_js($path .'/jqplot/plugins/jqplot.dateAxisRenderer.js');
 
-    // @TODO:  Support ALL plugins...
     if (!empty($settings['plotOptions']['highlighter'])) {
       drupal_add_js($path .'/jqplot/plugins/jqplot.highlighter.min.js');
     }

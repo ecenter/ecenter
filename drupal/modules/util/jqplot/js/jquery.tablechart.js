@@ -7,38 +7,41 @@ $.fn.tablechart = function(options) {
   this.each(function(i) {
     var table = $(this);
     var tabledata = $.fn.tablechart.scrapeTable(table);
-    var chart = table.data('chart');
 
-    // Get and redraw chart, or create a new one
-    if (chart != undefined) {
-      for (i in tabledata.data) {
-        chart.series[i].data = series[i];
+    if (tabledata.data.length) {
+      var chart = table.data('chart');
+
+      // Get and redraw chart, or create a new one
+      if (chart != undefined) {
+        for (i in tabledata.data) {
+          //chart.series[i].data = series[i];
+        }
+        chart.replot({resetAxes: true});
+      } else {
+        // Push scraped labels into series options 
+        $.extend(true, o.plotOptions.series, tabledata.labels);
+
+        chartId = $.uuid('chart-');
+        chartContainer = $('<div>').attr('id', chartId);
+
+        if (o.height) { chartContainer.height(o.height); }
+        if (o.width) { chartContainer.width(o.width); }
+
+        // Attach chart
+        if (!o.append) {
+          table.before(chartContainer);
+        }
+        else {
+          $(o.appendSelector).append(chartContainer);
+        }
+        if (o.hideTable) {
+          table.hide();
+        }
+
+        // Draw, store chart
+        chart = $.jqplot(chartId, tabledata.data, o.plotOptions);
+        table.data('chart', chart);
       }
-      chart.replot({resetAxes: true});
-    } else {
-      // Push scraped labels into series options 
-      $.extend(true, o.plotOptions.series, tabledata.labels);
-
-      chartId = $.uuid('chart-');
-      chartContainer = $('<div>').attr('id', chartId);
-
-      if (o.height) { chartContainer.height(o.height); }
-      if (o.width) { chartContainer.width(o.width); }
-
-      // Attach chart
-      if (!o.append) {
-        table.before(chartContainer);
-      }
-      else {
-        $(o.appendSelector).append(chartContainer);
-      }
-      if (o.hideTable) {
-        table.hide();
-      }
-
-      // Draw, store chart
-      chart = $.jqplot(chartId, tabledata.data, o.plotOptions);
-      table.data('chart', chart);
     }
 
   });

@@ -132,16 +132,13 @@ function _ecenter_weathermap_select_form() {
   );
 
   // Map
-  openlayers_include();
+  /*openlayers_include();
   $preset = openlayers_preset_load('ecenter_weathermap');
-  $map = openlayers_render_map($preset->data, $preset->name);
+  $map = openlayers_render_map($preset->data, $preset->name);*/
+  $map = 'Mapping temporarily disabled until it works dynamically';
 
   // Network map
-  $form['network_map_wrapper'] = array(
-    '#prefix' => '<div id="weathermap-wrapper">',
-    '#suffix' => '</div>',
-  );
-  $form['network_map_wrapper']['network_map'] = array(
+  $form['weathermap'] = array(
     '#prefix' => '<div id="weathermap">',
     '#value' => $map,
     '#suffix' => '</div>',
@@ -343,6 +340,15 @@ function ecenter_weathermap_select_form(&$form_state) {
     if ($data['code'] == 200 && !empty($data['response']->traceroute)) {
       $permalink = l(t('Permalink'), 'weathermap', array('query' => $query_params));
       $form['results_wrapper']['results']['#value'] = theme('ecenter_weathermap_data', $data, $permalink);
+
+      // Map
+      $_REQUEST = $query_params;
+      openlayers_include();
+      $preset = openlayers_preset_load('ecenter_weathermap');
+
+      $map = openlayers_render_map($preset->data, $preset->name);
+      $form['weathermap']['#value'] = $map;
+
     }
     else {
       watchdog('ecenter', 'Query returned no results: <code>@query</code>', array('@query' => $query), WATCHDOG_INFO);
@@ -471,6 +477,8 @@ function ecenter_weathermap_ctools_plugin_api($module, $api) {
     switch ($api) {
       case 'openlayers_layers':
         return array('version' => 1);
+      case 'openlayers_styles':
+        return array('version' => 1);
     }
   }
 }
@@ -482,15 +490,15 @@ function ecenter_weathermap_openlayers_styles() {
   $styles = array();
   $style = new stdClass();
   $style->api_version = 1;
-  $style->name = 'default';
+  $style->name = 'ecenter_default';
   $style->title = t('E-Center Style');
   $style->description = t('Basic E-center style.');
   $style->data = array(
-    'pointRadius' => 10,
-    'fillColor' => '#FFCC66',
-    'strokeColor' => '#FF9933',
-    'strokeWidth' => 6,
-    'fillOpacity' => 0.8,
+    'pointRadius' => 7,
+    'fillColor' => '#ffffff',
+    'strokeColor' => '#0000aa',
+    'strokeWidth' => 3,
+    'fillOpacity' => 0.5,
   );
   $styles[$style->name] = $style;
   return $styles;
@@ -530,22 +538,33 @@ function ecenter_weathermap_raw_layers() {
 
     $start_date_adjusted = _ecenter_weathermap_date_to_utc($start);
     $end_date_adjusted = _ecenter_weathermap_date_to_utc($end);
-    
+
     $data = $client->getData($src_ip, $dst_ip, $start_date_adjusted, $end_date_adjusted);
     $traceroutes = _ecenter_weathermap_object_to_array($data['response']->traceroute);
 
     foreach ($traceroutes as $traceroute) {
-      $i = 32;
+      $old_hop = NULL;
+      $count = count($traceroute);
+      $i = 0;
       foreach ($traceroute as $hop) {
+        if ($hop['longitude'] && $hop['latitude']) {
+          $features[] = array(
+            'wkt' => "POINT({$hop['longitude']} {$hop['latitude']})",
+            "projection"=> "4326",
+            'attributes' => array(
+              'name' => $hop['hop_ip'],
+              'description' => $hop['hop_id'],
+            ),
+          );
+          if ($old_hop && $i < $count) {
+            $features[] = array(
+              'wkt' => "LINESTRING({$old_hop['longitude']} {$old_hop['latitude']},{$hop['longitude']} {$hop['latitude']})",
+              "projection"=> "4326",
+            );
+          }
+          $old_hop = $hop;
+        }
         $i += 1;
-        $features[] = array(
-          'wkt' => "POINT({$hop['longitude']} {$hop['latitude']})",
-          "projection"=> "4326",
-          'attributes' => array(
-            'name' => $hop['hop_ip'],
-            'description' => $hop['hop_id'],
-          ),
-        );
       }
     }
     return $features;

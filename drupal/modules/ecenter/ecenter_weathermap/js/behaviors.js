@@ -11,3 +11,10 @@ Drupal.behaviors.EcenterDatehide = function(context) {
   });
 }
 
+Drupal.behaviors.EcenterEvents = function(context) {
+  $('#ip-select-wrapper input').change(function() {
+    if ($(this).val() == 'Select a source' || $(this).val() == 'Select a destination') {
+      $('#results-wrapper').text('');
+    }
+  });
+}

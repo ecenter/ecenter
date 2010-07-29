@@ -1,5 +1,5 @@
 Drupal.behaviors.EcenterTraceroute = function(context) {
-  $('.traceroute').traceroute();
+  $('.traceroute-wrapper').traceroute();
 }
 
 Drupal.behaviors.EcenterDatehide = function(context) {
@@ -12,9 +12,10 @@ Drupal.behaviors.EcenterDatehide = function(context) {
 }
 
 Drupal.behaviors.EcenterEvents = function(context) {
-  $('#ip-select-wrapper input').change(function() {
-    if ($(this).val() == 'Select a source' || $(this).val() == 'Select a destination') {
-      $('#results-wrapper').text('');
-    }
+  $('#ip-select-wrapper input[type=hidden]').change(function() {
+    $('#results-wrapper').text('');
+  });
+  $('#ip-select-wrapper input#edit-ip-select-src-ip-wrapper-src-ip').change(function() {
+    $('#ip-select-wrapper input#edit-ip-select-dst-ip-wrapper-dst-ip_quickselect').val('').attr('disabled', true);
   });
 }

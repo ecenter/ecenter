@@ -22,10 +22,11 @@ $.fn.traceroute.defaults = {
   'hopStrokeColor' : '#555555',
   'hopFillColor' : '#ffffff',
   'hopStrokeWidth' : 4,
-  'wrapperClass' : 'hop-wrapper',
-  'infoClass' : 'hop-info',
-  'nameClass' : 'hop-name',
-  'dataClass' : 'hop-data'
+  'tracerouteClass' : 'traceroute',
+  'hopWrapperClass' : 'hop-wrapper',
+  'hopInfoClass' : 'hop-info',
+  'hopNameClass' : 'hop-name',
+  'hopDataClass' : 'hop-data'
 };
 
 // Traceroute constructor

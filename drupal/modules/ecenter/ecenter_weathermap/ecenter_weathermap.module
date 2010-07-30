@@ -132,9 +132,9 @@ function _ecenter_weathermap_select_form() {
   );
 
   // Map
-  $map = ecenter_weathermap_refresh_map('ecenter_weathermap');
-  //$preset = openlayers_preset_load('ecenter_weathermap');
-  //$map = openlayers_render_map($preset->data, $preset->name);
+  //$map = ecenter_weathermap_refresh_map('ecenter_weathermap');
+  $preset = openlayers_preset_load('ecenter_weathermap');
+  $map = openlayers_render_map($preset->data, $preset->name);
   //$map = 'Mapping temporarily disabled until it works dynamically';
 
   // Network map
@@ -337,7 +337,7 @@ function ecenter_weathermap_select_form(&$form_state) {
 
     // If we've got the data (at bare minimum, a traceroute), delegate to rendering function
     if ($data['code'] == 200 && !empty($data['response']->traceroute)) {
-      //ecenter_weathermap_refresh_map('ecenter_weathermap', $data['response'], 'openlayers-map-auto-id-0');
+      ecenter_weathermap_refresh_map('ecenter_weathermap', 'openlayers-map-auto-id-0');
       $permalink = l(t('Permalink'), 'weathermap', array('query' => $query_params));
       $form['results_wrapper']['results']['#value'] = theme('ecenter_weathermap_data', $data, $permalink);
     }
@@ -364,34 +364,53 @@ function ecenter_weathermap_select_form(&$form_state) {
  * @param $id
  *  Optional ID to use for map.
  */
-function ecenter_weathermap_refresh_map($preset, $data = array(), $id = NULL, $render = TRUE) {
+function ecenter_weathermap_refresh_map($preset, $id = NULL) {
   openlayers_include();
   $preset = openlayers_preset_load($preset);
-
-  dpm($data);
-
-  if (!empty($data)) {
-    $traceroutes = _ecenter_weathermap_object_to_array($data->traceroute);
-
-    foreach ($traceroutes as $trace_id => $traceroute) {
-      $preset->data['layers'][] = 'ecenter_traceroute_'. $trace_id;
-    }
-  }
 
   // Run map through build process
   $map = openlayers_build_map($preset->data);
   $map['id'] = (!empty($id)) ? $id : $map['id'];
 
-  dpm($map);
-
   // Set proper JS settings
   if (empty($map['errors'])) {
     $js = array('openlayers' => array('maps' => array($map['id'] => $map)));
-    drupal_add_js($js, 'setting');
     dpm($js);
-    $output = theme('openlayers_map', $map, $preset->name);
+    drupal_add_js($js, 'setting');
   }
-  return $output;
+}
+
+function ecenter_weathermap_openlayers_map_preprocess_alter(&$map) {
+  $client = ecenter_weathermap_get_client();
+  if ($_REQUEST['ip_select']) {
+    $src_ip = $_REQUEST['ip_select']['src_ip_wrapper']['src_ip'];
+    $dst_ip = $_REQUEST['ip_select']['dst_ip_wrapper']['dst_ip'];
+    $start = $_REQUEST['date_wrapper']['start_date']['date'] .' '. $_REQUEST['date_wrapper']['start_date']['time'];
+    $end = $_REQUEST['date_wrapper']['end_date']['date'] .' '. $_REQUEST['date_wrapper']['end_date']['time'];
+  }
+  else {
+    extract($_REQUEST);
+  }
+
+  if ($src_ip && $dst_ip && $start && $end) {
+    $start_date_adjusted = _ecenter_weathermap_date_to_utc($start);
+    $end_date_adjusted = _ecenter_weathermap_date_to_utc($end);
+
+    $data = $client->getData($src_ip, $dst_ip, $start_date_adjusted, $end_date_adjusted);
+    $traceroutes = _ecenter_weathermap_object_to_array($data['response']->traceroute);
+
+    $start = TRUE;
+    foreach ($traceroutes as $trace_id => $traceroute) {
+      $map['layers']['ecenter_traceroute_'. $trace_id] = 'ecenter_traceroute_'. $trace_id;
+      $map['layer_switcher']['ecenter_traceroute_'. $trace_id] = 'ecenter_traceroute_'. $trace_id;
+      $map['layer_styles']['ecenter_traceroute_'. $trace_id] = 'test_style';
+      if ($start) {
+        $map['layer_activated']['ecenter_traceroute_'. $trace_id] = 'ecenter_traceroute_'. $trace_id;
+        $start = FALSE;
+      }
+    }
+  }
+  return $map;
 }
 
 /**
@@ -626,8 +645,8 @@ function ecenter_weathermap_openlayers_layers() {
             'wkt' => "POINT({$hop['longitude']} {$hop['latitude']})",
             "projection"=> "4326",
             'attributes' => array(
-              'name' => $hop['hop_ip'],
-              'description' => $hop['hop_id'],
+              'name' => $hop['hub'] .' ('. $hop['hop_ip'] .')',
+              'description' => 'Hop ID: '. $hop['hop_id'],
             ),
           );
           if ($old_hop && $i < $count) {
@@ -683,11 +702,11 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
       $output .= '<h2 class="hop-name">'. $hop['hop']['hop_id'] .' ('. $hop['hop']['hop_ip'] .')</h2>';
       $output .= '<div class="hop-info">Stub for hop info</div>';
       $output .= '<div class="hop-data">';
-      foreach ($hop['data'] as $type => $hop_data) {
+      /*foreach ($hop['data'] as $type => $hop_data) {
         if (!empty($hop_data)) {
           $output .= theme('ecenter_weathermap_render_data_'. $type, $hop_data); 
         }
-      }
+      }*/
       $output .= '</div>';
       $output .= '</div>';
     }

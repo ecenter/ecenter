@@ -43,7 +43,7 @@ function ecenter_weathermap_perm() {
 function ecenter_weathermap_theme() {
   $options = array(
     'file' => 'ecenter_weathermap.theme.inc',
-    'path' => drupal_get_path('module', 'ecenter_weathermap') .'/tpl',
+    'path' => drupal_get_path('module', 'ecenter_weathermap') .'/theme',
   );
   $registry = array(
     'ecenter_weathermap_hop_option' => array(

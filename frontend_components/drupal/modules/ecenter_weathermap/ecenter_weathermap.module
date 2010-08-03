@@ -41,36 +41,36 @@ function ecenter_weathermap_perm() {
  * Implementation of hook_theme().
  */
 function ecenter_weathermap_theme() {
-  //$options = array('file' => drupal_get_path('module', 'ecenter_weathermap') .'/includes/ecenter_weathermap.theme.inc');
-  $path = array(
-    'path' => drupal_get_path('module', 'ecenter_weathermap') .'/tpl',
+  $options = array(
+    'file' => 'ecenter_weathermap.theme.inc',
+    'path' => drupal_get_path('module', 'ecenter_weathermap') .'/theme',
   );
   $registry = array(
     'ecenter_weathermap_hop_option' => array(
       'arguments' => array(
         'hop' => NULL,
       )
-    ) + $path,
+    ) + $options,
    'ecenter_weathermap_data' => array(
       'template' => 'ecenter-weathermap-data',
       'arguments' => array(
         'data' => NULL,
         'permalink' => NULL,
       )
-    ) + $path,
+    ) + $options,
     'ecenter_weathermap_traceroute' => array(
       //'template' => 'ecenter-weathermap-traceroute',
       'arguments' => array(
         'hops' => NULL,
       )
-    ) + $path,
+    ) + $options,
   );
   foreach (_ecenter_weathermap_get_data_types() as $type) {
     $registry['ecenter_weathermap_render_data_'. $type] = array(
       'arguments' => array(
         'data' => NULL,
       ),
-    ) + $path;
+    ) + $options;
   }
   return $registry;
 }
@@ -110,9 +110,9 @@ function ecenter_weathermap_init() {
     drupal_add_css(drupal_get_path('module', 'ecenter_weathermap') .'/css/plot.css');
 
     $inline_css = array(
-      '.ecenter-critical' => array('color' => variable_get('ecenter_weathermap_threshold_critical_color', '#cc0000'),),    
-      '.ecenter-marginal' => array('color' => variable_get('ecenter_weathermap_threshold_marginal;_color', '#fe890c'),),    
-      '.ecenter-good' => array('color' => variable_get('ecenter_weathermap_threshold_marginal;_color', '#1c8a24'),),    
+      '.ecenter-critical' => array('color' => variable_get('ecenter_weathermap_threshold_critical_color', '#cc0000'),),
+      '.ecenter-marginal' => array('color' => variable_get('ecenter_weathermap_threshold_marginal;_color', '#fe890c'),),
+      '.ecenter-good' => array('color' => variable_get('ecenter_weathermap_threshold_marginal;_color', '#1c8a24'),),
     );
     ecenter_weathermap_add_inline_css($inline_css);
   }
@@ -131,16 +131,15 @@ function _ecenter_weathermap_select_form() {
     'exactMatch' => TRUE,
   );
 
-
+  // Map
+  $preset = openlayers_preset_load('ecenter_weathermap');
+  $map = openlayers_render_map($preset->data, $preset->name);
+  //$map = ecenter_weathermap_refresh_map('ecenter_weathermap');
 
   // Network map
-  $form['network_map_wrapper'] = array(
-    '#prefix' => '<div id="weathermap-wrapper">',
-    '#suffix' => '</div>',
-  );
-  $form['network_map_wrapper']['network_map'] = array(
+  $form['weathermap'] = array(
     '#prefix' => '<div id="weathermap">',
-    '#value' => '<p>-- Map will render here! --</p>',
+    '#value' => $map,
     '#suffix' => '</div>',
   );
 
@@ -182,7 +181,7 @@ function _ecenter_weathermap_select_form() {
     '#required' => TRUE,
     '#quickselect_options' => $quickselect_options,
     '#ahah' => array(
-      'event' => 'blur',
+      'event' => 'change',
       'path' => ahah_helper_path(array('ip_select', 'dst_ip_wrapper')),
       'wrapper' => 'dst-ip-wrapper',
     ),
@@ -202,8 +201,8 @@ function _ecenter_weathermap_select_form() {
     '#prefix' => '<div class="dst-ip-wrapper">',
     '#suffix' => '</div>',
     '#ahah' => array(
-      'event' => 'blur',
-      'path' => ahah_helper_path(array('results_wrapper')),
+      'event' => 'change',
+      'path' => ahah_helper_path(array('results_wrapper', 'results')),
       'wrapper' => 'results-wrapper',
     ),
   );
@@ -221,7 +220,7 @@ function _ecenter_weathermap_select_form() {
     '#suffix' => '</div>',
   );
   $form['results_wrapper']['results'] = array(
-    '#value' => '<p>-- Data results should show up here --</p>',
+    '#value' => '&nbsp;',
   );
 
   // For ahah helper
@@ -239,19 +238,12 @@ function _ecenter_weathermap_select_form() {
 function ecenter_weathermap_select_form(&$form_state) {
   $client = ecenter_weathermap_get_client();
 
-  // Check if something is wrong and bail before doing anything else.
-  if (!$client->checkStatus()) {
-    watchdog('ecenter', 'E-Center web service was not available.', array(), WATCHDOG_ERROR);
-    return array(
-      'error' => array(
-        '#value' => '<p class="error">'. t('The E-Center data service is currently experiencing difficulties. Please check back shortly.') .'</p>',
-      ),
-    );
-  }
-
   // Get base form and register with ahah_helper
   $form = _ecenter_weathermap_select_form();
   ahah_helper_register($form, $form_state);
+
+  // Add ahah_helper override
+  drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/ahah.js', 'footer');
 
   // Get query string or POSTed (manually or via AJAX) values. Form values "beat" query string values.
   $src_ip = (!empty($form_state['storage']['ip_select']['src_ip_wrapper']['src_ip']))
@@ -332,17 +324,9 @@ function ecenter_weathermap_select_form(&$form_state) {
 
   if ($src_ip && $dst_ip && $start_date && $end_date) {
 
-    $tz = date_default_timezone_name(TRUE);
+    $start_date_adjusted = _ecenter_weathermap_date_to_utc($start_date);
+    $end_date_adjusted = _ecenter_weathermap_date_to_utc($end_date);
 
-    $start_date_adjusted = date_create($start_date, timezone_open($tz));
-    date_timezone_set($start_date_adjusted, timezone_open('UTC'));
-    $start_date_adjusted = date_format($start_date_adjusted, 'Y-m-d H:i:s');
-
-    $end_date_adjusted = date_create($end_date, timezone_open($tz));
-    date_timezone_set($end_date_adjusted, timezone_open('UTC'));
-    $end_date_adjusted = date_format($end_date_adjusted, 'Y-m-d H:i:s');
-
-    // @TODO time handling needs work!
     $data = $client->getData($src_ip, $dst_ip, $start_date_adjusted, $end_date_adjusted);
 
     $query_params = array(
@@ -355,6 +339,7 @@ function ecenter_weathermap_select_form(&$form_state) {
 
     // If we've got the data (at bare minimum, a traceroute), delegate to rendering function
     if ($data['code'] == 200 && !empty($data['response']->traceroute)) {
+      ecenter_weathermap_refresh_map('ecenter_weathermap', 'openlayers-map-auto-id-0');
       $permalink = l(t('Permalink'), 'weathermap', array('query' => $query_params));
       $form['results_wrapper']['results']['#value'] = theme('ecenter_weathermap_data', $data, $permalink);
     }
@@ -366,6 +351,70 @@ function ecenter_weathermap_select_form(&$form_state) {
     }
   }
   return $form;
+}
+
+/**
+ * Refresh an Openlayers map
+ *
+ * This function is necessary because openlayers_render_map uses a small hack
+ * and uses json_encode and adds map settings to the page header.  This
+ * function adds the map array to the Drupal JS settings array no matter what,
+ * so that AJAX/AHAH will work properly.
+ *
+ * @param $preset
+ *  A string preset name.
+ * @param $id
+ *  Optional ID to use for map.
+ */
+function ecenter_weathermap_refresh_map($preset, $id = NULL) {
+  openlayers_include();
+  $preset = openlayers_preset_load($preset);
+
+  // Run map through build process
+  $map = openlayers_build_map($preset->data);
+  $map['id'] = (!empty($id)) ? $id : $map['id'];
+
+  // Set proper JS settings
+  if (empty($map['errors'])) {
+    $js = array('openlayers' => array('maps' => array($map['id'] => $map)));
+    drupal_add_js($js, 'setting');
+  }
+}
+
+function ecenter_weathermap_openlayers_map_preprocess_alter(&$map) {
+  $client = ecenter_weathermap_get_client();
+  if ($_REQUEST['ip_select']) {
+    $src_ip = $_REQUEST['ip_select']['src_ip_wrapper']['src_ip'];
+    $dst_ip = $_REQUEST['ip_select']['dst_ip_wrapper']['dst_ip'];
+    $start = $_REQUEST['date_wrapper']['start_date']['date'] .' '. $_REQUEST['date_wrapper']['start_date']['time'];
+    $end = $_REQUEST['date_wrapper']['end_date']['date'] .' '. $_REQUEST['date_wrapper']['end_date']['time'];
+  }
+  else {
+    extract($_REQUEST);
+  }
+
+  if ($src_ip && $dst_ip && $start && $end) {
+    $start_date_adjusted = _ecenter_weathermap_date_to_utc($start);
+    $end_date_adjusted = _ecenter_weathermap_date_to_utc($end);
+
+    $data = $client->getData($src_ip, $dst_ip, $start_date_adjusted, $end_date_adjusted);
+
+    if (is_object($data['response']->traceroute)) {
+      $traceroutes = _ecenter_weathermap_object_to_array($data['response']->traceroute);
+
+      $start = TRUE;
+      foreach ($traceroutes as $trace_id => $traceroute) {
+        $map['layers']['ecenter_traceroute_'. $trace_id] = 'ecenter_traceroute_'. $trace_id;
+        $map['layer_switcher']['ecenter_traceroute_'. $trace_id] = 'ecenter_traceroute_'. $trace_id;
+        $map['layer_styles']['ecenter_traceroute_'. $trace_id] = 'ecenter_default';
+        if ($start) {
+          $map['layer_activated']['ecenter_traceroute_'. $trace_id] = 'ecenter_traceroute_'. $trace_id;
+          $start = FALSE;
+        }
+      }
+    }
+  }
+  return $map;
 }
 
 /**
@@ -390,6 +439,22 @@ function ecenter_weathermap_get_client() {
     $dir = variable_get('ecenter_weathermap_basedir', '');
     $client = new Ecenter_Data_Service_Client($host, $port, $dir);
   }
+
+  // Check status
+  if (!$client->checkStatus()) {
+    $message = t('E-Center web service was not available.');
+    watchdog('ecenter', $message, array(), WATCHDOG_ERROR);
+
+    drupal_set_header('HTTP/1.1 503 Service unavailable');
+        
+    // Keep old path for reference, and to allow forms to redirect to it.
+    if (!isset($_REQUEST['destination'])) {
+      $_REQUEST['destination'] = $_GET['q'];
+    }
+    print theme('page', $message);
+    exit();
+  }
+
   return $client;
 }
 
@@ -460,181 +525,207 @@ function ecenter_weathermap_parse_data($data) {
   return $parsed;
 }
 
-/* --- Theme --- */
+/**
+ * Implementation of hook_ctools_plugin_api().
+ * Required to provide layers
+ */
+function ecenter_weathermap_ctools_plugin_api($module, $api) {
+  if ($module == "openlayers") {
+    switch ($api) {
+      case 'openlayers_layers':
+        return array('version' => 1);
+      case 'openlayers_styles':
+        return array('version' => 1);
+    }
+  }
+}
 
 /**
- * Theme main data display
+ * Implementation of hook_openlayers_styles().
  */
-function template_preprocess_ecenter_weathermap_data(&$vars) {
-  $data = ecenter_weathermap_parse_data($vars['data']['response']);
+function ecenter_weathermap_openlayers_styles() {
+  $styles = array();
 
-  foreach ($data as $trace_id => $traceroute) {
-    $output .= '<div class="traceroute">';
-    foreach ($traceroute as $hop) {
-      $output .= '<div id="hop-'. $hop['hop']['hop_id'] .'-wrapper" class="hop-wrapper">';
-      $output .= '<h2 class="hop-name">'. $hop['hop']['hop_id'] .' ('. $hop['hop']['hop_ip'] .')</h2>';
-      $output .= '<div class="hop-info">Stub for hop info</div>';
-      $output .= '<div class="hop-data">';
-      foreach ($hop['data'] as $type => $hop_data) {
-        $output .= theme('ecenter_weathermap_render_data_'. $type, $hop_data); 
+  // Default
+  $style = new stdclass();
+  $style->api_version = 1;
+  $style->name = 'ecenter_default';
+  $style->title = t('E-center style');
+  $style->description = t('Basic e-center style.');
+  $style->data = array(
+    'pointRadius' => 6,
+    'fillColor' => '#ffffff',
+    'strokeColor' => '#0000aa',
+    'strokeWidth' => 2,
+    'fillOpacity' => 1,
+  );
+  $styles[$style->name] = $style;
+
+  // Selected
+  $style = new stdclass();
+  $style->api_version = 1;
+  $style->name = 'ecenter_selected';
+  $style->title = t('E-center selected style');
+  $style->description = t('Basic e-center style.');
+  $style->data = array(
+    'pointRadius' => 6,
+    'fillColor' => '#ffffff',
+    'strokeColor' => '#777777',
+    'strokeWidth' => 2,
+    'fillOpacity' => 1,
+  );
+  $styles[$style->name] = $style;
+
+  return $styles;
+}
+
+/**
+ * Implementation of hook_openlayers_behaviors().
+ */
+function ecenter_weathermap_openlayers_behaviors() {
+  return array(
+    'ecenter_weathermap_behavior_dynamicload' => array(
+      'title' => t('E-Center Weathermap: Dynamic Load'),
+      'behavior' => array(
+        'path' => drupal_get_path('module', 'ecenter_weathermap') .'/openlayers',
+        'file' => 'ecenter_weathermap_behavior_dynamicload.inc',
+        'class' => 'ecenter_weathermap_behavior_dynamicload',
+        'parent' => 'openlayers_behavior',
+      ),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_openlyaers_layers().
+ */
+function ecenter_weathermap_openlayers_layers() {
+  $layers = array();
+  // Provide dynamic layers for map on
+  if ((arg(0) == 'weathermap' && !arg(1)) || ($_REQUEST['form_id'] == 'ecenter_weathermap_select_form')) {
+    $layers = ecenter_weathermap_map_layers();
+  }
+  return $layers;
+
+}
+
+/**
+ * Generate dynamic raw layer data for E-center weathermap
+ */
+function ecenter_weathermap_map_layers() {
+  $layers = array();
+  $client = ecenter_weathermap_get_client();
+
+  if ($_REQUEST['form_id'] == 'ecenter_weathermap_select_form') {
+    $src_ip = $_REQUEST['ip_select']['src_ip_wrapper']['src_ip'];
+    $dst_ip = $_REQUEST['ip_select']['dst_ip_wrapper']['dst_ip'];
+    $start = $_REQUEST['date_wrapper']['start_date']['date'] .' '. $_REQUEST['date_wrapper']['start_date']['time'];
+    $end = $_REQUEST['date_wrapper']['end_date']['date'] .' '. $_REQUEST['date_wrapper']['end_date']['time'];
+  }
+  else {
+    extract($_REQUEST);
+  }
+
+  if ($src_ip && $dst_ip && $start && $end) {
+
+    $start_date_adjusted = _ecenter_weathermap_date_to_utc($start);
+    $end_date_adjusted = _ecenter_weathermap_date_to_utc($end);
+
+    $data = $client->getData($src_ip, $dst_ip, $start_date_adjusted, $end_date_adjusted);
+
+    if (is_object($data['response']->traceroute)) {
+      $traceroutes = _ecenter_weathermap_object_to_array($data['response']->traceroute);
+
+      foreach ($traceroutes as $trace_id => $traceroute) {
+        // Initialize some counters, etc
+        $old_hop = NULL;
+        $count = count($traceroute);
+        $i = 0;
+
+        // Create layer object
+        $layer = new stdClass();
+        $layer->api_version = 1;
+        $layer->name = 'ecenter_traceroute_'. $trace_id;
+        $layer->title = t('Traceroute @id', array('@id' => $trace_id));
+        $layer->description = '';
+        $layer->data = array(
+          'layer_type' => 'openlayers_layer_type_raw',
+          'projection' => array('900913'),
+        );
+
+        $features = array();
+        foreach ($traceroute as $hop) {
+          if ($hop['longitude'] && $hop['latitude']) {
+            if ($old_hop && $i < $count) {
+              $features[] = array(
+                'wkt' => "LINESTRING({$old_hop['longitude']} {$old_hop['latitude']},{$hop['longitude']} {$hop['latitude']})",
+                'projection' => "4326",
+                'attributes' => array(
+                  'name' => t('Stub for link data'),
+                  'description' => t('Useful information about link/delay<br /> (as measured by traceroute, pingER, owamp)<br /> could go here'),
+                ),
+                'style' => array(
+                  'strokeWidth' => 4,
+                  'strokeColor' => '#777777',
+                ),
+              );
+            }
+            $features[] = array(
+              'wkt' => "POINT({$hop['longitude']} {$hop['latitude']})",
+              'projection' => "4326",
+              'attributes' => array(
+                'name' => $hop['hub'] .' ('. $hop['hop_ip'] .')',
+                'description' => 'Hop ID: '. $hop['hop_id'],
+              ),
+              'style' => array(
+                'pointRadius' => 5,
+                'fillColor' => '#ffffff',
+                'strokeColor' => '#0000aa',
+                'strokeWidth' => 2,
+                'fillOpacity' => 1,
+              ),
+            );
+            $old_hop = $hop;
+          }
+          $i += 1;
+        }
+        $layer->data['features'] = $features;
+        $layers[$layer->name] = $layer;
       }
-      $output .= '</div>';
-      $output .= '</div>';
     }
-    $output .= '</div>';
   }
-  $vars['traceroute'] = $output;
+  return $layers;
 }
 
 /**
- * Theme SNMP data
+ * Adjust local date to UTC
+ *
+ * @param $date
+ *  A date string
+ * @param $format
+ *  Format to use for return value.
+ * @return string
+ *  Formatted, converted date
  */
-function theme_ecenter_weathermap_render_data_snmp($data) {
-  $headers = array(t('Time'), t('Percent utilization'));
-  $table = array();
-  $min = 0;
-  $max = 0;
-  foreach ($data as $item) {
-    $class = '';
-    $utilization = ($item['utilization'] / $item['capacity']) * 100;
-    $max = ($utilization > $max) ? $utilization : $max;
-    $min = ($utilization < $min || $min == 0) ? $utilization : $min;
-
-    if ($utilization > variable_get('ecenter_weathermap_threshold_critical_snmp_utilization', 40)) {
-      $class = 'ecenter-critical';
-    }
-    if ($utilization > variable_get('ecenter_weathermap_threshold_marginal_snmp_utilization', 20)) {
-      $class = 'ecenter-marginal';
-    }
-
-    global $user;
-    if (variable_get('configurable_timezones', 1) && $user->uid && strlen($user->timezone)) {
-      $timezone = $user->timezone;
-    }
-    else {
-      $timezone = variable_get('date_default_timezone', 0);
-    }
-
-    $table[] = array(
-      'label' => array(
-        'data' => format_date($item['timestamp'], 'custom', 'Y-m-d H:i:s'),
-        'header' => TRUE,
-      ),
-      'utilization' => array(
-        'data' => sprintf('%01.2f', $utilization),
-        'class' => $class,
-      ),
-    );
-  }
-
-  $aggregate_table = array(
-    'max' => array(
-      'label' => array('data' => t('Max'), 'header' => TRUE,),
-      'value' => array('data' => sprintf('%01.2f', $max)),
-    ),
-    'min' => array(
-      'label' => array('data' => t('Min'), 'header' => TRUE,),
-      'value' => array('data' => sprintf('%01.2f', $min),),
-    ),
-  );
-
-  $plot_options = array(
-    'width' => 600,
-    'height' => 200,
-    'hideTable' => TRUE,
-    'plotOptions' => array(
-      'seriesDefaults' => array(
-        'lineWidth' => 1.5,
-        'shadow' => FALSE,
-        'fillAndStroke' => TRUE,
-        'markerOptions' => array(
-          'show' => FALSE,
-        ),
-      ),
-      'axes' => array(
-        'xaxis' => array(
-          'renderer' => '$.jqplot.DateAxisRenderer',
-          'tickOptions' => array(
-            'formatString' => "%H:%M",
-          ),
-        ),
-        'yaxis' => array(
-          'min' => 0,
-        ),
-      ),
-      'grid' => array(
-        'shadow' => FALSE,
-        'borderWidth' => 0,
-        'background' => '#eeeeee',
-        'gridLineColor' => '#ffffff',
-      ),
-      'highlighter' => array(
-        'sizeAdjust' => 1.5,
-        'tooltipLocation' => 'n',
-        'tooltipOffset' => 10,
-        'tooltipSeparator' => ': ',
-      ),
-      'cursor' => array('show' => FALSE),
-    ),
-  );
-
-  // Set colors...
-  if ($max > variable_get('ecenter_weathermap_threshold_critical_snmp_utilization', 60)) {
-    $plot_options['plotOptions']['seriesDefaults']['color'] = variable_get('ecenter_weathermap_threshold_critical_color', '#cc0000');
-    $aggregate_table['max']['value']['class'] = 'ecenter-critical';
-  }
-  else if ($max > variable_get('ecenter_weathermap_threshold_marginal_snmp_utilization', 40)) {
-    $plot_options['plotOptions']['seriesDefaults']['color'] = variable_get('ecenter_weathermap_threshold_marginal_color', '#fe890c');
-    $aggregate_table['max']['value']['class'] = 'ecenter-marginal';
-  }
-  else {
-    $plot_options['plotOptions']['seriesDefaults']['color'] = variable_get('ecenter_weathermap_threshold_good_color', '#1c8a24');
-    $aggregate_table['max']['value']['class'] = 'ecenter-good';
-  }
-
-  // @TODO loop through non max aggregate measures?
-  if ($min > variable_get('ecenter_weathermap_threshold_critical_snmp_utilization', 60)) {
-    $aggregate_table['min']['value']['class'] = 'ecenter-critical';
-  }
-  else if ($min > variable_get('ecenter_weathermap_threshold_marginal_snmp_utilization', 40)) {
-    $aggregate_table['min']['value']['class'] = 'ecenter-marginal';
-  }
-  else {
-    $aggregate_table['min']['value']['class'] = 'ecenter-good';
-  }
-
-  jqplot_register_tablechart('.snmp-chart', $plot_options);
-  return theme('table', NULL, $aggregate_table) . theme('table', $headers, $table, array('class' => 'snmp-chart'));
+function _ecenter_weathermap_date_to_utc($date, $format = 'Y-m-d H:i:s') {
+  $tz = date_default_timezone_name(TRUE);
+  $adjusted = date_create($date, timezone_open($tz));
+  date_timezone_set($adjusted, timezone_open('UTC'));
+  return date_format($adjusted, $format);
 }
 
 /**
- * Theme traceroute
+ * Add inline CSS: @TODO Move to separate module
  */
-function theme_ecenter_weathermap_traceroute($hops) {
-  $output = '';
-  foreach ($hops as $hop) {
-    $output .= ' '. $hop->hop_ip;
-  }
-  return $output;
-}
-
-/**
- * Theme services for use in options list.  Should always return plaintext!
- */
-function theme_ecenter_weathermap_hop_option($hop) {
-  return $hop->nodename .' ('. $hop->ip_noted .')';
-}
-
-function ecenter_weathermap_preprocess_page(&$vars) {
-  $vars['inline_css'] = ecenter_weathermap_get_inline_css();
-}
-
 function ecenter_weathermap_add_inline_css($css=array()) {
   static $inline_css = array();
   $inline_css += $css;
   return $inline_css;
 }
 
+/**
+ * Get inline CSS: @TODO Move to separate module
+ */
 function ecenter_weathermap_get_inline_css() {
   $css = ecenter_weathermap_add_inline_css();
   $output = '';

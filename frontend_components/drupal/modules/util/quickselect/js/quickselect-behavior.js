@@ -7,13 +7,8 @@ Drupal.behaviors.QuickSelect = function(context) {
     if ($(selector_id).attr('type') != 'hidden') {
       $(selector_id).quickselect(qs[selector]);
     }
-    // Compatibility with AHAH -- most events still don't bind properly
-    if (Drupal.settings.ahah[selector]) {
-      Drupal.settings.ahah[selector + '_quickselect'] = Drupal.settings.ahah[selector];
-      Drupal.settings.ahah[selector + '_quickselect']['selector'] = selector_id + '_quickselect';
-      delete Drupal.settings.ahah[selector];
-    }
   }
-  // Argh!
-  Drupal.behaviors.ahah(context);
+  if (Drupal.settings.ahah != undefined) {
+    Drupal.behaviors.ahah(context);
+  }
 }

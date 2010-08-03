@@ -47,17 +47,24 @@ function quickselect_elements() {
  * provide alternative rendering here.
  */
 function theme_quickselect($element) {
-  jq_add('quicksilver');
-  jq_add('jquery.quickselect');
+  drupal_add_css(drupal_get_path('module', 'quickselect') .'/css/quickselect.css');
+
+  // Dependent libraries
+  drupal_add_js(drupal_get_path('module', 'quickselect') .'/js/jquery.metadata.js');
+  drupal_add_js(drupal_get_path('module', 'quickselect') .'/js/jquery.json.js');
+
+  // Quickselect libraries
+  drupal_add_js(drupal_get_path('module', 'quickselect') .'/js/quicksilver.js');
+  drupal_add_js(drupal_get_path('module', 'quickselect') .'/js/jquery.quickselect.js');
+
+  // Drupal behaviors
+  drupal_add_js(drupal_get_path('module', 'quickselect') .'/js/quickselect-behavior.js');
 
   // A dummy settings array is required, otherwise Drupal's array_merge behavior
   // while adding settings will mess up the data structure.
   $options = (is_array($element['#quickselect_options'])) ? $element['#quickselect_options'] : array('delay' => 400);
-
-  drupal_add_js(drupal_get_path('module', 'quickselect') .'/js/quickselect-behavior.js');
   drupal_add_js(array('QuickSelect' => array($element['#id'] => $options)), 'setting');
 
-  drupal_add_css(drupal_get_path('module', 'quickselect') .'/css/quickselect.css');
 
   // "Borrowed" from the theme_select function
   $select = '';

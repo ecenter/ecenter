@@ -14,7 +14,7 @@ $.fn.tablechart = function(options) {
       // Get and redraw chart, or create a new one
       if (chart != undefined) {
         for (i in tabledata.data) {
-          chart.series[i].data = series[i];
+          //chart.series[i].data = series[i];
         }
         chart.replot({resetAxes: true});
       } else {

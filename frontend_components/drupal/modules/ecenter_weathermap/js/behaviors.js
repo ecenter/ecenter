@@ -1,7 +1,9 @@
+// Add traceroute
 Drupal.behaviors.EcenterTraceroute = function(context) {
-  $('.traceroute').traceroute();
+  $('.traceroute-wrapper').traceroute();
 }
 
+// Add date hiding / showing widget
 Drupal.behaviors.EcenterDatehide = function(context) {
   $('#date-wrapper').datehide({
     'startDateSelector' : '#edit-date-wrapper-start-date-datepicker-popup-0',
@@ -11,3 +13,12 @@ Drupal.behaviors.EcenterDatehide = function(context) {
   });
 }
 
+// Catchall for minor behavior modifications
+Drupal.behaviors.EcenterEvents = function(context) {
+  $('#ip-select-wrapper input[type=hidden]').change(function() {
+    $('#results-wrapper').text('');
+  });
+  $('#ip-select-wrapper input#edit-ip-select-src-ip-wrapper-src-ip').change(function() {
+    $('#ip-select-wrapper input#edit-ip-select-dst-ip-wrapper-dst-ip_quickselect').val('').attr('disabled', true);
+  });
+}

@@ -68,6 +68,7 @@ class Ecenter_Data_Service_Client {
     $url = str_replace('&amp;', '&', $url);
 
     if (empty($results[$url])) {
+      dpm('Query URL: '. $url);
       $handle = curl_init();
 
       curl_setopt($handle, CURLOPT_URL, $url);

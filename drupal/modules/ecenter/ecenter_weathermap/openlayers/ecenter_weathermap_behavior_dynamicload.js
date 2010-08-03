@@ -1,29 +1,63 @@
-/*Drupal.behaviors.ecenter_weathermap_behavior_dynamicload = function(context) {
+Drupal.behaviors.ecenter_weathermap_behavior_dynamicload = function(context) {
+  // Ignore context -- refresh all maps on the page
   for (var key in Drupal.settings.openlayers.maps) {
     var map = Drupal.settings.openlayers.maps[key];
     var data = $('#' + key).data('openlayers');
+    var openlayers = data.openlayers;
+
     if (data) {
-      for (var name in data.openlayers.layers) {
-        var layer = data.openlayers.layers[name];
-        if (!layer.isBaseLayer) {
-          layer.destroy();
+      // Remove all layers (that aren't a base layer)
+      for (var i = openlayers.layers.length - 1; i >= 0; i--) {
+        var layer = openlayers.layers[i];
+        if (layer != undefined && layer.isBaseLayer === false) {
+          openlayers.removeLayer(openlayers.layers[i]);
         }
       }
-      //console.log(map);
+
+      // Similar to addLayers method in OpenLayers module JS
       for (var name in map.layers) {
-        if (map.layers[name].baselayer) {
-          console.log(name);
-          delete map.layers[name];
+        var layer;
+        var options = map.layers[name];
+        options.drupalID = name;
+
+        // Ensure that the layer handler is available
+        if (options.layer_handler !== undefined && Drupal.openlayers.layer[options.layer_handler] !== undefined) {
+          var layer = Drupal.openlayers.layer[options.layer_handler](map.layers[name].title, map, options);
+          if (layer.isBaseLayer === false) {
+            layer.visibility = (!map.layer_activated || map.layer_activated[name]);
+            layer.displayInLayerSwitcher = (!map.layer_switcher || map.layer_switcher[name]);
+            if (map.center.wrapdateline === '1') {
+              layer.wrapDateLine = true;
+            }
+            openlayers.addLayer(layer);
+          }
+
+          var center = OpenLayers.LonLat.fromString(map.center.initial.centerpoint).transform(
+            new OpenLayers.Projection('EPSG:4326'), 
+            new OpenLayers.Projection('EPSG:' + map.projection));
+          var zoom = parseInt(map.center.initial.zoom, 10);
+          openlayers.setCenter(center, zoom, false, false);
         }
       }
-      Drupal.openlayers.addLayers(map, data.openlayers);
-      //for (var name in data.openlayers.layers) {
-      //  var layer = data.openlayers.layers[name];
-      //  if (!layer.isBaseLayer) {
-      //    layer.redraw();
-      //  }
-      //}
-      //console.log(data.openlayers);
+    }
+
+    // Because we are context-less, excute map behaviors the hard way
+    for (var name in map.behaviors) {
+      if (name != 'ecenter_weathermap_behavior_dynamicload') {
+        executeFunctionByName(name, Drupal.behaviors, $('#' + key).get(0));
+      }
     }
   }
-}*/
+}
+
+// See http://stackoverflow.com/questions/359788/javascript-function-name-as-a-string
+function executeFunctionByName(functionName, context /*, args */) {
+  var args = Array.prototype.slice.call(arguments).splice(2);
+  var namespaces = functionName.split(".");
+  var func = namespaces.pop();
+  for(var i = 0; i < namespaces.length; i++) {
+    context = context[namespaces[i]];
+  }
+  return context[func].apply(this, args);
+}
+

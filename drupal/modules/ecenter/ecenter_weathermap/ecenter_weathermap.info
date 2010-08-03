@@ -8,3 +8,5 @@ dependencies[] = date
 dependencies[] = date_popup
 dependencies[] = quickselect
 dependencies[] = jqplot
+dependencies[] = geoip
+dependencies[] = openlayers

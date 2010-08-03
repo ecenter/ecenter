@@ -401,6 +401,7 @@ function ecenter_weathermap_openlayers_map_preprocess_alter(&$map) {
 
     if (is_object($data['response']->traceroute)) {
       $traceroutes = _ecenter_weathermap_object_to_array($data['response']->traceroute);
+      krsort($traceroutes);
 
       $start = TRUE;
       foreach ($traceroutes as $trace_id => $traceroute) {
@@ -506,6 +507,8 @@ function ecenter_weathermap_parse_data($data) {
 
   // @TODO need a way to account for reverse traceroute
   $traceroutes = $data['traceroute'];
+  krsort($traceroutes);
+
   unset($data['traceroute']);
 
   $parsed = array();
@@ -635,6 +638,7 @@ function ecenter_weathermap_map_layers() {
 
     if (is_object($data['response']->traceroute)) {
       $traceroutes = _ecenter_weathermap_object_to_array($data['response']->traceroute);
+      krsort($traceroutes);
 
       foreach ($traceroutes as $trace_id => $traceroute) {
         // Initialize some counters, etc
@@ -655,38 +659,41 @@ function ecenter_weathermap_map_layers() {
 
         $features = array();
         foreach ($traceroute as $hop) {
-          if ($hop['longitude'] && $hop['latitude']) {
-            if ($old_hop && $i < $count) {
-              $features[] = array(
-                'wkt' => "LINESTRING({$old_hop['longitude']} {$old_hop['latitude']},{$hop['longitude']} {$hop['latitude']})",
-                'projection' => "4326",
-                'attributes' => array(
-                  'name' => t('Stub for link data'),
-                  'description' => t('Useful information about link/delay<br /> (as measured by traceroute, pingER, owamp)<br /> could go here'),
-                ),
-                'style' => array(
-                  'strokeWidth' => 4,
-                  'strokeColor' => '#777777',
-                ),
-              );
-            }
+          if (!$hop['longitude'] || !$hop['latitude']) {
+            $geo = geoip_city($hop['hop_ip']);
+            $hop['longitude'] = $geo->longitude;
+            $hop['latitude'] = $geo->latitude;
+          }
+          if ($old_hop && $i < $count) {
             $features[] = array(
-              'wkt' => "POINT({$hop['longitude']} {$hop['latitude']})",
+              'wkt' => "LINESTRING({$old_hop['longitude']} {$old_hop['latitude']},{$hop['longitude']} {$hop['latitude']})",
               'projection' => "4326",
               'attributes' => array(
-                'name' => $hop['hub'] .' ('. $hop['hop_ip'] .')',
-                'description' => 'Hop ID: '. $hop['hop_id'],
+                'name' => t('Stub for link data'),
+                'description' => t('Useful information about link/delay<br /> (as measured by traceroute, pingER, owamp)<br /> could go here'),
               ),
               'style' => array(
-                'pointRadius' => 5,
-                'fillColor' => '#ffffff',
-                'strokeColor' => '#0000aa',
-                'strokeWidth' => 2,
-                'fillOpacity' => 1,
+                'strokeWidth' => 4,
+                'strokeColor' => '#777777',
               ),
             );
-            $old_hop = $hop;
           }
+          $features[] = array(
+            'wkt' => "POINT({$hop['longitude']} {$hop['latitude']})",
+            'projection' => "4326",
+            'attributes' => array(
+              'name' => $hop['hub'] .' ('. $hop['hop_ip'] .')',
+              'description' => 'Hop ID: '. $hop['hop_id'],
+            ),
+            'style' => array(
+              'pointRadius' => 5,
+              'fillColor' => '#ffffff',
+              'strokeColor' => '#0000aa',
+              'strokeWidth' => 2,
+              'fillOpacity' => 1,
+            ),
+          );
+          $old_hop = $hop;
           $i += 1;
         }
         $layer->data['features'] = $features;

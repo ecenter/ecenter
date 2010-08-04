@@ -114,7 +114,7 @@ function ecenter_weathermap_init() {
       '.ecenter-marginal' => array('color' => variable_get('ecenter_weathermap_threshold_marginal;_color', '#fe890c'),),
       '.ecenter-good' => array('color' => variable_get('ecenter_weathermap_threshold_marginal;_color', '#1c8a24'),),
     );
-    ecenter_weathermap_add_inline_css($inline_css);
+    inline_css_add_css($inline_css);
   }
 }
 
@@ -719,29 +719,4 @@ function _ecenter_weathermap_date_to_utc($date, $format = 'Y-m-d H:i:s') {
   $adjusted = date_create($date, timezone_open($tz));
   date_timezone_set($adjusted, timezone_open('UTC'));
   return date_format($adjusted, $format);
-}
-
-/**
- * Add inline CSS: @TODO Move to separate module
- */
-function ecenter_weathermap_add_inline_css($css=array()) {
-  static $inline_css = array();
-  $inline_css += $css;
-  return $inline_css;
-}
-
-/**
- * Get inline CSS: @TODO Move to separate module
- */
-function ecenter_weathermap_get_inline_css() {
-  $css = ecenter_weathermap_add_inline_css();
-  $output = '';
-  foreach ($css as $selector => $rules) {
-    $output .= "\n". $selector ." {\n";
-    foreach ($rules as $rule => $value) {
-      $output .= ' '. $rule .": ". $value . ";\n";
-    }
-    $output .= "}\n";
-  }
-  return $output;
 }

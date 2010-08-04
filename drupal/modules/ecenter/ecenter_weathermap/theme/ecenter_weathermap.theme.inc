@@ -218,10 +218,3 @@ function theme_ecenter_weathermap_traceroute($hops) {
 function theme_ecenter_weathermap_hop_option($hop) {
   return $hop->nodename .' ('. $hop->ip_noted .')';
 }
-
-/**
- * Preprocess page
- */
-function ecenter_weathermap_preprocess_page(&$vars) {
-  $vars['inline_css'] = ecenter_weathermap_get_inline_css();
-}

@@ -452,7 +452,7 @@ function ecenter_weathermap_get_client($status_check = '503') {
     watchdog('ecenter', $message, array(), WATCHDOG_ERROR);
 
     if ($status_check == '503') {
-      drupal_set_header('HTTP/1.1 503 Service unavailable');        
+      drupal_set_header('HTTP/1.1 503 Service unavailable');
       // Keep old path for reference, and to allow forms to redirect to it.
       if (!isset($_REQUEST['destination'])) {
         $_REQUEST['destination'] = $_GET['q'];
@@ -544,11 +544,79 @@ function ecenter_weathermap_ctools_plugin_api($module, $api) {
   if ($module == "openlayers") {
     switch ($api) {
       case 'openlayers_layers':
-        return array('version' => 1);
       case 'openlayers_styles':
+      case 'openlayers_presets':
         return array('version' => 1);
     }
   }
+}
+
+/**
+ * Implementation of hook_openlayers_presets().
+ */
+function ecenter_weathermap_openlayers_presets() {
+  $items = array();
+  $openlayers_presets = new stdClass;
+  $openlayers_presets->disabled = FALSE; /* Edit this to true to make a default openlayers_presets disabled initially */
+  $openlayers_presets->api_version = 1;
+  $openlayers_presets->name = 'ecenter_weathermap';
+  $openlayers_presets->title = 'E-Center Weathermap';
+  $openlayers_presets->description = 'E-Center network weathermap';
+  $openlayers_presets->data = array(
+    'width' => '940px',
+    'height' => '360px',
+    'image_path' => '',
+    'css_path' => '',
+    'proxy_host' => '',
+    'hide_empty_map' => 0,
+    'center' => array(
+      'initial' => array(
+        'centerpoint' => '-99.492187496064, 38.822590974865',
+        'zoom' => '4',
+      ),
+      'restrict' => array(
+        'restrictextent' => 0,
+        'restrictedExtent' => '',
+      ),
+    ),
+    'behaviors' => array(
+      'ecenter_weathermap_behavior_dynamicload' => array(),
+      'openlayers_behavior_tooltip' => array(
+        'layers' => array(),
+      ),
+      'openlayers_behavior_fullscreen' => array(
+        'activated' => 0,
+      ),
+      'openlayers_behavior_keyboarddefaults' => array(),
+      'openlayers_behavior_layerswitcher' => array(),
+      'openlayers_behavior_navigation' => array(
+        'zoomWheelEnabled' => 0,
+      ),
+      'openlayers_behavior_panzoombar' => array(),
+    ),
+    'default_layer' => 'osm_mapnik',
+    'layers' => array(
+      'osm_mapnik' => 'osm_mapnik',
+    ),
+    'layer_styles' => array(
+      'ecenter_map_test_display_openlayers_1' => 'ecenter_default',
+    ),
+    'layer_activated' => array(),
+    'layer_switcher' => array(),
+    'projection' => '900913',
+    'displayProjection' => '4326',
+    'styles' => array(
+      'default' => 'ecenter_default',
+      'select' => 'ecenter_selected',
+      'temporary' => 'default',
+    ),
+    'options' => array(
+      'numZoomLevels' => 7,
+    ),
+    'preset_name' => 'ecenter_weathermap',
+  );
+  $items["ecenter_weathermap"] = $openlayers_presets;
+  return $items;
 }
 
 /**
@@ -608,7 +676,7 @@ function ecenter_weathermap_openlayers_behaviors() {
 }
 
 /**
- * Implementation of hook_openlyaers_layers().
+ * Implementation of hook_openlayers_layers().
  */
 function ecenter_weathermap_openlayers_layers() {
   $layers = array();
@@ -617,7 +685,6 @@ function ecenter_weathermap_openlayers_layers() {
     $layers = ecenter_weathermap_map_layers();
   }
   return $layers;
-
 }
 
 /**
@@ -625,7 +692,7 @@ function ecenter_weathermap_openlayers_layers() {
  */
 function ecenter_weathermap_map_layers() {
   $layers = array();
-  $client = ecenter_weathermap_get_client();
+  $client = ecenter_weathermap_get_client('message');
 
   if ($_REQUEST['form_id'] == 'ecenter_weathermap_select_form') {
     $src_ip = $_REQUEST['ip_select']['src_ip_wrapper']['src_ip'];

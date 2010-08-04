@@ -1,4 +1,4 @@
-// Override parts of AHAH framework...
+// Override parts of AHAH framework.  Most of them.
 (function($) {
 
 if (Drupal.jsEnabled) {

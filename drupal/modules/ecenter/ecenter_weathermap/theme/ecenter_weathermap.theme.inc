@@ -40,6 +40,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
 
   $headers = array(t('Time'), t('Percent utilization'));
   $table = array();
+  $days = array();
   $min = 0;
   $max = 0;
   $total = 0;
@@ -75,6 +76,16 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
         'class' => $class,
       ),
     );
+
+    $day = format_date($item['timestamp'], 'custom', 'Y-m-d');
+    $days[$day] = $day;
+  }
+
+  // Format date
+  $date_label = array_shift($days);
+  $end_day = array_pop($days);
+  if ($end_day) {
+    $date_label .= ' - '. $end_day;
   }
 
   // Get average
@@ -114,9 +125,16 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
           'tickOptions' => array(
             'formatString' => "%H:%M",
           ),
+          'label' => t('Time (@date)', array('@date' => $date_label)),
+          'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
         ),
         'yaxis' => array(
           'min' => 0,
+          'label' => t('Percent utilization'),
+          'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
+          'tickOptions' => array(
+            'formatString' => '%01.2f%'
+          ),
         ),
       ),
       'grid' => array(

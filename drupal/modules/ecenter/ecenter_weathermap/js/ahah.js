@@ -1,21 +1,57 @@
-/**
- * Override of Drupal.ahah.prototype.success.  Overrides both ahah_helper
- * AND core Drupal behavior. Allow for new Drupal settings and clear out map
- * layers to ensure when behaviors are reattached that empty map results
- * yield an empty map. Very ugly, but ultimately rather simple.
- */
+// Override parts of AHAH framework...
 (function($) {
 
 if (Drupal.jsEnabled) {
   $(document).ready(function() {
     if (Drupal.ahah != undefined) {
 
+/**
+ * Override of beforeSubmit method: Triggers custom event
+ */
+Drupal.ahah.prototype.beforeSubmit = function (form_values, element, options) {
+  // Disable the element that received the change.
+  $(this.element).addClass('progress-disabled').attr('disabled', true);
+
+  // Trigger event on parent form
+  $(this.element).closest('form').trigger('ahah_start');
+
+  // Insert progressbar or throbber.
+  if (this.progress.type == 'bar') {
+    var progressBar = new Drupal.progressBar('ahah-progress-' + this.element.id, eval(this.progress.update_callback), this.progress.method, eval(this.progress.error_callback));
+    if (this.progress.message) {
+      progressBar.setProgress(-1, this.progress.message);
+    }
+    if (this.progress.url) {
+      progressBar.startMonitoring(this.progress.url, this.progress.interval || 1500);
+    }
+    this.progress.element = $(progressBar.element).addClass('ahah-progress ahah-progress-bar');
+    this.progress.object = progressBar;
+    $(this.element).after(this.progress.element);
+  }
+  else if (this.progress.type == 'throbber') {
+    this.progress.element = $('<div class="ahah-progress ahah-progress-throbber"><div class="throbber">&nbsp;</div></div>');
+    if (this.progress.message) {
+      $('.throbber', this.progress.element).after('<div class="message">' + this.progress.message + '</div>')
+    }
+    $(this.element).after(this.progress.element);
+  }
+};
+
+/**
+ * Override of Drupal.ahah.prototype.success.  Overrides both ahah_helper
+ * AND core Drupal behavior. Allow for new Drupal settings and clear out map
+ * layers to ensure when behaviors are reattached that empty map results
+ * yield an empty map. Very ugly, but ultimately rather simple.
+ */
 Drupal.ahah.prototype.success = function (response, status) {
   var wrapper = $(this.wrapper);
   var form = $(this.element).parents('form');
   // Manually insert HTML into the jQuery object, using $() directly crashes
   // Safari with long string lengths. http://dev.jquery.com/ticket/1152
   var new_content = $('<div></div>').html(response.data);
+
+  // Trigger event on parent form
+  form.trigger('ahah_end');
 
   // Restore the previous action and target to the form.
   form.attr('action', this.form_action);
@@ -77,6 +113,7 @@ Drupal.ahah.prototype.success = function (response, status) {
   }
 
   Drupal.unfreezeHeight();
+
 };
 
     }

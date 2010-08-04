@@ -1,7 +1,20 @@
 <?php
 /**
  * @file
- * Add inline CSS to pages.
+ * Add inline CSS to pages to allow for configurable/dynamic styling.
+ *
+ * Invocation:
+ *
+ * inline_css_add_css(
+ *   array(
+ *     '.selector' => array(
+ *       'color' => variable_get('my_color', '#cc0000'),
+ *       'font-weight' => 'bold',
+ *     ),
+ *   )
+ * );
+ *
+ * Inline CSS is provided to the theming layer as $inline_css.
  */
 
 /**

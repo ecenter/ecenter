@@ -2,6 +2,8 @@
 // $Id$
 
 function ecenter_weathermap_admin_form() {
+  $client = ecenter_weathermap_get_client('message');
+
   $form = array();
   $form['service'] = array(
     '#title' => t('Web service settings'),
@@ -27,6 +29,12 @@ function ecenter_weathermap_admin_form() {
     '#type' => 'textfield',
     '#description' => t('Timeout for calls to the webservice, in seconds.'),
     '#default_value' => variable_get('ecenter_weathermap_timeout', 30),
+  );
+  $form['service']['ecenter_weathermap_status_timeout'] = array(
+    '#title' => t('Status timeout'),
+    '#type' => 'textfield',
+    '#description' => t('Timeout to check the webservice status, in seconds.'),
+    '#default_value' => variable_get('ecenter_weathermap_status_timeout', 2),
   );
   $form['service']['ecenter_weathermap_time_increment'] = array(
     '#title' => t('Time increment'),

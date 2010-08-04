@@ -83,7 +83,7 @@ class Ecenter_Data_Service_Client {
       }
       else {
         $code = 0;
-        $response = 'Timed out after '. $this->_timeout .' seconds.';
+        $response = 'Timed out after '. $timeout .' seconds.';
       }
 
       curl_close($handle);
@@ -93,7 +93,6 @@ class Ecenter_Data_Service_Client {
         'response' => $response,
       );
     }
-
     return $results[$url];
   }
 

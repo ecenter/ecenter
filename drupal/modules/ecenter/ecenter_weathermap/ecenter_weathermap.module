@@ -430,32 +430,40 @@ function ecenter_weathermap_select_form_submit($form, &$form_state) {
 
 /**
  * Get the E-Center weather map client
+ *
+ * @param $status_check
+ *  '503', 'message', or FALSE.  What to do if status_check fails.
  */
-function ecenter_weathermap_get_client() {
+function ecenter_weathermap_get_client($status_check = '503') {
   static $client = False;
   if (!$client) {
     require_once(dirname(__FILE__) . '/client.php');
     $host = variable_get('ecenter_weathermap_host', 'localhost');
     $port = variable_get('ecenter_weathermap_port', 8000);
     $dir = variable_get('ecenter_weathermap_basedir', '');
-    $client = new Ecenter_Data_Service_Client($host, $port, $dir);
+    $timeout = variable_get('ecenter_weathermap_timeout', 30);
+    $status_timeout = variable_get('ecenter_weathermap_status_timeout', 2);
+    $client = new Ecenter_Data_Service_Client($host, $port, $dir, $timeout, $status_timeout);
   }
 
   // Check status
-  if (!$client->checkStatus()) {
-    $message = t('E-Center web service was not available.');
+  if ($status_check && !$client->checkStatus()) {
+    $message = t('E-Center web service is not available.');
     watchdog('ecenter', $message, array(), WATCHDOG_ERROR);
 
-    drupal_set_header('HTTP/1.1 503 Service unavailable');
-        
-    // Keep old path for reference, and to allow forms to redirect to it.
-    if (!isset($_REQUEST['destination'])) {
-      $_REQUEST['destination'] = $_GET['q'];
+    if ($status_check == '503') {
+      drupal_set_header('HTTP/1.1 503 Service unavailable');        
+      // Keep old path for reference, and to allow forms to redirect to it.
+      if (!isset($_REQUEST['destination'])) {
+        $_REQUEST['destination'] = $_GET['q'];
+      }
+      print theme('page', $message);
+      exit();
     }
-    print theme('page', $message);
-    exit();
+    else {
+      drupal_set_message($message);
+    }
   }
-
   return $client;
 }
 

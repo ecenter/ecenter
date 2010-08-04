@@ -1,0 +1,5 @@
+;$Id$
+name = Inline CSS
+package = E-Center Project
+description = Provide the ability to add inline CSS to a page, similar to the inline JS option provided by Drupal.
+core = 6.x

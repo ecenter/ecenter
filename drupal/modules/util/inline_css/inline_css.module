@@ -1,0 +1,37 @@
+<?php
+/**
+ * @file
+ * Add inline CSS to pages.
+ */
+
+/**
+ * Add inline CSS
+ */
+function inline_css_add_css($css=array()) {
+  static $inline_css = array();
+  $inline_css += $css;
+  return $inline_css;
+}
+
+/**
+ * Get inline CSS
+ */
+function inline_css_get_css() {
+  $css = inline_css_add_css();
+  $output = '';
+  foreach ($css as $selector => $rules) {
+    $output .= "\n". $selector ." {\n";
+    foreach ($rules as $rule => $value) {
+      $output .= ' '. $rule .": ". $value . ";\n";
+    }
+    $output .= "}\n";
+  }
+  return $output;
+}
+
+/**
+ * Preprocess page
+ */
+function inline_css_preprocess_page(&$vars) {
+  $vars['inline_css'] = inline_css_get_css();
+}

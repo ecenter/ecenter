@@ -20,6 +20,7 @@ use Dancer::Logger;
 use Log::Log4perl qw(:easy); 
 use Ecenter::Data::Snmp;
 use Ecenter::Data::PingER;
+use Ecenter::Data::Bwctl;
 
 use aliased 'perfSONAR_PS::PINGER_DATATYPES::v2_0::pinger::Message::Metadata::Subject' => 'MetaSubj';
  
@@ -101,8 +102,9 @@ any ['get', 'post'] =>  '/data.:format' =>
 	}
 	return $data;
     };
-
-
+#
+# return list of hubs with coordinates
+#
 sub process_hub {
     my %params = validate(@_, {src_ip => {type => SCALAR, regex => $REG_IP, optional => 1} }); 
     my @hubs =(); 
@@ -130,8 +132,9 @@ sub process_hub {
     #debug Dumper(\@hubs);
     return \@hubs;
 }
-
-    
+#
+# return list of services 
+#
 sub process_service {
     my %params = validate(@_, {value =>  {type => SCALAR, optional => 1}, mapping =>  {type => SCALAR, optional => 1}});
  
@@ -158,11 +161,11 @@ sub process_service {
 #
 sub process_data {
     my %params = validate(@_, { data => {type => SCALAR, regex => qr/^(snmp|bwctl|owamp|pinger)$/, optional => 1}, 
-                               id     => {type => SCALAR, regex => qr/^\d+$/, optional => 1}, 
-                           src_ip => {type => SCALAR, regex => $REG_IP,   optional => 1}, 
-                           dst_ip => {type => SCALAR, regex => $REG_IP,   optional => 1}, 
-		           start  => {type => SCALAR, regex => $REG_DATE, optional => 1},
-		           end    => {type => SCALAR, regex => $REG_DATE, optional => 1},
+                                id     => {type => SCALAR, regex => qr/^\d+$/, optional => 1}, 
+                                src_ip => {type => SCALAR, regex => $REG_IP,   optional => 1}, 
+                                dst_ip => {type => SCALAR, regex => $REG_IP,   optional => 1}, 
+		                start  => {type => SCALAR, regex => $REG_DATE, optional => 1},
+		                end    => {type => SCALAR, regex => $REG_DATE, optional => 1},
 			      }
 		 );
     my $data = {};
@@ -193,7 +196,6 @@ sub process_data {
     $params{start} = $params{start}?DateTime::Format::MySQL->parse_datetime( $params{start} )->epoch:(time() - 3600);
     $params{end} =   $params{end}?DateTime::Format::MySQL->parse_datetime( $params{end} )->epoch:time();
     
-   
     my $dst_cond = $params{dst_ip}?"inet6_mask(md.dst_ip, n_dst.netmask)= inet6_mask(inet6_pton('$params{dst_ip}'), n_dst.netmask)":"md.dst_ip = '0'";
     ##
     ## get direct and reverse traceroutes
@@ -239,7 +241,7 @@ sub process_data {
     ###debug " MD for the E2E ::: " . Dumper $md_href;	
     				  
     return $data  unless $md_href && %{$md_href};
-    foreach my $e_type (qw/pinger/)  {
+    foreach my $e_type (qw/bwctl/)  {
         my %md_rows =   map {  $_ =>  $md_href->{$_}  if  $md_href->{$_}{type} eq $e_type  }    keys %{$md_href};
 	next unless  %md_rows;
 	if($e_type eq 'pinger') {
@@ -255,6 +257,37 @@ sub process_data {
     $pm->wait_all_children;
     return $data;
 }
+
+#
+#  get bwctl  data for end2end, first for the src_ip, then for the dst_ip
+#
+sub get_bwctl {
+    my ( $data_hr,  $params, $md_href ) = @_; 
+    my %result = ();
+    foreach my $metaid  ( keys %{$md_href} ) {
+       my  $md_row =  $md_href->{$metaid};
+       debug " ------ FOUND BWCTL md  $metaid:::  SRC=$md_row->{src_ip} DST= $md_row->{dst_ip} ";
+       my @datas = dbix->resultset('Bwctl_data')->search({ metaid => $metaid, 
+                                                           timestamp => { '>=' => $params->{start}, '<=' => $params->{end}}  });
+       my $end_time = -1; 
+       my $start_time =  40000000000;
+       foreach my $datum (@datas) {
+	   push @{$result{$md_row->{src_ip}}{$md_row->{dst_ip}}}, { timestamp   => $datum->timestamp,
+	                                         meanRtt     => $datum->meanRtt,     
+	                                         medianRtt   => $datum->medianRtt,
+					         iqrIpd      => $datum->iqrIpd,
+					         lossPercent => $datum->lossPercent,
+					         maxRtt      => $datum->maxRtt, 
+					         minRtt      => $datum->minRtt 
+					       };
+	   $end_time =   $datum->timestamp if $datum->timestamp > $end_time;
+	   $start_time =  $datum->timestamp if  $datum->timestamp < $start_time;
+       } 
+    }
+    $data_hr->{bwctl} = \%result;
+    return $data_hr;
+}
+
 #
 #  get pinger data for end2end, first for the src_ip, then for the dst_ip
 #
@@ -352,7 +385,7 @@ sub get_traceroute {
     $trace_date_cond .= $params->{start}?" AND td.updated >= $params->{start}":'';  
     $trace_date_cond .= $params->{end}?" AND td.updated <= $params->{end}":'';
     $trace_date_cond .= ') '; 
-     ############################    $trace_date_cond and   ------ ADD BACK WHEN TRACEROUTE WILL EB AVAILABLE !!!!!!!!!!!!!!!
+     ############################    $trace_date_cond and   ------ ADD BACK WHEN TRACEROUTE WILL BE AVAILABLE !!!!!!!!!!!!!!!
     my $trace_ref = database->selectall_hashref(qq|select  distinct td.updated, td.trace_id, md.metaid, td.number_hops,
                                                              h.hop_id, h.hop_delay, inet6_ntop(h.hop_ip) as hop_ip, h.hop_num,  hb.hub, hb.longitude, hb.latitude  
 					             from

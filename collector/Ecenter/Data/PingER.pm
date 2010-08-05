@@ -56,7 +56,6 @@ perfSONAR-PS - pinger  data retrieval API,see L<Ecenter::Data::Requester> fro mo
 has 'packetsize'  => (is => 'rw', isa => 'Ecenter::Types::PositiveInt', default => '1000');
 has 'src_regexp' => (is => 'rw', isa => 'Str'); 
 has 'dst_regexp' => (is => 'rw', isa => 'Str');
-has 'meta_keys'  => (is => 'rw', isa => 'ArrayRef');
 has 'src_name' => (is => 'rw', isa => 'Str');
 has 'dst_name' => (is => 'rw', isa => 'Str');
 
@@ -118,7 +117,7 @@ after 'get_data' => sub  {
         $self->logger->logdie(" Missed src_name and  dst_name or meta_keys parameter ");
     } 
    
-    my $md_result = $self->get_metadata();
+    $self->get_metadata() unless $self->meta_keys;
     $self->logger->info(" -------------------METADATA :: ", sub{ Dumper $self->meta_keys } );
     unless($self->meta_keys) {
           $self->logger->error(" No metadata returned !!! ");

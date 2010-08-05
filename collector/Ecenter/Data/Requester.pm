@@ -66,8 +66,13 @@ has 'end'        => (is => 'rw', isa => 'DateTime');
 has 'logger'     => (is => 'rw', isa => 'Log::Log4perl::Logger');
 has 'resolution' => (is => 'rw', isa => 'Ecenter::Types::PositiveInt', default => '100');
 has 'cf'         => (is => 'rw', isa => 'Str', default => 'AVERAGE');
+has parser       => (is => 'rw', isa => 'Object'); 
+has 'meta_keys'  => (is => 'rw', isa => 'ArrayRef');
 
- 
+sub BUILD { 
+      my $self = shift;
+      $self->parser(XML::LibXML->new());
+};
 
 sub get_data { 
     my ( $self, $params ) = @_;

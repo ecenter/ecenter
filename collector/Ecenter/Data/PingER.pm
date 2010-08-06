@@ -62,8 +62,9 @@ has 'dst_name' => (is => 'rw', isa => 'Str');
 sub BUILD {
       my $self = shift;
       my $args = shift; 
+      map {$self->$_($args->{$_}) if $self->can($_)}  keys %$args if $args && ref $args eq ref {};
       $self->logger(get_logger(__PACKAGE__));
-      return  $self->url($args->{url}) if $args->{url};
+      return  $self->url if $args->{url};
 };
 
 

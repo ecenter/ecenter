@@ -1,6 +1,6 @@
 package Ecenter::Data::Bwctl;
 
-use Mouse;
+use Moose;
 
 use FindBin qw($RealBin);
 use lib  "$FindBin::Bin";
@@ -14,7 +14,7 @@ use Date::Manip;
 
 =head1 NAME
 
- E-Center::Data::Owamp   data retrieval API for remote bwctl MA data
+ E-Center::Data::Bwctl data retrieval API for remote bwctl MA data
 
 =head1 DESCRIPTION
 
@@ -33,11 +33,11 @@ sub BUILD {
 };
 
 
-augment  'get_data' => sub {
-   my $self  = shift;
+augment  'process_datum' => sub {
+   my $self = shift;
    my $dt = shift;
    my $secs =  UnixDate( $dt->getAttribute( "timeValue" ), "%s");
-   return  ($secs and $dt->getAttribute( "throughput" ))?[$secs , eval( $dt->getAttribute( "throughput" ) ) ]:[];
+   return  ($secs and $dt->getAttribute( "throughput" ))?[ $secs, {throughput => eval( $dt->getAttribute( "throughput" ) } ]:[];
 };
 
 

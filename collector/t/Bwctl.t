@@ -39,7 +39,7 @@ foreach (qw/url subject/) {
 my $self = $obj1->get_metadata;
 my $mds = $obj1->metadata;
 my ($key ,$md_key) = each  %{$mds};
-ok($mds  &&  $key eq '2d93059c8a03be68fdfe100a400a3078', " get_metadata check ...  ") or diag("  $ERRNO". Dumper($obj1->metadata));
+ok($mds  &&  $key eq 'cfae4c7005443546844f20cfd971f9ed', " get_metadata check ...  ") or diag("  $ERRNO". Dumper($obj1->metadata));
 ok( $obj1->meta_keys->[0], " meta_keys check ...  ") or diag("  $ERRNO". Dumper($obj1->meta_keys));
 $obj1->get_data({meta_keys =>  $obj1->meta_keys, start=> DateTime->from_epoch( epoch => (time() - 80000)), end => DateTime->now(), });
 my $dd = $obj1->data;

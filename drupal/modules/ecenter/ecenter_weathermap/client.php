@@ -69,11 +69,19 @@ class Ecenter_Data_Service_Client {
 
     if (empty($results[$url])) {
       dpm('Query URL: '. $url);
+
       $handle = curl_init();
 
-      curl_setopt($handle, CURLOPT_URL, $url);
-      curl_setopt($handle, CURLOPT_RETURNTRANSFER, TRUE);
-      curl_setopt($handle, CURLOPT_TIMEOUT, $timeout);
+      $options = array(
+        CURLOPT_URL => $url,
+        CURLOPT_TIMEOUT => $timeout,
+        CURLOPT_RETURNTRANSFER => 1,
+        CURLOPT_FRESH_CONNECT => 1,
+        CURLOPT_FORBID_REUSE => 1,
+        CURLOPT_VERBOSE => 1,
+      );
+
+      curl_setopt_array($handle, $options);
 
       $response = curl_exec($handle);
 
@@ -89,9 +97,12 @@ class Ecenter_Data_Service_Client {
       curl_close($handle);
 
       $results[$url] = array(
+        'parameters' => $parameters,
+        'query' => $querystring,
         'code' => $code,
         'response' => $response,
       );
+
     }
     return $results[$url];
   }

@@ -1,5 +1,30 @@
 <h2><?php print t('Link status'); ?></h2>
 
-<p class="permalink"><?php print $permalink; ?></p>
+<div class="link-summary">
+  <p><?php print $permalink; ?></p>
+  <p>Stub for link summary</p>
+</div>
 
-<?php print $traceroute; ?>
+<div class="traceroute-wrapper">
+  <?php foreach ($data as $trace_id => $traceroute): ?>
+  <div class="traceroute">
+    <h2><?php print t('Trace: @id', array('@id' => $trace_id)); ?></h2>
+    <?php foreach ($traceroute as $hop): ?>
+    <div class="hop-wrapper">
+      <h3>
+        <?php print t('Hop #@id (@ip)', array('@id' => $hop['hop']['hop_id'], '@ip' => $hop['hop']['hop_ip'])); ?>
+      </h3>
+      <div class="hop_data">
+        <?php foreach ($hop['data'] as $type => $hop_data): ?>
+        <?php if (!empty($hop_data)): ?>
+        <div class="clearfix data-wrapper <?php print $type; ?>-data-wrapper">
+          <?php print theme('ecenter_weathermap_render_data_'. $type, $hop_data); ?>
+        </div>
+        <?php endif; ?>
+        <?php endforeach; ?>
+      </div>
+    </div>
+    <?php endforeach; ?>
+  </div>
+  <?php endforeach; ?>
+</div>

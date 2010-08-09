@@ -25,8 +25,10 @@ Drupal.behaviors.EcenterEvents = function(context) {
 
 /**
  * Disable form elements during AHAH request
+ *
  * Adding this to Drupal behaviors causes some serious chaos because it winds
- * up getting called too many times.
+ * up getting called many times, which the behavior only needs to be bound
+ * and executed once.
  */
 $(document).ready(function() {
   $('#ecenter-weathermap-select-form').bind('ahah_start', function() {

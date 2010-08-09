@@ -5,38 +5,20 @@
  * Theme main data display
  */
 function template_preprocess_ecenter_weathermap_data(&$vars) {
-  $data = ecenter_weathermap_parse_data($vars['data']['response']);
+  $response = $vars['response'];
 
-  $output = '<div class="traceroute-wrapper">';
-  foreach ($data as $trace_id => $traceroute) {
-    $output .= '<div class="traceroute">';
-    $output .= '<h2>Trace: '. $trace_id .'</h2>';
-    foreach ($traceroute as $hop) {
-      $output .= '<div id="hop-'. $hop['hop']['hop_id'] .'-wrapper" class="hop-wrapper">';
-      $output .= '<h3 class="hop-name">'. $hop['hop']['hop_id'] .' ('. $hop['hop']['hop_ip'] .')</h3>';
-      $output .= '<div class="hop-data">';
-      foreach ($hop['data'] as $type => $hop_data) {
-        if (!empty($hop_data)) {
-          $output .= "<div class='clearfix data-wrapper $type-data-wrapper'>";
-          $output .= theme('ecenter_weathermap_render_data_'. $type, $hop_data); 
-          $output .= "</div>";
-        }
-      }
-      $output .= '</div>';
-      $output .= '</div>';
-    }
-    $output .= '</div>';
-  }
-  $output .= '</div>';
+  // Use data to 
+  $vars['permalink'] = l('Permalink', 'weathermap', array('query' => $response['parameters']));
 
-  $vars['traceroute'] = $output;
+  // Finally, process data into final form
+  $vars['data'] = ecenter_weathermap_parse_response($response);
 }
 
 /**
  * Theme SNMP data
  */
 function theme_ecenter_weathermap_render_data_snmp($data) {
-  jquerytools_add('tooltip');
+  //jquerytools_add('tooltip');
 
   $headers = array(t('Time'), t('Percent utilization'));
   $table = array();
@@ -107,8 +89,8 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
   );
 
   $plot_options = array(
-    'width' => 600,
-    'height' => 200,
+    'width' => 650,
+    'height' => 250,
     'hideTable' => TRUE,
     'plotOptions' => array(
       'seriesDefaults' => array(
@@ -121,6 +103,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
       ),
       'axes' => array(
         'xaxis' => array(
+          'pad' => 0,
           'renderer' => '$.jqplot.DateAxisRenderer',
           'tickOptions' => array(
             'formatString' => "%H:%M",
@@ -130,6 +113,9 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
         ),
         'yaxis' => array(
           'min' => 0,
+          'max' => 100,
+          'pad' => 0,
+          'numberTicks' => 5,
           'label' => t('Percent utilization'),
           'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
           'tickOptions' => array(
@@ -154,7 +140,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
         'showToolTip' => FALSE,
         'zoom' => TRUE,
         'clickReset' => TRUE,
-        'constrainZoomTo' => 'x',
+        //'constrainZoomTo' => 'x',
       ),
     ),
   );

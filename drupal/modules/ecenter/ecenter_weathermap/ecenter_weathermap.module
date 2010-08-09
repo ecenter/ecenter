@@ -54,8 +54,7 @@ function ecenter_weathermap_theme() {
    'ecenter_weathermap_data' => array(
       'template' => 'ecenter-weathermap-data',
       'arguments' => array(
-        'data' => NULL,
-        'permalink' => NULL,
+        'response' => NULL,
       )
     ) + $options,
     'ecenter_weathermap_traceroute' => array(
@@ -89,12 +88,14 @@ function ecenter_weathermap_init() {
     // Add jqPlot
     $jq_path = drupal_get_path('module', 'jqplot');
     drupal_add_js($jq_path .'/jqplot/excanvas.min.js');
-    drupal_add_js($jq_path .'/jqplot/jquery.jqplot.min.js');
+    drupal_add_js($jq_path .'/jqplot/jquery.jqplot.js');
 
     // jqPlot plugins
-    drupal_add_js($jq_path .'/jqplot/plugins/jqplot.dateAxisRenderer.min.js');
-    drupal_add_js($jq_path .'/jqplot/plugins/jqplot.highlighter.min.js');
-    drupal_add_js($jq_path .'/jqplot/plugins/jqplot.cursor.min.js');
+    drupal_add_js($jq_path .'/jqplot/plugins/jqplot.dateAxisRenderer.js');
+    drupal_add_js($jq_path .'/jqplot/plugins/jqplot.highlighter.js');
+    drupal_add_js($jq_path .'/jqplot/plugins/jqplot.cursor.js');
+    drupal_add_js($jq_path .'/jqplot/plugins/jqplot.canvasTextRenderer.js');
+    drupal_add_js($jq_path .'/jqplot/plugins/jqplot.canvasAxisLabelRenderer.js');
 
     // Our libraries and behaviors
     drupal_add_js($jq_path .'/js/jquery.uuid.js');
@@ -129,18 +130,6 @@ function _ecenter_weathermap_select_form() {
     'emulateDropdown' => TRUE,
     'maxHeight' => '400px',
     'exactMatch' => TRUE,
-  );
-
-  // Map
-  $preset = openlayers_preset_load('ecenter_weathermap');
-  $map = openlayers_render_map($preset->data, $preset->name);
-  //$map = ecenter_weathermap_refresh_map('ecenter_weathermap');
-
-  // Network map
-  $form['weathermap'] = array(
-    '#prefix' => '<div id="weathermap">',
-    '#value' => $map,
-    '#suffix' => '</div>',
   );
 
   // Date select
@@ -205,6 +194,17 @@ function _ecenter_weathermap_select_form() {
       'path' => ahah_helper_path(array('results_wrapper', 'results')),
       'wrapper' => 'results-wrapper',
     ),
+  );
+
+  // Map
+  $preset = openlayers_preset_load('ecenter_weathermap');
+  $map = openlayers_render_map($preset->data, $preset->name);
+
+  // Network map
+  $form['weathermap'] = array(
+    '#prefix' => '<div id="weathermap">',
+    '#value' => $map,
+    '#suffix' => '</div>',
   );
 
   // Submit button
@@ -329,19 +329,10 @@ function ecenter_weathermap_select_form(&$form_state) {
 
     $data = $client->getData($src_ip, $dst_ip, $start_date_adjusted, $end_date_adjusted);
 
-    $query_params = array(
-      'src_ip' => $src_ip,
-      'dst_ip' => $dst_ip,
-      'start' => $start_date,
-      'end' => $end_date,
-    );
-    $query = http_build_query($query_params);
-
     // If we've got the data (at bare minimum, a traceroute), delegate to rendering function
     if ($data['code'] == 200 && !empty($data['response']->traceroute)) {
       ecenter_weathermap_refresh_map('ecenter_weathermap', 'openlayers-map-auto-id-0');
-      $permalink = l(t('Permalink'), 'weathermap', array('query' => $query_params));
-      $form['results_wrapper']['results']['#value'] = theme('ecenter_weathermap_data', $data, $permalink);
+      $form['results_wrapper']['results']['#value'] = theme('ecenter_weathermap_data', $data);
     }
     else {
       watchdog('ecenter', 'Query returned no results: <code>@query</code>', array('@query' => $query), WATCHDOG_INFO);
@@ -400,11 +391,10 @@ function ecenter_weathermap_openlayers_map_preprocess_alter(&$map) {
     $data = $client->getData($src_ip, $dst_ip, $start_date_adjusted, $end_date_adjusted);
 
     if (is_object($data['response']->traceroute)) {
-      $traceroutes = _ecenter_weathermap_object_to_array($data['response']->traceroute);
-      krsort($traceroutes);
+      $data = ecenter_weathermap_parse_response($data);
 
       $start = TRUE;
-      foreach ($traceroutes as $trace_id => $traceroute) {
+      foreach (array_keys($data) as $trace_id) {
         $map['layers']['ecenter_traceroute_'. $trace_id] = 'ecenter_traceroute_'. $trace_id;
         $map['layer_switcher']['ecenter_traceroute_'. $trace_id] = 'ecenter_traceroute_'. $trace_id;
         $map['layer_styles']['ecenter_traceroute_'. $trace_id] = 'ecenter_default';
@@ -509,31 +499,59 @@ function _ecenter_weathermap_get_data_types() {
 
 /**
  * Parse data
+ *
+ * Take the data response and turn it into a format more appropriate for
+ * visualization.  Specificially, instead of treating the traceroute as just
+ * one more type of data, we build an array around it.
+ *
+ * @param $response
+ *  A response object from the E-center webservice.
  */
-function ecenter_weathermap_parse_data($data) {
-  $data = _ecenter_weathermap_object_to_array($data);
+function ecenter_weathermap_parse_response($response) {
+  static $queries = array();
 
-  // @TODO need a way to account for reverse traceroute
-  $traceroutes = $data['traceroute'];
-  krsort($traceroutes);
+  if (empty($queries[$response->query])) {
+    $data = _ecenter_weathermap_object_to_array($response['response']);
 
-  unset($data['traceroute']);
+    // Pull out traceroutes and sort: we use them to stitch together our
+    // data structure
+    $traceroutes = $data['traceroute'];
+    krsort($traceroutes);
+    unset($data['traceroute']);
 
-  $parsed = array();
-  foreach ($traceroutes as $trace_id => $traceroute) {
-    $parsed[$trace_id] = array();
-    foreach ($traceroute as $hop) {
-      $hop_data = array();
-      foreach ($data as $type => $values) {
-        $hop_data[$type] = $values[$hop['hop_id']];
+    // Loop over each traceroute
+    $parsed = array();
+
+    foreach ($traceroutes as $trace_id => $traceroute) {
+
+      $parsed[$trace_id] = array();
+
+      foreach ($traceroute as $hop) {
+        $hop_data = array();
+
+        // Geolocate IP if no geo data available
+        if (!$hop['longitude'] || !$hop['latitude']) {
+          $geo = geoip_city($hop['hop_ip']);
+          $hop['longitude'] = $geo->longitude;
+          $hop['latitude'] = $geo->latitude;
+          $hop['geolocated'] = TRUE;
+        }
+
+        // Pull in data for hop
+        // @TODO -- Make this more efficient -- looping not really required...
+        foreach ($data as $type => $values) {
+          $hop_data[$type] = $values[$hop['hop_id']];
+        }
+
+        $parsed[$trace_id][] = array(
+          'hop' => $hop,
+          'data' => $hop_data,
+        );
       }
-      $parsed[$trace_id][] = array(
-        'hop' => $hop,
-        'data' => $hop_data,
-      );
     }
+    $queries[$response->query] = $parsed;
   }
-  return $parsed;
+  return $queries[$response->query];
 }
 
 /**
@@ -563,7 +581,7 @@ function ecenter_weathermap_openlayers_presets() {
   $openlayers_presets->title = 'E-Center Weathermap';
   $openlayers_presets->description = 'E-Center network weathermap';
   $openlayers_presets->data = array(
-    'width' => '940px',
+    'width' => '660px',
     'height' => '360px',
     'image_path' => '',
     'css_path' => '',
@@ -571,7 +589,7 @@ function ecenter_weathermap_openlayers_presets() {
     'hide_empty_map' => 0,
     'center' => array(
       'initial' => array(
-        'centerpoint' => '-99.492187496064, 38.822590974865',
+        'centerpoint' => '-97.892187496064, 38.822590974865',
         'zoom' => '4',
       ),
       'restrict' => array(
@@ -587,16 +605,31 @@ function ecenter_weathermap_openlayers_presets() {
       'openlayers_behavior_fullscreen' => array(
         'activated' => 0,
       ),
-      'openlayers_behavior_keyboarddefaults' => array(),
+      //'openlayers_behavior_keyboarddefaults' => array(),
       'openlayers_behavior_layerswitcher' => array(),
       'openlayers_behavior_navigation' => array(
         'zoomWheelEnabled' => 0,
       ),
       'openlayers_behavior_panzoombar' => array(),
+      /*'openlayers_plus_behavior_blockswitcher' => array(
+        'map' => array(
+          'enabled' => 1,
+          'open' => 1,
+          'overlay_style' => 'radio',
+          'position' => 'ne',
+        ),
+      ),*/
     ),
     'default_layer' => 'osm_mapnik',
     'layers' => array(
       'osm_mapnik' => 'osm_mapnik',
+      //'google_satellite' => 'google_satellite',
+      'google_hybrid' => 'google_hybrid',
+      'google_normal' => 'google_normal',
+      //'google_physical' => 'google_physical',
+      //'virtualearth_street' => 'virtualearth_street',
+      //'virtualearth_satellite' => 'virtualearth_satellite',
+      //'virtualearth_hybrid' => 'virtualearth_hybrid',
     ),
     'layer_styles' => array(
       'ecenter_map_test_display_openlayers_1' => 'ecenter_default',
@@ -609,9 +642,6 @@ function ecenter_weathermap_openlayers_presets() {
       'default' => 'ecenter_default',
       'select' => 'ecenter_selected',
       'temporary' => 'default',
-    ),
-    'options' => array(
-      'numZoomLevels' => 7,
     ),
     'preset_name' => 'ecenter_weathermap',
   );
@@ -712,10 +742,9 @@ function ecenter_weathermap_map_layers() {
     $data = $client->getData($src_ip, $dst_ip, $start_date_adjusted, $end_date_adjusted);
 
     if (is_object($data['response']->traceroute)) {
-      $traceroutes = _ecenter_weathermap_object_to_array($data['response']->traceroute);
-      krsort($traceroutes);
+      $data = ecenter_weathermap_parse_response($data, $src_ip, $dst_ip);
 
-      foreach ($traceroutes as $trace_id => $traceroute) {
+      foreach ($data as $trace_id => $traceroute) {
         // Initialize some counters, etc
         $old_hop = NULL;
         $count = count($traceroute);
@@ -733,42 +762,40 @@ function ecenter_weathermap_map_layers() {
         );
 
         $features = array();
-        foreach ($traceroute as $hop) {
-          if (!$hop['longitude'] || !$hop['latitude']) {
-            $geo = geoip_city($hop['hop_ip']);
-            $hop['longitude'] = $geo->longitude;
-            $hop['latitude'] = $geo->latitude;
-          }
-          if ($old_hop && $i < $count) {
+        foreach ($traceroute as $hop_data) {
+          $hop = $hop_data['hop'];
+          if ($hop['longitude'] && $hop['latitude']) {
+            if ($old_hop && $i < $count) {
+              $features[] = array(
+                'wkt' => "LINESTRING({$old_hop['longitude']} {$old_hop['latitude']}, {$hop['longitude']} {$hop['latitude']})",
+                'projection' => "4326",
+                'attributes' => array(
+                  'name' => t('Stub for link data'),
+                  'description' => t('Useful information about link/delay<br /> (as measured by traceroute, pingER, owamp)<br /> could go here'),
+                ),
+                'style' => array(
+                  'strokeWidth' => 4,
+                  'strokeColor' => '#777777',
+                ),
+              );
+            }
             $features[] = array(
-              'wkt' => "LINESTRING({$old_hop['longitude']} {$old_hop['latitude']},{$hop['longitude']} {$hop['latitude']})",
+              'wkt' => "POINT({$hop['longitude']} {$hop['latitude']})",
               'projection' => "4326",
               'attributes' => array(
-                'name' => t('Stub for link data'),
-                'description' => t('Useful information about link/delay<br /> (as measured by traceroute, pingER, owamp)<br /> could go here'),
+                'name' => $hop['hub'] .' ('. $hop['hop_ip'] .')',
+                'description' => 'Hop ID: '. $hop['hop_id'],
               ),
               'style' => array(
-                'strokeWidth' => 4,
-                'strokeColor' => '#777777',
+                'pointRadius' => 5,
+                'fillColor' => '#ffffff',
+                'strokeColor' => '#0000aa',
+                'strokeWidth' => 2,
+                'fillOpacity' => 1,
               ),
             );
+            $old_hop = $hop;
           }
-          $features[] = array(
-            'wkt' => "POINT({$hop['longitude']} {$hop['latitude']})",
-            'projection' => "4326",
-            'attributes' => array(
-              'name' => $hop['hub'] .' ('. $hop['hop_ip'] .')',
-              'description' => 'Hop ID: '. $hop['hop_id'],
-            ),
-            'style' => array(
-              'pointRadius' => 5,
-              'fillColor' => '#ffffff',
-              'strokeColor' => '#0000aa',
-              'strokeWidth' => 2,
-              'fillOpacity' => 1,
-            ),
-          );
-          $old_hop = $hop;
           $i += 1;
         }
         $layer->data['features'] = $features;
@@ -777,6 +804,19 @@ function ecenter_weathermap_map_layers() {
     }
   }
   return $layers;
+}
+
+/**
+ * Implementation of hook_openlayers_map_alter().
+ */
+function ecenter_weathermap_openlayers_map_alter(&$map) {
+  if ($map['preset_name'] == 'ecenter_weathermap') {
+    foreach ($map['layers'] as $name => $layer) {
+      if ($layer['baselayer'] == TRUE) {
+        $map['layers'][$name]['numZoomLevels'] = 8;
+      }
+    }
+  }
 }
 
 /**

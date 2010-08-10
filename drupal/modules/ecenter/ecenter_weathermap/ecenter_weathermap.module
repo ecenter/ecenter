@@ -18,7 +18,7 @@ function ecenter_weathermap_menu() {
     'type' => MENU_CALLBACK,
   );
   $items['admin/settings/ecenter'] = array(
-    'title' => 'E-Center Network Query Settings',
+    'title' => 'E-Center Weathermap',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('ecenter_weathermap_admin_form'),
     'access callback' => 'user_access',
@@ -54,7 +54,8 @@ function ecenter_weathermap_theme() {
    'ecenter_weathermap_data' => array(
       'template' => 'ecenter-weathermap-data',
       'arguments' => array(
-        'response' => NULL,
+        'data' => NULL,
+        'params' => NULL,
       )
     ) + $options,
     'ecenter_weathermap_traceroute' => array(
@@ -327,12 +328,18 @@ function ecenter_weathermap_select_form(&$form_state) {
     $start_date_adjusted = _ecenter_weathermap_date_to_utc($start_date);
     $end_date_adjusted = _ecenter_weathermap_date_to_utc($end_date);
 
-    $data = $client->getData($src_ip, $dst_ip, $start_date_adjusted, $end_date_adjusted);
+    $data = ecenter_weathermap_get_data($src_ip, $dst_ip, $start_date_adjusted, $end_date_adjusted);
+    $params = array(
+      'src_ip' => $src_ip,
+      'dst_ip' => $dst_ip,
+      'start' => $start_date_adjusted,
+      'end' => $end_date_adjustedm
+    );
 
     // If we've got the data (at bare minimum, a traceroute), delegate to rendering function
-    if ($data['code'] == 200 && !empty($data['response']->traceroute)) {
+    if ($data) {
       ecenter_weathermap_refresh_map('ecenter_weathermap', 'openlayers-map-auto-id-0');
-      $form['results_wrapper']['results']['#value'] = theme('ecenter_weathermap_data', $data);
+      $form['results_wrapper']['results']['#value'] = theme('ecenter_weathermap_data', $data, $params);
     }
     else {
       watchdog('ecenter', 'Query returned no results: <code>@query</code>', array('@query' => $query), WATCHDOG_INFO);
@@ -342,6 +349,16 @@ function ecenter_weathermap_select_form(&$form_state) {
     }
   }
   return $form;
+}
+
+/**
+ * Default submit handler for weathermap form
+ */
+function ecenter_weathermap_select_form_submit($form, &$form_state) {
+  // Do what AHAH helper does on an AJAX call, to make form constructor a 
+  // little less crazy
+  $form_state['storage'] = $form_state['values'];
+  $form_state['rebuild'] = TRUE;
 }
 
 /**
@@ -372,6 +389,9 @@ function ecenter_weathermap_refresh_map($preset, $id = NULL) {
   }
 }
 
+/**
+ * Implementation of hook_openlayers_map_preprocess_alter().
+ */
 function ecenter_weathermap_openlayers_map_preprocess_alter(&$map) {
   $client = ecenter_weathermap_get_client();
   if ($_REQUEST['ip_select']) {
@@ -388,11 +408,9 @@ function ecenter_weathermap_openlayers_map_preprocess_alter(&$map) {
     $start_date_adjusted = _ecenter_weathermap_date_to_utc($start);
     $end_date_adjusted = _ecenter_weathermap_date_to_utc($end);
 
-    $data = $client->getData($src_ip, $dst_ip, $start_date_adjusted, $end_date_adjusted);
+    $data = ecenter_weathermap_get_data($src_ip, $dst_ip, $start_date_adjusted, $end_date_adjusted);
 
-    if (is_object($data['response']->traceroute)) {
-      $data = ecenter_weathermap_parse_response($data);
-
+    if ($data) {
       $start = TRUE;
       foreach (array_keys($data) as $trace_id) {
         $map['layers']['ecenter_traceroute_'. $trace_id] = 'ecenter_traceroute_'. $trace_id;
@@ -406,16 +424,6 @@ function ecenter_weathermap_openlayers_map_preprocess_alter(&$map) {
     }
   }
   return $map;
-}
-
-/**
- * Default submit handler for weathermap form
- */
-function ecenter_weathermap_select_form_submit($form, &$form_state) {
-  // Do what AHAH helper does on an AJAX call, to make form constructor a 
-  // little less crazy
-  $form_state['storage'] = $form_state['values'];
-  $form_state['rebuild'] = TRUE;
 }
 
 /**
@@ -455,6 +463,38 @@ function ecenter_weathermap_get_client($status_check = '503') {
     }
   }
   return $client;
+}
+
+/**
+ * Get/cache data
+ */
+function ecenter_weathermap_get_data($src_ip, $dst_ip, $start, $end) {
+  $client = ecenter_weathermap_get_client('message');
+
+  $query = http_build_query(array(
+    'src_ip' => $src_ip,
+    'dst_ip' => $dst_ip,
+    'start' => $start,
+    'end' => $end,
+  ));
+
+  $caching = variable_get('ecenter_weathermap_cache_enabled', 0);
+
+  if ($caching && $result = cache_get($query, 'cache_ecenter_weathermap')) {
+    return $result->data;
+  }
+  else {
+    $result = $client->getData($src_ip, $dst_ip, $start, $end);
+    if ($result['code'] == 200) {
+      $data = ecenter_weathermap_parse_response($result);
+      if ($caching) {
+        $expires = time() + variable_get('ecenter_weathermap_cache_ttl', 300);
+        cache_set($query, $data, 'cache_ecenter_weathermap', $expires);
+      }
+      return $data;
+    }
+  }
+  return FALSE;
 }
 
 /**
@@ -739,11 +779,9 @@ function ecenter_weathermap_map_layers() {
     $start_date_adjusted = _ecenter_weathermap_date_to_utc($start);
     $end_date_adjusted = _ecenter_weathermap_date_to_utc($end);
 
-    $data = $client->getData($src_ip, $dst_ip, $start_date_adjusted, $end_date_adjusted);
+    $data = ecenter_weathermap_get_data($src_ip, $dst_ip, $start_date_adjusted, $end_date_adjusted);
 
-    if (is_object($data['response']->traceroute)) {
-      $data = ecenter_weathermap_parse_response($data, $src_ip, $dst_ip);
-
+    if ($data) {
       foreach ($data as $trace_id => $traceroute) {
         // Initialize some counters, etc
         $old_hop = NULL;

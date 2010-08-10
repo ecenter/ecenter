@@ -49,6 +49,23 @@ function ecenter_weathermap_admin_form() {
     '#default_value' => variable_get('ecenter_weathermap_time_window', 3600),
   );
 
+  $form['performance'] = array(
+    '#title' => t('Performance'),
+    '#type' => 'fieldset',
+  );
+  $form['performance']['ecenter_weathermap_cache_enabled'] = array(
+    '#title' => t('Enable result caching'),
+    '#type' => 'checkbox',
+    '#description' => t('Should the Ecenter Weathermap cache results?'),
+    '#default_value' => variable_get('ecenter_weathermap_cache_enabled', 0),
+  );
+  $form['performance']['ecenter_weathermap_cache_ttl'] = array(
+    '#title' => t('Cache time to live'),
+    '#type' => 'textfield',
+    '#description' => t('How long should results be cached, in seconds?'),
+    '#default_value' => variable_get('ecenter_weathermap_cache_ttl', 300),
+  );
+
   $form['thresholds'] = array(
     '#title' => t('Threshold values'),
     '#type' => 'fieldset',
@@ -62,17 +79,17 @@ function ecenter_weathermap_admin_form() {
   $form['thresholds']['colors']['critical'] = array(
     '#title' => t('Critical color'),
     '#type' => 'textfield',
-    '#default_value' => variable_get('ecenter_weathermap_threshold_critical_color', '#cc0000'),    
+    '#default_value' => variable_get('ecenter_weathermap_threshold_critical_color', '#cc0000'),
   );
   $form['thresholds']['colors']['marginal'] = array(
     '#title' => t('Marginal color'),
     '#type' => 'textfield',
-    '#default_value' => variable_get('ecenter_weathermap_threshold_marginal_color', '#fe890c'),    
+    '#default_value' => variable_get('ecenter_weathermap_threshold_marginal_color', '#fe890c'),
   );
   $form['thresholds']['colors']['good'] = array(
     '#title' => t('Marginal color'),
     '#type' => 'textfield',
-    '#default_value' => variable_get('ecenter_weathermap_threshold_good_color', '#1c8a24'),    
+    '#default_value' => variable_get('ecenter_weathermap_threshold_good_color', '#1c8a24'),
   );
 
   $form['thresholds']['snmp'] = array(

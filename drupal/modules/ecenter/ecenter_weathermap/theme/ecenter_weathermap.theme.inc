@@ -5,13 +5,7 @@
  * Theme main data display
  */
 function template_preprocess_ecenter_weathermap_data(&$vars) {
-  $response = $vars['response'];
-
-  // Use data to 
-  $vars['permalink'] = l('Permalink', 'weathermap', array('query' => $response['parameters']));
-
-  // Finally, process data into final form
-  $vars['data'] = ecenter_weathermap_parse_response($response);
+  $vars['permalink'] = l('Permalink', 'weathermap', array('query' => http_build_query($vars['params'])));
 }
 
 /**

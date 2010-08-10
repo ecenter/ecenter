@@ -1,0 +1,17 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Views for E-Center project.
+ */
+
+/**
+ * Implementation of hook_views_api().
+ */
+function ecenter_views_views_api() {
+  return array(
+    'api' => 2,
+    'path' => drupal_get_path('module', 'ecenter_views'),
+  );
+}

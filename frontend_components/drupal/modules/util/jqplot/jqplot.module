@@ -20,7 +20,7 @@ function jqplot_register_tablechart($selector, $settings = array()) {
 
     // Core library
     drupal_add_js($path .'/jqplot/excanvas.min.js');
-    drupal_add_js($path .'/jqplot/jquery.jqplot.min.js');
+    drupal_add_js($path .'/jqplot/jquery.jqplot.js');
 
     // Our libraries and behaviors
     drupal_add_js($path .'/js/jquery.uuid.js');
@@ -31,11 +31,14 @@ function jqplot_register_tablechart($selector, $settings = array()) {
     drupal_add_js($path .'/jqplot/plugins/jqplot.dateAxisRenderer.js');
 
     if (!empty($settings['plotOptions']['highlighter'])) {
-      drupal_add_js($path .'/jqplot/plugins/jqplot.highlighter.min.js');
+      drupal_add_js($path .'/jqplot/plugins/jqplot.highlighter.js');
     }
     if (!empty($settings['plotOptions']['cursor'])) {
-      drupal_add_js($path .'/jqplot/plugins/jqplot.cursor.min.js');
+      drupal_add_js($path .'/jqplot/plugins/jqplot.cursor.js');
     }
+
+    drupal_add_js($path .'/jqplot/plugins/jqplot.canvasTextRenderer.js');
+    drupal_add_js($path .'/jqplot/plugins/jqplot.canvasAxisLabelRenderer.js');
 
     $behavior = array();
     $behavior['jqPlot'][$selector] = $settings;

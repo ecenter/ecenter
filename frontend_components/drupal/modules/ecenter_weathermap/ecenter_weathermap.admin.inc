@@ -2,6 +2,8 @@
 // $Id$
 
 function ecenter_weathermap_admin_form() {
+  $client = ecenter_weathermap_get_client('message');
+
   $form = array();
   $form['service'] = array(
     '#title' => t('Web service settings'),
@@ -28,6 +30,12 @@ function ecenter_weathermap_admin_form() {
     '#description' => t('Timeout for calls to the webservice, in seconds.'),
     '#default_value' => variable_get('ecenter_weathermap_timeout', 30),
   );
+  $form['service']['ecenter_weathermap_status_timeout'] = array(
+    '#title' => t('Status timeout'),
+    '#type' => 'textfield',
+    '#description' => t('Timeout to check the webservice status, in seconds.'),
+    '#default_value' => variable_get('ecenter_weathermap_status_timeout', 2),
+  );
   $form['service']['ecenter_weathermap_time_increment'] = array(
     '#title' => t('Time increment'),
     '#type' => 'textfield',
@@ -39,6 +47,23 @@ function ecenter_weathermap_admin_form() {
     '#type' => 'textfield',
     '#description' => t('Specify default window of time to query over, in seconds (i.e. 1 hour is 3600 seconds).'),
     '#default_value' => variable_get('ecenter_weathermap_time_window', 3600),
+  );
+
+  $form['performance'] = array(
+    '#title' => t('Performance'),
+    '#type' => 'fieldset',
+  );
+  $form['performance']['ecenter_weathermap_cache_enabled'] = array(
+    '#title' => t('Enable result caching'),
+    '#type' => 'checkbox',
+    '#description' => t('Should the Ecenter Weathermap cache results?'),
+    '#default_value' => variable_get('ecenter_weathermap_cache_enabled', 0),
+  );
+  $form['performance']['ecenter_weathermap_cache_ttl'] = array(
+    '#title' => t('Cache time to live'),
+    '#type' => 'textfield',
+    '#description' => t('How long should results be cached, in seconds?'),
+    '#default_value' => variable_get('ecenter_weathermap_cache_ttl', 300),
   );
 
   $form['thresholds'] = array(
@@ -54,17 +79,17 @@ function ecenter_weathermap_admin_form() {
   $form['thresholds']['colors']['critical'] = array(
     '#title' => t('Critical color'),
     '#type' => 'textfield',
-    '#default_value' => variable_get('ecenter_weathermap_threshold_critical_color', '#cc0000'),    
+    '#default_value' => variable_get('ecenter_weathermap_threshold_critical_color', '#cc0000'),
   );
   $form['thresholds']['colors']['marginal'] = array(
     '#title' => t('Marginal color'),
     '#type' => 'textfield',
-    '#default_value' => variable_get('ecenter_weathermap_threshold_marginal_color', '#fe890c'),    
+    '#default_value' => variable_get('ecenter_weathermap_threshold_marginal_color', '#fe890c'),
   );
   $form['thresholds']['colors']['good'] = array(
     '#title' => t('Marginal color'),
     '#type' => 'textfield',
-    '#default_value' => variable_get('ecenter_weathermap_threshold_good_color', '#1c8a24'),    
+    '#default_value' => variable_get('ecenter_weathermap_threshold_good_color', '#1c8a24'),
   );
 
   $form['thresholds']['snmp'] = array(

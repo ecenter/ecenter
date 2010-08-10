@@ -202,9 +202,18 @@ function _ecenter_weathermap_select_form() {
   $map = openlayers_render_map($preset->data, $preset->name);
 
   // Network map
-  $form['weathermap'] = array(
-    '#prefix' => '<div id="weathermap">',
+  $form['weathermap_wrapper'] = array(
+    '#prefix' => '<div id="weathermap-wrapper" class="clearfix">',
+    '#suffix' => '</div>',
+  );
+  $form['weathermap_wrapper']['weathermap'] = array(
+    '#prefix' => '<div id="weathermap-map">',
     '#value' => $map,
+    '#suffix' => '</div>',
+  );
+  $form['weathermap_wrapper']['results'] = array(
+    '#prefix' => '<div id="weathermap-results">',
+    '#value' => 'stub for results...',
     '#suffix' => '</div>',
   );
 
@@ -851,7 +860,7 @@ function ecenter_weathermap_openlayers_map_alter(&$map) {
   if ($map['preset_name'] == 'ecenter_weathermap') {
     foreach ($map['layers'] as $name => $layer) {
       if ($layer['baselayer'] == TRUE) {
-        $map['layers'][$name]['numZoomLevels'] = 8;
+        $map['layers'][$name]['numZoomLevels'] = 12;
       }
     }
   }

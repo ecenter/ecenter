@@ -1,0 +1,26 @@
+<?php
+// $Id$
+
+/**
+ * @file ecenter_weathermap.install
+ */
+
+function ecenter_weathermap_schema() {
+  $schema['cache_ecenter_weathermap'] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_ecenter_weathermap']['description'] = 'Cache table for storing saved results.';
+  return $schema;
+}
+
+/**
+ * Implementation of hook_install().
+ */
+function ecenter_weathermap_install() {
+  drupal_install_schema('ecenter_weathermap');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function ecenter_weathermap_uninstall() {
+  drupal_uninstall_schema('ecenter_weathermap');
+}

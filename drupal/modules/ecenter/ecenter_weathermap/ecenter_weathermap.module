@@ -478,8 +478,6 @@ function ecenter_weathermap_get_client($status_check = '503') {
  * Get/cache data
  */
 function ecenter_weathermap_get_data($src_ip, $dst_ip, $start, $end) {
-  $client = ecenter_weathermap_get_client('message');
-
   $query = http_build_query(array(
     'src_ip' => $src_ip,
     'dst_ip' => $dst_ip,
@@ -493,6 +491,7 @@ function ecenter_weathermap_get_data($src_ip, $dst_ip, $start, $end) {
     return $result->data;
   }
   else {
+    $client = ecenter_weathermap_get_client('message');
     $result = $client->getData($src_ip, $dst_ip, $start, $end);
     if ($result['code'] == 200) {
       $data = ecenter_weathermap_parse_response($result);

@@ -67,7 +67,7 @@ CREATE TABLE  node (
  ip_addr  varbinary(16)  NOT NULL,
  nodename  varchar(255)  NULL,
  ip_noted  varchar(40)  NOT NULL,
- netmask  smallint(3) NOT NULL default '32',
+ netmask  smallint(3) NOT NULL default '24',
  PRIMARY KEY  (ip_addr),
  KEY (nodename),
  KEY (ip_noted),
@@ -196,7 +196,7 @@ CREATE TABLE   pinger_data  (
  meanRtt float NOT NULL DEFAULT  '0.0',
  medianRtt float NOT NULL DEFAULT  '0.0',
  maxRtt float NOT NULL DEFAULT  '0.0',
- timestamp   bigint(20) unsigned NOT NULL,
+ timestamp   bigint(12) unsigned NOT NULL,
  minIpd float  NOT NULL DEFAULT  '0.0',
  meanIpd float NOT NULL DEFAULT  '0.0',
  maxIpd float NOT NULL DEFAULT  '0.0',
@@ -208,6 +208,7 @@ CREATE TABLE   pinger_data  (
  PRIMARY KEY (pinger_data), 
  KEY (timestamp),
  INDEX (meanRtt, medianRtt, lossPercent, meanIpd, clp),
+ UNIQUE KEY meta_time (metaid, timestamp),
  FOREIGN KEY (metaid) references  metadata  (metaid) on DELETE CASCADE ON UPDATE CASCADE
  ) ENGINE=InnoDB CHARSET=latin1 COMMENT='ps-ps  pinger data  cache';
 --
@@ -219,13 +220,11 @@ drop  table if exists  bwctl_data;
 CREATE TABLE  bwctl_data (
    bwctl_data  bigint  unsigned AUTO_INCREMENT NOT NULL, 
    metaid    BIGINT  unsigned NOT NULL,
-   timestamp   bigint(20) unsigned NOT NULL,
+   timestamp   bigint(12) unsigned NOT NULL,
    throughput  float default NULL,
-   jitter      float default NULL,
-   lost  int unsigned default NULL,
-   sent  int unsigned default NULL,
    PRIMARY KEY  (bwctl_data),
-   KEY (timestamp),
+   KEY (timestamp), 
+   UNIQUE KEY meta_time (metaid, timestamp),
    FOREIGN KEY (metaid) REFERENCES   metadata  (metaid) on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps  bwctl data  cache';
 --
@@ -236,17 +235,15 @@ drop  table if exists owamp_data;
 CREATE TABLE  owamp_data (
    owamp_data  bigint unsigned AUTO_INCREMENT NOT NULL, 
    metaid   BIGINT  unsigned  NOT NULL,
-   timestamp  bigint(20) unsigned NOT NULL,
-   min float  NOT NULL DEFAULT  '0.0',
-   max float  NOT NULL DEFAULT  '0.0',
-   minttl tinyint(3) unsigned NOT NULL DEFAULT  '0',
-   maxttl tinyint(3) unsigned NOT NULL DEFAULT  '0',
+   timestamp  bigint(12) unsigned NOT NULL,
+   min_delay float  NOT NULL DEFAULT  '0.0',
+   max_delay float  NOT NULL DEFAULT  '0.0',
    sent   int unsigned NOT NULL DEFAULT  '0',
-   lost   int unsigned NOT NULL DEFAULT  '0',
-   dups   int unsigned NOT NULL DEFAULT  '0',
-   maxerr float  NOT NULL DEFAULT  '0.0',
+   loss   int unsigned NOT NULL DEFAULT  '0',
+   duplicates   int unsigned NOT NULL DEFAULT  '0',
    PRIMARY KEY  (owamp_data),
    KEY  (timestamp),
+   UNIQUE KEY meta_time (metaid, timestamp),
    FOREIGN KEY  (metaid) REFERENCES   metadata  (metaid) on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps  owamp  data  cache';
 --
@@ -257,12 +254,13 @@ drop  table if exists snmp_data;
 CREATE TABLE  snmp_data (
    snmp_data  bigint unsigned AUTO_INCREMENT NOT NULL, 
    metaid   BIGINT  unsigned  NOT NULL,
-   timestamp  bigint(20) unsigned NOT NULL,
+   timestamp  bigint(12) unsigned NOT NULL,
    utilization float  NOT NULL DEFAULT  '0.0',
    errors int unsigned NOT NULL DEFAULT  '0',
    drops int unsigned  NOT NULL DEFAULT  '0',
    PRIMARY KEY  (snmp_data),
-   KEY  (timestamp),
+   KEY  (timestamp),\
+   UNIQUE KEY meta_time (metaid, timestamp),
    FOREIGN KEY (metaid) REFERENCES metadata (metaid) on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps snmp data  cache';
 --
@@ -275,7 +273,7 @@ CREATE TABLE traceroute_data (
 trace_id   bigint  unsigned AUTO_INCREMENT NOT NULL,
 metaid   BIGINT  unsigned  NOT NULL,
 number_hops tinyint(3) NOT NULL DEFAULT '1', 
-updated bigint(20) unsigned NOT NULL, 
+updated bigint(12) unsigned NOT NULL, 
 PRIMARY KEY (trace_id), 
 UNIQUE KEY updated_metaid (metaid, updated),
 FOREIGN KEY (metaid) references  metadata (metaid) on DELETE CASCADE ON UPDATE CASCADE

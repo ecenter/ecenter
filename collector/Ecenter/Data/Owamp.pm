@@ -31,7 +31,6 @@ sub BUILD {
       $self->namespace("http://ggf.org/ns/nmwg/tools/owamp/2.0");
       $self->nsid("owamp");
       $self->logger(get_logger(__PACKAGE__));
-      return  $self->url($args->{url}) if $args->{url};
 };
   
 augment  'process_datum' => sub {

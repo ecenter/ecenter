@@ -37,7 +37,7 @@ augment  'process_datum' => sub {
    my $self = shift;
    my $dt = shift;
    my $secs =  UnixDate( $dt->getAttribute( "timeValue" ), "%s");
-   return  ($secs and $dt->getAttribute( "throughput" ))?[ $secs, {throughput => eval( $dt->getAttribute( "throughput" ) } ]:[];
+   return  ($secs and $dt->getAttribute( "throughput" ))?[ $secs, {throughput => eval( $dt->getAttribute( "throughput" ) ) } ]:[];
 };
 
 

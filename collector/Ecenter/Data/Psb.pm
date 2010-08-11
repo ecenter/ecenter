@@ -54,10 +54,7 @@ has 'src_ip' => (is => 'rw', isa => 'Str');
 has 'dst_ip' => (is => 'rw', isa => 'Str');
 has 'src_name' => (is => 'rw', isa => 'Str');
 has 'dst_name' => (is => 'rw', isa => 'Str');
-has eventtypes => (is => 'rw', isa => 'ArrayRef');
-has nsid => (is => 'rw', isa => 'Str'); 
-has namespace => (is => 'rw', isa => 'Str'); 
-
+ 
 sub BUILD {
       my $self = shift;
       my $args = shift;  
@@ -158,7 +155,8 @@ after  'get_data' => sub   {
         }
         my $datum1 = find( $doc1->getDocumentElement, "./*[local-name()='datum']", 0 );
         if ( $datum1 ) {
-            foreach my $dt ( $datum1->get_nodelist ) { 
+            foreach my $dt ( $datum1->get_nodelist ) {
+	         $self->logger->info("  Datum: ". $dt->toString);
 	         my $processed =  $self->process_datum($dt); ## provide implementation in the subclass
                  push  @data,  $processed if $processed && ref $processed eq ref [] && @{$processed};
             }

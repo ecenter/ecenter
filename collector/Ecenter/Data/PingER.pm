@@ -62,8 +62,11 @@ has 'dst_name' => (is => 'rw', isa => 'Str');
 sub BUILD {
       my $self = shift;
       my $args = shift; 
+      $self->eventtypes([("http://ggf.org/ns/nmwg/tools/pinger/2.0/")]);
+      $self->namespace("http://ggf.org/ns/nmwg/tools/pinger/2.0/");
+      $self->nsid("pinger");
+      $self->logger(get_logger(__PACKAGE__));  
       map {$self->$_($args->{$_}) if $self->can($_)}  keys %$args if $args && ref $args eq ref {};
-      $self->logger(get_logger(__PACKAGE__));
       return  $self->url if $args->{url};
 };
 

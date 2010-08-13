@@ -837,24 +837,6 @@ function ecenter_weathermap_map_layers() {
                   'strokeOpacity' => '0.75',
                 ),
               );
-              
-              $features[] = array(
-                'wkt' => "POINT({$c1->x} {$c1->y})",
-                'projection' => "4326",
-                'attributes' => array(
-                  'name' => 'control point 1',
-                  'description' => $old_hop['hub'] .' ('. $old_hop['hop_ip'] .') to '. $hop['hub'] .' ('. $hop['hop_ip'] .')',
-                ),
-              );
-              $features[] = array(
-                'wkt' => "POINT({$c2->x} {$c2->y})",
-                'projection' => "4326",
-                'attributes' => array(
-                  'name' => 'control point 2',
-                  'description' => $old_hop['hub'] .' ('. $old_hop['hop_ip'] .') to '. $hop['hub'] .' ('. $hop['hop_ip'] .')',
-                ),
-              );
-
             }
             $features[] = array(
               'wkt' => "POINT({$hop['longitude']} {$hop['latitude']})",

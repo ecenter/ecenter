@@ -812,25 +812,9 @@ function ecenter_weathermap_map_layers() {
           $hop = $hop_data['hop'];
           if ($hop['longitude'] && $hop['latitude']) {
             if ($old_hop && $i < $count) {
-
-              /*$features[] = array(
-                'wkt' => "LINESTRING({$old_hop['longitude']} {$old_hop['latitude']}, {$hop['longitude']} {$hop['latitude']})",
-                'projection' => "4326",
-                'attributes' => array(
-                  'name' => t('Stub for link data'),
-                  'description' => 'Hop ID: '. $old_hop['hop_id'] .' to '. $hop['hop_id'],
-                ),
-                'style' => array(
-                  'strokeWidth' => 4,
-                  'strokeColor' => '#bbbbbb',
-                  'strokeOpacity' => 0.5,
-                ),
-              );*/
-
-              $curve = _ecenter_weathermap_curve($old_hop, $hop, variable_get('ecenter_weathermap_curve_divisions', 6), 0);
+              $curve = _ecenter_weathermap_curve($old_hop, $hop, $index);
 
               $segments = array();
-
               foreach ($curve as $segment) {
                 $segments[] = "{$segment->x} {$segment->y}";
               }
@@ -840,65 +824,16 @@ function ecenter_weathermap_map_layers() {
               $features[] = array(
                 'wkt' => "LINESTRING($line)",
                 'projection' => "4326",
+                /*'attributes' => array(
+                  'name' => $old_hop['hub'] .' ('. $old_hop['hop_ip'] .') to '. $hop['hub'] .' ('. $hop['hop_ip'] .')',
+                  'description' => 'Stub for useful data',
+                ),*/
                 'style' => array(
                   'strokeWidth' => 4,
                   'strokeColor' => '#444444',
-                  'strokeOpacity'
-
+                  'strokeOpacity' => '0.75',
                 ),
               );
-
-              /*$index = 0;
-              $p1 = new Vector2d($old_hop['longitude'], $old_hop['latitude']);
-              $p2 = new Vector2d($hop['longitude'], $hop['latitude']);
-              $angle = pi() * (0.5 + (0.5 * $index)) / 32;
-              $magnitude = (0.5 + 0.5 * $index) / 32;
-              
-              list($c1, $c2) = _ecenter_weathermap_get_control_points($p1, $p2, $magnitude, $angle, 3);
-
-              $features[] = array(
-                'wkt' => "POINT({$c1->x} {$c1->y})",
-                'projection' => "4326",
-                'attributes' => array(
-                  'name' => 'c1',
-                  'description' => 'Hop ID: '. $old_hop['hop_id'] .' to '. $hop['hop_id'],
-                ),
-                'style' => array(
-                  'pointRadius' => 5,
-                  'fillColor' => '#000000',
-                  'fillOpacity' => 1.0,
-                ),
-              );
-              $features[] = array(
-                'wkt' => "LINESTRING({$old_hop['longitude']} {$old_hop['latitude']}, {$c1->x} {$c1->y})",
-                'projection' => "4326",
-                'attributes' => array(
-                  'name' => 'c1',
-                  'description' => 'Hop ID: '. $old_hop['hop_id'] .' to '. $hop['hop_id'],
-                ),
-              );
-
-              $features[] = array(
-                'wkt' => "POINT({$c2->x} {$c2->y})",
-                'projection' => "4326",
-                'attributes' => array(
-                  'name' => 'c2',
-                  'description' => 'Hop ID: '. $old_hop['hop_id'] .' to '. $hop['hop_id'],
-                ),
-                'style' => array(
-                  'pointRadius' => 5,
-                  'fillColor' => '#00ff00',
-                  'fillOpacity' => 1.0,
-                ),
-              );
-              $features[] = array(
-                'wkt' => "LINESTRING({$hop['longitude']} {$hop['latitude']}, {$c2->x} {$c2->y})",
-                'projection' => "4326",
-                'attributes' => array(
-                  'name' => 'c1',
-                  'description' => 'Hop ID: '. $old_hop['hop_id'] .' to '. $hop['hop_id'],
-                ),
-              );*/
             }
             $features[] = array(
               'wkt' => "POINT({$hop['longitude']} {$hop['latitude']})",
@@ -927,27 +862,24 @@ function ecenter_weathermap_map_layers() {
   return $layers;
 }
 
-// Based on ESNet weathermap javascript, because I'm NOT GOOD AT GEOMETRY
-function _ecenter_weathermap_curve($a, $b, $divisions = 6, $index = 0) {
-  $p0 = new Vector2d($a['longitude'], $a['latitude']);
-  $p3 = new Vector2d($b['longitude'], $b['latitude']);
+function _ecenter_weathermap_curve($from, $to, $index = 0) {
+  $p0 = new Vector2d($from['longitude'], $from['latitude']);
+  $p3 = new Vector2d($to['longitude'], $to['latitude']);
 
-  $angle = pi() * (0.5 + (0.5 * $index)) / 16;
-  $magnitude = (0.5 + 0.5 * $index) / 8;
+  // Base control point angle and magnitude on index
+  $angle = pi() * (1 + (0.25 * $index)) / 8;
+  $magnitude = (1.5 + 0.5 * $index) / 8;
 
   list($c1, $c2) = _ecenter_weathermap_get_control_points($p0, $p3, $magnitude, $angle);
-  $curve = _ecenter_weathermap_get_bezier($p0, $c1, $c2, $p3);
 
-  //dpm(get_defined_vars());
-
-  return $curve;
+  $steps = variable_get('ecenter_weathermap_curve_divisions', 20);
+  return _ecenter_weathermap_get_bezier($p0, $c1, $c2, $p3, $steps);
 }
 
-function _ecenter_weathermap_get_bezier($p0, $c1, $c2, $p3, $steps = 30) {
+function _ecenter_weathermap_get_bezier($p0, $c1, $c2, $p3, $steps) {
   $div = 1 / $steps;
 
   for ($t = 0; $t <= 1; $t += $div) {
-
     // Coefficients
     $B0 = pow($t, 3);
     $B1 = 3 * pow($t, 2) * (1 - $t);
@@ -964,6 +896,7 @@ function _ecenter_weathermap_get_bezier($p0, $c1, $c2, $p3, $steps = 30) {
   return $points;
 }
 
+// Control point code based on ESNet weathermap
 function _ecenter_weathermap_get_control_points($to, $from, $mag_scale, $angle) {
   $dirX = $to->x - $from->x;
   $dirY = $to->y - $from->y;

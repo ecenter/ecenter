@@ -812,16 +812,92 @@ function ecenter_weathermap_map_layers() {
           $hop = $hop_data['hop'];
           if ($hop['longitude'] && $hop['latitude']) {
             if ($old_hop && $i < $count) {
+
               $features[] = array(
                 'wkt' => "LINESTRING({$old_hop['longitude']} {$old_hop['latitude']}, {$hop['longitude']} {$hop['latitude']})",
                 'projection' => "4326",
                 'attributes' => array(
                   'name' => t('Stub for link data'),
-                  'description' => t('Useful information about link/delay<br /> (as measured by traceroute, pingER, owamp)<br /> could go here'),
+                  'description' => 'Hop ID: '. $old_hop['hop_id'] .' to '. $hop['hop_id'],
                 ),
                 'style' => array(
                   'strokeWidth' => 4,
                   'strokeColor' => '#777777',
+                ),
+              );
+
+              $curve = _ecenter_weathermap_curve($old_hop, $hop, variable_get('ecenter_weathermap_curve_divisions', 6), 5);
+
+              $segments = array();
+
+              foreach ($curve as $segment) {
+                $segments[] = "{$segment->x} {$segment->y}";
+              }
+
+              $line = implode(',', $segments);
+              //dpm($line);
+
+              $features[] = array(
+                'wkt' => "LINESTRING($line)",
+                'projection' => "4326",
+                'style' => array(
+                  'strokeWidth' => 3,
+                  'strokeColor' => '#ff0000',
+                ),
+              );
+
+              //dpm($old_hop);
+              //dpm($hop);
+              //dpm('---');
+              //dpm($curve);
+
+              $p1 = new Vector2d($old_hop['longitude'], $old_hop['latitude']);
+              $p2 = new Vector2d($hop['longitude'], $hop['latitude']);
+              $angle = pi() * (0.5 + (0.5 * $index)) / 6;
+              $magnitude = (0.5 + 0.5 * $index) / 6;
+              list($c1, $c2) = _ecenter_weathermap_get_control_points($p1, $p2, $magnitude, $angle, 3);
+
+              $features[] = array(
+                'wkt' => "POINT({$c1->x} {$c1->y})",
+                'projection' => "4326",
+                'attributes' => array(
+                  'name' => 'c1',
+                  'description' => 'Hop ID: '. $old_hop['hop_id'] .' to '. $hop['hop_id'],
+                ),
+                'style' => array(
+                  'pointRadius' => 5,
+                  'fillColor' => '#000000',
+                  'fillOpacity' => 1.0,
+                ),
+              );
+              $features[] = array(
+                'wkt' => "LINESTRING({$old_hop['longitude']} {$old_hop['latitude']}, {$c1->x} {$c1->y})",
+                'projection' => "4326",
+                'attributes' => array(
+                  'name' => 'c1',
+                  'description' => 'Hop ID: '. $old_hop['hop_id'] .' to '. $hop['hop_id'],
+                ),
+              );
+
+              $features[] = array(
+                'wkt' => "POINT({$c2->x} {$c2->y})",
+                'projection' => "4326",
+                'attributes' => array(
+                  'name' => 'c2',
+                  'description' => 'Hop ID: '. $old_hop['hop_id'] .' to '. $hop['hop_id'],
+                ),
+                'style' => array(
+                  'pointRadius' => 5,
+                  'fillColor' => '#00ff00',
+                  'fillOpacity' => 1.0,
+                ),
+              );
+              $features[] = array(
+                'wkt' => "LINESTRING({$hop['longitude']} {$hop['latitude']}, {$c2->x} {$c2->y})",
+                'projection' => "4326",
+                'attributes' => array(
+                  'name' => 'c1',
+                  'description' => 'Hop ID: '. $old_hop['hop_id'] .' to '. $hop['hop_id'],
                 ),
               );
             }
@@ -840,8 +916,8 @@ function ecenter_weathermap_map_layers() {
                 'fillOpacity' => 1,
               ),
             );
-            $old_hop = $hop;
           }
+          $old_hop = $hop;
           $i += 1;
         }
         $layer->data['features'] = $features;
@@ -850,6 +926,100 @@ function ecenter_weathermap_map_layers() {
     }
   }
   return $layers;
+}
+
+// Based on ESNet weathermap javascript, because I'm NOT GOOD AT GEOMETRY
+function _ecenter_weathermap_curve($a, $b, $divisions = 6, $index = 0) {
+  $p0 = new Vector2d($a['longitude'], $a['latitude']);
+  $p3 = new Vector2d($b['longitude'], $b['latitude']);
+
+  $angle = pi() * (0.5 + (0.5 * $index)) / 6;
+  $magnitude = (0.5 + 0.5 * $index) / 6;
+
+  list($c1, $c2) = _ecenter_weathermap_get_control_points($p0, $p3, $magnitude, $angle);
+  $curve = _ecenter_weathermap_get_bezier($p0, $c1, $c2, $p3);
+
+  return $curve;
+}
+
+function _ecenter_weathermap_get_bezier($p0, $c1, $c2, $p3, $steps = 30) {
+  $div = 1 / $steps;
+
+  for ($t = 0; $t <= 1; $t += $div) {
+
+    // Coefficients
+    $B0 = pow($t, 3);
+    $B1 = 3 * pow($t, 2) * (1 - $t);
+    $B2 = 3 * $t * pow((1 - $t), 2);
+    $B3 = pow((1 - $t), 3);
+
+    // Coordinates
+    $x = ($p0->x * $B0) + ($c1->x * $B1) + ($c2->x * $B2) + ($p3->x * $B3);
+    $y = ($p0->y * $B0) + ($c1->y * $B1) + ($c2->y * $B2) + ($p3->y * $B3);
+
+    $point = new Vector2d($x, $y);
+    $points[] = $point;
+  }
+  return $points;
+}
+
+function _ecenter_weathermap_get_control_points($to, $from, $mag_scale, $angle) {
+  $dirX = $to->x - $from->x;
+  $dirY = $to->y - $from->y;
+
+  $mag = sqrt(($dirX * $dirX) + ($dirY * $dirY));
+  if (!$mag) {
+    return array($to, $from);
+  }
+
+  $length = $mag * $mag_scale;
+
+  $dirX = $dirX / $mag;
+  $dirY = $dirY / $mag;
+
+  $rotation = $angle;
+  $sin = sin($rotation);
+  $cos = cos($rotation);
+
+  $rotX = $cos * $dirX - $sin * $dirY;
+  $rotY = $sin * $dirX + $cos * $dirY;
+  $rotNegX = $cos * -$dirX - $sin * $dirY;
+  $rotNegY = $sin * $dirX - $cos * $dirY;
+
+  $x1 = $rotX * $length + $from->x;
+  $y1 = $rotY * $length + $from->y;
+  $x2 = $rotNegX * $length + $to->x;
+  $y2 = $rotNegY * $length + $to->y;
+
+  if ($dirX < 0 || (!$dirX && $dirY < 0)) {
+    $x1 = -$rotNegX * $length + $from->x;
+    $y1 = -$rotNegY * $length + $from->y;
+    $x2 = -$rotX * $length + $to->x;
+    $y2 = -$rotY * $length + $to->y;
+  }
+
+  return array(new Vector2d($x2, $y2), new Vector2d($x1, $y1));
+}
+
+class Vector2d {
+  public $x, $y;
+
+  public function __construct($x, $y) {
+    $this->x = $x;
+    $this->y = $y;
+  }
+
+  public function add($vector) {
+    return new Vector2d($this->x + $vector->x, $this->y + $vector->y);
+  }
+
+  public function subtract($vector) {
+    return new Vector2d($this->x - $vector->x, $this->y - $vector->y);
+  }
+
+  public function scale($constant) {
+    return new Vector2d($this->x * $constant, $this->y * $constant);
+  }
 }
 
 /**

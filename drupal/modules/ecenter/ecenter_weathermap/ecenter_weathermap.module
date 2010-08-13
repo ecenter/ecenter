@@ -837,6 +837,24 @@ function ecenter_weathermap_map_layers() {
                   'strokeOpacity' => '0.75',
                 ),
               );
+              
+              $features[] = array(
+                'wkt' => "POINT({$c1->x} {$c1->y})",
+                'projection' => "4326",
+                'attributes' => array(
+                  'name' => 'control point 1',
+                  'description' => $old_hop['hub'] .' ('. $old_hop['hop_ip'] .') to '. $hop['hub'] .' ('. $hop['hop_ip'] .')',
+                ),
+              );
+              $features[] = array(
+                'wkt' => "POINT({$c2->x} {$c2->y})",
+                'projection' => "4326",
+                'attributes' => array(
+                  'name' => 'control point 2',
+                  'description' => $old_hop['hub'] .' ('. $old_hop['hop_ip'] .') to '. $hop['hub'] .' ('. $hop['hop_ip'] .')',
+                ),
+              );
+
             }
             $features[] = array(
               'wkt' => "POINT({$hop['longitude']} {$hop['latitude']})",
@@ -916,7 +934,7 @@ function _ecenter_weathermap_get_bezier($p0, $c1, $c2, $p3, $steps) {
  * @return
  *  Array of control points 
  */
-function _ecenter_weathermap_get_control_points($from, $to, $mag_scale, $angle) {
+function _ecenter_weathermap_get_control_points($to, $from, $mag_scale, $angle) {
   $dirX = $to->x - $from->x;
   $dirY = $to->y - $from->y;
 

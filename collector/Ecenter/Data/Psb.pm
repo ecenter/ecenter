@@ -125,7 +125,7 @@ after 'get_metadata' => sub {
 after  'get_data' => sub   {
     my ( $self, $params ) = @_;
     map {$self->$_($params->{$_})  if $self->can($_)} keys %$params if $params && ref $params eq ref {};
-    unless($self->meta_keys || ($self->src && $self->dst )  || $self->subject) {
+    unless($self->meta_keys || ($self->src_ip && $self->dst_ip )  || ($self->src_name && $self->dst_name )  || $self->subject) {
         $self->logger->logdie(" Missed src_name and  dst_name or meta_keys parameter ");
     } 
     $self->get_metadata() unless $self->meta_keys; 

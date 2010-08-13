@@ -127,8 +127,8 @@ my  $logger = Log::Log4perl->get_logger(__PACKAGE__);
 
 pod2usage(-verbose => 2) if ( $OPTIONS{help} || ($OPTIONS{procs} && $OPTIONS{procs} !~ /^\d\d?$/));
 
-$MAX_THREADS = $OPTIONS{procs} if $OPTIONS{procs} > 0 && $OPTIONS{procs}  < 40;
-$PAST_SECS = $OPTIONS{past} if $OPTIONS{past} > 0 && $OPTIONS{past}  <  10000;
+$MAX_THREADS = $OPTIONS{procs} if $OPTIONS{procs}  && $OPTIONS{procs}  < 40;
+$PAST_SECS = $OPTIONS{past} if $OPTIONS{past} && $OPTIONS{past}  <  10000;
 
 my $pm  =   new Parallel::ForkManager($MAX_THREADS);
 
@@ -251,7 +251,7 @@ sub parse_topo {
 							       netmask =>   $net_ip->bits,
 		    					       ip_noted => $ip_addr}); 
 	    my $ip_addr_obj =  $dbh->resultset('Node')->find({ip_noted => $ip_addr});
-	    $dbh->resultset('L2_l3_map')->update_or_create({ ip_addr => $ip_addr_obj,
+	    $dbh->resultset('L2_l3_map')->update_or_create({ ip_addr => $ip_addr_obj->ip_addr,
 	                                                     l2_urn => $port2_name,
 							  });
         }
@@ -267,19 +267,26 @@ sub parse_topo {
 }
 
 sub get_snmp { 
-    my ($dbh ) = @_; 
-    my $services = $dbh->resultset('Service')->search({type => 'snmp', url => {like => '%es.net%'}});
+    my ($dbh, $pm ) = @_; 
+    my $services = $dbh->resultset('Service')->search({'eventtype.service_type' => 'snmp', url => {like => '%es.net%'}}, 
+                                                      {join => 'eventtype'});
     # harcoded fix for miserable  ESnet services
     unless($services->count) {
         my $ps3_node =   $dbh->resultset('Node')->find({nodename => 'ps3.es.net'});
-        $dbh->resultset('Service')->update_or_create({name => 'ESnet SNMP MA',
-	                                    type => 'snmp', 
-	                                    ip_addr => $ps3_node, 
+        my $service_obj = $dbh->resultset('Service')->update_or_create({name => 'ESnet SNMP MA',
+	                                    ip_addr => $ps3_node->ip_addr, 
 					    comments => 'ESnet SNMP MA',
 					    is_alive => 1,
 					    updated =>  \"NOW()",
 					    url =>  'http://ps3.es.net:8080/perfSONAR_PS/services/snmpMA'});
-	$services = $dbh->resultset('Service')->search({type => 'snmp', url => {like => '%es.net%'}});
+	 $dbh->resultset('Eventtype')->update_or_create( { eventtype =>  'http://ggf.org/ns/nmwg/characteristic/utilization/2.0',
+								  service =>  $service_obj->service,
+								  service_type =>  'snmp',
+								},
+								{ key => 'eventtype_service_type' }
+							      );				    
+	$services = $dbh->resultset('Service')->search({'eventtype.service_type' => 'snmp', url => {like => '%es.net%'}}, 
+                                                       {join => 'eventtype'} );
     }
     my $ports = $dbh->resultset('L2_port')->search({ }, { 'join'  =>  'l2_src_links'  });
     my %threads;
@@ -314,8 +321,9 @@ sub get_snmp {
      								     direction   => $direction 
      								  }
 								  );
+			    $pm->finish unless $snmp_ma->data && @{$snmp_ma->data};
      		            foreach my $data (@{ $snmp_ma->data}) { 
-     			        $dbh->resultset('Snmp_data')->update_or_create({ metaid =>  $meta,
+     			        $dbh->resultset('Snmp_data')->update_or_create({ metaid =>  $meta->metaid,
      									  timestamp => $data->[0],
      									  utilization => $data->[1],
      								             },

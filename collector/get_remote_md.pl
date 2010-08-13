@@ -96,7 +96,6 @@ my $MAX_THREADS = 10;
  
 our %SERVICE_PARAM = ( url => [qw/accessPoint address/], 
 		       name => [qw/serviceName name/],
-        	       type => [qw/serviceType type/],
         	       comments => [qw/serviceDescription description/],
 );
 our %SERVICE_LOOKUP = (  'http://ggf.org/ns/nmwg/characteristic/utilization/2.0' => 'snmp',
@@ -219,7 +218,6 @@ for my $root ( @{ $gls->{ROOTS} } ) {
 		    	my $ip_addr_obj =  $dbh->resultset('Node')->find({ip_noted => $ip_addr});
 		    	my $hls = $dbh->resultset('Service')->update_or_create({ name => $serviceName,
 		    								 url   =>   $accessPoint,
-		    								 type => $serviceType,
 		    								 ip_addr =>  $ip_addr_obj->ip_addr,
 		    								 comments => $serviceDescription,
 		    								 is_alive => (!$status?'1':'0'), 
@@ -227,6 +225,12 @@ for my $root ( @{ $gls->{ROOTS} } ) {
 										},
 		    							  { key => 'service_url'}
 		    							 );
+			$dbh->resultset('Eventtype')->update_or_create( { eventtype =>    $result->{eventType},
+								          service =>  $hls->service,
+									  service_type => 'hLS',
+								        },
+								        { key => 'eventtype_service_type' }
+							              );
 		    	unless($status)  {
 		    	    get_fromHLS($accessPoint, $now_str, $hls, $dbh);
 		    	}
@@ -345,13 +349,13 @@ sub get_fromHLS {
 	 }
 	$param_exist{is_alive} = 1;
 	$param_exist{updated} =  $now_str;
-	if(!$param_exist{type} || $param_exist{type} =~ /^(MA|MP|TS)$/i) {
-	    ($param_exist{type}) = $param_exist{url} =~ /^http.+\/services\/(\w+)/; 
-	    $param_exist{type} = lc($param_exist{type});
-	    $param_exist{type} = 'bwctl' if  $param_exist{type} =~ /psb/;
-	    $param_exist{type} = 'snmp' if  $param_exist{type} eq 'snmpma';
-	}
-	$param_exist{type} ||= 'N/A';
+	#if(!$param_exist{type} || $param_exist{type} =~ /^(MA|MP|TS)$/i) {
+	#    ($param_exist{type}) = $param_exist{url} =~ /^http.+\/services\/(\w+)/; 
+	##    $param_exist{type} = lc($param_exist{type}); 
+	#   # $param_exist{type} = 'bwctl' if  $param_exist{type} =~ /psb/;
+	#    $param_exist{type} = 'snmp' if  $param_exist{type} eq 'snmpma';
+	#}
+	#$param_exist{type} ||= 'N/A';
 	$param_exist{name} ||= 'N/A';
 	my ( $ip_noted , $nodename) = get_ip_name(  $param_exist{url} );
 	unless($ip_noted) {
@@ -369,7 +373,7 @@ sub get_fromHLS {
 	 $param_exist{ip_addr}	 =  $ip_addr->ip_addr;						   
 	 my $service_obj =$dbh->resultset('Service')->find_or_create( \%param_exist,{ key => 'service_url' } ); 
        ## my $service_obj =  $dbh->resultset('Service')->find({url => $param_exist{url}});
-	$logger->info("TID= $$  Found for url $param_exist{url} service=" .$service_obj->service);
+	$logger->debug("TID= $$  Found for url $param_exist{url} service=" .$service_obj->service);
 	
 	next unless $service_obj;
 	##############  data part processing
@@ -379,7 +383,7 @@ sub get_fromHLS {
 	    next; 
 	}
 	my @d1_query = @{$look_data_query_id{$id}};
-	$logger->info("TID= $$  +++++++++ Found  something  ", sub{Dumper($look_data_query_id{$id})});
+	$logger->debug("TID= $$  +++++++++ Found  something  ", sub{Dumper($look_data_query_id{$id})});
    	# get the keywords
 	foreach my $d1_el (@d1_query) {
 	    my $data_id =  $d1_el->getAttribute("id");
@@ -401,6 +405,7 @@ sub get_fromHLS {
 								      );
  		 $dbh->resultset('Keywords_Service')->update_or_create( { keyword => $keyword_str,
 									  service =>  $service_obj->service
+									  
 									},
 									{ key => 'keywords_service' } 
 								      );
@@ -411,33 +416,35 @@ sub get_fromHLS {
             foreach my $e ( $eventTypes->get_nodelist ) {
    		my $value = extract( $e, 0 );
 		if($SERVICE_LOOKUP{$value}) {
-		    $service_obj->type($SERVICE_LOOKUP{$value});
 		    $type_of_service = $SERVICE_LOOKUP{$value};
-		}
-		$dbh->resultset('Eventtype')->update_or_create( { eventtype =>  $value,
-								  service =>  $service_obj->service
+		    $dbh->resultset('Eventtype')->update_or_create( { eventtype =>  $value,
+								  service =>  $service_obj->service,
+								  service_type => $type_of_service,
 								},
-								{ key => 'eventtype_service' }
+								{ key => 'eventtype_service_type' }
 							      );
-	        $snmp ||= $SERVICE_LOOKUP{$value} if $SERVICE_LOOKUP{$value} && $SERVICE_LOOKUP{$value} eq 'snmp';
+	            $snmp ||= $SERVICE_LOOKUP{$value} if $SERVICE_LOOKUP{$value} && $SERVICE_LOOKUP{$value} eq 'snmp';
+		}
 	    }
 	    
 	    my $subj_md =  find($d1_el, "./nmwg:metadata/*[local-name()='subject']", 1);
-	    $logger->info("TID=proc=$$====DATA $id  MD element:::" . $subj_md->toString) if $subj_md;
+	    $logger->debug("TID=proc=$$====DATA $id  MD element:::" . $subj_md->toString) if $subj_md;
    	  
 	    if($subj_md) {
 	        my %ip_addr_h = (   src => '', dst => '');
-		my %ip_addr_rs = (   src => '', dst => '');
+		
 	        $subj_md->setNamespace('http://ggf.org/ns/nmwg/topology/2.0/','nmwgt');
                 foreach my $try_src ("./*[local-name()='endPointPair']/*[local-name()='src']", 
 		                     "./*[local-name()='node']/*[local-name()='port']/*[local-name()='address']",
-				     "./*[local-name()='interface']/*[local-name()='ipAddress']",
-				     "./*[local-name()='interface']/*[local-name()='ifAddress']", ) {
+				     "./*[local-name()='interface']/*[local-name()='ipAddress']",  
+				     "./*[local-name()='interface']/*[local-name()='ifAddress']",
+				     "./*[local-name()='interface']/*[local-name()='hostName']",
+				   ) {
 		    
 		    my $ips =  find($subj_md, $try_src, 1);
 		    if($ips) {
 		      $ip_addr_h{src} = extract(  $ips, 0);
-		      $logger->info("TID=proc=$$ ======  $try_src=$ip_addr_h{src} ------" . $ips->toString);
+		      $logger->debug("TID=proc=$$ ======  $try_src  ------" . $ips->toString);
 		      last if  $ip_addr_h{src}; 
 		    }
 		    
@@ -445,15 +452,14 @@ sub get_fromHLS {
 	        my ($dst) =  $subj_md->findnodes( "./*[local-name()='endPointPair']/*[local-name()='dst']");
 	        $ip_addr_h{dst} =  extract(  $dst, 0) if $dst;  
 		my $capacity    =  extract( find( $subj_md, "./*[local-name()='interface']/*[local-name()='capacity']", 1), 0 );
-		my $host_ip     =  extract( find( $subj_md, "./*[local-name()='interface']/*[local-name()='hostName']", 1), 0 );
-		
-	        $logger->info("TID=proc=$$ ====== src=$ip_addr_h{src}========== \n");
+	        $logger->debug("TID=proc=$$ ====== src=$ip_addr_h{src}========== \n");
                 unless($ip_addr_h{src}) {
-		    $logger->error("!!! FAILED To extract IP from subject !!!");
+		    $logger->error("!!! FAILED To extract IP from subject !!!" .  $subj_md->toString);
 		    next;
 		}
-		
+		my %ip_addr_rs = (   src => '', dst => '');
 		foreach my $ip_key (qw/src dst/) {
+		    next unless $ip_addr_h{$ip_key};
 		    my ($ip_cidr, $ip_name) = get_ip_name($ip_addr_h{$ip_key});
 		   
 		    if($ip_addr_h{$ip_key} && $ip_cidr) {
@@ -464,16 +470,21 @@ sub get_fromHLS {
 								       ip_noted => $ip_cidr 
 								     }
 								    );
-			  $ip_addr_rs{$ip_key} =  $dbh->resultset('Node')->find({ip_noted => $ip_cidr });				    
+			  $ip_addr_rs{$ip_key} =  $dbh->resultset('Node')->single({ip_noted => $ip_cidr });				    
+		    } else {
+		        $logger->error("!!! FAILED To get IP/hostname for $ip_key=$ip_addr_h{$ip_key} !!!");
 		    }
 		}
-	        $logger->error("TID=" .  threads->tid .' !!! End ======  MISSING:' . $subj_md->toString) unless $ip_addr_rs{src};
-	 
+	        unless ($ip_addr_rs{src}) {
+		    $logger->error("TID=$$ !! End ======  MISSING SRC, skipping...:$ip_addr_h{src}");
+		    next;
+		}
+	       
 	        eval {
 	               $dbh->resultset('Metadata')->update_or_create ({ 
 							      service	    => $service_obj->service,
 							      src_ip	    =>   $ip_addr_rs{src}->ip_addr,
-							      dst_ip	    =>   ($ip_addr_rs{dst}?$ip_addr_rs{dst}->ip_addr:0),
+							      dst_ip	    =>   ($ip_addr_rs{dst} && ref $ip_addr_rs{dst}?$ip_addr_rs{dst}->ip_addr:0),
 							      subject	 => ($subj_md?$subj_md->toString:''),
 							      parameters => ($param_md?$param_md->toString:''),
 							     }

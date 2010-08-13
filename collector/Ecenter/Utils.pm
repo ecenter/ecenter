@@ -131,7 +131,14 @@ sub update_create_fixed {
         $row->update($set);
         return $row;
    }
-   return $rs->create($set);
+   my $created;
+   eval { 
+       $created = $rs->create($set)
+   };
+   if($EVAL_ERROR) {
+       $logger->error(" Failed to insert $set - $EVAL_ERROR  ");
+   }
+   return $created;
 }
 
 =head2 ip_ton(ip address)

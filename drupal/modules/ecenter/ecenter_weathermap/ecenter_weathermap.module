@@ -6,6 +6,9 @@
  * E-Center network query interface.
  */
 
+// Load vector class
+require_once(dirname(__FILE__) . '/Vector2d.class.php');
+
 /**
  * Implementation of hook_menu().
  */
@@ -824,10 +827,10 @@ function ecenter_weathermap_map_layers() {
               $features[] = array(
                 'wkt' => "LINESTRING($line)",
                 'projection' => "4326",
-                /*'attributes' => array(
+                'attributes' => array(
                   'name' => $old_hop['hub'] .' ('. $old_hop['hop_ip'] .') to '. $hop['hub'] .' ('. $hop['hop_ip'] .')',
                   'description' => 'Stub for useful data',
-                ),*/
+                ),
                 'style' => array(
                   'strokeWidth' => 4,
                   'strokeColor' => '#444444',
@@ -896,8 +899,24 @@ function _ecenter_weathermap_get_bezier($p0, $c1, $c2, $p3, $steps) {
   return $points;
 }
 
-// Control point code based on ESNet weathermap
-function _ecenter_weathermap_get_control_points($to, $from, $mag_scale, $angle) {
+/**
+ * Get control points
+ * 
+ * Calculate control points for drawing Bezier curve between points
+ * 
+ * @param $from
+ *  Source coordinates
+ * @param $to
+ *  Destination coordinates
+ * @param $mag_scale
+ *  A scaling factor for the control point vector
+ * @param $angle 
+ *  The angle of control point vector relative to the line
+ *  between source and destination.
+ * @return
+ *  Array of control points 
+ */
+function _ecenter_weathermap_get_control_points($from, $to, $mag_scale, $angle) {
   $dirX = $to->x - $from->x;
   $dirY = $to->y - $from->y;
 
@@ -933,27 +952,6 @@ function _ecenter_weathermap_get_control_points($to, $from, $mag_scale, $angle) 
   }
 
   return array(new Vector2d($x2, $y2), new Vector2d($x1, $y1));
-}
-
-class Vector2d {
-  public $x, $y;
-
-  public function __construct($x, $y) {
-    $this->x = $x;
-    $this->y = $y;
-  }
-
-  public function add($vector) {
-    return new Vector2d($this->x + $vector->x, $this->y + $vector->y);
-  }
-
-  public function subtract($vector) {
-    return new Vector2d($this->x - $vector->x, $this->y - $vector->y);
-  }
-
-  public function scale($constant) {
-    return new Vector2d($this->x * $constant, $this->y * $constant);
-  }
 }
 
 /**

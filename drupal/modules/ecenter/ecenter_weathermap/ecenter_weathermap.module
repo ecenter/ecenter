@@ -816,7 +816,6 @@ function ecenter_weathermap_map_layers() {
           if ($hop['longitude'] && $hop['latitude']) {
             if ($old_hop && $i < $count) {
               $curve = _ecenter_weathermap_curve($old_hop, $hop, $index);
-
               $segments = array();
               foreach ($curve as $segment) {
                 $segments[] = "{$segment->x} {$segment->y}";
@@ -896,6 +895,7 @@ function _ecenter_weathermap_get_bezier($p0, $c1, $c2, $p3, $steps) {
     $point = new Vector2d($x, $y);
     $points[] = $point;
   }
+  $points[] = $p0; // I don't really understand why I need this
   return $points;
 }
 
@@ -930,26 +930,29 @@ function _ecenter_weathermap_get_control_points($to, $from, $mag_scale, $angle) 
   $dirX = $dirX / $mag;
   $dirY = $dirY / $mag;
 
-  $rotation = $angle;
-  $sin = sin($rotation);
-  $cos = cos($rotation);
+  $sin = sin($angle);
+  $cos = cos($angle);
 
   $rotX = $cos * $dirX - $sin * $dirY;
   $rotY = $sin * $dirX + $cos * $dirY;
   $rotNegX = $cos * -$dirX - $sin * $dirY;
   $rotNegY = $sin * $dirX - $cos * $dirY;
 
-  $x1 = $rotX * $length + $from->x;
-  $y1 = $rotY * $length + $from->y;
-  $x2 = $rotNegX * $length + $to->x;
-  $y2 = $rotNegY * $length + $to->y;
-
+  // Flip control points for "backwards" curves
   if ($dirX < 0 || (!$dirX && $dirY < 0)) {
     $x1 = -$rotNegX * $length + $from->x;
     $y1 = -$rotNegY * $length + $from->y;
     $x2 = -$rotX * $length + $to->x;
     $y2 = -$rotY * $length + $to->y;
   }
+  // Or generate "normal" control points
+  else {
+    $x1 = $rotX * $length + $from->x;
+    $y1 = $rotY * $length + $from->y;
+    $x2 = $rotNegX * $length + $to->x;
+    $y2 = $rotNegY * $length + $to->y;
+  }
+
 
   return array(new Vector2d($x2, $y2), new Vector2d($x1, $y1));
 }

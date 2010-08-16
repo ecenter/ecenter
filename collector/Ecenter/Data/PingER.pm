@@ -65,6 +65,7 @@ sub BUILD {
       $self->eventtypes([("http://ggf.org/ns/nmwg/tools/pinger/2.0/")]);
       $self->namespace("http://ggf.org/ns/nmwg/tools/pinger/2.0/");
       $self->nsid("pinger");
+      $self->resolution(100);
       $self->logger(get_logger(__PACKAGE__));  
       map {$self->$_($args->{$_}) if $self->can($_)}  keys %$args if $args && ref $args eq ref {};
       return  $self->url if $args->{url};

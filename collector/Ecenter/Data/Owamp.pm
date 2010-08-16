@@ -29,7 +29,8 @@ sub BUILD {
       my $args = shift; 
       $self->eventtypes([("http://ggf.org/ns/nmwg/tools/owamp/2.0")]);
       $self->namespace("http://ggf.org/ns/nmwg/tools/owamp/2.0");
-      $self->nsid("owamp");
+      $self->nsid("owamp"); 
+      $self->resolution(100);
       $self->logger(get_logger(__PACKAGE__));
 };
   
@@ -39,6 +40,7 @@ augment  'process_datum' => sub {
    my $s_secs = UnixDate( $dt->getAttribute( "startTime" ), "%s" );
    my $e_secs = UnixDate( $dt->getAttribute( "endTime" ),   "%s" );
    my $response = {min_delay => 0, max_delay => 0, sent => 0, loss => 0, duplicates => 0, };
+   
    foreach my $key (keys %{$response}) {
         $response->{$key} = eval( $dt->getAttribute( $key ) ) if $dt->getAttribute( $key ) ;
    }

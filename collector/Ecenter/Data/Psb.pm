@@ -134,7 +134,7 @@ after  'get_data' => sub   {
           $self->logger->error(" No metadata returned !!! ");
 	  return;
     }
-    my @data = ();
+    my @data_raw = ();
     foreach my $key_id  (@{$self->meta_keys}) {
         my $subject = "  <nmwg:key id=\"key-1\">\n";
         $subject .= "    <nmwg:parameters id=\"parameters-key-1\">\n";
@@ -143,11 +143,11 @@ after  'get_data' => sub   {
         $subject .= "  </nmwg:key>  \n";
 	my $doc1;
         eval { 
-	    my $request = {  start => $self->start->epoch,
-                	     end   => $self->end->epoch,   
-                	     subject	 =>  $subject,
-                	     eventTypes =>  $self->eventtypes  };
-	    $request->{resolution} = 5 if $self->nsid eq 'owamp';     
+	    my $request =  { start      => $self->start->epoch,
+                	     end        => $self->end->epoch,   
+                	     subject	=> $subject,
+                	     eventTypes => $self->eventtypes
+			   };
             my $result = $self->ma->setupDataRequest( $request );
             $doc1 =  $self->parser->parse_string( $result->{"data"}->[0] ); };
         if ( $EVAL_ERROR ) {
@@ -155,15 +155,18 @@ after  'get_data' => sub   {
         }
         my $datum1 = find( $doc1->getDocumentElement, "./*[local-name()='datum']", 0 );
         if ( $datum1 ) {
+	    my @data_raw = ();
             foreach my $dt ( $datum1->get_nodelist ) {
 	         $self->logger->info("  Datum: ". $dt->toString);
 	         my $processed =  $self->process_datum($dt); ## provide implementation in the subclass
-                 push  @data,  $processed if $processed && ref $processed eq ref [] && @{$processed};
+                 push  @data_raw,  $processed if $processed && ref $processed eq ref [] && @{$processed};
             }
+	  
+	    
         } 
     } 
-    $self->logger->debug("  Data Result ", sub{ Dumper  \@data });
-    return $self->data(\@data);
+    $self->logger->debug("  Data Result ", sub{ Dumper  \@data_raw });
+    return $self->data(\@data_raw);
 };
 
 #

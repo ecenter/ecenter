@@ -268,8 +268,8 @@ sub parse_topo {
 
 sub get_snmp { 
     my ($dbh, $pm ) = @_; 
-    my $services = $dbh->resultset('Service')->search({'eventtype.service_type' => 'snmp', url => {like => '%es.net%'}}, 
-                                                      {join => 'eventtype'});
+    my $services = $dbh->resultset('Service')->search({'eventtypes.service_type' => 'snmp', url => {like => '%es.net%'}}, 
+                                                      {join => 'eventtypes'});
     # harcoded fix for miserable  ESnet services
     unless($services->count) {
         my $ps3_node =   $dbh->resultset('Node')->find({nodename => 'ps3.es.net'});
@@ -285,8 +285,8 @@ sub get_snmp {
 								},
 								{ key => 'eventtype_service_type' }
 							      );				    
-	$services = $dbh->resultset('Service')->search({'eventtype.service_type' => 'snmp', url => {like => '%es.net%'}}, 
-                                                       {join => 'eventtype'} );
+	$services = $dbh->resultset('Service')->search({'eventtypes.service_type' => 'snmp', url => {like => '%es.net%'}}, 
+                                                       {join => 'eventtypes'} );
     }
     my $ports = $dbh->resultset('L2_port')->search({ }, { 'join'  =>  'l2_src_links'  });
     my %threads;

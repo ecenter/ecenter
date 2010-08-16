@@ -71,7 +71,8 @@ has 'eventtypes' => (is => 'rw', isa => 'ArrayRef');
 
 sub BUILD {
       my $self = shift;
-      my $args = shift; 
+      my $args = shift;
+      $self->resolution(100);
       $self->logger(get_logger(__PACKAGE__));
       $self->eventtypes([("http://ggf.org/ns/nmwg/characteristic/utilization/2.0")]);
       return  $self->url($args->{url}) if $args->{url};

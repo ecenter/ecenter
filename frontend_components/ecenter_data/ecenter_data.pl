@@ -145,8 +145,8 @@ sub process_service {
     my %search = ();
     $search{ $params{mapping} } =  $params{value}  if( %params && $params{value});
     my @rows =   dbix->resultset('Service')->search( { %search },
-		                                     { join => 'node', 
-						       '+columns' => ['node.ip_noted']
+		                                     { join => [('node','eventtypes')],
+						       '+columns' => [('node.ip_noted','eventtypes.service_type')]
 						     }
 						   );
     foreach my $row (@rows) {
@@ -168,6 +168,7 @@ sub process_data {
                                 dst_ip => {type => SCALAR, regex => $REG_IP,   optional => 1}, 
 		                start  => {type => SCALAR, regex => $REG_DATE, optional => 1},
 		                end    => {type => SCALAR, regex => $REG_DATE, optional => 1},
+				resolution => {type => SCALAR, regex => qr/^\d+$/, optional => 1},
 			      }
 		 );
     my $data = {};
@@ -183,10 +184,18 @@ sub process_data {
     #  data service first will consult local archive and then send request to remote MA if no data or too old data found
     ###
    
-    #   get epoch or set default to NOW and -1 hour
-    $params{start} = $params{start}?DateTime::Format::MySQL->parse_datetime( $params{start} )->epoch:(time() - 3600);
-    $params{end} =   $params{end}?DateTime::Format::MySQL->parse_datetime( $params{end} )->epoch:time();
+    my $resolution =  $params{resolution} &&  $params{resolution} > 0 && $params{resolution} <= 100?$params{resolution}:100;
     
+    #   get epoch or set end default to NOW and start to end-12 hours
+    $params{end} =   $params{end}?DateTime::Format::MySQL->parse_datetime( $params{end} )->epoch:time();
+    $params{start} = $params{start}?DateTime::Format::MySQL->parse_datetime($params{start})->epoch:($params{end}  - 12*3600);
+    
+    map { $params{$_}{end} =  $params{end};   $params{$_}{start} =  $params{start}; } qw/owamp pinger snmp traceroute/;
+    if(  ($params{end}-$params{start}) < 3600*6) {
+	    my $median = $params{start} + (($params{end}-$params{start})/2);
+	    $params{bwctl}{start} = $median - 6*3600; # 6 hours
+	    $params{bwctl}{end} = $median + 6*3600; # 6 hours
+    }     
     my $dst_cond = $params{dst_ip}?"inet6_mask(md.dst_ip, n_dst.netmask)= inet6_mask(inet6_pton('$params{dst_ip}'), n_dst.netmask)":"md.dst_ip = '0'";
     ##
     ## get direct and reverse traceroutes
@@ -212,20 +221,20 @@ sub process_data {
     $data->{snmp} = get_snmp(\%allhops, \%params  );
     # end to end data  stats if available
     return $data unless $params{src_ip} && $params{dst_ip};
-    ##foreach my $e2e (qw/pinger bwctl owamp/) {
-    my $e2e_sql = qq|select   m.metaid, n_src.ip_noted as src_ip, m.subject, s.type,  n_dst.ip_noted  as dst_ip, 
+    my $e2e_sql = qq|select   m.metaid, n_src.ip_noted as src_ip, m.subject, e.service_type as type,  n_dst.ip_noted  as dst_ip, 
                                                           n_src.nodename as src_name, n_dst.nodename as dst_name, s.url, s.service
 	                                               from 
 						        	  metadata m
 					        	    join  node n_src on(m.src_ip = n_src.ip_addr) 
 							    join  node n_dst on(m.dst_ip = n_dst.ip_addr) 
 							    join service s  on (m.service = s.service)
+							    join eventtype e on(s.service = e.service)
 						      where  
 							    inet6_mask(m.src_ip, 16) = inet6_mask(inet6_pton('$params{src_ip}'), 16) and
 							    inet6_mask(m.dst_ip, 16) = inet6_mask(inet6_pton('$params{dst_ip}'), 16) and
-							    s.type in ('pinger','bwctl','owamp') and
+							    e.service_type in ('pinger','bwctl','owamp') and
 							    s.url  like 'http%'
-					         group by src_ip, dst_ip|;
+					         group by src_ip, dst_ip, service|;
     debug " E2E SQL:: $e2e_sql";
     my $md_href =  database->selectall_hashref($e2e_sql, 'metaid');   
     debug " MD for the E2E ::: " . Dumper $md_href;	
@@ -236,52 +245,117 @@ sub process_data {
                                 MinKids                 => 3,
                                 Name                    => 'E2E Forker',
                                 Code                    => \&get_remote_e2e);
-    foreach my $e_type (qw/pinger bwctl owamp/)  {
+    $params{table_map} = { bwctl =>  {table => 'Bwctl_data', class => 'Bwctl',  data => [qw/throughput/]},
+                      owamp =>  {table => 'Owamp_data', class => 'Owamp', data => [qw/sent loss min_delay max_delay duplicates/]},
+		      pinger => {table => 'Pinger_data', class => 'PingER', data => [qw/meanRtt maxRtt medianRtt minRtt iqrIpd lossPercent/]},
+		    };
+   my @data_keys = qw/bwctl owamp pinger/;
+   #   my @data_keys = qw/owamp/;
+    
+    foreach my $e_type (@data_keys)  {
 	debug " Running  ------------  $e_type";
 	get_e2e($data,  \%params,   $md_href, $e_type, $e2e_forker);
     }
     $e2e_forker->cleanup();
+    # getting results
+    foreach my $e_type (@data_keys)  {
+        foreach my $metaid  ( keys %{$md_href} ) { 
+	    my  $md_row =  $md_href->{$metaid};  
+            next if $md_row->{type} ne $e_type;
+            unless (@{$data->{$e_type}{$md_row->{src_ip}}{$md_row->{dst_ip}}} ) {
+ 	         my @datas = dbix->resultset($params{table_map}->{$e_type}{table})->search({ metaid => $metaid, 
+	                                                	                             timestamp => { '>=' => $params{$e_type}{start}, '<=' => $params{$e_type}{end}} 
+         						                                  });
+	         get_datums(\@datas, $md_row,  $data->{$e_type}, \%params, $e_type) if @datas;
+	    }
+	    debug "\u$e_type- " .$md_row->{src_ip} . ' Entries Result= ' .  @{$data->{$e_type}{$md_row->{src_ip}}{$md_row->{dst_ip}}};
+	}
+    }
     return $data;
 }
+# get timestamp and aggregate to return no more than requested data points
+# and return as arrayref => [timestamp, {data_row}] 
+#
+
+sub refactor_result {
+    my ($data_raw, $params) = @_;
+    my $count = scalar @{$data_raw};
+    my $result = [];
+    debug "Data_raw " . Dumper $data_raw;
+    if($count > $params->{resolution}) {
+	my $bin = $count/$params->{resolution};
+	my $j = 0;
+	my $old_j = 0;
+	my $count_j = 0;
+	for(my $i = 0; $i < $count ; $i++) {
+	    $j = int($i/$bin);
+	    debug "REFACTOR: $i $j $old_j $count_j $bin  raw=$data_raw->[$i][0]   new=$result->[$j][0] ";
+	    if($j > $old_j) {
+	        map {$result->[$j][1]{$_}/$count_j if $result->[$j][1]{$_}} keys %{$data_raw->[$j][1]};
+	        $result->[$j][0] /= $count_j if   $result->[$j][0];
+	        $count_j = 0; 
+	        $old_j = $j; 
+	    } 
+	    $result->[$j][0] += $data_raw->[$i][0];
+	    map {$result->[$j][1]{$_} += $data_raw->[$j][1]{$_}} keys %{$data_raw->[$j][1]};
+	    $count_j++;
+	}	   
+    } else {
+        $result =  $data_raw;
+    }
+    return $result;
+}
+
+
 
 sub get_datums {
-    my ($datas, $md_row, $result, $table_map, $type) = @_; 
+    my ($datas, $md_row, $result, $params, $type) = @_; 
     my $end_time = -1; 
     my $start_time =  40000000000;
+    my $results_raw = [];
+    my $count = 0;
     foreach my $datum (@{$datas}) {
         my %result_row = (timestamp   => $datum->timestamp);
-        map {$result_row{$_} = $datum->$_ } @{$table_map->{$type}{data}};
-        push @{$result->{$md_row->{src_ip}}{$md_row->{dst_ip}}},  \%result_row;
+        map {$result_row{$_} = $datum->$_ } @{$params->{table_map}{$type}{data}};
+        push @{$results_raw}, [$datum->timestamp, \%result_row];
         $end_time =   $datum->timestamp if $datum->timestamp > $end_time;
         $start_time =  $datum->timestamp if  $datum->timestamp < $start_time;
-    }  
+    } 
+    $result->{$md_row->{src_ip}}{$md_row->{dst_ip}} = refactor_result($results_raw, $params) if @{$results_raw};
+    #fixing up resolution - only return no more than requested number of points
+  
     return  ($start_time, $end_time); 
 }
 
 sub get_remote_e2e {
-    my ( $md_row,  $table_map, $params, $type, $metaid) = @_;
+    my ( $md_row,   $params, $type, $metaid) = @_;
     eval {
-        debug " params to ma: ip= $md_row->{url} start=$params->{start} end=$params->{end} ";
-        my $class =  $table_map->{$type}{class};
+        debug " params to ma: ip= $md_row->{url} start=$params->{$type}{start} end=$params->{$type}{end} ";
+        my $class =  $params->{table_map}{$type}{class};
         my $ma =  ("Ecenter::Data::$class")->new({ url =>  $md_row->{url} });
         my $ns = $ma->namespace;
         my $nsid = $ma->nsid;
-        $md_row->{subject} =~ s/nmwgt:subject/$nsid:subject/gxm;
-        $md_row->{subject} =~ s|<$nsid:subject |<$nsid:subject xmlns:$nsid="$ns" xmlns:nmwgt="http://ggf.org/ns/nmwg/topology/2.0/" |xm;
+	my $subject =   $md_row->{subject};
+        $subject =~ s/nmwgt:subject/$nsid:subject/gxm;
+        $subject =~ s|<$nsid:subject |<$nsid:subject xmlns:$nsid="$ns" xmlns:nmwgt="http://ggf.org/ns/nmwg/topology/2.0/" |xm
+	       if $type eq 'pinger'; ### pinger has no ns definition in the md
+	# fix for short time periods because bwctl only runs every 4 hours or even less frequently
+	 
         my $request = { 
-        		subject => $md_row->{subject},
-        		start =>  DateTime->from_epoch( epoch =>  $params->{start}),
-        		end =>  DateTime->from_epoch( epoch => $params->{end})
+        		subject => $subject,
+        		start =>  DateTime->from_epoch( epoch =>  $params->{$type}{start}),
+        		end =>  DateTime->from_epoch( epoch => $params->{$type}{end}),
+			resolution => $params->{resolution},
         	      };
         $ma->get_data($request);
-        debug "MA Data :: " .Dumper( $ma->data);
+        debug "MA Data Entries="  . scalar @{$ma->data};
         if($ma->data && @{$ma->data}) {
 	   foreach my $ma_data (@{$ma->data}) { 
                my $sql_datum = {  metaid => $metaid,  timestamp => $ma_data->[0]};
                foreach my $data_id (keys %{$ma_data->[1]}) {
         	   $sql_datum->{$data_id} = $ma_data->[1]{$data_id};
                }
-               dbix->resultset($table_map->{$type}{table})->update_or_create( $sql_datum,  { key => 'meta_time'}  );
+               dbix->resultset($params->{table_map}{$type}{table})->update_or_create( $sql_datum,  { key => 'meta_time'}  );
             }
        }
     };
@@ -293,37 +367,26 @@ sub get_remote_e2e {
 #  get bwctl/owamp/pinger data for end2end, first for the src_ip, then for the dst_ip
 #
 sub get_e2e{
-    my ( $data_hr,  $params, $md_href, $type, $forker ) = @_; 
+    my ( $data_hr,  $params,   $md_href, $type, $forker ) = @_; 
     my %result = ();
-    my $table_map = { bwctl =>  {table => 'Bwctl_data', class => 'Bwctl',  data => [qw/throughput/]},
-                      owamp =>  {table => 'Owamp_data', class => 'Owamp', data => [qw/sent loss min_delay max_delay duplicates/]},
-		      pinger => {table => 'Pinger_data', class => 'PingER', data => [qw/meanRtt maxRtt medianRtt minRtt iqrIpd lossPercent/]},
-		    };
-		    no warnings;
+    no warnings;
     foreach my $metaid  ( keys %{$md_href} ) {
         my  $md_row =  $md_href->{$metaid};  
         next if $md_row->{type} ne $type;
         debug " ------ FOUND $type md  $metaid:::  SRC=$md_row->{src_ip} DST= $md_row->{dst_ip} ";
-        my @datas = dbix->resultset($table_map->{$type}{table})->search({ metaid => $metaid, 
-                                                                         timestamp => { '>=' => $params->{start}, '<=' => $params->{end}} 
-								       });
-       my ($start_time, $end_time) = get_datums(\@datas, $md_row, \%result, $table_map, $type);
-       debug "\U$type::" . "  Times: start= $start_time  start_dif=" . ($start_time - $params->{start}) . 
-   		 "... end=$end_time   end_dif=" . ( $params->{end} -  $end_time );
+        my @datas = dbix->resultset($params->{table_map}{$type}{table})->search({ metaid => $metaid, 
+                                                                                  timestamp => { '>=' => $params->{$type}{start}, '<=' => $params->{$type}{end}} 
+								               });
+       my ($start_time, $end_time) = get_datums(\@datas, $md_row, \%result, $params, $type);
+       debug "\U$type::" . "  Times: start= $start_time  start_dif=" . ($start_time - $params->{$type}{start}) . 
+   		 "... end=$end_time   end_dif=" . ( $params->{$type}{end} -  $end_time );
        if( !%result || !@{$result{$md_row->{src_ip}}{$md_row->{dst_ip}} } || 
-	   ( abs($end_time - $params->{end}) > 1800 ||
-   	     abs($start_time - $params->{start}) > 1800 ) ) {
+	   ( abs($end_time - $params->{$type}{end}) > 1800 ||
+   	     abs($start_time - $params->{$type}{start}) > 1800 ) ) {
              @{$result{$md_row->{src_ip}}{$md_row->{dst_ip}}} = ();
-   	     $forker->run($md_row, $table_map, $params, $type, $metaid);
+	     
+   	     $forker->run($md_row, $params,  $type, $metaid);
 	}
-  
-	unless (@{$result{$md_row->{src_ip}}{$md_row->{dst_ip}}} ) {
- 	     my @datas = dbix->resultset($table_map->{$type}{table})->search({ metaid => $metaid, 
-	                                                	 timestamp => { '>=' => $params->{start}, '<=' => $params->{end}} 
-         						       });
-	     get_datums(\@datas, $md_row,  \%result, $table_map, $type);
-	}
-	debug "\u$type- " .$md_row->{src_ip} . ' Entries Result= ' . @{$result{$md_row->{src_ip}}{$md_row->{dst_ip}}} ;
     }
    
     $data_hr->{$type} = \%result;
@@ -338,8 +401,8 @@ sub get_traceroute {
     my %traces = ();
     my %hops = ();
     my $trace_date_cond = ' ( 1 ';
-    $trace_date_cond .= $params->{start}?" AND td.updated >= $params->{start}":'';  
-    $trace_date_cond .= $params->{end}?" AND td.updated <= $params->{end}":'';
+    $trace_date_cond .= $params->{traceroute}{start}?" AND td.updated >= $params->{traceroute}{start}":'';  
+    $trace_date_cond .= $params->{traceroute}{end}?" AND td.updated <= $params->{traceroute}{end}":'';
     $trace_date_cond .= ') '; 
     ############################    $trace_date_cond and   ------ ADD BACK WHEN TRACEROUTE WILL BE AVAILABLE !!!!!!!!!!!!!!!
     my $cmd = qq|select  distinct td.updated, td.trace_id, md.metaid, td.number_hops,
@@ -376,8 +439,8 @@ sub get_snmp {
     my ($hops_ref, $params ) = @_;
     my %snmp=(); 
     my $date_cond = ' ( 1 ';
-    $date_cond .= $params->{start}?" AND sd.timestamp >= $params->{start}":'';  
-    $date_cond .= $params->{end}?" AND sd.timestamp <= $params->{end}":'';
+    $date_cond .= $params->{snmp}{start}?" AND sd.timestamp >= $params->{snmp}{start}":'';  
+    $date_cond .= $params->{snmp}{end}?" AND sd.timestamp <= $params->{snmp}{end}":'';
     $date_cond .= ') and';
     
     debug "+++SNMP:: hops::" .  Dumper($hops_ref);
@@ -396,19 +459,19 @@ sub get_snmp {
 	    debug "----- SNMP:$hop_ip: DATA2 -0::" .  join(" :: ", each %{$data_ref} ); 
 	}
         my $packed =   _pack_snmp_data($data_ref);
-	$snmp{$hops_ref->{$hop_ip}} = $packed->{data};
+	$snmp{$hops_ref->{$hop_ip}} = refactor_result($packed->{data}, $params);
 	 
-	debug "---------SNMP::  Times: start= $packed->{start_time} start_dif=" . ($packed->{start_time} - $params->{start}) . 
-	                     "... end=$packed->{end_time} end_dif=" . ( $params->{end} - $packed->{end_time});
+	debug "---------SNMP::  Times: start= $packed->{start_time} start_dif=" . ($packed->{start_time} - $params->{snmp}{start}) . 
+	                     "... end=$packed->{end_time} end_dif=" . ( $params->{snmp}{end} - $packed->{end_time});
      	##################### no metadata, skip
 	next  unless  $data_ref && %$data_ref;
 	# if we have difference on any end more than 30 minutes  then run remote query
-	if ( abs($packed->{end_time}  - $params->{end}) >  1800 ||
-	     abs($packed->{start_time} - $params->{start}) > 1800 ) {
+	if ( abs($packed->{end_time}  - $params->{snmp}{end}) >  1800 ||
+	     abs($packed->{start_time} - $params->{snmp}{start}) > 1800 ) {
 	      my (undef, $request_params) = each(%$data_ref);
 	      $snmp{$hops_ref->{$hop_ip}} = [];
 	      foreach my $direction (qw/in out/) {
-	           debug " params to ma: ip=$request_params->{snmp_ip} start=$params->{start} end=$params->{end} ";
+	           debug " params to ma: ip=$request_params->{snmp_ip} start=$params->{snmp}{start} end=$params->{snmp}{end} ";
 	           $forker->run( $request_params->{url}, $request_params->{metaid},$request_params->{snmp_ip}, $direction, $params);    
 		     
      	     }
@@ -421,7 +484,8 @@ sub get_snmp {
        ### debug "Data for ip=$hop_ip hop_id=$hops_ref->{$hop_ip}:: " . Dumper( $snmp{$hops_ref->{$hop_ip}});
        next if $snmp{$hops_ref->{$hop_ip}} && @{$snmp{$hops_ref->{$hop_ip}}}>0;
        my $packed = _pack_snmp_data(_get_snmp_from_db($hop_ip, $date_cond));
-       $snmp{$hops_ref->{$hop_ip}} = $packed->{data};
+      
+       $snmp{$hops_ref->{$hop_ip}} = refactor_result($packed->{data},$params);
     }
     return \%snmp;
 }
@@ -431,14 +495,16 @@ sub get_snmp {
 sub get_remote_snmp {
     my ($url, $metaid, $snmp_ip, $direction, $params) = @_;
     my $snmp_ma;
+    my $period = ($params->{snmp}{end} - $params->{snmp}{start})/$params->{resolution};
+   $period = int($period/60);
+   
     eval {
 	$snmp_ma =  Ecenter::Data::Snmp->new({ url =>   $url });
 	$snmp_ma->get_data({ direction =>  $direction, 
 			     ifAddress =>  $snmp_ip, 
-			     start =>  DateTime->from_epoch( epoch =>  $params->{start}),
-			     end =>  DateTime->from_epoch( epoch => $params->{end}),
-			     cf => 'AVERAGE',
-			     resolution => '300',
+			     start =>  DateTime->from_epoch( epoch =>  $params->{snmp}{start}),
+			     end =>  DateTime->from_epoch( epoch => $params->{snmp}{end}),
+			     resolution => $period,
 			  });
     };
     if($EVAL_ERROR) {
@@ -472,9 +538,10 @@ sub _pack_snmp_data {
     my $end_time = -1;
     my @result = ();
     my $start_time =  4000000000; 
-    foreach my $time (sort {$a<=>$b} keys %$data_ref) { 
+    debug " PACKING SNMP:::" . Dumper($data_ref);
+    foreach my $time (sort {$a<=>$b} grep {$_} keys %$data_ref) { 
 	push @result,   
-	            {timestamp => $time, capacity => $data_ref ->{$time}{capacity},  utilization => $data_ref ->{$time}{utilization} };
+	            [ $time, {capacity => $data_ref ->{$time}{capacity},  utilization => $data_ref ->{$time}{utilization} }];
 	$end_time = $time if $time > $end_time;
 	$start_time = $time if $time < $start_time;
     }

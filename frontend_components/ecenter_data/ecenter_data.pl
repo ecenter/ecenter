@@ -289,16 +289,18 @@ sub refactor_result {
 	my $count_j = 0;
 	for(my $i = 0; $i < $count ; $i++) {
 	    $j = int($i/$bin);
-	    debug "REFACTOR: $i $j $old_j $count_j $bin  raw=$data_raw->[$i][0]   new=$result->[$j][0] ";
-	    if($j > $old_j) {
-	        map {$result->[$j][1]{$_}/$count_j if $result->[$j][1]{$_}} keys %{$data_raw->[$j][1]};
-	        $result->[$j][0] /= $count_j if   $result->[$j][0];
+	    $result->[$j][0] += $data_raw->[$i][0];
+	    map {$result->[$j][1]{$_} += $data_raw->[$i][1]{$_}} keys %{$data_raw->[$i][1]};
+	    if( $j > $old_j || $i == ($count-1) ) {
+	        $count_j++ if $i == ($count-1); 
+	        map {$result->[$old_j][1]{$_}/$count_j if $result->[$old_j][1]{$_} &&  $count_j } keys %{$data_raw->[$i][1]};
+	        $result->[$old_j][0] = int($result->[$old_j][0]/$count_j) if   $result->[$old_j][0] &&  $count_j ;
 	        $count_j = 0; 
 	        $old_j = $j; 
-	    } 
-	    $result->[$j][0] += $data_raw->[$i][0];
-	    map {$result->[$j][1]{$_} += $data_raw->[$j][1]{$_}} keys %{$data_raw->[$j][1]};
-	    $count_j++;
+	    }
+	    $count_j++;       
+	    debug "REFACTOR: i=$i j=$j old_j=$old_j count_j=$count_j  raw=$data_raw->[$i][0]  result=$result->[$old_j][0] new=$result->[$j][0] ";
+	 
 	}	   
     } else {
         $result =  $data_raw;

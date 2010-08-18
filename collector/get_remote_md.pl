@@ -413,20 +413,26 @@ sub get_fromHLS {
 	    my $eventTypes = find( $d1_el , "./nmwg:metadata/nmwg:eventType", 0 );
 	    my $type_of_service =  $param_exist{type};
 	    my $snmp;
+	    my $eventtype_obj;
             foreach my $e ( $eventTypes->get_nodelist ) {
    		my $value = extract( $e, 0 );
 		if($SERVICE_LOOKUP{$value}) {
 		    $type_of_service = $SERVICE_LOOKUP{$value};
-		    $dbh->resultset('Eventtype')->update_or_create( { eventtype =>  $value,
+		    eval {
+		          $eventtype_obj = $dbh->resultset('Eventtype')->update_or_create( { eventtype =>  $value,
 								  service =>  $service_obj->service,
 								  service_type => $type_of_service,
 								},
 								{ key => 'eventtype_service_type' }
 							      );
+		    };
+		    if($EVAL_ERROR) {
+		           $logger->error("TID=proc=$$====DATA - erro with Eventtype - $EVAL_ERROR");
+		    }
 	            $snmp ||= $SERVICE_LOOKUP{$value} if $SERVICE_LOOKUP{$value} && $SERVICE_LOOKUP{$value} eq 'snmp';
 		}
 	    }
-	    
+	    next if $snmp;  ## skip snmp ma   
 	    my $subj_md =  find($d1_el, "./nmwg:metadata/*[local-name()='subject']", 1);
 	    $logger->debug("TID=proc=$$====DATA $id  MD element:::" . $subj_md->toString) if $subj_md;
    	  
@@ -450,8 +456,10 @@ sub get_fromHLS {
 		    
 		}
 	        my ($dst) =  $subj_md->findnodes( "./*[local-name()='endPointPair']/*[local-name()='dst']");
-	        $ip_addr_h{dst} =  extract(  $dst, 0) if $dst;  
+	        $ip_addr_h{dst} =  extract(  $dst, 0) if $dst;
+	
 		my $capacity    =  extract( find( $subj_md, "./*[local-name()='interface']/*[local-name()='capacity']", 1), 0 );
+		next if $capacity || $snmp;  ## skip snmp ma      
 	        $logger->debug("TID=proc=$$ ====== src=$ip_addr_h{src}========== \n");
                 unless($ip_addr_h{src}) {
 		    $logger->error("!!! FAILED To extract IP from subject !!!" .  $subj_md->toString);
@@ -482,7 +490,7 @@ sub get_fromHLS {
 	       
 	        eval {
 	               $dbh->resultset('Metadata')->update_or_create ({ 
-							      service	    => $service_obj->service,
+							      eventtype_id  => $eventtype_obj->ref_id,
 							      src_ip	    =>   $ip_addr_rs{src}->ip_addr,
 							      dst_ip	    =>   ($ip_addr_rs{dst} && ref $ip_addr_rs{dst}?$ip_addr_rs{dst}->ip_addr:0),
 							      subject	 => ($subj_md?$subj_md->toString:''),

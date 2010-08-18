@@ -72,7 +72,7 @@ has 'eventtypes' => (is => 'rw', isa => 'ArrayRef');
 sub BUILD {
       my $self = shift;
       my $args = shift;
-      $self->resolution(100);
+      $self->resolution(5);
       $self->logger(get_logger(__PACKAGE__));
       $self->eventtypes([("http://ggf.org/ns/nmwg/characteristic/utilization/2.0")]);
       return  $self->url($args->{url}) if $args->{url};
@@ -95,7 +95,7 @@ after 'get_metadata' => sub  {
     my $ma_result =  $self->ma->metadataKeyRequest(
         {
             subject               => $self->subject,
-            eventTypes            => $self->eventtypes
+            eventTypes            => $self->eventtypes,
         }
     );
     $self->parse_metadata($ma_result); 

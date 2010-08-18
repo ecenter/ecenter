@@ -155,7 +155,7 @@ foreach my $service ( qw/ps3/ ) {
             my $urn = "domain=$IP_TOPOLOGY";
             my ($status, $res) = $client->xQuery("//*[matches(\@id, '$urn', 'xi')]", 'encoded');
             throw  perfSONAR_PS::Error if $status;
-	    parse_topo($dbh, $res);
+	     parse_topo($dbh, $res);
 	}
 	get_snmp($dbh, $pm) if $OPTIONS{snmp};
     }
@@ -268,10 +268,12 @@ sub parse_topo {
 
 sub get_snmp { 
     my ($dbh, $pm ) = @_; 
-    my $services = $dbh->resultset('Service')->search({'eventtypes.service_type' => 'snmp', url => {like => '%es.net%'}}, 
-                                                      {join => 'eventtypes'});
-    # harcoded fix for miserable  ESnet services
-    unless($services->count) {
+    my $service = $dbh->resultset('Service')->search({'eventtypes.service_type' => 'snmp', url => {like => '%es.net%'}}, 
+                                                     {join => 'eventtypes', '+select' => ['eventtypes.ref_id'] }
+						    )->single();
+    # harcoded fix for miserable  ESnet services 
+    my $eventtype_obj; 
+    unless($service) {
         my $ps3_node =   $dbh->resultset('Node')->find({nodename => 'ps3.es.net'});
         my $service_obj = $dbh->resultset('Service')->update_or_create({name => 'ESnet SNMP MA',
 	                                    ip_addr => $ps3_node->ip_addr, 
@@ -279,61 +281,62 @@ sub get_snmp {
 					    is_alive => 1,
 					    updated =>  \"NOW()",
 					    url =>  'http://ps3.es.net:8080/perfSONAR_PS/services/snmpMA'});
-	 $dbh->resultset('Eventtype')->update_or_create( { eventtype =>  'http://ggf.org/ns/nmwg/characteristic/utilization/2.0',
+	$eventtype_obj = $dbh->resultset('Eventtype')->update_or_create( { eventtype =>  'http://ggf.org/ns/nmwg/characteristic/utilization/2.0',
 								  service =>  $service_obj->service,
 								  service_type =>  'snmp',
 								},
 								{ key => 'eventtype_service_type' }
 							      );				    
-	$services = $dbh->resultset('Service')->search({'eventtypes.service_type' => 'snmp', url => {like => '%es.net%'}}, 
-                                                       {join => 'eventtypes'} );
+	$service = $dbh->resultset('Service')->search({'eventtypes.service_type' => 'snmp', url => {like => '%es.net%'}}, 
+                                                       {join => 'eventtypes', '+select' => ['eventtypes.ref_id'] } )->single();
     }
+    my $eventtype_id =  $service->eventtypes->first->ref_id;
     my $ports = $dbh->resultset('L2_port')->search({ }, { 'join'  =>  'l2_src_links'  });
     my %threads;
     my $thread_counter = 0;
-    while( my $service = $services->next) {
-     	my $snmp_ma =  Ecenter::Data::Snmp->new({ url => $service->url});
-	unless($ports->count) {
-	    $logger->error(" !!! NO Ports !!! ");
-	    next;
-	}
-     	while( my  $port = $ports->next) {
-     	    my $ifAddresses = $dbh->resultset('L2_l3_map')->search( { l2_urn => $port->l2_urn }, 
-     								    { 'join' => 'node', '+select' => ['node.ip_noted'] }
-     								  );
-     	    unless ($ifAddresses->count) {
-	        $logger->error(" !!! NO Addresses !!! ");
-	        next;
-	    }
-	    while( my    $l3 = $ifAddresses->next) {
-	        $logger->debug("=====---------------===== \n ifAddress::" .$l3->node->ip_noted . " URN:" . $port->l2_urn );
-     		foreach my $direction (qw/in out/) {
-		   
-	                my $pid = $pm->start and next; 
-     		            $snmp_ma->get_data({ direction =>  $direction, 
-		                                 ifAddress => $l3->node->ip_noted, 
-		                                 start =>  DateTime->from_epoch( epoch => (time() - $PAST_SECS )),
-						 end => DateTime->now()   });
-		            $logger->debug("Data :: ", sub{Dumper( $snmp_ma->data)});
-     		            my $meta = $dbh->resultset('Metadata')->update_or_create({
-     								     service	 => $service,
-     								     src_ip	 => $l3->ip_addr,
-     								     direction   => $direction 
-     								  }
-								  );
-			    $pm->finish unless $snmp_ma->data && @{$snmp_ma->data};
-     		            foreach my $data (@{ $snmp_ma->data}) { 
-     			        $dbh->resultset('Snmp_data')->update_or_create({ metaid =>  $meta->metaid,
-     									  timestamp => $data->[0],
-     									  utilization => $data->[1],
-     								             },
-									     { key => 'meta_time'});
-     		            } 
-		        $pm->finish;    
-     		 }				  
-     	     }
-     	 }
-     }
+ 
+    my $snmp_ma =  Ecenter::Data::Snmp->new({ url => $service->url});
+    #$logger->info("=====---- SERVICE eventtype ---------", sub{Dumper($service->eventtypes)});
+    unless($ports->count) {
+    	$logger->error(" !!! NO Ports !!! ");
+    	return;
+    }
+    while( my  $port = $ports->next) {
+    	my $ifAddresses = $dbh->resultset('L2_l3_map')->search( { l2_urn => $port->l2_urn }, 
+    								{ 'join' => 'node', '+select' => ['node.ip_noted'] }
+    							      );
+    	unless ($ifAddresses->count) {
+    	    $logger->error(" !!! NO Addresses !!! ");
+    	    next;
+    	}
+    	while( my    $l3 = $ifAddresses->next) {
+    	    $logger->debug("=====---------------===== \n ifAddress::" .$l3->node->ip_noted . " URN:" . $port->l2_urn );
+	    foreach my $direction (qw/in out/) {
+    		my $pid = $pm->start and next;
+    		$snmp_ma->get_data({ direction =>  $direction, 
+    				     ifAddress => $l3->node->ip_noted, 
+    				     start =>  DateTime->from_epoch( epoch => (time() - $PAST_SECS )),
+    				     end => DateTime->now()   });
+    		$logger->debug("Data :: ", sub{Dumper( $snmp_ma->data)});
+    		my $meta = $dbh->resultset('Metadata')->update_or_create({ 
+    							 eventtype_id => $eventtype_id ,
+    							 src_ip       => $l3->ip_addr,
+    							 direction    => $direction 
+    						      }
+    						      );
+    		$pm->finish unless $snmp_ma->data && @{$snmp_ma->data};
+    		foreach my $data (@{ $snmp_ma->data}) { 
+    		    $dbh->resultset('Snmp_data')->update_or_create({ metaid =>  $meta->metaid,
+    							      timestamp => $data->[0],
+    							      utilization => $data->[1],
+    								 },
+    								 { key => 'meta_time'});
+    		} 
+    		$pm->finish;	 
+    	    }				      
+    	}
+    }
+      
      pool_control($MAX_THREADS, 'finish_it');
 }
 __END__

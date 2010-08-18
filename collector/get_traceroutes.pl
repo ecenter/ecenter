@@ -126,7 +126,7 @@ my $dbh =  Ecenter::Schema->connect("DBI:mysql:$OPTIONS{db}",  $OPTIONS{user},
                                      $OPTIONS{password}, 
 				    {RaiseError => 1, PrintError => 1});
 $dbh->storage->debug(1)  if $OPTIONS{debug};
-my $services = $dbh->resultset('Service')->search({},{join => 'node', group_by => 'ip_addr'});
+my $services = $dbh->resultset('Service')->search({},{join => ['node','eventtypes'], group_by => 'ip_addr'});
 my $src_match = $OPTIONS{src_match}?qr/$OPTIONS{src_match}/:'';
 my $dst_match = $OPTIONS{dst_match}?" and me.nodename   like '\%$OPTIONS{dst_match}\%' ":'';
 
@@ -134,7 +134,12 @@ while( my $service = $services->next) {
     my $nodename = $service->node->nodename;
     next unless $nodename; 
     next if($src_match && $nodename !~  $src_match);
-   
+    my   $eventtype_obj = $dbh->resultset('Eventtype')->update_or_create( { eventtype =>  'http://ggf.org/ns/nmwg/tools/traceroute/1.0',
+								  service =>  $service->service,
+								  service_type => 'traceroute',
+								},
+								{ key => 'eventtype_service_type' }
+							      );
     my $service_ip = $service->node->ip_noted;
     my $mask = ( $service_ip  =~ /^[\d\.]+$/)?'31':'64';
     my $where = "inet6_mask(me.ip_addr, $mask) != inet6_mask(inet6_pton('". $service->node->ip_noted ."'), $mask) $dst_match";
@@ -166,7 +171,7 @@ while( my $service = $services->next) {
             while( my $node = $nodes->next) {
 		my $metaid = $dbh_node->resultset('Metadata')->update_or_create({  
 	                                                        	 subject => md5_hex( $service_ip . $node->ip_noted), 
-	    								 service	  => $service->service,
+	    								 eventtype_id	  =>   $eventtype_obj->ref_id,
 	    								 src_ip	  => $service->node->ip_addr,
 	    								 dst_ip	  => $node->ip_addr,
 	    						     }

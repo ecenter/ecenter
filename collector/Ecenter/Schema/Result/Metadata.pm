@@ -2,9 +2,9 @@ package Ecenter::Schema::Result::Metadata;
 use base qw/DBIx::Class::Core/;
 
 __PACKAGE__->table('metadata');
-__PACKAGE__->add_columns(qw/metaid  src_ip dst_ip direction service subject parameters/); 
+__PACKAGE__->add_columns(qw/metaid  src_ip dst_ip direction eventtype_id subject parameters/); 
 __PACKAGE__->set_primary_key('metaid');
-__PACKAGE__->belongs_to(service => 'Ecenter::Schema::Result::Service');
+__PACKAGE__->belongs_to(eventtype  => 'Ecenter::Schema::Result::Eventtype', { 'foreign.ref_id' => 'self.eventtype_id' } );
 __PACKAGE__->belongs_to(src_ip => 'Ecenter::Schema::Result::Node',  { 'foreign.ip_addr' => 'self.src_ip' }  );
 __PACKAGE__->belongs_to(dst_ip => 'Ecenter::Schema::Result::Node',  { 'foreign.ip_addr' => 'self.dst_ip' }  );
  

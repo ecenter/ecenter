@@ -25,7 +25,7 @@ $.fn.traceroute = function(options) {
   return this.each(function(i) {
     var trace = $(this).data('TraceRoute');
     if (trace == undefined) {
-      trace = new TraceRoute(this, opt);
+      //trace = new TraceRoute(this, opt);
     }
   });
 

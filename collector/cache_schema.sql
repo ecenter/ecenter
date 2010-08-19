@@ -4,12 +4,12 @@
 --    author: Maxim Grigoriev, 2010, maxim_at_fnal_dot_gov
 --
 --
-drop  database if exists ecenter_data;
-create database ecenter_data;
-grant all privileges on ecenter_data.* to ecenter@localhost identified by 'ecenter2010';
-grant select on ecenter_data.* to www@localhost identified by 'www_user';
+drop  database if exists ecenter_test;
+create database ecenter_test;
+grant all privileges on ecenter_test.* to ecenter@localhost identified by 'ecenter2010';
+grant select on ecenter_test.* to www@localhost identified by 'www_user';
 flush privileges;
-use ecenter_data;
+use ecenter_test;
 
 --
 --  topology hub ( something with coordinates, name )
@@ -107,8 +107,7 @@ CREATE TABLE   service (
  name varchar(255) NOT NULL,
  ip_addr varbinary(16) NOT NULL,
  url varchar(255) NOT NULL,
- type varchar(32) NOT NULL DEFAULT 'hLS',
- comments  varchar(255) NULL, 
+ comments  varchar(255) NULL,
  is_alive boolean,
  created  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
  updated  TIMESTAMP NOT NULL DEFAULT 0,
@@ -118,15 +117,16 @@ CREATE TABLE   service (
  FOREIGN KEY (ip_addr) REFERENCES  node (ip_addr)
  ) ENGINE=InnoDB CHARSET=latin1 COMMENT='ps-ps services operational table';
 --
---    list of eventtypes
+--    list of eventtypes, metadata will refere to the ref_id here, not the SERVICE !
 --
 drop  table if exists eventtype;
 CREATE TABLE   eventtype  (
  ref_id   bigint  unsigned AUTO_INCREMENT NOT NULL, 
  eventtype  varchar(255)  NULL, 
- service bigint unsigned  NOT NULL, 
+ service bigint unsigned  NOT NULL,
+ service_type  varchar(32) NOT NULL DEFAULT 'hLS',
  PRIMARY KEY  (ref_id),
- UNIQUE KEY eventtype_service (eventtype, service), 
+ UNIQUE KEY eventtype_service_type (eventtype, service, service_type), 
  FOREIGN KEY  (service) REFERENCES  service (service)  on DELETE CASCADE ON UPDATE CASCADE
  )  ENGINE=InnoDB CHARSET=latin1 COMMENT='project keywords';
 --
@@ -158,14 +158,14 @@ metaid  bigint  unsigned AUTO_INCREMENT NOT NULL,
 src_ip  varbinary(16)  NOT NULL,
 dst_ip  varbinary(16)  NOT  NULL DEFAULT '0',
 direction   enum('in','out') NOT NULL default 'in', 
-service bigint  unsigned  NOT NULL,
+eventtype_id  bigint  unsigned  NOT NULL,
 subject varchar(1023) NOT NULL  DEFAULT '',
 parameters varchar(1023) NULL,
 PRIMARY KEY  (metaid),
 KEY  (metaid),
 FOREIGN KEY (src_ip) REFERENCES  node (ip_addr), 
-FOREIGN KEY (service) REFERENCES  service (service)  on DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB CHARSET=latin1 COMMENT='ps-ps metaid provided by each service';
+FOREIGN KEY (eventtype_id) REFERENCES  eventtype(ref_id)  on DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB CHARSET=latin1 COMMENT='ps-ps metaid provided by each service-eventtype';
 --
 --  NEXT TABLES FOR THE  DATA CACHE
 --  we are going to store pinger, owamp, bwctl, snmp data

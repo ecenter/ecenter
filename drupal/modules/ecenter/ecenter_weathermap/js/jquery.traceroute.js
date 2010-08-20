@@ -23,13 +23,14 @@ $.fn.traceroute = function(data, options) {
 
 // Defaults
 $.fn.traceroute.defaults = {
-  'tracerouteLength' : NULL, // Set this to require traceRoute 
+  'tracerouteLength' : null, // Set this to require traceRoute 
   'link' : {
     'linkLength' : 12,
+    'linkWidth' : 4,
     'style' : { 
       'fillStyle' : '#555555',
      }
-  }
+  },
   'arrow' : {
     'size' : 6,
     'style' : {
@@ -40,13 +41,13 @@ $.fn.traceroute.defaults = {
     'extraMargin' : 30,
     'radius' : 9,
     'style' : {
-      'strokeStyle' : '#555555',
+      'strokeStyle' : '#0000ff',
       'fillStyle' : '#ffffff',
-      'shadowOffsetX' : 3,
-      'shadowOffsetY' : 3,
-      'shadowBlur' : 1,
-      'shadowColor' : '#000000',
-      'lineWidth' : 4
+      'lineWidth' : 4,
+      //'shadowOffsetX' : 1,
+      //'shadowOffsetY' : 1,
+      //'shadowBlur' : 3,
+      //'shadowColor' : '#555555',
     }
   }
 };
@@ -56,6 +57,11 @@ function TraceRoute(el, data, options) {
   this.el = el;
   this.options = options;
   this.data = data;
+
+  // Get traceroute length if not provided; we need it to size the canvas
+  if (this.options.tracerouteLength || this.options.tracerouteLength < 1) {
+    this.options.tracerouteLength = this.tracerouteLength();
+  }
 
   // Initialize canvas
   this.initCanvas();
@@ -72,88 +78,171 @@ function TraceRoute(el, data, options) {
 TraceRoute.prototype.initCanvas = function() {
   var o = this.options;
 
-  var canv = document.createElement('canvas');
-  $(canv).addClass('traceroute-graph');
-  $(this.el).append(canv);
+  // Create canvases
+  var hopCanvas = document.createElement('canvas');
+  var linkCanvas = document.createElement('canvas');
+
+  // Create canvases for IE
   if ($.browser.msie) {
-    canv = window.G_vmlCanvasManager.initElement(canv);
+    hopCanvas = window.G_vmlCanvasManager.initElement(hopCanvas);
+    linkCanvas = window.G_vmlCanvasManager.initElement(linkCanvas);
   }
 
-  this.segmentHeightInc = ((o.hopRadius * 2) + o.hopStrokeWidth) + o.linkLength;
-  this.hopX = this.hopHeightInc = o.hopRadius + (o.hopStrokeWidth / 2);
-  this.hopAsymX = this.hopX + o.extraHopMargin;
-  this.segmentH = o.linkLength + (2 * o.hopRadius);
-  
-  cvWidth = ((o.hopRadius * 2) + o.hopStrokeWidth) + o.extraHopMargin;
-  cvHeight = this.segmentHeightInc * this.maxLength
+  // Position container
+  $(this.el).css({
+    'position' : 'relative',
+  });
 
-  canv.width = cvWidth;
-  canv.height = cvHeight;
+  // Default "layer" CSS settings
+  canvasCss = {
+    'position' : 'absolute',
+    'left' : 0,
+    'top' : 0,
+    'z-index' : 0,
+  };
 
-  this.cv = canv;
-  this.ctx = canv.getContext('2d');
+  // Layer canvases onto target
+  $(linkCanvas).addClass('traceroute-links').css(canvasCss);
+  $(hopCanvas).addClass('traceroute-links').css($.extend(canvasCss, {'z-index' : 1}));
+
+  // Calculate constants
+  this.hopX = this.hopHeightInc = o.hop.radius + (o.hop.style.lineWidth / 2);
+  this.hopAsymX = this.hopX + o.hop.extraMargin;
+  this.segmentHeightInc = o.link.linkLength + o.hop.radius;
+
+  linkCenter = (o.hop.radius / 2) - (o.link.linkWidth / 3);
+  this.forwardLinkX = Math.ceil(linkCenter);
+  this.reverseLinkX = Math.floor(linkCenter + o.hop.radius);
+  this.singleLinkX = o.hop.radius - (o.link.linkWidth / 3);
+ 
+  // Set size for both canvases
+  hopCanvas.width = linkCanvas.width = ((o.hop.radius * 2) + o.hop.style.lineWidth) + o.hop.extraMargin;
+  hopCanvas.height = linkCanvas.height = this.segmentHeightInc * o.tracerouteLength
+
+  $(this.el).css({
+    'position' : 'relative',
+    'height' : hopCanvas.height,
+    'width' : hopCanvas.width,
+  }).append(linkCanvas).append(hopCanvas);
+
+  // Provide canvases as part of traceroute object
+  this.hopCanvas = hopCanvas;
+  this.hopContext = hopCanvas.getContext('2d');
+  this.linkCanvas = linkCanvas;
+  this.linkContext = linkCanvas.getContext('2d');
+
 }
 
+// Calculate traceroute length
+TraceRoute.prototype.tracerouteLength = function() {
+  var count = 0;
+  for (var i = 0; i < this.data.length; i++) {
+    var row = this.data[i];
+    if (row.match != undefined) {
+      count += 1;
+    }
+    if (row.diff != undefined) {
+      count += (row.diff.reverse.length > row.diff.forward.length) ? row.diff.reverse.length : row.diff.forward.length;
+    }
+  }
+  return count;
+}
+
+// Draw traceroute chart
 TraceRoute.prototype.drawTraceroute = function(traceroute) {
   var o = this.options;
-  var canvas_height = 0;
-
   var extraInc = 0;
+  var old_row = false;
 
   for (var i = 0; i < this.data.length; i++) {
 
     var row = this.data[i];
 
     if (row.match != undefined) {
-      var hopY = (this.segmentHeightInc * (i + extraInc)) + this.hopHeightInc;
+      hopY = (this.segmentHeightInc * (i + extraInc));
+      hopStyle = (row.hopStyle != undefined) ? row.hopStyle : o.hop.style;
+      this.drawHop(this.hopX, hopY, o.hop.radius, hopStyle);
 
-      if (i < this.data.length - 1) {
-        this.drawSegment(5, hopY, o.linkWidth, this.segmentH, '#bbbbbb');
+      if (old_row && old_row.match != undefined) {
+        var linkStyle = (row.linkStyle != undefined) ? row.linkStyle : o.link.style;
+        linkY = hopY - (this.segmentHeightInc);
+        this.drawSegment(this.forwardLinkX, hopY, o.link.linkWidth, this.segmentHeightInc, 0, linkStyle);
+        this.drawSegment(this.reverseLinkX, hopY, o.link.linkWidth, this.segmentHeightInc, 0, linkStyle);
       }
-
-      this.drawHop(this.hopX, hopY, o.hopRadius, o.hopStrokeWidth, o.hopStrokeColor, o.hopFillColor);
     }
 
     if (row.diff != undefined) {
+
+      // A little convoluted?
+      longestSegment = (row.diff.forward.length > row.diff.reverse.length) ? 'forward' : 'reverse';
+      shortestSegment = (row.diff.forward.length > row.diff.reverse.length) ? 'reverse' : 'forward';
+      longestSegmentLength = (row.diff[longestSegment].length * this.segmentH);
+      shortSegmentLength = (longestSegmentLength - (row.diff[shortestSegment].length * ((o.hop.radius * 2) - 1))) / row.diff[shortestSegment].length;
+
+      
+
+
       for (var j = 0; j < row.diff.forward.length; j++) {
-        var hopY = (this.segmentHeightInc * (i + j)) + this.hopHeightInc;
-        this.drawSegment(5, hopY, o.linkWidth, this.segmentH, '#bbbbbb');
-        this.drawHop(this.hopX, hopY, o.hopRadius, o.hopStrokeWidth, o.hopStrokeColor, o.hopFillColor);
+        hop = row.diff.forward[j];
+        hopStyle = (row.hopStyle != undefined) ? hop.hopStyle : o.hop.style;
+
+        if (shortestSegment == 'forward') {
+          var hopY = ((this.segmentHeightInc * i) + this.hopHeightInc) + shortSegmentLength;
+        } else {
+          var hopY = (this.segmentHeightInc * (i + j)) + this.hopHeightInc;
+        }
+
+        this.drawHop(this.hopX, hopY, o.hop.radius, hopStyle);
+        //this.drawSegment(this.singleLinkX, hopY, o.link.linkWidth, this.segmentH, 0, linkStyle);
       }
+
       for (var k = 0; k < row.diff.reverse.length; k++) {
-        var hopY = (this.segmentHeightInc * (i + k)) + this.hopHeightInc;
-        this.drawHop(this.hopAsymX, hopY, o.hopRadius, o.hopStrokeWidth, o.hopStrokeColor, o.hopFillColor);
+        hop = row.diff.reverse[k];
+        hopStyle = (row.hopStyle != undefined) ? hop.hopStyle : o.hop.style;
+
+        if (shortestSegment == 'reverse') {
+          var hopY = ((this.segmentHeightInc * i) + this.hopHeightInc) + shortSegmentLength;
+        } else {
+          var hopY = (this.segmentHeightInc * (i + j)) + this.hopHeightInc;
+        }
+
+        this.drawHop(this.hopAsymX, hopY, o.hop.radius, hopStyle);
       }
+
       if (j > 1 || k > 1) {
         extraInc = (k > j) ? k - 1 : j - 1; 
       } else {
         extraInc = 0;
       }
+
     }
 
+    // Save last row...
+    old_row = row;
   }
-
 }
 
 TraceRoute.prototype.drawHop = function(x, y, r, options) {
-  this.ctx.beginPath();
-  this.ctx.arc(x, y, r, 0, Math.PI*2, true);
+  ctx = this.hopContext;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI*2, true);
   for (option in options) {
-    this.ctx[option] = options[option];
+    ctx[option] = options[option];
   }
-  this.ctx.closePath();
-  this.ctx.fill();
-  this.ctx.stroke();
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
 }
 
-TraceRoute.prototype.drawSegment = function(x, y, w, h, options) {
-  this.ctx.beginPath();
-  this.ctx.rect(x,y,w,h);
+TraceRoute.prototype.drawSegment = function(x, y, w, h, rotation, options) {
+  ctx = this.linkContext;
+  ctx.beginPath();
+  ctx.rect(x,y,w,h);
   for (option in options) {
-    this.ctx[option] = options[option];
+    ctx[option] = options[option];
   }
-  this.ctx.closePath();
-  this.ctx.fill();
+  ctx.closePath();
+  ctx.fill();
 }
 
 })(jQuery);

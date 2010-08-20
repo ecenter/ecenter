@@ -1,6 +1,6 @@
 // Add traceroute
 Drupal.behaviors.EcenterTraceroute = function(context) {
-  $('#traceroute').traceroute(Drupal.settings.tracerouteData, Drupal.settings.tracerouteMaxLength);
+  $('#traceroute').traceroute(Drupal.settings.tracerouteData);
 }
 
 // Add date hiding / showing widget

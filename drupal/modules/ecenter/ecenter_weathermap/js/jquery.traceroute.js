@@ -25,7 +25,7 @@ $.fn.traceroute = function(data, options) {
 $.fn.traceroute.defaults = {
   'tracerouteLength' : null, // Set this to require traceRoute 
   'link' : {
-    'linkLength' : 12,
+    'linkLength' : 15,
     'linkWidth' : 4,
     'style' : { 
       'fillStyle' : '#555555',
@@ -38,17 +38,20 @@ $.fn.traceroute.defaults = {
     }
   },
   'hop' : {
-    'extraMargin' : 30,
+    'extraMargin' : 20,
     'radius' : 9,
     'style' : {
       'strokeStyle' : '#0000ff',
       'fillStyle' : '#ffffff',
       'lineWidth' : 4,
-      //'shadowOffsetX' : 1,
-      //'shadowOffsetY' : 1,
-      //'shadowBlur' : 3,
-      //'shadowColor' : '#555555',
+      /*'shadowOffsetX' : 1,
+      'shadowOffsetY' : 1,
+      'shadowBlur' : 3,
+      'shadowColor' : '#555555',*/
     }
+  },
+  'label' : {
+    'width' : 200
   }
 };
 
@@ -88,11 +91,6 @@ TraceRoute.prototype.initCanvas = function() {
     linkCanvas = window.G_vmlCanvasManager.initElement(linkCanvas);
   }
 
-  // Position container
-  $(this.el).css({
-    'position' : 'relative',
-  });
-
   // Default "layer" CSS settings
   canvasCss = {
     'position' : 'absolute',
@@ -119,6 +117,11 @@ TraceRoute.prototype.initCanvas = function() {
   // Set size for both canvases
   hopCanvas.width = linkCanvas.width = (this.hopSize * 2) + o.hop.extraMargin;
   hopCanvas.height = linkCanvas.height = (o.link.linkLength * (o.tracerouteLength - 1)) + (this.hopSize * o.tracerouteLength);
+
+  // Position container
+  $(this.el).css({
+    'position' : 'relative',
+  });
 
   $(this.el).css({
     'position' : 'relative',
@@ -166,10 +169,15 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
       last_match_y = hopY = (this.segmentHeight * (i + extra_inc)) + this.hopRadius;
       this.drawHop(this.hopRadius, hopY, o.hop.radius, hopStyle);
 
-      if (old_row && old_row.match != undefined) {
+      if (old_row) { // && old_row.match != undefined) {
         linkY = hopY - this.segmentHeight;
         linkStyle = (row.linkStyle != undefined) ? row.linkStyle : o.link.style;
         this.drawSegment(this.forwardLinkX, linkY, o.link.linkWidth, this.segmentHeight, 0, linkStyle);
+
+        if (old_row.match != undefined) {
+          console.log(old_row);
+          this.drawSegment(this.reverseLinkX, linkY, o.link.linkWidth, this.segmentHeight, 0, linkStyle);
+        }
       }
     }
 
@@ -191,12 +199,19 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
 
         if (leastHops == 'forward') {
           hopY = last_match_y + (adjustedSegmentHeight * (j + 1));
+          link_height = adjustedSegmentHeight;
         }
         else {
           hopY = last_match_y + (this.segmentHeight * (j + 1));
+          link_height = this.segmentHeight;
         }
 
         this.drawHop(this.hopRadius, hopY, o.hop.radius, hopStyle);
+
+        linkY = hopY - link_height;
+        linkStyle = (row.linkStyle != undefined) ? row.linkStyle : o.link.style;
+        this.drawSegment(this.forwardLinkX, linkY, o.link.linkWidth, link_height, 0, linkStyle);
+
       }
 
       // Reverse
@@ -204,7 +219,6 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
         hop = row.diff.reverse[k];
         hopStyle = (row.hopStyle != undefined) ? hop.hopStyle : o.hop.style;
 
-        hopY = last_match_y + (this.segmentHeight * (k + 1));
         if (leastHops == 'reverse') {
           hopY = last_match_y + (adjustedSegmentHeight * (k + 1));
         }

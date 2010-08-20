@@ -8,6 +8,8 @@
 
 // Load vector class
 require_once(dirname(__FILE__) . '/Vector2d.class.php');
+// Load traceroute diff (to keep licensing issues clear)
+require_once(dirname(__FILE__) . '/ecenter_weathermap_traceroute_diff.inc');
 
 /**
  * Implementation of hook_menu().
@@ -341,15 +343,18 @@ function ecenter_weathermap_select_form(&$form_state) {
     $end_date_adjusted = _ecenter_weathermap_date_to_utc($end_date);
 
     $data = ecenter_weathermap_get_data($src_ip, $dst_ip, $start_date_adjusted, $end_date_adjusted);
+
     $params = array(
       'src_ip' => $src_ip,
       'dst_ip' => $dst_ip,
       'start' => $start_date_adjusted,
-      'end' => $end_date_adjustedm
+      'end' => $end_date_adjusted,
     );
 
     // If we've got the data (at bare minimum, a traceroute), delegate to rendering function
     if ($data) {
+      drupal_add_js(array('tracerouteData' => $data['diff']), 'setting');
+      drupal_add_js(array('tracerouteMaxLength' => $data['traceroute_max']), 'setting');
       ecenter_weathermap_refresh_map('ecenter_weathermap', 'openlayers-map-auto-id-0');
       $form['results_wrapper']['results']['#value'] = theme('ecenter_weathermap_data', $data, $params);
     }
@@ -528,7 +533,7 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
             'hop_ip' => $src_ip,
           ));
         }
-        else {
+        else if ($direction == 'reverse_traceroute') {
           array_unshift($traceroute, array(
             'hop_id' => 'end',
             'hop_ip' => $dst_ip,
@@ -545,10 +550,15 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
             $hop['latitude'] = $geo->latitude;
             $hop['geolocated'] = TRUE;
           }
-
+  
+          // Add data
           foreach ($data as $type => $values) {
             $hop_data[$type] = $values[$hop['hop_id']];
           }
+
+          // Calculate netblock
+          $mask = (!empty($hop['netmask'])) ? $hop['netmask'] : 24;
+          $hop['netblock'] = long2ip(ip2long($hop['hop_ip']) & ~((1 << (32 - $mask)) - 1));
 
           $parsed[$trace_id][] = array(
             'hop' => $hop,
@@ -558,6 +568,14 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
       }
       $direction_label = ($direction == 'reverse_traceroute') ? 'reverse' : 'forward';
       $queries[$response->query][$direction_label] = $parsed;
+    }
+
+    // Calculate diff
+    if (!empty($queries[$response->query]['forward']) && !empty($queries[$response->query]['reverse'])) {
+      $forward = array_pop(array_values($queries[$response->query]['forward']));
+      $reverse = array_reverse(array_pop(array_values($queries[$response->query]['reverse'])));
+      $queries[$response->query]['diff'] = traceroute_diff($forward, $reverse);
+      $queries[$response->query]['traceroute_max'] = (count($forward) > count($reverse)) ? count($forward) : count($reverse);
     }
   }
   return $queries[$response->query];
@@ -751,9 +769,9 @@ function ecenter_weathermap_map_layers() {
     $data = ecenter_weathermap_get_data($src_ip, $dst_ip, $start_date_adjusted, $end_date_adjusted);
 
     if ($data) {
-      foreach ($data as $direction => $traceroutes) {
+      foreach (array('forward', 'reverse') as $direction) {
         $flip = ($direction == 'forward') ? FALSE : TRUE;
-        foreach ($traceroutes as $trace_id => $traceroute) {
+        foreach ($data[$direction] as $trace_id => $traceroute) {
           // Initialize some counters, etc
           $old_hop = NULL;
           $count = count($traceroute);
@@ -954,8 +972,8 @@ function ecenter_weathermap_openlayers_map_preprocess_alter(&$map) {
 
       if ($data) {
         $start = TRUE;
-        foreach ($data as $direction => $traceroutes) {
-          foreach (array_keys($traceroutes) as $trace_id) {
+        foreach (array('forward', 'reverse') as $direction) {
+          foreach (array_keys($data[$direction]) as $trace_id) {
             $map['layers']['ecenter_traceroute_'. $trace_id] = 'ecenter_traceroute_'. $trace_id;
             $map['layer_switcher']['ecenter_traceroute_'. $trace_id] = 'ecenter_traceroute_'. $trace_id;
             $map['layer_styles']['ecenter_traceroute_'. $trace_id] = 'ecenter_default';

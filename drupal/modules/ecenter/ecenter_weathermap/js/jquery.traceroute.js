@@ -106,9 +106,10 @@ TraceRoute.prototype.initCanvas = function() {
   $(hopCanvas).addClass('traceroute-links').css($.extend(canvasCss, {'z-index' : 1}));
 
   // Calculate constants
-  this.hopX = this.hopHeightInc = o.hop.radius + (o.hop.style.lineWidth / 2);
-  this.hopAsymX = this.hopX + o.hop.extraMargin;
-  this.segmentHeightInc = o.link.linkLength + o.hop.radius;
+  this.hopRadius = o.hop.radius + (o.hop.style.lineWidth / 2);
+  this.hopSize = this.hopRadius * 2;
+  this.segmentHeight = o.link.linkLength + this.hopSize;
+  this.hopAsymOffset = this.hopSize + o.hop.extraMargin;
 
   linkCenter = (o.hop.radius / 2) - (o.link.linkWidth / 3);
   this.forwardLinkX = Math.ceil(linkCenter);
@@ -116,8 +117,8 @@ TraceRoute.prototype.initCanvas = function() {
   this.singleLinkX = o.hop.radius - (o.link.linkWidth / 3);
  
   // Set size for both canvases
-  hopCanvas.width = linkCanvas.width = ((o.hop.radius * 2) + o.hop.style.lineWidth) + o.hop.extraMargin;
-  hopCanvas.height = linkCanvas.height = this.segmentHeightInc * o.tracerouteLength
+  hopCanvas.width = linkCanvas.width = (this.hopSize * 2) + o.hop.extraMargin;
+  hopCanvas.height = linkCanvas.height = (o.link.linkLength * (o.tracerouteLength - 1)) + (this.hopSize * o.tracerouteLength);
 
   $(this.el).css({
     'position' : 'relative',
@@ -151,68 +152,74 @@ TraceRoute.prototype.tracerouteLength = function() {
 // Draw traceroute chart
 TraceRoute.prototype.drawTraceroute = function(traceroute) {
   var o = this.options;
-  var extraInc = 0;
+  var extra_inc = 0;
   var old_row = false;
+  var old_match_row = false;
+  var last_match_y = 0;
 
   for (var i = 0; i < this.data.length; i++) {
 
     var row = this.data[i];
 
     if (row.match != undefined) {
-      hopY = (this.segmentHeightInc * (i + extraInc));
       hopStyle = (row.hopStyle != undefined) ? row.hopStyle : o.hop.style;
-      this.drawHop(this.hopX, hopY, o.hop.radius, hopStyle);
+      last_match_y = hopY = (this.segmentHeight * (i + extra_inc)) + this.hopRadius;
+      this.drawHop(this.hopRadius, hopY, o.hop.radius, hopStyle);
 
       if (old_row && old_row.match != undefined) {
-        var linkStyle = (row.linkStyle != undefined) ? row.linkStyle : o.link.style;
-        linkY = hopY - (this.segmentHeightInc);
-        this.drawSegment(this.forwardLinkX, hopY, o.link.linkWidth, this.segmentHeightInc, 0, linkStyle);
-        this.drawSegment(this.reverseLinkX, hopY, o.link.linkWidth, this.segmentHeightInc, 0, linkStyle);
+        linkY = hopY - this.segmentHeight;
+        linkStyle = (row.linkStyle != undefined) ? row.linkStyle : o.link.style;
+        this.drawSegment(this.forwardLinkX, linkY, o.link.linkWidth, this.segmentHeight, 0, linkStyle);
       }
     }
 
     if (row.diff != undefined) {
 
-      // A little convoluted?
-      longestSegment = (row.diff.forward.length > row.diff.reverse.length) ? 'forward' : 'reverse';
-      shortestSegment = (row.diff.forward.length > row.diff.reverse.length) ? 'reverse' : 'forward';
-      longestSegmentLength = (row.diff[longestSegment].length * this.segmentH);
-      shortSegmentLength = (longestSegmentLength - (row.diff[shortestSegment].length * ((o.hop.radius * 2) - 1))) / row.diff[shortestSegment].length;
+      // Calculate position / segment length
+      mostHops = (row.diff.forward.length > row.diff.reverse.length) ? 'forward' : 'reverse';
+      leastHops = (row.diff.forward.length > row.diff.reverse.length) ? 'reverse' : 'forward';
+      longestSegment = (o.link.linkLength * (row.diff[mostHops].length + 1)) + (this.hopSize * row.diff[mostHops].length);
+      adjustedLinkLength = (longestSegment - (row.diff[leastHops].length * this.hopSize)) / (row.diff[leastHops].length + 1);
+      adjustedSegmentHeight = adjustedLinkLength + this.hopSize; 
 
-      
-
-
+      // @TODO DRY violations ahead...
+ 
+      // Forward
       for (var j = 0; j < row.diff.forward.length; j++) {
         hop = row.diff.forward[j];
         hopStyle = (row.hopStyle != undefined) ? hop.hopStyle : o.hop.style;
 
-        if (shortestSegment == 'forward') {
-          var hopY = ((this.segmentHeightInc * i) + this.hopHeightInc) + shortSegmentLength;
-        } else {
-          var hopY = (this.segmentHeightInc * (i + j)) + this.hopHeightInc;
+        if (leastHops == 'forward') {
+          hopY = last_match_y + (adjustedSegmentHeight * (j + 1));
+        }
+        else {
+          hopY = last_match_y + (this.segmentHeight * (j + 1));
         }
 
-        this.drawHop(this.hopX, hopY, o.hop.radius, hopStyle);
-        //this.drawSegment(this.singleLinkX, hopY, o.link.linkWidth, this.segmentH, 0, linkStyle);
+        this.drawHop(this.hopRadius, hopY, o.hop.radius, hopStyle);
       }
 
+      // Reverse
       for (var k = 0; k < row.diff.reverse.length; k++) {
         hop = row.diff.reverse[k];
         hopStyle = (row.hopStyle != undefined) ? hop.hopStyle : o.hop.style;
 
-        if (shortestSegment == 'reverse') {
-          var hopY = ((this.segmentHeightInc * i) + this.hopHeightInc) + shortSegmentLength;
-        } else {
-          var hopY = (this.segmentHeightInc * (i + j)) + this.hopHeightInc;
+        hopY = last_match_y + (this.segmentHeight * (k + 1));
+        if (leastHops == 'reverse') {
+          hopY = last_match_y + (adjustedSegmentHeight * (k + 1));
+        }
+        else {
+          hopY = last_match_y + (this.segmentHeight * (k + 1));
         }
 
-        this.drawHop(this.hopAsymX, hopY, o.hop.radius, hopStyle);
+        this.drawHop(this.hopAsymOffset, hopY, o.hop.radius, hopStyle);
       }
 
+      // Set extra increment for next match
       if (j > 1 || k > 1) {
-        extraInc = (k > j) ? k - 1 : j - 1; 
+        extra_inc = (k > j) ? k - 1 : j - 1; 
       } else {
-        extraInc = 0;
+        extra_inc = 0;
       }
 
     }

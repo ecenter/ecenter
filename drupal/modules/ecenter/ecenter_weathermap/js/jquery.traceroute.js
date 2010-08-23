@@ -178,7 +178,6 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
           this.drawSegment(this.reverseLinkX, linkY, o.link.linkWidth, this.segmentHeight, 0, linkStyle);
         }
       }
-
       this.drawHopLabel(row.match.forward.hop, 0, hopY - this.hopSize);
     }
 
@@ -195,6 +194,7 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
  
       // Forward
       for (var j = 0; j < row.diff.forward.length; j++) {
+
         hop = row.diff.forward[j];
         hopStyle = (row.hopStyle != undefined) ? hop.hopStyle : o.hop.style;
 
@@ -206,6 +206,8 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
           hopY = last_match_y + (this.segmentHeight * (j + 1));
           link_height = this.segmentHeight;
         }
+
+        //console.log('hopY: '+ hopY);
 
         this.drawHop(this.hopRadius, hopY, o.hop.radius, hopStyle);
 
@@ -236,10 +238,8 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
 
       // Set extra increment for next match
       if (j > 1 || k > 1) {
-        extra_inc = (k > j) ? k - 1 : j - 1; 
-      } else {
-        extra_inc = 0;
-      }
+        extra_inc += (k > j) ? k - 1 : j - 1; 
+      } 
 
     }
 

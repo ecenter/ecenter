@@ -193,7 +193,7 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
 
         // The old row had asymmetry, but contributed no hops
         if (old_row.diff != undefined && !last_diff_y) {
-
+          this.drawCurve(this.reverseLinkX, this.reverseLinkX + o.hop.extraMargin, last_match_y, hopY, linkStyle);
         }
 
       }
@@ -255,7 +255,6 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
         segmentLength = Math.sqrt((segment * segment) + (o.hop.extraMargin * o.hop.extraMargin));
         rotation = (2 * Math.PI) - Math.tan((o.hop.extraMargin + this.forwardLinkX) / segment); 
         this.drawSegment(this.hopAsymOffset, hopY, o.link.linkWidth, -segmentLength, rotation, linkStyle);
-
       }
 
       if (!row.diff.reverse.length) {
@@ -289,17 +288,14 @@ TraceRoute.prototype.drawHop = function(x, y, r, options) {
   ctx.restore();
 }
 
-TraceRoute.prototype.drawCurve = function(x, y, r, options) {
-  ctx = this.hopContext;
+TraceRoute.prototype.drawCurve = function(x, xOffset, y1, y2, options) {
+  ctx = this.linkContext;
   ctx.save();
-  ctx.translate(x, y);
   ctx.beginPath();
-  ctx.arc(0, 0, r, 0, Math.PI, true);
-  for (option in options) {
-    ctx[option] = options[option];
-  }
-  //ctx.closePath();
-  ctx.fill();
+  ctx.moveTo(x, y1);
+  ctx.bezierCurveTo(x + xOffset, y1, x + xOffset, y2, x, y2); 
+  ctx.strokeStyle = '#555555';
+  ctx.lineWidth = 4;
   ctx.stroke();
   ctx.restore();
 }

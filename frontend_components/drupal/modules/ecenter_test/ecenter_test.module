@@ -47,6 +47,7 @@ function ecenter_test_theme() {
   return array(
     'ecenter_html_test' => array('arguments' => array(), 'template' => 'ecenter-html-test', 'path' => $path),
     'ecenter_jqplot_test' => array('arguments' => array(), 'template' => 'ecenter-jqplot-test', 'path' => $path),
+    'ecenter_traceroute_test' => array('arguments' => array('data' => NULL), 'template' => 'ecenter-traceroute', 'path' => $path),
   );
 }
 
@@ -185,18 +186,139 @@ function ecenter_test_service_render() {
 }
 
 function ecenter_test_traceroute_render() {
-  drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/display.js');
+  drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/jquery.traceroute.js');
+  drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/jquery.datehide.js');
+  drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/behaviors.js');
 
-  $i = 0;
-  $output = '<div class="traceroute">';
-  while ($i < 10) {
-    $output .= '<div class="hop-wrapper">';
-    $output .= '  <h2 class="hop-name">Hop '. $i .'</h2>';
-    $output .= '  <div class="hop-info">FAKE INFO</div>';
-    $output .= '  <div class="hop-data">FAKE DATA</div>';
-    $output .= '</div>';
-    $i += 1;
+  $client = ecenter_weathermap_get_client('message');
+  $result = $client->getData('198.49.208.3', '131.243.24.11', '2010-07-09 14:00:00', '2010-07-09 15:00:00');
+  $data = ecenter_weathermap_parse_response($result, '198.49.208.3', '131.243.24.11');
+
+  drupal_add_js(array('tracerouteData' => $data['diff']), 'setting');
+  drupal_add_js(array('tracerouteMaxLength' => $data['traceroute_max']), 'setting');
+
+  return theme('ecenter_traceroute_test');
+}
+
+/**
+ *
+ * Adapted for E-center from http://paulbutler.org/archives/a-simple-diff-algorithm-in-php/
+ *
+ * Available at:
+ * http://github.com/paulgb/simplediff/blob/5bfe1d2a8f967c7901ace50f04ac2d9308ed3169/simplediff.php
+ *
+ * The original code is released under the zlib/libpng license 
+ * (http://www.opensource.org/licenses/zlib-license.php).
+ */
+function traceroute_diff($old, $new){
+  foreach($old as $oindex => $ovalue){
+    // Find matching sequences
+    $nkeys = traceroute_array_keys($new, $ovalue);  
+
+    foreach($nkeys as $nindex){
+      $matrix[$oindex][$nindex] = isset($matrix[$oindex - 1][$nindex - 1]) ? $matrix[$oindex - 1][$nindex - 1] + 1 : 1;
+      if ($matrix[$oindex][$nindex] > $maxlen){
+        $maxlen = $matrix[$oindex][$nindex];
+        $omax = $oindex + 1 - $maxlen;
+        $nmax = $nindex + 1 - $maxlen;
+      }
+    }
   }
-  $output .= '</div>';
-  return $output;
+
+  // Ignore extraneous empty diffs
+  if (empty($old) && empty($new)) {
+    return array();
+  }
+  if ($maxlen == 0) {
+    return array(array(
+      'diff' => array(
+        'forward'=> $old, 
+        'reverse'=> $new,
+      )
+    ));
+  }
+
+  // Take matches and turn them into a set of associated pairs
+  $fwd_slices = array_slice($old, $omax, $maxlen);
+  $rev_slices = array_slice($new, $nmax, $maxlen);
+  $slices = array();
+  while (!empty($fwd_slices) && !empty($rev_slices)) {
+    $slices[] = array(
+      'match' => array(
+        'forward' => array_pop($fwd_slices),
+        'reverse' => array_pop($rev_slices),
+      ),
+    );
+  }
+
+  // Recurse into non-matching sequences while mashing together with matching
+  // sequences
+  return array_merge(
+    traceroute_diff(array_slice($old, 0, $omax), array_slice($new, 0, $nmax)),
+    $slices,
+    traceroute_diff(array_slice($old, $omax + $maxlen), array_slice($new, $nmax + $maxlen))
+  );
+}
+
+function traceroute_array_keys($hops, $match) {
+  $return = array();
+  foreach($hops as $k => $hop) {
+    if ($hop['hop']['netblock'] == $match['hop']['netblock']) {
+      $return[] = $k;
+    }
+  }
+  return $return;
+}
+
+function template_preprocess_ecenter_traceroute_test(&$vars) {}
+
+function ecenter_test_parse_response($response) {
+  static $queries = array();
+
+  if (empty($queries[$response->query])) {
+    $data = _ecenter_weathermap_object_to_array($response['response']);
+
+    foreach (array('traceroute', 'reverse_traceroute') as $direction) {
+
+      // Pull out traceroutes and sort: we use them to stitch together our
+      // data structure
+      $traceroutes = $data[$direction];
+      krsort($traceroutes);
+      unset($data[$direction]);
+
+      // Loop over each traceroute
+      $parsed = array();
+
+      foreach ($traceroutes as $trace_id => $traceroute) {
+
+        $parsed[$trace_id] = array();
+
+        foreach ($traceroute as $hop) {
+          $hop_data = array();
+
+          // Geolocate IP if no geo data available
+          if (!$hop['longitude'] || !$hop['latitude']) {
+            $geo = geoip_city($hop['hop_ip']);
+            $hop['longitude'] = $geo->longitude;
+            $hop['latitude'] = $geo->latitude;
+            $hop['geolocated'] = TRUE;
+          }
+
+          // Pull in data for hop
+          // @TODO -- Make this more efficient -- looping not really required...
+          foreach ($data as $type => $values) {
+            $hop_data[$type] = $values[$hop['hop_id']];
+          }
+
+          $parsed[$trace_id][] = array(
+            'hop' => $hop,
+            'data' => $hop_data,
+          );
+        }
+      }
+
+      $queries[$response->query][$direction] = $parsed;
+    }
+  }
+  return $queries[$response->query];
 }

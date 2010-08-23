@@ -66,47 +66,68 @@ function ecenter_weathermap_admin_form() {
     '#default_value' => variable_get('ecenter_weathermap_cache_ttl', 300),
   );
 
-  $form['thresholds'] = array(
-    '#title' => t('Threshold values'),
-    '#type' => 'fieldset',
-    '#description' => t('Set threshold values for data diagnostics'),
-  );
-  $form['thresholds']['colors'] = array(
-    '#title' => t('Colors'),
+  
+  $form['thresholds_colors'] = array(
+    '#title' => t('Threshold colors'),
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
   );
-  $form['thresholds']['colors']['critical'] = array(
+
+  $form['thresholds_colors']['ecenter_weathermap_threshold_critical_color'] = array(
     '#title' => t('Critical color'),
     '#type' => 'textfield',
     '#default_value' => variable_get('ecenter_weathermap_threshold_critical_color', '#cc0000'),
   );
-  $form['thresholds']['colors']['marginal'] = array(
+  $form['threshold_colors']['ecenter_weathermap_threshold_marginal_color'] = array(
     '#title' => t('Marginal color'),
     '#type' => 'textfield',
     '#default_value' => variable_get('ecenter_weathermap_threshold_marginal_color', '#fe890c'),
   );
-  $form['thresholds']['colors']['good'] = array(
+  $form['threshold_colors']['ecenter_weathermap_threshold_good_color'] = array(
     '#title' => t('Marginal color'),
     '#type' => 'textfield',
     '#default_value' => variable_get('ecenter_weathermap_threshold_good_color', '#1c8a24'),
   );
 
+  $form['thresholds'] = array(
+    '#title' => t('Threshold values'),
+    '#type' => 'fieldset',
+    '#description' => t('Set threshold values for data diagnostics'),
+  );
   $form['thresholds']['snmp'] = array(
     '#title' => t('SNMP'),
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
   );
-  $form['thresholds']['snmp']['critical'] = array(
+  $form['thresholds']['snmp']['ecenter_weathermap_threshold_critical_snmp_utilization'] = array(
     '#title' => t('Critical utilization'),
     '#type' => 'textfield',
     '#default_value' => variable_get('ecenter_weathermap_threshold_critical_snmp_utilization', 90),
+    '#description' => t('Percent utilization above this threshold is considered critical.'),
   );
-  $form['thresholds']['snmp']['marginal'] = array(
+  $form['thresholds']['snmp']['ecenter_weathermap_threshold_marginal_snmp_utilization'] = array(
     '#title' => t('Marginal utilization'),
     '#type' => 'textfield',
     '#default_value' => variable_get('ecenter_weathermap_threshold_marginal_snmp_utilization', 70),
+    '#description' => t('Percent utilization above this threshold is considered marginal.'),
+  );
+
+  $form['thresholds']['bwctl'] = array(
+    '#title' => t('BWCTL'),
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
+  );
+  $form['thresholds']['bwctl']['ecenter_weathermap_threshold_critical_bwctl_throughput'] = array(
+    '#title' => t('Critical throughput'),
+    '#type' => 'textfield',
+    '#default_value' => variable_get('ecenter_weathermap_threshold_critical_bwctl_throughput', 90),
+    '#description' => t('Percent (compared to slowest link in path) throughput below this threshold is considered critical.'),
+  );
+  $form['thresholds']['bwctl']['ecenter_weathermap_threshold_marginal_bwctl_throughput'] = array(
+    '#title' => t('Marginal utilization'),
+    '#type' => 'textfield',
+    '#default_value' => variable_get('ecenter_weathermap_threshold_marginal_bwctl_throughput', 95),
+    '#description' => t('Percent (compared to slowest link in path) throughput below this threshold is considered marginal.'),
   );
 
   return system_settings_form($form);

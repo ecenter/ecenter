@@ -207,8 +207,6 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
           link_height = this.segmentHeight;
         }
 
-        //console.log('hopY: '+ hopY);
-
         this.drawHop(this.hopRadius, hopY, o.hop.radius, hopStyle);
 
         linkY = hopY - link_height;
@@ -250,6 +248,7 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
 
 TraceRoute.prototype.drawHop = function(x, y, r, options) {
   ctx = this.hopContext;
+  ctx.save();
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI*2, true);
   for (option in options) {
@@ -258,10 +257,12 @@ TraceRoute.prototype.drawHop = function(x, y, r, options) {
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
+  ctx.restore();
 }
 
 TraceRoute.prototype.drawSegment = function(x, y, w, h, rotation, options) {
   ctx = this.linkContext;
+  ctx.save();
   ctx.beginPath();
   ctx.rect(x,y,w,h);
   for (option in options) {
@@ -269,6 +270,7 @@ TraceRoute.prototype.drawSegment = function(x, y, w, h, rotation, options) {
   }
   ctx.closePath();
   ctx.fill();
+  ctx.restore();
 }
 
 TraceRoute.prototype.drawHopLabel = function(hop, x, y, align) {

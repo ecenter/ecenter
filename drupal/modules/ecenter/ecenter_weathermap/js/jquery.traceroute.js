@@ -159,29 +159,45 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
   var old_row = false;
   var old_match_row = false;
   var last_match_y = 0;
+  var last_diff_y = 0;
 
   for (var i = 0; i < this.data.length; i++) {
 
     var row = this.data[i];
 
+    // Row contains matching hops
     if (row.match != undefined) {
       hopStyle = (row.hopStyle != undefined) ? row.hopStyle : o.hop.style;
-      last_match_y = hopY = (this.segmentHeight * (i + extra_inc)) + this.hopRadius;
+      hopY = (this.segmentHeight * (i + extra_inc)) + this.hopRadius;
       this.drawHop(this.hopRadius, hopY, o.hop.radius, hopStyle);
 
-      if (old_row) { // && old_row.match != undefined) {
-        linkY = hopY; // - this.segmentHeight;
+      // If an old row exists, draw backwards lines running to it
+      if (old_row) {
         linkStyle = (row.linkStyle != undefined) ? row.linkStyle : o.link.style;
-        this.drawSegment(this.forwardLinkX, linkY, o.link.linkWidth, -this.segmentHeight, 0, linkStyle);
 
+        // Always draw forward segment back to previous hop
+        this.drawSegment(this.forwardLinkX, hopY, o.link.linkWidth, -this.segmentHeight, 0, linkStyle);
+
+        // If the old row was another matching hop, just draw regular lines back
         if (old_row.match != undefined) {
-          this.drawSegment(this.reverseLinkX, linkY, o.link.linkWidth, -this.segmentHeight, 0, linkStyle);
+          this.drawSegment(this.reverseLinkX, hopY, o.link.linkWidth, -this.segmentHeight, 0, linkStyle);
         }
 
-        /*if (old_row.diff != undefined) {
-          this.drawSegment(this.hopAsymOffset, linkY, o.link.linkWidth, this.segmentHeight, 0.25 * Math.PI, linkStyle);
-        }*/
+        // The old row had asymmetry, draw a segment back to the last asymmetrical hop
+        if (old_row.diff != undefined && last_diff_y) {
+          segment = hopY - last_diff_y;
+          segmentLength = Math.sqrt((segment * segment) + (o.hop.extraMargin * o.hop.extraMargin));
+          rotation = Math.tan((o.hop.extraMargin + this.forwardLinkX) / segment); 
+          this.drawSegment(this.reverseLinkX, hopY, o.link.linkWidth, -segmentLength, rotation, linkStyle);
+        }
+
+        // The old row had asymmetry, but contributed no hops
+        if (old_row.diff != undefined && !last_diff_y) {
+
+        }
+
       }
+      last_match_y = hopY;
       this.drawHopLabel(row.match.forward.hop, 0, hopY - this.hopSize);
     }
 
@@ -194,8 +210,6 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
       adjustedLinkLength = (longestSegment - (row.diff[leastHops].length * this.hopSize)) / (row.diff[leastHops].length + 1);
       adjustedSegmentHeight = adjustedLinkLength + this.hopSize; 
 
-      // @TODO DRY violations ahead...
- 
       // Forward
       for (var j = 0; j < row.diff.forward.length; j++) {
 
@@ -213,7 +227,6 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
 
         this.drawHop(this.hopRadius, hopY, o.hop.radius, hopStyle);
 
-        //linkY = hopY - link_height;
         linkStyle = (row.linkStyle != undefined) ? row.linkStyle : o.link.style;
         this.drawSegment(this.forwardLinkX, hopY, o.link.linkWidth, -link_height, 0, linkStyle);
 
@@ -232,10 +245,21 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
         else {
           hopY = last_match_y + (this.segmentHeight * (k + 1));
         }
+        last_diff_y = hopY;
 
         this.drawHop(this.hopAsymOffset, hopY, o.hop.radius, hopStyle);
-
         this.drawHopLabel(hop.hop, o.label.width + this.hopAsymOffset + this.hopSize, hopY - this.hopSize, 'right');
+
+        // Every asymetrical hop will have a line back to a match
+        segment = hopY - last_match_y;
+        segmentLength = Math.sqrt((segment * segment) + (o.hop.extraMargin * o.hop.extraMargin));
+        rotation = (2 * Math.PI) - Math.tan((o.hop.extraMargin + this.forwardLinkX) / segment); 
+        this.drawSegment(this.hopAsymOffset, hopY, o.link.linkWidth, -segmentLength, rotation, linkStyle);
+
+      }
+
+      if (!row.diff.reverse.length) {
+        last_diff_y = 0;
       }
 
       // Set extra increment for next match
@@ -253,8 +277,9 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
 TraceRoute.prototype.drawHop = function(x, y, r, options) {
   ctx = this.hopContext;
   ctx.save();
+  ctx.translate(x, y);
   ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI*2, true);
+  ctx.arc(0, 0, r, 0, Math.PI*2, true);
   for (option in options) {
     ctx[option] = options[option];
   }
@@ -264,21 +289,29 @@ TraceRoute.prototype.drawHop = function(x, y, r, options) {
   ctx.restore();
 }
 
+TraceRoute.prototype.drawCurve = function(x, y, r, options) {
+  ctx = this.hopContext;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI, true);
+  for (option in options) {
+    ctx[option] = options[option];
+  }
+  //ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+
+
 TraceRoute.prototype.drawSegment = function(x, y, w, h, rotation, options) {
   ctx = this.linkContext;
   ctx.save();
-  if (rotation) {
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(rotation);
-    ctx.beginPath();
-    ctx.rect(0,0,4,100);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-  }
+  ctx.translate(x, y);
+  ctx.rotate(rotation);
   ctx.beginPath();
-  ctx.rect(x,y,w,h);
+  ctx.rect(0,0,w,h);
   for (option in options) {
     ctx[option] = options[option];
   }

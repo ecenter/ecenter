@@ -51,7 +51,10 @@ $.fn.traceroute.defaults = {
     }
   },
   'label' : {
-    'width' : 200
+    'width' : 120,
+    'side_padding' : 6,
+    'top_padding' : 12,
+    'font_size' : '11px'
   }
 };
 
@@ -94,7 +97,7 @@ TraceRoute.prototype.initCanvas = function() {
   // Default "layer" CSS settings
   canvasCss = {
     'position' : 'absolute',
-    'left' : 0,
+    'left' : o.label.width,
     'top' : 0,
     'z-index' : 0,
   };
@@ -119,14 +122,11 @@ TraceRoute.prototype.initCanvas = function() {
   hopCanvas.height = linkCanvas.height = (o.link.linkLength * (o.tracerouteLength - 1)) + (this.hopSize * o.tracerouteLength);
 
   // Position container
-  $(this.el).css({
-    'position' : 'relative',
-  });
-
+  container_width = (o.label.width * 2) + hopCanvas.width;
   $(this.el).css({
     'position' : 'relative',
     'height' : hopCanvas.height,
-    'width' : hopCanvas.width,
+    'width' : container_width + 'px'
   }).append(linkCanvas).append(hopCanvas);
 
   // Provide canvases as part of traceroute object
@@ -175,10 +175,11 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
         this.drawSegment(this.forwardLinkX, linkY, o.link.linkWidth, this.segmentHeight, 0, linkStyle);
 
         if (old_row.match != undefined) {
-          console.log(old_row);
           this.drawSegment(this.reverseLinkX, linkY, o.link.linkWidth, this.segmentHeight, 0, linkStyle);
         }
       }
+
+      this.drawHopLabel(row.match.forward.hop, 0, hopY - this.hopSize);
     }
 
     if (row.diff != undefined) {
@@ -212,6 +213,8 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
         linkStyle = (row.linkStyle != undefined) ? row.linkStyle : o.link.style;
         this.drawSegment(this.forwardLinkX, linkY, o.link.linkWidth, link_height, 0, linkStyle);
 
+        this.drawHopLabel(hop.hop, 0, hopY - this.hopSize);
+
       }
 
       // Reverse
@@ -227,6 +230,8 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
         }
 
         this.drawHop(this.hopAsymOffset, hopY, o.hop.radius, hopStyle);
+
+        this.drawHopLabel(hop.hop, o.label.width + this.hopAsymOffset + this.hopSize, hopY - this.hopSize, 'right');
       }
 
       // Set extra increment for next match
@@ -266,174 +271,32 @@ TraceRoute.prototype.drawSegment = function(x, y, w, h, rotation, options) {
   ctx.fill();
 }
 
+TraceRoute.prototype.drawHopLabel = function(hop, x, y, align) {
+  var o = this.options;
+  label = $('<div class="label">' + hop.hop_id + ' (' + hop.hop_ip + ')</div>');
+  label_width = o.label.width - o.label.side_padding;
+  css = {
+    'width' : label_width + 'px',
+    'position' : 'absolute',
+    'padding-top' : o.label.top_padding + 'px',
+    'left' : x,
+    'top' : y,
+    'font-size' : o.label.font_size,
+  };
+  if (align == 'right') {
+    $.extend(css, {
+      'padding-left' : o.label.side_padding + 'px',
+      'text-align' : 'left'
+    });
+  } else {
+    $.extend(css, {
+      'padding-right' : o.label.side_padding + 'px',
+      'text-align' : 'right'
+    });
+  }
+
+  label.css(css);
+  $(this.el).append(label);
+}
+
 })(jQuery);
-
-/*
-  var cv = $(this.cv);
-  var ctx = this.ctx;
-
-  // Set canvas size
-  var num_hops = this.hops.size();
-  var cv_height = (num_hops * ((options.hopRadius * 2) + options.hopStrokeWidth)) + (options.linkLength * (num_hops - 1));
-  var cv_width = (options.hopRadius * 2) + options.hopStrokeWidth;
-  cv.attr('width', cv_width).attr('height', cv_height);
-  cv.css('position', 'absolute');
-
-  this.drawHop(5, 5, 10, 4, '#000000', '#cccccc');
-
-
-  // Some calculations
-  var width = cv_width + options.labelWidth + options.labelMargin;
-
-  // Initialize container
-  var container = $('<div class="traceroute-graph-wrapper">');
-  console.log(container);
-  container.css('position', 'relative');
-  //container.height(cv_height).width(width);
-
-  // Initialize label container
-  var label_container = $('<div class="traceroute-labels">');
-  label_container.css('position', 'absolute');
-  label_container.css('left', 0);
-  //label_container.height(cv_height).width(width);
-
-  container.append(cv).append(label_container);
-
-  if (options.labelLocation == 'left') {
-    cv.css('right', 0);
-    label_container.addClass('labels-left');
-    var label_css = {'padding-right': cv_width + options.labelMargin};
-  } else {
-    cv.css('left', 0);
-    label_container.addClass('labels-right');
-    var label_css = {'padding-left': cv_width + options.labelMargin};
-  }
-
-  var segment_x = options.hopRadius + (options.hopStrokeWidth / 2) - (options.linkWidth / 2);
-  var hop_x = options.hopRadius + (options.hopStrokeWidth / 2);
-  var segment_h = options.linkLength + (2 * options.hopRadius);
-
-  var trace = this;
-
-  this.hops.each(function(i) {
-    var hop_y = (((options.hopRadius * 2) + options.hopStrokeWidth + options.linkLength) * i) + options.hopRadius + (options.hopStrokeWidth / 2);
-    if (i < (num_hops - 1)) {
-      trace.drawSegment(segment_x, hop_y, options.linkWidth, segment_h, '#bbbbbb');
-    }
-    trace.drawHop(hop_x, hop_y, options.hopRadius, options.hopStrokeWidth, options.hopStrokeColor, options.hopFillColor);
-
-    var label_y = (((options.hopRadius * 2) + options.hopStrokeWidth + options.linkLength) * i);
-    var name = $('.' + options.nameClass, this).text()
-
-    var label_wrapper = $('<div class="traceroute-label-wrapper">');
-    var label = $('<div class="traceroute-label">');
-    label.text(name);
-    label_wrapper.append(label);
-    label_wrapper.width(options.labelWidth);
-    label_wrapper.css(label_css);
-    label_wrapper.css({'position' : 'absolute', 'top' : label_y});
-    label_container.append(label_wrapper);
-    label_wrapper.append(this);
-    label_wrapper.data('HopData', this);
-
-    // Replace with better hover
-    label.hover(function() {
-      hopdata = label.data('HopData');
-      $(hopdata).css({
-        'position': 'absolute',
-        'top': 450,
-        'left': 300,
-        'z-index': 10,
-        'background-color': '#ffffff'
-      });
-      $(hopdata).show();
-    }, function() {
-      hopdata = label.data('HopData');
-      $(hopdata).hide();
-    });
-
-  });
-
-*/
-  // Set canvas size
-  /*var num_hops = this.hops.size();
-  var cv_height = (num_hops * ((options.hopRadius * 2) + options.hopStrokeWidth)) + (options.linkLength * (num_hops - 1));
-  var cv_width = (options.hopRadius * 2) + options.hopStrokeWidth;
-  cv.attr('width', cv_width).attr('height', cv_height);
-  cv.css('position', 'absolute');
-
-  this.drawHop(5, 5, 10, 4, '#000000', '#cccccc');
-
-
-  // Some calculations
-  var width = cv_width + options.labelWidth + options.labelMargin;
-
-  // Initialize container
-  var container = $('<div class="traceroute-graph-wrapper">');
-  console.log(container);
-  container.css('position', 'relative');
-  //container.height(cv_height).width(width);
-
-  // Initialize label container
-  var label_container = $('<div class="traceroute-labels">');
-  label_container.css('position', 'absolute');
-  label_container.css('left', 0);
-  //label_container.height(cv_height).width(width);
-
-  container.append(cv).append(label_container);
-
-  if (options.labelLocation == 'left') {
-    cv.css('right', 0);
-    label_container.addClass('labels-left');
-    var label_css = {'padding-right': cv_width + options.labelMargin};
-  } else {
-    cv.css('left', 0);
-    label_container.addClass('labels-right');
-    var label_css = {'padding-left': cv_width + options.labelMargin};
-  }
-
-  var segment_x = options.hopRadius + (options.hopStrokeWidth / 2) - (options.linkWidth / 2);
-  var hop_x = options.hopRadius + (options.hopStrokeWidth / 2);
-  var segment_h = options.linkLength + (2 * options.hopRadius);
-
-  var trace = this;
-
-  this.hops.each(function(i) {
-    var hop_y = (((options.hopRadius * 2) + options.hopStrokeWidth + options.linkLength) * i) + options.hopRadius + (options.hopStrokeWidth / 2);
-    if (i < (num_hops - 1)) {
-      trace.drawSegment(segment_x, hop_y, options.linkWidth, segment_h, '#bbbbbb');
-    }
-    trace.drawHop(hop_x, hop_y, options.hopRadius, options.hopStrokeWidth, options.hopStrokeColor, options.hopFillColor);
-
-    var label_y = (((options.hopRadius * 2) + options.hopStrokeWidth + options.linkLength) * i);
-    var name = $('.' + options.nameClass, this).text()
-
-    var label_wrapper = $('<div class="traceroute-label-wrapper">');
-    var label = $('<div class="traceroute-label">');
-    label.text(name);
-    label_wrapper.append(label);
-    label_wrapper.width(options.labelWidth);
-    label_wrapper.css(label_css);
-    label_wrapper.css({'position' : 'absolute', 'top' : label_y});
-    label_container.append(label_wrapper);
-    label_wrapper.append(this);
-    label_wrapper.data('HopData', this);
-
-    // Replace with better hover
-    label.hover(function() {
-      hopdata = label.data('HopData');
-      $(hopdata).css({
-        'position': 'absolute',
-        'top': 450,
-        'left': 300,
-        'z-index': 10,
-        'background-color': '#ffffff'
-      });
-      $(hopdata).show();
-    }, function() {
-      hopdata = label.data('HopData');
-      $(hopdata).hide();
-    });
-
-  });*/
-

@@ -170,13 +170,17 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
       this.drawHop(this.hopRadius, hopY, o.hop.radius, hopStyle);
 
       if (old_row) { // && old_row.match != undefined) {
-        linkY = hopY - this.segmentHeight;
+        linkY = hopY; // - this.segmentHeight;
         linkStyle = (row.linkStyle != undefined) ? row.linkStyle : o.link.style;
-        this.drawSegment(this.forwardLinkX, linkY, o.link.linkWidth, this.segmentHeight, 0, linkStyle);
+        this.drawSegment(this.forwardLinkX, linkY, o.link.linkWidth, -this.segmentHeight, 0, linkStyle);
 
         if (old_row.match != undefined) {
-          this.drawSegment(this.reverseLinkX, linkY, o.link.linkWidth, this.segmentHeight, 0, linkStyle);
+          this.drawSegment(this.reverseLinkX, linkY, o.link.linkWidth, -this.segmentHeight, 0, linkStyle);
         }
+
+        /*if (old_row.diff != undefined) {
+          this.drawSegment(this.hopAsymOffset, linkY, o.link.linkWidth, this.segmentHeight, 0.25 * Math.PI, linkStyle);
+        }*/
       }
       this.drawHopLabel(row.match.forward.hop, 0, hopY - this.hopSize);
     }
@@ -209,9 +213,9 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
 
         this.drawHop(this.hopRadius, hopY, o.hop.radius, hopStyle);
 
-        linkY = hopY - link_height;
+        //linkY = hopY - link_height;
         linkStyle = (row.linkStyle != undefined) ? row.linkStyle : o.link.style;
-        this.drawSegment(this.forwardLinkX, linkY, o.link.linkWidth, link_height, 0, linkStyle);
+        this.drawSegment(this.forwardLinkX, hopY, o.link.linkWidth, -link_height, 0, linkStyle);
 
         this.drawHopLabel(hop.hop, 0, hopY - this.hopSize);
 
@@ -263,6 +267,16 @@ TraceRoute.prototype.drawHop = function(x, y, r, options) {
 TraceRoute.prototype.drawSegment = function(x, y, w, h, rotation, options) {
   ctx = this.linkContext;
   ctx.save();
+  if (rotation) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.beginPath();
+    ctx.rect(0,0,4,100);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
   ctx.beginPath();
   ctx.rect(x,y,w,h);
   for (option in options) {

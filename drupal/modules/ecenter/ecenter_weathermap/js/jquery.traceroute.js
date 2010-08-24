@@ -39,7 +39,7 @@ $.fn.traceroute.defaults = {
     }
   },
   'hop' : {
-    'extraMargin' : 20,
+    'extraMargin' : 40,
     'radius' : 9,
     'style' : {
       'strokeStyle' : '#0000ff',
@@ -184,7 +184,7 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
         if (old_row.diff != undefined && last_diff_y) {
           segment = hopY - last_diff_y;
           segmentLength = Math.sqrt((segment * segment) + (o.hop.extraMargin * o.hop.extraMargin));
-          rotation = Math.tan((o.hop.extraMargin + this.forwardLinkX) / segment); 
+          rotation = Math.tan((o.hop.extraMargin + this.forwardLinkX + this.hopRadius) / segment); 
           this.drawSegment(this.reverseLinkX, hopY, -segmentLength, rotation, linkStyle, arrowStyle, 'reverse');
         }
 

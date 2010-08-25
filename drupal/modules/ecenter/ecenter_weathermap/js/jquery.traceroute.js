@@ -239,9 +239,11 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
         arrowStyle = (hop.arrowStyle != undefined) ? hop.arrowStyle : o.arrow.style;
 
         if (leastHops == 'reverse') {
+          lastHopY = last_match_y + (adjustedSegmentHeight * k);
           hopY = last_match_y + (adjustedSegmentHeight * (k + 1));
         }
         else {
+          lastHopY = last_match_y + (this.segmentHeight * k);
           hopY = last_match_y + (this.segmentHeight * (k + 1));
         }
         last_reverse_diff_y = hopY;
@@ -252,7 +254,7 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
         if (k == 0) {
           this.drawSegment(this.hopAsymOffset, hopY, this.hopRadius, last_match_y, linkStyle, arrowStyle);
         } else {
-          // @TODO connecting segments
+          this.drawSegment(this.hopAsymOffset, hopY, this.hopAsymOffset, lastHopY, linkStyle, arrowStyle);
         }
 
       }

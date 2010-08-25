@@ -26,21 +26,21 @@ $.fn.traceroute.defaults = {
   'tracerouteLength' : null,
   'drawArrows' : true,
   'link' : {
-    'linkLength' : 18,
+    'linkLength' : 15,
     'style' : {
-      'lineWidth' : 3,
-      'strokeStyle' : '#555555'
+      'lineWidth' : 4,
+      'strokeStyle' : '#aaaaaa'
     }
   },
   'arrow' : {
-    'arrowHeight' : 8,
+    'arrowHeight' : 6,
     'arrowWidth' : 8,
     'style' : {
-      'fillStyle' : '#000000'
+      'fillStyle' : '#555555'
     }
   },
   'hop' : {
-    'extraMargin' : 20,
+    'extraMargin' : 30,
     'radius' : 8,
     'style' : {
       'strokeStyle' : '#0000ff',
@@ -51,7 +51,7 @@ $.fn.traceroute.defaults = {
   'label' : {
     'width' : 120,
     'side_padding' : 6,
-    'top_padding' : 12,
+    'top_padding' : 9,
     'font_size' : '11px'
   }
 };
@@ -156,7 +156,8 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
   var old_row = false;
   var old_match_row = false;
   var last_match_y = 0;
-  var last_diff_y = 0;
+  var last_reverse_diff_y = 0;
+  var last_forward_diff_y = 0;
 
   for (var i = 0; i < this.data.length; i++) {
     var row = this.data[i];
@@ -172,24 +173,22 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
         linkStyle = (row.linkStyle != undefined) ? row.linkStyle : o.link.style;
         arrowStyle = (row.arrowStyle != undefined) ? row.arrowStyle : o.arrow.style;
 
-        // Always draw forward segment back to previous hop
-
         // If the old row was another matching hop, just draw regular lines back
         if (old_row.match != undefined) {
           this.drawSegment(this.forwardLinkX, last_match_y, this.forwardLinkX, hopY, linkStyle, arrowStyle);
           this.drawSegment(this.reverseLinkX, hopY, this.reverseLinkX, last_match_y, linkStyle, arrowStyle);
         }
 
-        // The old row had asymmetry, draw a segment back to the last asymmetrical hop
-        if (old_row.diff != undefined && last_diff_y) {
-          //this.drawSegment(this.forwardLinkX, last_diff_y, this.forwardLinkX, hopY, linkStyle, arrowStyle);
-          this.drawSegment(this.hopAsymOffset, last_diff_y, this.hopRadius, hopY, linkStyle, arrowStyle);
+        // The old row had asymmetry, but contributed no hops in the reverse direction (a skip)
+        if (old_row.diff != undefined && !old_row.diff.reverse.length) {
+          this.drawSegment(this.forwardLinkX, last_forward_diff_y, this.forwardLinkX, hopY, linkStyle, arrowStyle);
+          this.drawCurve(this.reverseLinkX, this.hopAsymOffset, last_match_y, hopY, linkStyle, arrowStyle);
         }
 
-        // The old row had asymmetry, but contributed no hops
-        if (old_row.diff != undefined && !last_diff_y) {
-          //this.drawSegment(this.forwardLinkX, last_diff_y, this.forwardLinkX, hopY, linkStyle, arrowStyle);
-          this.drawCurve(this.reverseLinkX, this.reverseLinkX + o.hop.extraMargin, last_match_y, hopY, linkStyle, arrowStyle);
+        // The old row contributed hops in the reverse direction 
+        if (old_row.diff != undefined && old_row.diff.reverse.length) {
+          this.drawSegment(this.forwardLinkX, last_forward_diff_y, this.forwardLinkX, hopY, linkStyle, arrowStyle);
+          this.drawSegment(this.hopRadius, hopY, this.hopAsymOffset, last_reverse_diff_y, linkStyle, arrowStyle);
         }
 
       }
@@ -220,6 +219,7 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
           lastHopY = last_match_y + (this.segmentHeight * j);
           hopY = last_match_y + (this.segmentHeight * (j + 1));
         }
+        last_forward_diff_y = hopY;
 
         this.drawHop(this.hopRadius, hopY, o.hop.radius, hopStyle);
 
@@ -244,7 +244,7 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
         else {
           hopY = last_match_y + (this.segmentHeight * (k + 1));
         }
-        last_diff_y = hopY;
+        last_reverse_diff_y = hopY;
 
         this.drawHop(this.hopAsymOffset, hopY, o.hop.radius, hopStyle);
         this.drawHopLabel(hop.hop, o.label.width + this.hopAsymOffset + this.hopSize, hopY - this.hopSize, 'right');
@@ -256,10 +256,6 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
         }
 
       }
-
-      /*if (!row.diff.reverse.length) {
-        last_diff_y = 0;
-      }*/
 
       // Set extra increment for next match
       if (j > 1 || k > 1) {
@@ -302,15 +298,13 @@ TraceRoute.prototype.drawCurve = function(x, xOffset, y1, y2, options, arrow_opt
   ctx.stroke();
   ctx.restore();
 
-  /*arrowY = (h / 2) + (o.arrow.arrowHeight / 2);
-  ctx.moveTo(-arrowX, arrowY);
-  ctx.lineTo(arrowX, arrowY);
-  ctx.lineTo(0, arrowY - o.arrow.arrowHeight);*/
-
   // Draw arrow on line
   ctx.save();
   arrowY = y1 + (o.arrow.arrowHeight / 2) + ((y2 - y1)/2);
-  offset = xOffset + (x/2.5);
+
+  // Simplified version of Bezier algorithm, with t=0.5 (because we're positioning halfway)
+  offset = (1.5*Math.pow((0.5), 2)*xOffset) + (1.5*Math.pow(0.5,2)*xOffset) + x;
+
   arrowStartX = offset - (o.arrow.arrowWidth / 2);
   arrowEndX = offset + (o.arrow.arrowWidth / 2);
   ctx.beginPath();
@@ -322,7 +316,6 @@ TraceRoute.prototype.drawCurve = function(x, xOffset, y1, y2, options, arrow_opt
   }
   ctx.fill();
   ctx.restore();
-
 
 }
 
@@ -351,94 +344,33 @@ TraceRoute.prototype.drawSegment = function(x1, y1, x2, y2, options, arrow_optio
     rotation = (2 * Math.PI) - Math.tan(deltaX/deltaY);
     ctx.rotate(rotation);
 
+    hypotenuse = Math.sqrt(Math.pow(deltaY, 2) + Math.pow(deltaX, 2));
+    ctx.beginPath();
+
     // "Forward" traceroutes
     if (deltaY > 0) {
-      ctx.beginPath();
-      arrowY = (deltaY / 2) - (o.arrow.arrowHeight / 2);
+      arrowY = (hypotenuse / 2) - (o.arrow.arrowHeight / 2);
       ctx.moveTo(-arrowX, arrowY);
       ctx.lineTo(arrowX, arrowY);
       ctx.lineTo(0, arrowY + o.arrow.arrowHeight);
       ctx.fill();
     }
     else {
-      ctx.beginPath();
-      arrowY = (deltaY / 2) + (o.arrow.arrowHeight / 2);
+      arrowY = (-hypotenuse / 2) + (o.arrow.arrowHeight / 2);
       ctx.moveTo(-arrowX, arrowY);
       ctx.lineTo(arrowX, arrowY);
       ctx.lineTo(0, arrowY - o.arrow.arrowHeight);
-      ctx.fill();
     }
 
-  }
-  // Draw arrow on line
-  /*ctx.beginPath();
-  arrowX = o.arrow.arrowWidth / 2;
-  
-  if (direction == 'reverse') {
-    arrowY = (h / 2) + (o.arrow.arrowHeight / 2);
-    ctx.moveTo(-arrowX, arrowY);
-    ctx.lineTo(arrowX, arrowY);
-    ctx.lineTo(0, arrowY - o.arrow.arrowHeight);
-  } else {
-    arrowY = (h / 2) - (o.arrow.arrowHeight / 2);
-    ctx.moveTo(-arrowX, arrowY);
-    ctx.lineTo(arrowX, arrowY);
-    ctx.lineTo(0, arrowY + o.arrow.arrowHeight);
-  }
+    for (option in arrow_options) {
+      ctx[option] = arrow_options[option];
+    }
+    ctx.fill();
 
-  for (option in arrow_options) {
-    ctx[option] = arrow_options[option];
   }
-  ctx.fill();*/
-
   ctx.restore();
   
 }
-
-
-
-/*TraceRoute.prototype.drawSegment = function(x, y, h, rotation, options, arrow_options, direction) {
-  ctx = this.linkContext;
-  o = this.options; // Needed for arrow drawing
-
-  ctx.save();
-
-  // Draw line
-  ctx.beginPath();
-  ctx.translate(x, y);
-  ctx.rotate(rotation);
-  ctx.lineTo(0, 0);
-  ctx.lineTo(0, h);
-  for (option in options) {
-    ctx[option] = options[option];
-  }
-  ctx.stroke();
-  ctx.fill();
-
-  // Draw arrow on line
-  ctx.beginPath();
-  arrowX = o.arrow.arrowWidth / 2;
-  
-  if (direction == 'reverse') {
-    arrowY = (h / 2) + (o.arrow.arrowHeight / 2);
-    ctx.moveTo(-arrowX, arrowY);
-    ctx.lineTo(arrowX, arrowY);
-    ctx.lineTo(0, arrowY - o.arrow.arrowHeight);
-  } else {
-    arrowY = (h / 2) - (o.arrow.arrowHeight / 2);
-    ctx.moveTo(-arrowX, arrowY);
-    ctx.lineTo(arrowX, arrowY);
-    ctx.lineTo(0, arrowY + o.arrow.arrowHeight);
-  }
-
-  for (option in arrow_options) {
-    ctx[option] = arrow_options[option];
-  }
-  ctx.fill();
-
-  ctx.restore();
-  
-}*/
 
 TraceRoute.prototype.drawHopLabel = function(hop, x, y, align) {
   var o = this.options;

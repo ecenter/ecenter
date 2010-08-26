@@ -1,18 +1,11 @@
+<p><?php print $permalink; ?></p>
+
 <div id="traceroute">
-TARGET!
-</div>
-
-
-<h2><?php print t('Link status'); ?></h2>
-
-<div class="link-summary">
-  <p><?php print $permalink; ?></p>
-  <p>Stub for link summary</p>
 </div>
 
 <?php /*
 <div class="traceroute-wrapper">
-  <?php foreach ($data as $direction => $traceroutes): ?>
+  <?php foreach (array('forward' => $data['forward'], 'reverse' => $data['reverse']) as $direction => $traceroutes): ?>
     <?php foreach ($traceroutes as $trace_id => $traceroute): ?>
     <div class="traceroute">
       <h2><?php print t('Trace: @id (@direction)', array('@id' => $trace_id, '@direction' => $direction)); ?></h2>

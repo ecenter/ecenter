@@ -14,7 +14,7 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
 function theme_ecenter_weathermap_render_data_snmp($data) {
   //jquerytools_add('tooltip');
 
-  $headers = array(t('Time'), t('Percent utilization'));
+  /*$headers = array(t('Time'), t('Percent utilization'));
   $table = array();
   $days = array();
   $min = 0;
@@ -173,9 +173,10 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
     $plot_options['plotOptions']['seriesDefaults']['color'] = variable_get('ecenter_weathermap_threshold_marginal_color', '#fe890c');
   }
 
-  jqplot_register_tablechart('.snmp-chart', $plot_options);
+  jqplot_register_tablechart('.snmp-chart', $plot_options);*/
   $title = '<h4>'. t('SNMP Utilization') .'</h4>';
-  return $title . theme('table', $headers, $table, array('class' => 'snmp-chart')) . theme('table', NULL, $aggregate_table);
+  return 'fixing problematic data stuff';
+  //return $title . theme('table', $headers, $table, array('class' => 'snmp-chart')) . theme('table', NULL, $aggregate_table);
 }
 
 /**

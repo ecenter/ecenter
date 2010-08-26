@@ -6,10 +6,10 @@ Drupal.behaviors.EcenterTraceroute = function(context) {
 // Add date hiding / showing widget
 Drupal.behaviors.EcenterDatehide = function(context) {
   $('#date-wrapper').datehide({
-    'startDateSelector' : '#edit-date-wrapper-start-date-datepicker-popup-0',
-    'startTimeSelector' : '#edit-date-wrapper-start-date-timeEntry-popup-1',
-    'endDateSelector' : '#edit-date-wrapper-end-date-datepicker-popup-0',
-    'endTimeSelector' : '#edit-date-wrapper-end-date-timeEntry-popup-1'
+    'startDateSelector' : '#edit-ip-select-date-wrapper-start-date-datepicker-popup-0',
+    'startTimeSelector' : '#edit-ip-select-date-wrapper-start-date-timeEntry-popup-1',
+    'endDateSelector' : '#edit-ip-select-date-wrapper-end-date-datepicker-popup-0',
+    'endTimeSelector' : '#edit-ip-select-date-wrapper-end-date-timeEntry-popup-1'
   });
 }
 

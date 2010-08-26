@@ -191,8 +191,12 @@ function ecenter_test_traceroute_render() {
   drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/behaviors.js');
 
   $client = ecenter_weathermap_get_client('message');
-  $result = $client->getData('198.49.208.3', '131.243.24.11', '2010-07-09 14:00:00', '2010-07-09 15:00:00');
-  $data = ecenter_weathermap_parse_response($result, '198.49.208.3', '131.243.24.11');
+  //result = $client->getData('198.49.208.3', '131.243.24.11', '2010-07-09 14:00:00', '2010-07-09 15:00:00');
+  //$data = ecenter_weathermap_parse_response($result, '198.49.208.3', '131.243.24.11');
+  //$result = $client->getData('192.12.15.26', '131.243.24.11', '2010-08-11 10:00:00', '2010-08-11 11:00:00');
+  //$data = ecenter_weathermap_parse_response($result, '192.12.15.26', '131.243.24.11');
+  $result = $client->getData('131.243.24.11', '198.49.208.3', '2010-08-11 10:00:00', '2010-08-11 11:00:00');
+  $data = ecenter_weathermap_parse_response($result, '131.243.24.11', '198.49.208.3');
 
   drupal_add_js(array('tracerouteData' => $data['diff']), 'setting');
   drupal_add_js(array('tracerouteMaxLength' => $data['traceroute_max']), 'setting');

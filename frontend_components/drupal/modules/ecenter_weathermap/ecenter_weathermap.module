@@ -8,6 +8,7 @@
 
 // Load vector class
 require_once(dirname(__FILE__) . '/Vector2d.class.php');
+
 // Load traceroute diff (to keep licensing issues clear)
 require_once(dirname(__FILE__) . '/ecenter_weathermap_traceroute_diff.inc');
 
@@ -129,7 +130,14 @@ function ecenter_weathermap_init() {
  * Primary selection form definition.
  */
 function _ecenter_weathermap_select_form() {
+  // Initialize time-related variables
   $inc = variable_get('ecenter_weathermap_time_increment', 5);
+  $now = time();
+  $default_end = variable_get('ecenter_weathermap_default_end', 1800);
+  $default_start = variable_get('ecenter_weathermap_default_end', 9000);
+  $tz = date_default_timezone_name(TRUE);
+  $end = date_make_date($now - $default_end, $tz, DATE_UNIX);
+  $start = date_make_date($now - $default_start, $tz, DATE_UNIX);
 
   // Set up quick select options
   $quickselect_options = array(
@@ -138,32 +146,36 @@ function _ecenter_weathermap_select_form() {
     'exactMatch' => TRUE,
   );
 
-  // Date select
-  $form['date_wrapper'] = array(
-    '#prefix' => '<div id="date-wrapper" class="clearfix">',
-    '#suffix' => '</div>',
-  );
-  $form['date_wrapper']['start_date'] = array(
-    '#type' => 'date_popup',
-    '#title' => t('Start date'),
-    '#date_increment' => $inc,
-  );
-  $form['date_wrapper']['end_date'] = array(
-    '#type' => 'date_popup',
-    '#title' => t('End date'),
-    '#date_increment' => $inc,
-  );
-  $form['date_wrapper']['description'] = array(
-    '#prefix' => '<div id="description-wrapper">',
-    '#suffix' => '</div>',
-    '#value' => t('Use care when setting the date. Date ranges longer than a few hours can lead to very slow queries.'),
-  );
-
   // Select source and destination IP -- convoluted because of AHAH
   $form['ip_select'] = array(
     '#prefix' => '<div id="ip-select-wrapper" class="clearfix">',
     '#suffix' => '</div>',
   );
+
+  // Date select
+  $form['ip_select']['date_wrapper'] = array(
+    '#prefix' => '<div id="date-wrapper" class="clearfix">',
+    '#suffix' => '</div>',
+  );
+  $form['ip_select']['date_wrapper']['start_date'] = array(
+    '#type' => 'date_popup',
+    '#title' => t('Start date'),
+    '#date_increment' => $inc,
+    '#default_value' => date_format($start, 'Y-m-d H:i'),
+  );
+  $form['ip_select']['date_wrapper']['end_date'] = array(
+    '#type' => 'date_popup',
+    '#title' => t('End date'),
+    '#date_increment' => $inc,
+    '#default_value' => date_format($end, 'Y-m-d H:i'),
+  );
+  $form['ip_select']['date_wrapper']['description'] = array(
+    '#prefix' => '<div id="description-wrapper">',
+    '#suffix' => '</div>',
+    '#value' => t('Use care when setting the date. Date ranges longer than a few hours can lead to very slow queries.'),
+  );
+
+  // Source IP
   $form['ip_select']['src_ip_wrapper'] = array(
     '#prefix' => '<div id="src-ip-wrapper">',
     '#suffix' => '</div>',
@@ -181,6 +193,8 @@ function _ecenter_weathermap_select_form() {
       'wrapper' => 'dst-ip-wrapper',
     ),
   );
+
+  // Destination IP
   $form['ip_select']['dst_ip_wrapper'] = array(
     '#prefix' => '<div id="dst-ip-wrapper">',
     '#suffix' => '</div>',
@@ -270,11 +284,11 @@ function ecenter_weathermap_select_form(&$form_state) {
     : $_REQUEST['dst_ip'];
 
   // Date values are HAIRY
-  if (is_array($form_state['storage']['date_wrapper']['start_date'])) {
-    $start_date = $form_state['storage']['date_wrapper']['start_date']['date'] .' '. $form_state['storage']['date_wrapper']['start_date']['time'];
+  if (is_array($form_state['storage']['ip_select']['date_wrapper']['start_date'])) {
+    $start_date = $form_state['storage']['ip_select']['date_wrapper']['start_date']['date'] .' '. $form_state['storage']['ip_select']['date_wrapper']['start_date']['time'];
   }
-  else if (!empty($form_state['storage']['date_wrapper']['start_date'])) {
-    $start_date = $form_state['storage']['date_wrapper']['start_date'];
+  else if (!empty($form_state['storage']['ip_select']['date_wrapper']['start_date'])) {
+    $start_date = $form_state['storage']['ip_select']['date_wrapper']['start_date'];
   }
   else if (!empty($_REQUEST['start'])) {
     $start_date = $_REQUEST['start'];
@@ -283,11 +297,11 @@ function ecenter_weathermap_select_form(&$form_state) {
     $start_date = format_date(time() - 4500, 'custom', 'Y-m-d H:i');
   }
 
-  if (is_array($form_state['storage']['date_wrapper']['end_date'])) {
-    $end_date = $form_state['storage']['date_wrapper']['end_date']['date'] .' '. $form_state['storage']['date_wrapper']['end_date']['time'];
+  if (is_array($form_state['storage']['ip_select']['date_wrapper']['end_date'])) {
+    $end_date = $form_state['storage']['ip_select']['date_wrapper']['end_date']['date'] .' '. $form_state['storage']['ip_select']['date_wrapper']['end_date']['time'];
   }
-  else if (!empty($form_state['storage']['date_wrapper']['end_date'])) {
-    $end_date = $form_state['storage']['date_wrapper']['end_date'];
+  else if (!empty($form_state['storage']['ip_select']['date_wrapper']['end_date'])) {
+    $end_date = $form_state['storage']['ip_select']['date_wrapper']['end_date'];
   }
   else if (!empty($_REQUEST['end'])) {
     $end_date = $_REQUEST['end'];
@@ -427,6 +441,9 @@ function ecenter_weathermap_get_data($src_ip, $dst_ip, $start, $end) {
     'start' => $start,
     'end' => $end,
   ));
+
+  dpm($start);
+  dpm($end);
 
   $caching = variable_get('ecenter_weathermap_cache_enabled', 0);
 
@@ -638,25 +655,12 @@ function ecenter_weathermap_openlayers_presets() {
         'zoomWheelEnabled' => 0,
       ),
       'openlayers_behavior_panzoombar' => array(),
-      /*'openlayers_plus_behavior_blockswitcher' => array(
-        'map' => array(
-          'enabled' => 1,
-          'open' => 1,
-          'overlay_style' => 'radio',
-          'position' => 'ne',
-        ),
-      ),*/
     ),
     'default_layer' => 'osm_mapnik',
     'layers' => array(
       'osm_mapnik' => 'osm_mapnik',
-      //'google_satellite' => 'google_satellite',
       'google_hybrid' => 'google_hybrid',
       'google_normal' => 'google_normal',
-      //'google_physical' => 'google_physical',
-      //'virtualearth_street' => 'virtualearth_street',
-      //'virtualearth_satellite' => 'virtualearth_satellite',
-      //'virtualearth_hybrid' => 'virtualearth_hybrid',
     ),
     'layer_styles' => array(
       'ecenter_map_test_display_openlayers_1' => 'ecenter_default',
@@ -769,74 +773,71 @@ function ecenter_weathermap_map_layers() {
     $data = ecenter_weathermap_get_data($src_ip, $dst_ip, $start_date_adjusted, $end_date_adjusted);
 
     if ($data) {
-      foreach (array('forward', 'reverse') as $direction) {
-        $flip = ($direction == 'forward') ? FALSE : TRUE;
-        foreach ($data[$direction] as $trace_id => $traceroute) {
-          // Initialize some counters, etc
-          $old_hop = NULL;
-          $count = count($traceroute);
-          $i = 0;
+      foreach ($data['forward'] as $trace_id => $traceroute) {
+        // Initialize some counters, etc
+        $old_hop = NULL;
+        $count = count($traceroute);
+        $i = 0;
 
-          // Create layer object
-          $layer = new stdClass();
-          $layer->api_version = 1;
-          $layer->name = 'ecenter_traceroute_'. $trace_id;
-          $layer->title = t('Traceroute @id (@direction)', array('@id' => $trace_id, '@direction' => $direction));
-          $layer->description = '';
-          $layer->data = array(
-            'layer_type' => 'openlayers_layer_type_raw',
-            'projection' => array('900913'),
-          );
+        // Create layer object
+        $layer = new stdClass();
+        $layer->api_version = 1;
+        $layer->name = 'ecenter_traceroute_'. $trace_id;
+        $layer->title = t('Traceroute @id', array('@id' => $trace_id));
+        $layer->description = '';
+        $layer->data = array(
+          'layer_type' => 'openlayers_layer_type_raw',
+          'projection' => array('900913'),
+        );
 
-          $features = array();
-          foreach ($traceroute as $hop_data) {
-            $hop = $hop_data['hop'];
-            if ($hop['longitude'] && $hop['latitude']) {
-              if ($old_hop && $i < $count) {
-                $curve = _ecenter_weathermap_curve($old_hop, $hop, $index, $flip);
-                $segments = array();
-                foreach ($curve as $segment) {
-                  $segments[] = "{$segment->x} {$segment->y}";
-                }
-
-                $line = implode(',', $segments);
-
-                $features[] = array(
-                  'wkt' => "LINESTRING($line)",
-                  'projection' => "4326",
-                  'attributes' => array(
-                    'name' => $old_hop['hub'] .' ('. $old_hop['hop_ip'] .') to '. $hop['hub'] .' ('. $hop['hop_ip'] .')',
-                    'description' => 'Stub for useful data',
-                  ),
-                  'style' => array(
-                    'strokeWidth' => 4,
-                    'strokeColor' => '#444444',
-                    'strokeOpacity' => '0.75',
-                  ),
-                );
+        $features = array();
+        foreach ($traceroute as $hop_data) {
+          $hop = $hop_data['hop'];
+          if ($hop['longitude'] && $hop['latitude']) {
+            if ($old_hop && $i < $count) {
+              $curve = _ecenter_weathermap_curve($old_hop, $hop, $index, $flip);
+              $segments = array();
+              foreach ($curve as $segment) {
+                $segments[] = "{$segment->x} {$segment->y}";
               }
+
+              $line = implode(',', $segments);
+
               $features[] = array(
-                'wkt' => "POINT({$hop['longitude']} {$hop['latitude']})",
+                'wkt' => "LINESTRING($line)",
                 'projection' => "4326",
                 'attributes' => array(
-                  'name' => $hop['hub'] .' ('. $hop['hop_ip'] .')',
-                  'description' => 'Hop ID: '. $hop['hop_id'],
+                  'name' => $old_hop['hub'] .' ('. $old_hop['hop_ip'] .') to '. $hop['hub'] .' ('. $hop['hop_ip'] .')',
+                  'description' => 'Stub for useful data',
                 ),
                 'style' => array(
-                  'pointRadius' => 5,
-                  'fillColor' => '#ffffff',
-                  'strokeColor' => '#0000aa',
-                  'strokeWidth' => 2,
-                  'fillOpacity' => 1,
+                  'strokeWidth' => 4,
+                  'strokeColor' => '#444444',
+                  'strokeOpacity' => '0.75',
                 ),
               );
             }
-            $old_hop = $hop;
-            $i += 1;
+            $features[] = array(
+              'wkt' => "POINT({$hop['longitude']} {$hop['latitude']})",
+              'projection' => "4326",
+              'attributes' => array(
+                'name' => $hop['hub'] .' ('. $hop['hop_ip'] .')',
+                'description' => 'Hop ID: '. $hop['hop_id'],
+              ),
+              'style' => array(
+                'pointRadius' => 5,
+                'fillColor' => '#ffffff',
+                'strokeColor' => '#0000aa',
+                'strokeWidth' => 2,
+                'fillOpacity' => 1,
+              ),
+            );
           }
-          $layer->data['features'] = $features;
-          $layers[$layer->name] = $layer;
+          $old_hop = $hop;
+          $i += 1;
         }
+        $layer->data['features'] = $features;
+        $layers[$layer->name] = $layer;
       }
     }
   }
@@ -880,20 +881,20 @@ function _ecenter_weathermap_get_bezier($p0, $c1, $c2, $p3, $steps) {
 
 /**
  * Get control points
- * 
+ *
  * Calculate control points for drawing Bezier curve between points
- * 
+ *
  * @param $from
  *  Source coordinates
  * @param $to
  *  Destination coordinates
  * @param $mag_scale
  *  A scaling factor for the control point vector
- * @param $angle 
+ * @param $angle
  *  The angle of control point vector relative to the line
  *  between source and destination.
  * @return
- *  Array of control points 
+ *  Array of control points
  */
 function _ecenter_weathermap_get_control_points($to, $from, $mag_scale, $angle, $flip = FALSE) {
   $dirX = $to->x - $from->x;
@@ -952,6 +953,7 @@ function ecenter_weathermap_openlayers_map_alter(&$map) {
  * Implementation of hook_openlayers_map_preprocess_alter().
  */
 function ecenter_weathermap_openlayers_map_preprocess_alter(&$map) {
+  // Add the new layers to the map array for our behavior to use
   if ($map['preset_name'] == 'ecenter_weathermap') {
     $client = ecenter_weathermap_get_client();
     if ($_REQUEST['ip_select']) {
@@ -972,15 +974,13 @@ function ecenter_weathermap_openlayers_map_preprocess_alter(&$map) {
 
       if ($data) {
         $start = TRUE;
-        foreach (array('forward', 'reverse') as $direction) {
-          foreach (array_keys($data[$direction]) as $trace_id) {
-            $map['layers']['ecenter_traceroute_'. $trace_id] = 'ecenter_traceroute_'. $trace_id;
-            $map['layer_switcher']['ecenter_traceroute_'. $trace_id] = 'ecenter_traceroute_'. $trace_id;
-            $map['layer_styles']['ecenter_traceroute_'. $trace_id] = 'ecenter_default';
-            if ($start) {
-              $map['layer_activated']['ecenter_traceroute_'. $trace_id] = 'ecenter_traceroute_'. $trace_id;
-              $start = FALSE;
-            }
+        foreach (array_keys($data['forward']) as $trace_id) {
+          $map['layers']['ecenter_traceroute_'. $trace_id] = 'ecenter_traceroute_'. $trace_id;
+          $map['layer_switcher']['ecenter_traceroute_'. $trace_id] = 'ecenter_traceroute_'. $trace_id;
+          $map['layer_styles']['ecenter_traceroute_'. $trace_id] = 'ecenter_default';
+          if ($start) {
+            $map['layer_activated']['ecenter_traceroute_'. $trace_id] = 'ecenter_traceroute_'. $trace_id;
+            $start = FALSE;
           }
         }
       }

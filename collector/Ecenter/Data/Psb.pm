@@ -155,11 +155,11 @@ after  'get_data' => sub   {
         }
         my $datum1 = find( $doc1->getDocumentElement, "./*[local-name()='datum']", 0 );
         if ( $datum1 ) {
-	    my @data_raw = ();
             foreach my $dt ( $datum1->get_nodelist ) {
-	         $self->logger->info("  Datum: ". $dt->toString);
+	         $self->logger->debug("  Datum: ". $dt->toString);
 	         my $processed =  $self->process_datum($dt); ## provide implementation in the subclass
-                 push  @data_raw,  $processed if $processed && ref $processed eq ref [] && @{$processed};
+	         $self->logger->debug("  Datum Parsed ", sub{ Dumper  $processed}); 
+                 push  @data_raw,  $processed if $processed &&  @{$processed};
             }
 	  
 	    

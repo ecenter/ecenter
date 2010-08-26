@@ -74,6 +74,9 @@ use FindBin;
 use Log::Log4perl qw(:easy);
 use Ecenter::Utils;
 use Net::Netmask;
+use File::Slurp;
+
+#use Parallel::ForkControl;
 use Parallel::ForkManager;
 
 use lib  "$FindBin::Bin";
@@ -88,6 +91,7 @@ use perfSONAR_PS::Client::gLS;
 use perfSONAR_PS::Error_compat qw/:try/;
 use perfSONAR_PS::Error;
 use perfSONAR_PS::Client::Echo;
+
 
 
 # Maximum working threads
@@ -120,34 +124,47 @@ our $QUERY_EVENTTYPE     = 'http://ogf.org/ns/nmwg/tools/org/perfsonar/service/l
 
 
 my %OPTIONS;
-my @string_option_keys = qw/key password user db procs/;
+my @string_option_keys = qw/key password user db procs hls_file/;
 GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
             qw/debug help/,
 ) or pod2usage(1);
+my $output_level = $OPTIONS{debug} || $OPTIONS{d}?$DEBUG:$INFO;
 
-$OPTIONS{debug}?Log::Log4perl->easy_init($DEBUG):Log::Log4perl->easy_init($INFO);
+my %logger_opts = (
+    level  => $output_level,
+    layout => '%d (%P) %p> %F{1}:%L %M - %m%n'
+);
+Log::Log4perl->easy_init(\%logger_opts);
 my  $logger = Log::Log4perl->get_logger(__PACKAGE__);
 
 pod2usage(-verbose => 2) if ( $OPTIONS{help} || ($OPTIONS{procs} && $OPTIONS{procs} !~ /^\d\d?$/));
 
 $MAX_THREADS = $OPTIONS{procs} if $OPTIONS{procs} > 0 && $OPTIONS{procs}  < 40;
-
+my @hlses = ();
+if($OPTIONS{hls_file} && -e $OPTIONS{hls_file}) {
+  @hlses = read_file($OPTIONS{hls_file});
+}
 $OPTIONS{db} ||= 'ecenter_data';
 $OPTIONS{user} ||= 'ecenter';
 unless($OPTIONS{password}) {
     $OPTIONS{password} = `cat /etc/my_ecenter`;
     chomp $OPTIONS{password};
 } 
-my $parser = XML::LibXML->new();
-my $hints  = "http://www.perfsonar.net/gls.root.hints";
-my $pattern = '';
+my $parser    = XML::LibXML->new();
+my $hints     = "http://www.perfsonar.net/gls.root.hints";
+my $pattern   = '';
 my %hls_cache = ();
-my $gls = perfSONAR_PS::Client::gLS->new( { url => $hints } );
 $logger->info(" MAX THREADS = $MAX_THREADS ");
 
-$logger->logdie("roots not found") unless ( $#{ $gls->{ROOTS} } > -1 );
- 
+
+#my $ls_forker = new Parallel::ForkControl( 
+#    				MaxKids 		=> $MAX_THREADS,
+#    			   	MinKids 		=> 3,
+#				Debug => 4,
+#   				Name			=> 'LS Forker',
+#   				Code			=> \&remote_ls);	  
+
 my $pm  =   new Parallel::ForkManager($MAX_THREADS);
 
 # 
@@ -175,91 +192,98 @@ if($OPTIONS{key}) {
         return \$metadata|;
 }
  
-for my $root ( @{ $gls->{ROOTS} } ) {  
-    $logger->info("Root:\t$root");
-    my $result = $gls->getLSQueryRaw( { ls => $root, xquery =>   $hls_query } );
-    
-    if ( exists $result->{eventType} && $result->{eventType} !~ m/^error/ ) {
-        $logger->debug("\tEvenType:\t$result->{eventType}");
-        my $doc = $parser->parse_string( $result->{response} ) if exists $result->{response};
-        my $service = find( $doc->getDocumentElement, ".//*[local-name()='service']", 0 );
-        foreach my $s ( $service->get_nodelist ) {  
-	  ### run query/echo/ping async	   
-	    
-	  
-	    my $pid = $pm->start and next;
-		my $now_str = strftime('%Y-%m-%d %H:%M:%S', localtime());
-		$logger->debug("Connecting... 'DBI:mysql:$OPTIONS{db}");
-		my $dbh =  Ecenter::Schema->connect('DBI:mysql:' . $OPTIONS{db},  $OPTIONS{user}, $OPTIONS{password}, {RaiseError => 1, PrintError => 1});
-		$dbh->storage->debug(1) if $OPTIONS{debug};
-		
- 		my $keyword_str = $pattern;
-        	my $accessPoint = extract( find( $s, ".//*[local-name()='accessPoint']", 1 ), 0 );
-		my $serviceName = extract( find( $s, ".//*[local-name()='serviceName']", 1 ), 0 );
-        	my $serviceType = extract( find( $s, ".//*[local-name()='serviceType']", 1 ), 0 );
-        	my $serviceDescription = extract( find( $s, ".//*[local-name()='serviceDescription']", 1 ), 0 );
-		$pm->finish if exists $hls_cache{$accessPoint};
-	        $pm->finish if !$accessPoint || $serviceType =~ /^ping$/i ||  $accessPoint =~ /^tcp\:/;
-		$pm->finish unless $accessPoint =~ /\.gov|\.net/;
-        	try {		  
-                    $logger->debug("\t\thLS:\t$accessPoint");
-                    my ($ip_addr,$ip_name) = get_ip_name($accessPoint); 	       
-                    if($ip_addr) {
-		    	my $echo_service = perfSONAR_PS::Client::Echo->new( $accessPoint );
-                    	my ( $status, $res ) = $echo_service->ping();
-			 
-			$hls_cache{$accessPoint}++;
-		    	update_create_fixed($dbh->resultset('Node'),
-		    					      {ip_addr =>  \"=inet6_pton('$ip_addr')"},
-		    					      {ip_addr => \"inet6_pton('$ip_addr')",
-		    					       nodename => $ip_name,
-		    					       ip_noted => $ip_addr}); 
-		    	#$logger->info(" ip_addr " , sub {Dumper($ip_addr$ip_addr_obj )});
-		    	my $ip_addr_obj =  $dbh->resultset('Node')->find({ip_noted => $ip_addr});
-		    	my $hls = $dbh->resultset('Service')->update_or_create({ name => $serviceName,
-		    								 url   =>   $accessPoint,
-		    								 ip_addr =>  $ip_addr_obj->ip_addr,
-		    								 comments => $serviceDescription,
-		    								 is_alive => (!$status?'1':'0'), 
-		    								 updated =>  \"NOW()",
-										},
-		    							  { key => 'service_url'}
-		    							 );
-			$dbh->resultset('Eventtype')->update_or_create( { eventtype =>    $result->{eventType},
-								          service =>  $hls->service,
-									  service_type => 'hLS',
-								        },
-								        { key => 'eventtype_service_type' }
-							              );
-		    	unless($status)  {
-		    	    get_fromHLS($accessPoint, $now_str, $hls, $dbh);
-		    	}
-                     }  else  {
-                    	$logger->debug("TID= $$ \t\t\tReject:\t$accessPoint)");
-                     }
-		} 
-		catch perfSONAR_PS::Error   with {
-		    $logger->error("TID=proc=$$ ... " .  shift);
-		} catch perfSONAR_PS::Error_compat with {
-                    $logger->error("TID=");
-        	}
-        	otherwise {
-                    my $ex  = shift; 
-                    $logger->error("TID= $$ Unhandled exception or crash: $ex");
-        	}
-		finally {
-	            $dbh->storage->disconnect if $dbh;
-		};
-	    $pm->finish;
-	}
-    }
-    else {
-       $logger->debug("\tResult:\t" , sub{Dumper($result)});
-   }
-}
-$pm->wait_all_children;
+unless(@hlses) {
+    my $gls       = perfSONAR_PS::Client::gLS->new( { url => $hints } );
+    $logger->logdie("roots not found") unless ( $#{ $gls->{ROOTS} } > -1 );
+    for my $root ( @{ $gls->{ROOTS} } ) {  
+	$logger->info("Root:\t$root");
+	my $result = $gls->getLSQueryRaw( { ls => $root, xquery =>   $hls_query } );
 
- 
+	if ( exists $result->{eventType} && $result->{eventType} !~ m/^error/ ) {
+            $logger->debug("\tEvenType:\t$result->{eventType}");
+            my $doc = $parser->parse_string( $result->{response} ) if exists $result->{response};
+            my $service = find( $doc->getDocumentElement, ".//*[local-name()='service']", 0 );
+	    my @nodes = $service->get_nodelist;
+	    $logger->debug("LSS COUNT:   " . scalar @nodes);
+	    map{ my $hls = extract( find( $_, ".//*[local-name()='accessPoint']", 1 ), 0 ); $hls_cache{$hls}++ if $hls && $hls =~ /http\:/}  @nodes;
+         } 
+    }
+    @hlses = keys %hls_cache;
+}	
+foreach my $hls (@hlses) {
+    $logger->debug("LSS INDEX BEFORE:	$hls"); 
+    $logger->debug("For... $hls");  
+    #if($hls !~ /(anl|ornl|lbl|lbnl|jlab|bnl)\.gov|es\.net|\w+.edu|dmz\.net|[\w\-]+\.org/) { 
+    #	  next;
+    #}	   ### run query/echo/ping async
+    $logger->info("LSS INDEX PASSED: $hls");
+    my $pid = $pm->start and next; 
+    chomp $hls;
+    remote_ls( $hls, 'hLS service', 'hLS', 'http://ggf.org/ns/nmwg/tools/org/perfsonar/service/1.0/');
+    $pm->finish;
+}
+
+#$ls_forker->cleanup;
+$pm->wait_all_children;
+exit(0);
+
+sub remote_ls {
+    my ($accessPoint, $serviceName, $serviceType,   $eventtype ) = @_;
+    my $now_str = strftime('%Y-%m-%d %H:%M:%S', localtime());
+    my $dbh =  Ecenter::Schema->connect('DBI:mysql:' . $OPTIONS{db},  $OPTIONS{user}, $OPTIONS{password}, {RaiseError => 1, PrintError => 1});
+    $dbh->storage->debug(1) if $OPTIONS{debug};
+    try {	      
+    	$logger->debug("\t\thLS:\t$accessPoint");
+    	my ($ip_addr,$ip_name) = get_ip_name($accessPoint);		   
+    	if($ip_addr) {
+    	    my $echo_service = perfSONAR_PS::Client::Echo->new( $accessPoint );
+    	    my ( $status, $res ) = $echo_service->ping();
+    	     
+    	    $hls_cache{$accessPoint}++;
+    	    update_create_fixed($dbh->resultset('Node'),
+    						  {ip_addr =>  \"=inet6_pton('$ip_addr')"},
+    						  {ip_addr => \"inet6_pton('$ip_addr')",
+    						   nodename => $ip_name,
+    						   ip_noted => $ip_addr}); 
+    	    #$logger->info(" ip_addr " , sub {Dumper($ip_addr$ip_addr_obj )});
+    	    my $ip_addr_obj =  $dbh->resultset('Node')->find({ip_noted => $ip_addr});
+    	    my $hls = $dbh->resultset('Service')->update_or_create({ name => $serviceName,
+    								     url   =>	$accessPoint,
+    								     ip_addr =>  $ip_addr_obj->ip_addr,
+    								     comments => 'hLS service',
+    								     is_alive => (!$status?'1':'0'), 
+    								     updated =>  \"NOW()",
+    								    },
+    							      { key => 'service_url'}
+    							     );
+    	    $dbh->resultset('Eventtype')->update_or_create( { eventtype =>    $eventtype,
+    							      service =>  $hls->service,
+    							      service_type => 'hLS',
+    							    },
+    							    { key => 'eventtype_service_type' }
+    							  );
+    	    unless($status)  {
+    		get_fromHLS($accessPoint, $now_str, $hls, $dbh);
+	        $logger->error("Ping failed for -----  $accessPoint ");
+    	    }
+    	 }  else  {
+    	    $logger->error(" \t\t\tReject:\t$accessPoint)");
+    	 }
+    } 
+    catch perfSONAR_PS::Error	with {
+    	$logger->error("TID=proc=$$ ... " .  shift);
+    } catch perfSONAR_PS::Error_compat with {
+    	$logger->error("TID=proc=$$ ... " .  shift);
+    }
+    otherwise {
+    	my $ex  = shift; 
+    	$logger->error("TID= $$ Unhandled exception or crash: $ex");
+    }
+    
+    $dbh->storage->disconnect if $dbh;
+    return;
+}
+
  
 =head2 ls_store_request
 
@@ -343,8 +367,8 @@ sub get_fromHLS {
 	        $param_exist{$param} ||=   extract( find( $m1, "./*[local-name()='subject']//*[local-name()='$try']", 1 ), 0 );
 	    }
         }
-	 unless($param_exist{url}) {
-	    $logger->error("TID= $$  !!!! URL is missing in MD ---: "  . $m1->toString );
+	 unless($param_exist{url} && $param_exist{url} =~ /^http/) {
+	    $logger->error("TID= $$  !!!! URL is missing in MD or its not http --- url=$param_exist{url} ");
 	    next;
 	 }
 	$param_exist{is_alive} = 1;
@@ -369,9 +393,9 @@ sub get_fromHLS {
 						       ip_noted => $ip_noted,
 						      }); 
 						      
-	  my   $ip_addr = $dbh->resultset('Node')->find({ip_noted => $ip_noted  });
-	 $param_exist{ip_addr}	 =  $ip_addr->ip_addr;						   
-	 my $service_obj =$dbh->resultset('Service')->find_or_create( \%param_exist,{ key => 'service_url' } ); 
+	my   $ip_addr = $dbh->resultset('Node')->find({ip_noted => $ip_noted  });
+	$param_exist{ip_addr}	 =  $ip_addr->ip_addr;						   
+	my $service_obj =$dbh->resultset('Service')->find_or_create( \%param_exist,{ key => 'service_url' } ); 
        ## my $service_obj =  $dbh->resultset('Service')->find({url => $param_exist{url}});
 	$logger->debug("TID= $$  Found for url $param_exist{url} service=" .$service_obj->service);
 	
@@ -495,7 +519,8 @@ sub get_fromHLS {
 							      dst_ip	    =>   ($ip_addr_rs{dst} && ref $ip_addr_rs{dst}?$ip_addr_rs{dst}->ip_addr:0),
 							      subject	 => ($subj_md?$subj_md->toString:''),
 							      parameters => ($param_md?$param_md->toString:''),
-							     }
+							     },
+							      {key => 'md_ips_type'}
 	                                                  ) ;
 	        };
 	        if($EVAL_ERROR) {

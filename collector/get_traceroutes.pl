@@ -103,8 +103,13 @@ GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
             qw/debug help/,
 ) or pod2usage(1);
+my $output_level =  $OPTIONS{debug} || $OPTIONS{d}?$DEBUG:$INFO;
 
-$OPTIONS{debug}?Log::Log4perl->easy_init($DEBUG):Log::Log4perl->easy_init($INFO);
+my %logger_opts = (
+    level  => $output_level,
+    layout => '%d (%P) %p> %F{1}:%L %M - %m%n'
+);
+Log::Log4perl->easy_init(\%logger_opts);
 our  $logger = Log::Log4perl->get_logger(__PACKAGE__);
 
 pod2usage(-verbose => 2) if ( $OPTIONS{help}    || ($OPTIONS{procs} && $OPTIONS{procs} !~ /^\d\d?$/));
@@ -148,86 +153,97 @@ while( my $service = $services->next) {
 	my $mech = WWW::Mechanize->new(   agent  => 'Mozilla/5.0 (compatible; MSIE 7.0; Windows 2000; .NET CLR 1.1.4322)',
               stack_depth => 1,
               env_proxy   => 1,
+	      autocheck => 1,
               cookie_jar  => {},
-              autocheck => 1, 
 	      timeout => 10,
 	      );
 
 	my $result;
-	eval {
-            $result = $mech->get("http://$nodename/$TRACE_CMD");
-	};
-	if($EVAL_ERROR) {
-            $logger->error(" Failed to get URL:  $nodename " );
-	    $pm->finish;
+	my $trace_cmd_found = $TRACE_CMD;
+	foreach my $url ("$TRACE_CMD"  , "toolkit/$TRACE_CMD") {
+	    eval {
+	        $result = $mech->get("http://$nodename/$url");
+	    };
+	    if($EVAL_ERROR) {
+	       $logger->error(" Failed to get URL:  http://$nodename/$TRACE_CMD "  . $mech->status);
+	    } elsif($mech->success) {
+	       $trace_cmd_found = $url;
+	       last;
+	    }
 	}
-	if($result->is_success) {
-            my $dbh_node =  Ecenter::Schema->connect('DBI:mysql:' . $OPTIONS{db}, 
-	    			$OPTIONS{user}, $OPTIONS{password}, 
-	    			{RaiseError => 1, PrintError => 1});
-	    $dbh_node->storage->debug(1) if $OPTIONS{debug};	
-            my $nodes = $dbh_node->resultset('Node')->search({  '' => \$where});  
+	$pm->finish unless $mech->success;
+	 
+        my $dbh_node =  Ecenter::Schema->connect('DBI:mysql:' . $OPTIONS{db}, 
+	 		     $OPTIONS{user}, $OPTIONS{password}, 
+	 		     {RaiseError => 1, PrintError => 1});
+	$dbh_node->storage->debug(1) if $OPTIONS{debug};    
+        my $nodes = $dbh_node->resultset('Node')->search({  '' => \$where});  
 
-            while( my $node = $nodes->next) {
-		my $metaid = $dbh_node->resultset('Metadata')->update_or_create({  
-	                                                        	 subject => md5_hex( $service_ip . $node->ip_noted), 
-	    								 eventtype_id	  =>   $eventtype_obj->ref_id,
-	    								 src_ip	  => $service->node->ip_addr,
-	    								 dst_ip	  => $node->ip_addr,
-	    						     }
-	    						  );
-		my $node_ip = $node->ip_noted;
-		my $now_sec = floor(Time::HiRes::time() * 1000);
-        	$logger->debug(" TRying: http://$nodename/$TRACE_CMD -> $node_ip");
-        	my $result2 = $mech->get("http://$nodename/$TRACE_CMD?choice=yes&target=$node_ip");
-		if($result2->is_success) {         
-            	    my $tree = HTML::TreeBuilder->new_from_content($result2->content());
-            	    my ($pre) = $tree->findnodes('//pre');
-	    	    if($pre) {
-	    		my $trace = parse_trace($pre->as_text);
-	    		my $trace_data = $dbh->resultset('Traceroute_data')->update_or_create({ metaid =>  $metaid->metaid,
-	    										   number_hops  =>   $trace->{max_hops},
-	    										   updated =>   $now_sec,
-	    										},
-	    										{key => 'updated_metaid'}
-	    										);
-	    		 #$logger->debug(" HOPS: ", sub {Dumper ($trace->{hops})});
-	    		foreach my $hop (sort {$a <=> $b} keys %{$trace->{hops}}) {
-	    		    if($trace->{hops}{$hop}{ip}) {
-	    			update_create_fixed($dbh_node->resultset('Node'),
-	    						      { ip_addr =>  \"=inet6_pton('$trace->{hops}{$hop}{ip}')"},
-	    						      { ip_addr => \"inet6_pton('$trace->{hops}{$hop}{ip}')",
-	    							nodename =>  $trace->{hops}{$hop}{host},
-	    							ip_noted => $trace->{hops}{$hop}{ip} 
-	    						      }
-	    					    ); 
-	    			#$logger->info(" ip_addr " , sub {Dumper($ip_addr$ip_addr_obj )});
-	    			my $hop_addr_obj =  $dbh->resultset('Node')->find({ip_noted =>  $trace->{hops}{$hop}{ip}});
-	    			my $hop = $dbh->resultset('Hop')->update_or_create({  
-	    									     trace_id => $trace_data->trace_id,
-	    									     hop_ip => $hop_addr_obj->ip_addr,
-	    									     hop_num => $hop,
-	    									     hop_delay => $trace->{hops}{$hop}{delay}
-	    									} 
-	    								 );
-	    		    }
-	    		}
-	    	    } else {
-	    		$logger->debug("NOT FOUND:: " . $tree->as_HTML);
-	    	    }
-	    	    $tree->delete if $tree;
-		} else {
-  	    	    $logger->error(" Failed to run  URL:  $nodename -> " . $node->ip_noted  . " ERROR: " . $result->status_line );
-		} 
-            } 
-	    $dbh_node->storage->disconnect if $dbh_node;   
-        } else {
-            $logger->error(" Failed to get URL:  $nodename- " . $result->status_line );
-        }
-    $pm->finish;
+        while( my $node = $nodes->next) {
+	    my $metaid = $dbh_node->resultset('Metadata')->update_or_create({  
+	 							      subject => md5_hex( $service_ip . $node->ip_noted), 
+	 							      eventtype_id     =>   $eventtype_obj->ref_id,
+	 							      src_ip   => $service->node->ip_addr,
+	 							      dst_ip   => $node->ip_addr,
+	 						  },
+							  {key => 'md_ips_type'}
+	 					       );
+	    my $node_ip = $node->ip_noted;
+	    my $now_sec = floor(Time::HiRes::time() * 1000);
+            $logger->debug(" TRying: http://$nodename/$trace_cmd_found -> $node_ip"); 
+	    my $result2;
+	    eval {
+                $result2 = $mech->get("http://$nodename/$trace_cmd_found?choice=yes&target=$node_ip");
+             };
+	     if($EVAL_ERROR) {
+	        $logger->error("$EVAL_ERROR :: Failed to get URL:  http://$nodename/$trace_cmd_found  "  . $mech->status);
+		next;
+	     }
+	     if($mech->success) {	   
+         	 my $tree = HTML::TreeBuilder->new_from_content($result2->content());
+         	 my ($pre) = $tree->findnodes('//pre');
+	 	 if($pre) {
+	 	     my $trace = parse_trace($pre->as_text);
+	 	     my $trace_data = $dbh->resultset('Traceroute_data')->update_or_create({ metaid =>  $metaid->metaid,
+	 										number_hops  =>   $trace->{max_hops},
+	 										updated =>   $now_sec,
+	 									     },
+	 									     {key => 'updated_metaid'}
+	 									     );
+	 	      #$logger->debug(" HOPS: ", sub {Dumper ($trace->{hops})});
+	 	     foreach my $hop (sort {$a <=> $b} keys %{$trace->{hops}}) {
+	 		 if($trace->{hops}{$hop}{ip}) {
+	 		     update_create_fixed($dbh_node->resultset('Node'),
+	 						   { ip_addr =>  \"=inet6_pton('$trace->{hops}{$hop}{ip}')"},
+	 						   { ip_addr => \"inet6_pton('$trace->{hops}{$hop}{ip}')",
+	 						     nodename =>  $trace->{hops}{$hop}{host},
+	 						     ip_noted => $trace->{hops}{$hop}{ip} 
+	 						   }
+	 					 ); 
+	 		     #$logger->info(" ip_addr " , sub {Dumper($ip_addr$ip_addr_obj )});
+	 		     my $hop_addr_obj =  $dbh->resultset('Node')->find({ip_noted =>  $trace->{hops}{$hop}{ip}});
+	 		     my $hop = $dbh->resultset('Hop')->update_or_create({  
+	 									  trace_id => $trace_data->trace_id,
+	 									  hop_ip => $hop_addr_obj->ip_addr,
+	 									  hop_num => $hop,
+	 									  hop_delay => $trace->{hops}{$hop}{delay}
+	 								     } 
+	 							      );
+	 		 }
+	 	     }
+	 	 } else {
+	 	     $logger->debug("NOT FOUND:: " . $tree->as_HTML);
+	 	 }
+	 	 $tree->delete if $tree;
+	     } else {
+  	 	 $logger->error(" Failed to run  URL:  $nodename -> " . $node->ip_noted  . " ERROR: " . $mech->status);
+	     } 
+         } 
+	 $dbh_node->storage->disconnect if $dbh_node;	
+         $pm->finish;
 }	
 $pm->wait_all_children;
-
+exit(0);
  
 
 

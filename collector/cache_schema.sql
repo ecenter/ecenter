@@ -36,7 +36,7 @@ description varchar(100)   NOT NULL,
 capacity   bigint  unsigned   NOT NULL,   
 hub varchar(32) NOT NULL,
 PRIMARY KEY  (l2_urn ),
-FOREIGN KEY ( hub ) REFERENCES hub ( hub )
+FOREIGN KEY ( hub ) REFERENCES hub ( hub )  on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps topology layer2 info';
 --
 --  topology layer2 linkage
@@ -48,8 +48,8 @@ l2_link  bigint  unsigned AUTO_INCREMENT  NOT NULL,
 l2_src_urn varchar(512)   NOT NULL,   
 l2_dst_urn varchar(512)   NOT NULL,   
 PRIMARY KEY  (l2_link),
-FOREIGN KEY ( l2_src_urn ) REFERENCES l2_port ( l2_urn),
-FOREIGN KEY ( l2_dst_urn ) REFERENCES l2_port ( l2_urn )
+FOREIGN KEY ( l2_src_urn ) REFERENCES l2_port ( l2_urn)  on DELETE CASCADE ON UPDATE CASCADE,
+FOREIGN KEY ( l2_dst_urn ) REFERENCES l2_port ( l2_urn )  on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps topology layer2  links';
 --
 --   nodes - all of them
@@ -84,8 +84,8 @@ l2_l3_map  bigint  unsigned AUTO_INCREMENT  NOT NULL,
 ip_addr   varbinary(16)  NOT NULL,
 l2_urn    varchar(512)    NOT NULL,  
 PRIMARY KEY  (l2_l3_map),
-FOREIGN KEY (l2_urn) REFERENCES l2_port ( l2_urn ),
-FOREIGN KEY ( ip_addr ) REFERENCES node ( ip_addr )
+FOREIGN KEY (l2_urn) REFERENCES l2_port ( l2_urn )  on DELETE CASCADE ON UPDATE CASCADE,
+FOREIGN KEY ( ip_addr ) REFERENCES node ( ip_addr )  on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps topology layer2-layer3 mapping';
 
 --
@@ -163,7 +163,8 @@ subject varchar(1023) NOT NULL  DEFAULT '',
 parameters varchar(1023) NULL,
 PRIMARY KEY  (metaid),
 KEY  (metaid),
-FOREIGN KEY (src_ip) REFERENCES  node (ip_addr), 
+UNIQUE KEY md_ips_type (src_ip, dst_ip, eventtype_id), 
+FOREIGN KEY (src_ip) REFERENCES  node (ip_addr)  on DELETE CASCADE ON UPDATE CASCADE, 
 FOREIGN KEY (eventtype_id) REFERENCES  eventtype(ref_id)  on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB CHARSET=latin1 COMMENT='ps-ps metaid provided by each service-eventtype';
 --
@@ -291,6 +292,6 @@ hop_ip  varbinary(16) NOT NULL,
 hop_num tinyint(3) NOT NULL DEFAULT '1', 
 hop_delay  float NOT NULL DEFAULT '0.0', 
 PRIMARY KEY (hop_id), 
-FOREIGN KEY (trace_id) REFERENCES traceroute_data(trace_id),
-FOREIGN KEY (hop_ip) REFERENCES  node(ip_addr)
+FOREIGN KEY (trace_id) REFERENCES traceroute_data(trace_id)  on DELETE CASCADE ON UPDATE CASCADE,
+FOREIGN KEY (hop_ip) REFERENCES  node(ip_addr)  on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps traceroute hops';

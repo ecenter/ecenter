@@ -121,8 +121,13 @@ GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
             qw/debug help  snmp no_topo/,
 ) or pod2usage(1);
+my $output_level =  $OPTIONS{debug} || $OPTIONS{d}?$DEBUG:$INFO;
 
-$OPTIONS{debug}?Log::Log4perl->easy_init($DEBUG):Log::Log4perl->easy_init($INFO);
+my %logger_opts = (
+    level  => $output_level,
+    layout => '%d (%P) %p> %F{1}:%L %M - %m%n'
+);
+Log::Log4perl->easy_init(\%logger_opts);
 my  $logger = Log::Log4perl->get_logger(__PACKAGE__);
 
 pod2usage(-verbose => 2) if ( $OPTIONS{help} || ($OPTIONS{procs} && $OPTIONS{procs} !~ /^\d\d?$/));
@@ -173,7 +178,7 @@ foreach my $service ( qw/ps3/ ) {
     };
 }
 $pm->wait_all_children;
-
+exit(0);
  
 
 =head2  parse_topo
@@ -311,9 +316,9 @@ sub get_snmp {
     	}
     	while( my    $l3 = $ifAddresses->next) {
     	    $logger->debug("=====---------------===== \n ifAddress::" .$l3->node->ip_noted . " URN:" . $port->l2_urn );
-	    foreach my $direction (qw/in out/) {
+	 
     		my $pid = $pm->start and next;
-    		$snmp_ma->get_data({ direction =>  $direction, 
+    		$snmp_ma->get_data({ direction => 'out',
     				     ifAddress => $l3->node->ip_noted, 
     				     start =>  DateTime->from_epoch( epoch => (time() - $PAST_SECS )),
     				     end => DateTime->now()   });
@@ -321,8 +326,9 @@ sub get_snmp {
     		my $meta = $dbh->resultset('Metadata')->update_or_create({ 
     							 eventtype_id => $eventtype_id ,
     							 src_ip       => $l3->ip_addr,
-    							 direction    => $direction 
-    						      }
+    							 dst_ip => '0',
+    						      },
+						      {key => 'md_ips_type'}
     						      );
     		$pm->finish unless $snmp_ma->data && @{$snmp_ma->data};
     		foreach my $data (@{ $snmp_ma->data}) { 
@@ -333,7 +339,7 @@ sub get_snmp {
     								 { key => 'meta_time'});
     		} 
     		$pm->finish;	 
-    	    }				      
+    	     			      
     	}
     }
       

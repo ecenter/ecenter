@@ -32,7 +32,13 @@ my $REG_DATE = qr/^\d{4}\-\d{2}\-\d{2}\s+\d{2}\:\d{2}\:\d{2}$/;
 #set content_type =>  'application/json';
 prepare_serializer_for_format;
 
-config->{debug}?Log::Log4perl->easy_init($DEBUG):Log::Log4perl->easy_init($INFO);
+my $output_level = config->{debug} && config->{debug}> 0 ?$DEBUG:$INFO;
+
+my %logger_opts = (
+    level  => $output_level,
+    layout => '%d (%P) %p> %F{1}:%L %M - %m%n'
+);
+Log::Log4perl->easy_init(\%logger_opts);
 my  $logger = Log::Log4perl->get_logger(__PACKAGE__);
  
 =head1 NAME
@@ -198,11 +204,11 @@ sub process_data {
 	    $params{bwctl}{start} = $median - 6*3600; # 6 hours
 	    $params{bwctl}{end} = $median + 6*3600; # 6 hours
     }     
-    my $dst_cond = $params{dst_ip}?"inet6_mask(md.dst_ip, 16)= inet6_mask(inet6_pton('$params{dst_ip}'), 16)":"md.dst_ip = '0'";
+    my $dst_cond = $params{dst_ip}?"inet6_mask(md.dst_ip, n_dst.netmask)= inet6_mask(inet6_pton('$params{dst_ip}'), n_dst.netmask)":"md.dst_ip = '0'";
     ##
     ## get direct and reverse traceroutes
     ## 
-    my $trace_cond = qq|  inet6_mask(md.src_ip, 16) = inet6_mask(inet6_pton('$params{src_ip}'), 16) and $dst_cond |;
+    my $trace_cond = qq|  inet6_mask(md.src_ip, n_src.netmask) = inet6_mask(inet6_pton('$params{src_ip}'), n_src.netmask) and $dst_cond |;
      
     my $traceroute  = get_traceroute($trace_cond, \%params);
     $data->{traceroute} = $traceroute->{traceroute} 
@@ -210,7 +216,7 @@ sub process_data {
 			         ref $traceroute->{traceroute} &&  %{$traceroute->{traceroute}}); 
     my $rev_traceroute;
     if($params{dst_ip}) {
-        my $rev_trace_cond =  qq| inet6_mask(md.dst_ip, 16) = inet6_mask(inet6_pton('$params{src_ip}'), 16) and inet6_mask(md.src_ip, 16) =  inet6_mask(inet6_pton('$params{dst_ip}'), 16) |;
+        my $rev_trace_cond =  qq| inet6_mask(md.dst_ip,  n_dst.netmask) = inet6_mask(inet6_pton('$params{src_ip}'), n_src.netmask) and inet6_mask(md.src_ip, n_src.netmask) =  inet6_mask(inet6_pton('$params{dst_ip}'), n_dst.netmask) |;
 	$rev_traceroute  = get_traceroute($rev_trace_cond, \%params);					      
         $data->{reverse_traceroute} = $rev_traceroute->{traceroute} 
 	                                  if($rev_traceroute && $rev_traceroute->{traceroute} && 
@@ -226,6 +232,7 @@ sub process_data {
     my %directions = (direct => ['src_ip', 'dst_ip'], reverse => ['dst_ip', 'src_ip'] );
    
     my @data_keys = qw/bwctl owamp pinger/;
+    # my @data_keys = qw/owamp/;
     my %e2e_mds = ();
     foreach my $dir (keys %directions) {
 	my $e2e_sql = qq|select   m.metaid, n_src.ip_noted as src_ip, m.subject, e.service_type as type,  n_dst.ip_noted  as dst_ip, 
@@ -237,11 +244,11 @@ sub process_data {
 								join eventtype e on(m.eventtype_id = e.ref_id)
 								join service s  on (e.service = s.service)
 							  where  
-								inet6_mask(m.src_ip, 16) = inet6_mask(inet6_pton('$params{$directions{$dir}->[0]}'), 16) and
-								inet6_mask(m.dst_ip, 16) = inet6_mask(inet6_pton('$params{$directions{$dir}->[1]}'), 16) and
+								inet6_mask(m.src_ip, n_src.netmask) = inet6_mask(inet6_pton('$params{$directions{$dir}->[0]}'),  n_src.netmask) and
+								inet6_mask(m.dst_ip, n_dst.netmask) = inet6_mask(inet6_pton('$params{$directions{$dir}->[1]}'),  n_dst.netmask) and
 								e.service_type in ('pinger','bwctl','owamp') and
 								s.url  like 'http%'
-					             group by src_ip, dst_ip, service|;
+					             group by src_ip, dst_ip, service, type|;
 	debug " E2E SQL:: $e2e_sql";
 	my $md_href =  database->selectall_hashref($e2e_sql, 'metaid');   
 	debug " MD for the E2E ::: " . Dumper $md_href;	
@@ -254,7 +261,8 @@ sub process_data {
 			};
 	foreach my $e_type (@data_keys)  {
 	    debug " ...  Running  ------------  $e_type";
-	    get_e2e($data->{$e_type},  \%params,   $md_href, $e_type );
+	    $data->{$e_type} = {};
+	    get_e2e($data,  \%params,   $md_href, $e_type );
 	    debug " +++++ Done  ------------  $e_type";
 	}
      }
@@ -265,12 +273,14 @@ sub process_data {
     	 foreach my $metaid  ( keys %e2e_mds) { 
 	     my  $md_row =  $e2e_mds{$metaid};  
     	     next if $md_row->{type} ne $e_type;
-    	     unless ($data->{$e_type}  &&  $data->{$e_type}{$md_row->{src_ip}}{$md_row->{dst_ip}} &&  @{$data->{$e_type}{$md_row->{src_ip}}{$md_row->{dst_ip}}} ) {
+    	     unless ($data->{$e_type}  &&  $data->{$e_type}{$md_row->{src_ip}}{$md_row->{dst_ip}} &&  
+	              @{$data->{$e_type}{$md_row->{src_ip}}{$md_row->{dst_ip}}} ) {
     		  my @datas = dbix->resultset($params{table_map}->{$e_type}{table})->search({ metaid => $metaid, 
     											      timestamp => { '>=' => $params{$e_type}{start}, '<=' => $params{$e_type}{end}} 
     											   });
-    		  get_datums(\@datas, $md_row,  $data->{$e_type}, \%params, $e_type) if @datas;
-		  debug "\u$e_type- " .$md_row->{src_ip} . " Data ::" . scalar @datas if @datas;  
+    		  get_datums(\@datas, $md_row,  $data, \%params, $e_type) if @datas;
+		  debug "\u$e_type- " . $md_row->{src_ip} . " Data ::" . scalar @datas if @datas; 
+		  debug "\u$e_type -----------   Data dump::" . Dumper $data->{$e_type}; 
     	     }
     	 
     	 }
@@ -286,7 +296,7 @@ sub refactor_result {
     my ($data_raw, $params) = @_;
     my $count = scalar @{$data_raw};
     my $result = [];
-    ###debug "Data_raw " . Dumper $data_raw;
+    debug "refactoring..resolution=$params->{resolution}  ==  Data_raw - $count";
     if($count > $params->{resolution}) {
 	my $bin = $count/$params->{resolution};
 	my $j = 0;
@@ -298,18 +308,19 @@ sub refactor_result {
 	    map {$result->[$j][1]{$_} += $data_raw->[$i][1]{$_}} keys %{$data_raw->[$i][1]};
 	    if( $j > $old_j || $i == ($count-1) ) {
 	        $count_j++ if $i == ($count-1); 
-	        map {$result->[$old_j][1]{$_}/$count_j if $result->[$old_j][1]{$_} &&  $count_j } keys %{$data_raw->[$i][1]};
+	        map {$result->[$old_j][1]{$_} /= $count_j if $result->[$old_j][1]{$_} &&  $count_j } keys %{$data_raw->[$i][1]};
 	        $result->[$old_j][0] = int($result->[$old_j][0]/$count_j) if   $result->[$old_j][0] &&  $count_j ;
 	        $count_j = 0; 
 	        $old_j = $j; 
 	    }
 	    $count_j++;       
-	    ##debug "REFACTOR: i=$i j=$j old_j=$old_j count_j=$count_j  raw=$data_raw->[$i][0]  result=$result->[$old_j][0] new=$result->[$j][0] ";
+	    debug "REFACTOR: i=$i j=$j old_j=$old_j count_j=$count_j  raw=$data_raw->[$i][0]  result=$result->[$old_j][0] new=$result->[$j][0] ";
 	 
 	}	   
     } else {
         $result =  $data_raw;
     }
+    debug "refactoring..resolution=$params->{resolution}   ==  Data_raw - " . scalar @$result;
     return $result;
 }
 #
@@ -330,7 +341,7 @@ sub get_datums {
         $end_time =   $datum->timestamp if $datum->timestamp > $end_time;
         $start_time =  $datum->timestamp if  $datum->timestamp < $start_time;
     } 
-    $result->{$md_row->{src_ip}}{$md_row->{dst_ip}} = refactor_result($results_raw, $params) if $results_raw && @{$results_raw};
+    $result->{$type}{$md_row->{src_ip}}{$md_row->{dst_ip}} = refactor_result($results_raw, $params) if $results_raw && @{$results_raw};
     #fixing up resolution - only return no more than requested number of points
   
     return  ($start_time, $end_time); 
@@ -373,14 +384,14 @@ sub get_remote_e2e {
        }
    };
    if($EVAL_ERROR) {
-       debug " remote call failed - $EVAL_ERROR  ";
+       error " remote call failed - $EVAL_ERROR  ";
    }
 }
 #
 #  get bwctl/owamp/pinger data for end2end, first for the src_ip, then for the dst_ip
 #
 sub get_e2e{
-    my ( $data_hr,  $params,   $md_href, $type  ) = @_; 
+    my ( $data_hr,  $params,   $md_href, $type) = @_; 
     my %result = ();
     my $e2e_forker = new Parallel::ForkControl( 
     				MaxKids 		=> 10,
@@ -395,7 +406,7 @@ sub get_e2e{
         my @datas = dbix->resultset($params->{table_map}{$type}{table})->search({ metaid => $metaid, 
                                                                                   timestamp => { '>=' => $params->{$type}{start}, '<=' => $params->{$type}{end}} 
 								               });
-        my ($start_time, $end_time) = get_datums(\@datas, $md_row, \%result, $params, $type);
+        my ($start_time, $end_time) = get_datums(\@datas, $md_row,  $data_hr, $params, $type);
         debug " Times: start_dif=" . abs($start_time - $params->{$type}{start}) .   "... end_dif=" . abs( $params->{$type}{end} -  $end_time );
 	
         if(  abs($end_time - $params->{$type}{end}) > 1800 ||
@@ -405,10 +416,9 @@ sub get_e2e{
    	    $e2e_forker->run($md_row, $params,  $type, $metaid);
 	}
     }
-    debug " ------ CLEANUP -----------";
+    debug "cleanup...";
     $e2e_forker->cleanup() if $e2e_forker->kids();
-    debug " ------ AFTER FORKER -----------";
-    $data_hr = \%result;
+    %{$data_hr->{$type}}  =  (%{$data_hr->{$type}}, %result) if %result;
 }
  
  

@@ -39,7 +39,7 @@ my %logger_opts = (
     layout => '%d (%P) %p> %F{1}:%L %M - %m%n'
 );
 Log::Log4perl->easy_init(\%logger_opts);
-my  $logger = Log::Log4perl->get_logger(__PACKAGE__);
+our  $logger = Log::Log4perl->get_logger(__PACKAGE__);
  
 =head1 NAME
 
@@ -167,6 +167,8 @@ sub process_service {
 #  if data is not in the db then get it from remote site
 #
 sub process_data {
+   my $data = {};
+  eval {
     my %params = validate(@_, { data => {type => SCALAR, regex => qr/^(snmp|bwctl|owamp|pinger)$/, optional => 1}, 
                                 id     => {type => SCALAR, regex => qr/^\d+$/, optional => 1}, 
                                 src_ip => {type => SCALAR, regex => $REG_IP,   optional => 1}, 
@@ -176,7 +178,6 @@ sub process_data {
 				resolution => {type => SCALAR, regex => qr/^\d+$/, optional => 1},
 			      }
 		 );
-    my $data = {};
     # debug Dumper(\%params );
     ### query allowed  as:?src_ip=131.225.1.1&dst_ip=212.4.4.4&start=2010-05-02%20:01:02&end=2010-05-02%20:01:02
     
@@ -197,18 +198,18 @@ sub process_data {
     #   get epoch or set end default to NOW and start to end-12 hours
     $params{end} =   $params{end}?DateTime::Format::MySQL->parse_datetime( $params{end} )->epoch:time();
     $params{start} = $params{start}?DateTime::Format::MySQL->parse_datetime($params{start})->epoch:($params{end}  - 12*3600);
-    
+    debug "Before traceroute sql";
     map { $params{$_}{end} =  $params{end};   $params{$_}{start} =  $params{start}; } qw/owamp pinger snmp traceroute/;
     if(  ($params{end}-$params{start}) < 3600*6) {
 	    my $median = $params{start} + int(($params{end}-$params{start})/2);
 	    $params{bwctl}{start} = $median - 6*3600; # 6 hours
 	    $params{bwctl}{end} = $median + 6*3600; # 6 hours
     }     
-    my $dst_cond = $params{dst_ip}?"inet6_mask(md.dst_ip, n_dst.netmask)= inet6_mask(inet6_pton('$params{dst_ip}'), n_dst.netmask)":"md.dst_ip = '0'";
+    my $dst_cond = $params{dst_ip}?"inet6_mask(md.dst_ip, 24)= inet6_mask(inet6_pton('$params{dst_ip}'), 24)":"md.dst_ip = '0'";
     ##
     ## get direct and reverse traceroutes
     ## 
-    my $trace_cond = qq|  inet6_mask(md.src_ip, n_src.netmask) = inet6_mask(inet6_pton('$params{src_ip}'), n_src.netmask) and $dst_cond |;
+    my $trace_cond = qq|  inet6_mask(md.src_ip, 24) = inet6_mask(inet6_pton('$params{src_ip}'), 24) and $dst_cond |;
      
     my $traceroute  = get_traceroute($trace_cond, \%params);
     $data->{traceroute} = $traceroute->{traceroute} 
@@ -216,7 +217,7 @@ sub process_data {
 			         ref $traceroute->{traceroute} &&  %{$traceroute->{traceroute}}); 
     my $rev_traceroute;
     if($params{dst_ip}) {
-        my $rev_trace_cond =  qq| inet6_mask(md.dst_ip,  n_dst.netmask) = inet6_mask(inet6_pton('$params{src_ip}'), n_src.netmask) and inet6_mask(md.src_ip, n_src.netmask) =  inet6_mask(inet6_pton('$params{dst_ip}'), n_dst.netmask) |;
+        my $rev_trace_cond =  qq| inet6_mask(md.dst_ip, 24) = inet6_mask(inet6_pton('$params{src_ip}'), 24) and inet6_mask(md.src_ip,24) =  inet6_mask(inet6_pton('$params{dst_ip}'), 24) |;
 	$rev_traceroute  = get_traceroute($rev_trace_cond, \%params);					      
         $data->{reverse_traceroute} = $rev_traceroute->{traceroute} 
 	                                  if($rev_traceroute && $rev_traceroute->{traceroute} && 
@@ -286,7 +287,12 @@ sub process_data {
     	 }
      }
     
-    return $data;
+   
+  };
+  if($EVAL_ERROR) {
+      error "data callfailed - $EVAL_ERROR";
+  }
+   return $data; 
 }
 # get timestamp and aggregate to return no more than requested data points
 # and return as arrayref => [timestamp, {data_row}] 
@@ -431,30 +437,46 @@ sub get_traceroute {
     my $trace_date_cond = ' ( 1 ';
     $trace_date_cond .= $params->{traceroute}{start}?" AND td.updated >= $params->{traceroute}{start}":'';  
     $trace_date_cond .= $params->{traceroute}{end}?" AND td.updated <= $params->{traceroute}{end}":'';
-    $trace_date_cond .= ') '; 
+    $trace_date_cond .= ') ';
+    
     ############################    $trace_date_cond and   ------ ADD BACK WHEN TRACEROUTE WILL BE AVAILABLE !!!!!!!!!!!!!!!
-    my $cmd = qq|select  distinct td.updated, td.trace_id, md.metaid, td.number_hops, n_hop.netmask,
-                                                             h.hop_id, h.hop_delay, inet6_ntop(h.hop_ip) as hop_ip, h.hop_num,  hb.hub, hb.longitude, hb.latitude  
+    # split it up
+    my $cmd = qq|select  distinct td.updated, td.trace_id as trace_id, td.number_hops  
 					             from
-						            hop h 
-						       join traceroute_data td    using(trace_id) 
+						            traceroute_data td
 						       join metadata        md    using(metaid) 
 						       join node            n_src on(md.src_ip = n_src.ip_addr)
 						       left join node       n_dst on(md.dst_ip = n_dst.ip_addr)
+						     where  
+						             $trace_cond
+						     order by   td.trace_id asc|;
+   debug " TRACEROUTE SQL1: $cmd";					     
+    my $trace_ref = database->selectall_hashref($cmd, 'trace_id');
+    my @trace_ids = keys %$trace_ref;
+    my $trace_ins = join("','",@trace_ids);
+    
+   
+    $cmd = qq|select  distinct  h.trace_id as trace_id, n_hop.netmask,   h.hop_id, h.hop_delay, 
+                                n_hop.ip_noted, h.hop_num,  hb.hub, hb.longitude, hb.latitude  
+					             from
+						            hop h 
 						       join node       n_hop on(h.hop_ip  = n_hop.ip_addr)     	
 						       left  join l2_l3_map llm on(inet6_mask(n_hop.ip_addr, n_hop.netmask) = inet6_mask(llm.ip_addr, n_hop.netmask)) 
      	                                               left  join l2_port l2p on(llm.l2_urn =l2p.l2_urn) 
      	                                               left  join hub hb using(hub) 
 						     where  
-						             $trace_cond
-						     order by   h.hop_id asc|;
-    my $trace_ref = database->selectall_hashref($cmd, 'hop_id');
-    debug " TRACEROUTE SQL: $cmd";						     
-    foreach my $hop_id (sort {$a<=>$b} keys %$trace_ref) {
-        push @{$traces{$trace_ref->{$hop_id}{trace_id}}}, $trace_ref->{$hop_id};
-	$hops{$trace_ref->{$hop_id}{hop_ip}} = $trace_ref->{$hop_id}{hop_id} 
-	                                            if !(exists $hops{$trace_ref->{$hop_id}{hop_ip}}) ||
-	                                                $hops{$trace_ref->{$hop_id}{hop_ip}} < $trace_ref->{$hop_id}{hop_id};
+						             h.trace_id in ('$trace_ins')
+						     order by   h.hop_id asc|; 
+    debug " TRACEROUTE SQL2: $cmd";		
+    my $hops_ref = database->selectall_hashref($cmd, 'hop_id');
+  					     
+    foreach my $hop_id (sort {$a<=>$b} keys %$hops_ref) {
+        push @{$traces{$hops_ref->{$hop_id}{trace_id}}}, {(%{$hops_ref->{$hop_id}},%{$trace_ref->{$hops_ref->{$hop_id}{trace_id}}})};
+	$hops{$hops_ref->{$hop_id}{hop_ip}} = $hops_ref->{$hop_id}{hop_id} 
+	                                            if $hops_ref->{$hop_id}{hop_ip} && 
+						       (!(exists $hops{$hops_ref->{$hop_id}{hop_ip}}) ||
+	                                                 $hops{$hops_ref->{$hop_id}{hop_ip}} < $hops_ref->{$hop_id}{hop_id}
+						       );
     }
     ### debug  "Traceroutes:" . Dumper(\%traces);
     return {traceroute => \%traces, hops => \%hops};

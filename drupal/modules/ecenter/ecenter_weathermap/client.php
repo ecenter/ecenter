@@ -124,12 +124,13 @@ class Ecenter_Data_Service_Client {
     return $this->query($q);
   }
 
-  public function getData($src_ip, $dst_ip, $start, $end) {
+  public function getData($src_ip, $dst_ip, $start, $end, $resolution = 20) {
     $parameters = array(
       'src_ip' => $src_ip,
       'dst_ip' => $dst_ip,
       'start' => $start,
       'end' => $end,
+      'resolution' => $resolution,
     );
     return $this->query('data', $parameters);
   }

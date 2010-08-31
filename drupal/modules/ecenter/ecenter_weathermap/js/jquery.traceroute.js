@@ -16,7 +16,7 @@ $.fn.traceroute = function(data, options) {
       trace = new TraceRoute(this, data, options);
     }
     else {
-      //trace.redraw(data);
+      trace.redraw(data, options);
     }
   });
 };
@@ -415,6 +415,26 @@ TraceRoute.prototype.hopBehavior = function(el) {
   }, function() {
     $('#stubhover').fadeOut('slow');
   });
+}
+
+// @TODO: DRY violation
+TraceRoute.prototype.redraw = function(data, options) {
+  this.options = options;
+  this.data = data;
+
+  $(this.hopCanvas).remove();
+  $(this.linkCanvas).remove();
+
+    // Get traceroute length if not provided; we need it to size the canvas
+  if (this.options.tracerouteLength || this.options.tracerouteLength < 1) {
+    this.options.tracerouteLength = this.tracerouteLength();
+  }
+
+  // Initialize canvas
+  this.initCanvas();
+
+  // Draw traceroute
+  this.drawTraceroute();
 }
 
 })(jQuery);

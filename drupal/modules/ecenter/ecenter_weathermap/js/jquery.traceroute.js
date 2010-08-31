@@ -14,6 +14,7 @@ $.fn.traceroute = function(data, options) {
     var trace = $(this).data('TraceRoute');
     if (trace == undefined) {
       trace = new TraceRoute(this, data, options);
+      $(this).data('TraceRoute', trace);
     }
     else {
       trace.redraw(data, options);
@@ -25,6 +26,7 @@ $.fn.traceroute = function(data, options) {
 $.fn.traceroute.defaults = {
   'tracerouteLength' : null,
   'drawArrows' : true,
+  'append' : true,
   'link' : {
     'linkLength' : 15,
     'style' : {
@@ -36,7 +38,7 @@ $.fn.traceroute.defaults = {
     'arrowHeight' : 6,
     'arrowWidth' : 8,
     'style' : {
-      'fillStyle' : '#888888'
+      'fillStyle' : '#666666'
     }
   },
   'hop' : {
@@ -72,11 +74,6 @@ function TraceRoute(el, data, options) {
 
   // Draw traceroute
   this.drawTraceroute();
-
-  // Save
-  $(this.el).data('TraceRoute', this);
-
-  return this;
 }
 
 TraceRoute.prototype.initCanvas = function() {
@@ -120,11 +117,12 @@ TraceRoute.prototype.initCanvas = function() {
   hopCanvas.height = linkCanvas.height = (o.link.linkLength * (o.tracerouteLength - 1)) + (this.hopSize * o.tracerouteLength);
 
   // Position container
-  container_width = (o.label.width * 2) + hopCanvas.width;
+  this.containerWidth = (o.label.width * 2) + hopCanvas.width;
+
   $(this.el).css({
     'position' : 'relative',
     'height' : hopCanvas.height,
-    'width' : container_width + 'px'
+    'width' : this.containerWidth + 'px'
   }).append(linkCanvas).append(hopCanvas);
 
   // Provide canvases as part of traceroute object
@@ -379,7 +377,7 @@ TraceRoute.prototype.drawSegment = function(x1, y1, x2, y2, options, arrow_optio
 
 TraceRoute.prototype.drawHopLabel = function(hop, x, y, align) {
   var o = this.options;
-  label = $('<div class="label">' + hop.hop_id + ' (' + hop.hop_ip + ')</div>');
+  label = $('<div class="label" hopid="' + hop.hop_id + '">' + hop.hop_id + ' (' + hop.hop_ip + ')</div>');
   label_width = o.label.width - o.label.side_padding;
   css = {
     'width' : label_width + 'px',
@@ -409,14 +407,22 @@ TraceRoute.prototype.drawHopLabel = function(hop, x, y, align) {
 }
 
 TraceRoute.prototype.hopBehavior = function(el) {
+  var offset = $(this.el).offset();
+  var containerWidth = this.containerWidth;
   el.hover(function() {
-    $('#stubhover').remove();
-    foo = $('<h1 id="stubhover">stub for hover</h1>');
-    foo.css({'position': 'absolute', 'top': 250, 'left': 30, 'background-color': '#000000', 'font-size': '200%', 'color': '#ffffff', 'display': 'none'});
-    $('body').append(foo);
-    foo.fadeIn('slow');
+    hopid = $(this).attr('hopid');
+    chart = $('.tablechart', $('#hop-' + hopid));
+    chart.css({
+      'position' : 'absolute',
+      'z-index' : 1,
+      'left' : containerWidth,
+      'top' : offset.top
+    });
+    chart.fadeIn('fast');
   }, function() {
-    $('#stubhover').fadeOut('slow');
+    hopid = $(this).attr('hopid');
+    chart = $('.tablechart', $('#hop-' + hopid));
+    chart.fadeOut('fast');
   });
 }
 

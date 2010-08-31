@@ -70,6 +70,14 @@ function ecenter_weathermap_theme() {
         'hops' => NULL,
       )
     ) + $options,
+    'ecenter_weathermap_table' => array(
+      'arguments' => array(
+        'header' => NULL,
+        'rows' => NULL,
+        'attributes' => NULL,
+        'caption' => NULL,
+      ),
+    ) + $options,
   );
   foreach (_ecenter_weathermap_get_data_types() as $type) {
     $registry['ecenter_weathermap_render_data_'. $type] = array(

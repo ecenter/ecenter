@@ -7,7 +7,6 @@
 function template_preprocess_ecenter_weathermap_data(&$vars) {
   $vars['permalink'] = l('Permalink', 'weathermap', array('query' => http_build_query($vars['params'])));
   $vars['snmp'] = theme('ecenter_weathermap_render_data_snmp', $vars['data']['diff']);
-  dpm($vars['data']);
 }
 
 /**
@@ -16,9 +15,9 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
 function theme_ecenter_weathermap_render_data_snmp($data) {
   
   $plot_options = array(
-    'width' => 650,
-    'height' => 250,
-    'hideTable' => TRUE,
+    'width' => 580,
+    'height' => 200,
+    'hideTables' => TRUE,
     'plotOptions' => array(
       'seriesDefaults' => array(
         'lineWidth' => 1.5,
@@ -31,10 +30,10 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
       'axes' => array(
         'xaxis' => array(
           'pad' => 0,
-          'renderer' => '$.jqplot.DateAxisRenderer',
-          'tickOptions' => array(
-            'formatString' => "%H:%M",
-          ),
+          //'renderer' => '$.jqplot.DateAxisRenderer',
+          //'tickOptions' => array(
+          //  'formatString' => "%H:%M",
+          //),
           //'label' => t('Time (@date)', array('@date' => $date_label)),
           'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
         ),
@@ -42,7 +41,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
           'min' => 0,
           'max' => 100,
           'pad' => 0,
-          'numberTicks' => 5,
+          'numberTicks' => 6,
           'label' => t('Percent utilization'),
           'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
           'tickOptions' => array(
@@ -80,33 +79,48 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
 
   $i = 0;
 
+  // @TODO whoa, way nested, really ugly and complicated
   foreach ($data as $row) {
+
     // For matches, create "couplets" of tables to be plotted on the same chart
     if (!empty($row['match'])) {
-      foreach (array('forward', 'reverse') as $direction) {
-        foreach ($row['match'][$direction] as $hop) {
-          if (!empty($hop['data']['snmp']) && is_array($hop['data']['snmp'])) {
-            $table = array();
-            dpm($hop['data']['snmp']);
-            foreach ($hop['data']['snmp'] as $item) {
-              $table[] = array(
-                'label' => array(
-                  //'data' => format_date($item['timestamp'], 'custom', 'Y-m-d H:i:s'),
-                  'data' => $item['timestamp'],
-                  'header' => TRUE,
-                ),
-                'utilization' => array(
-                  'data' => sprintf('%01.2f', $utilization),
-                  'class' => $class,
-                ),
-              );
-            }
+      $table = array();
 
+      $id = $row['match']['forward']['hop']['hop_id'];
+
+      foreach (array('forward', 'reverse') as $direction) {
+        if (empty($row['match'][$direction]['data']['snmp'])) {
+          continue;
+        }
+
+        $hop = $row['match'][$direction];
+        if (!empty($hop['data']['snmp']) && is_array($hop['data']['snmp'])) {
+          foreach ($hop['data']['snmp'] as $item) {
+            $table[$direction][] = array(
+              'label' => array(
+                'data' => $item[0],
+                'header' => TRUE,
+              ),
+              'utilization' => array(
+                'data' => sprintf('%01.2f', 100 * ($item[1]['utilization'] / $item[1]['capacity'])),
+                'class' => $class,
+              ),
+            );
           }
+
         }
       }
+
+      $output = '<div class="snmp-chart-wrapper" id="hop-'. $id .'">';
+      $output .= (!empty($table['forward'])) ? theme('ecenter_weathermap_table', $headers, $table['forward']) : '';
+      $output .= (!empty($table['reverse'])) ? theme('ecenter_weathermap_table', $headers, $table['reverse']) : '';
+      $output .= '</div>';
+      $out[] = $output;
     }
   }
+  jqplot_register_tablechart('.snmp-chart-wrapper', $plot_options);
+
+  return implode("\n", $out);
 }
 
 /**
@@ -146,4 +160,82 @@ function theme_ecenter_weathermap_traceroute($hops) {
  */
 function theme_ecenter_weathermap_hop_option($hop) {
   return $hop->nodename .' ('. $hop->ip_noted .')';
+}
+
+/**
+ * Theme a table for Ecenter.
+ *
+ * Similar to regular theme_table, minus the stupid sticky headers.
+ */
+function theme_ecenter_weathermap_table($header, $rows, $attributes = array(), $caption = NULL) {
+  $output = '<table'. drupal_attributes($attributes) .">\n";
+
+  if (isset($caption)) {
+    $output .= '<caption>'. $caption ."</caption>\n";
+  }
+
+  // Format the table header:
+  if (count($header)) {
+    $ts = tablesort_init($header);
+    // HTML requires that the thead tag has tr tags in it followed by tbody
+    // tags. Using ternary operator to check and see if we have any rows.
+    $output .= (count($rows) ? ' <thead><tr>' : ' <tr>');
+    foreach ($header as $cell) {
+      $cell = tablesort_header($cell, $header, $ts);
+      $output .= _theme_table_cell($cell, TRUE);
+    }
+    // Using ternary operator to close the tags based on whether or not there are rows
+    $output .= (count($rows) ? " </tr></thead>\n" : "</tr>\n");
+  }
+  else {
+    $ts = array();
+  }
+
+  // Format the table rows:
+  if (count($rows)) {
+    $output .= "<tbody>\n";
+    $flip = array('even' => 'odd', 'odd' => 'even');
+    $class = 'even';
+    foreach ($rows as $number => $row) {
+      $attributes = array();
+
+      // Check if we're dealing with a simple or complex row
+      if (isset($row['data'])) {
+        foreach ($row as $key => $value) {
+          if ($key == 'data') {
+            $cells = $value;
+          }
+          else {
+            $attributes[$key] = $value;
+          }
+        }
+      }
+      else {
+        $cells = $row;
+      }
+      if (count($cells)) {
+        // Add odd/even class
+        $class = $flip[$class];
+        if (isset($attributes['class'])) {
+          $attributes['class'] .= ' '. $class;
+        }
+        else {
+          $attributes['class'] = $class;
+        }
+
+        // Build row
+        $output .= ' <tr'. drupal_attributes($attributes) .'>';
+        $i = 0;
+        foreach ($cells as $cell) {
+          $cell = tablesort_cell($cell, $header, $ts, $i++);
+          $output .= _theme_table_cell($cell);
+        }
+        $output .= " </tr>\n";
+      }
+    }
+    $output .= "</tbody>\n";
+  }
+
+  $output .= "</table>\n";
+  return $output;
 }

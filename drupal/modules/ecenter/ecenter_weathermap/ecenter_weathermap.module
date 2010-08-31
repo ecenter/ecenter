@@ -293,9 +293,6 @@ function ecenter_weathermap_select_form(&$form_state) {
   else if (!empty($_REQUEST['start'])) {
     $start_date = $_REQUEST['start'];
   }
-  else {
-    $start_date = format_date(time() - 4500, 'custom', 'Y-m-d H:i');
-  }
 
   if (is_array($form_state['storage']['ip_select']['date_wrapper']['end_date'])) {
     $end_date = $form_state['storage']['ip_select']['date_wrapper']['end_date']['date'] .' '. $form_state['storage']['ip_select']['date_wrapper']['end_date']['time'];
@@ -306,18 +303,20 @@ function ecenter_weathermap_select_form(&$form_state) {
   else if (!empty($_REQUEST['end'])) {
     $end_date = $_REQUEST['end'];
   }
-  else {
-    $end_date = format_date(time() - 900, 'custom', 'Y-m-d H:i');
-  }
 
   // Set dates
-  $form['date_wrapper']['start_date']['#default_value'] = $start_date;
-  $form['date_wrapper']['end_date']['#default_value'] = $end_date;
+  if (!empty($start_date)) {
+    $form['ip_select']['date_wrapper']['start_date']['#default_value'] = $start_date;
+  }
+  if (!empty($end_date)) {
+    $form['ip_select']['date_wrapper']['end_date']['#default_value'] = $end_date;
+  }
 
   // Always get source hubs
-  $src_hops = $client->getHubs();
+  $src_hops = ecenter_weathermap_get_hops();
+
   $src_options = array('' => t('Select a source'));
-  foreach ($src_hops['response'] as $hop) {
+  foreach ($src_hops as $hop) {
     $src_options[$hop->ip_noted] = theme('ecenter_weathermap_hop_option', $hop);
   }
   $form['ip_select']['src_ip_wrapper']['src_ip']['#options'] = $src_options;
@@ -331,9 +330,9 @@ function ecenter_weathermap_select_form(&$form_state) {
       unset($src_ip);
     }
 
-    $dst_hops = $client->getHubs($src_ip);
+    $dst_hops = ecenter_weathermap_get_hops($src_ip);
     $dst_options = array('' => t('Select a destination'));
-    foreach ($dst_hops['response'] as $hop) {
+    foreach ($dst_hops as $hop) {
       $dst_options[$hop->ip_noted] = theme('ecenter_weathermap_hop_option', $hop);
     }
 
@@ -474,6 +473,15 @@ function ecenter_weathermap_get_data($src_ip, $dst_ip, $start, $end, $debug=FALS
 }
 
 /**
+ * Get hops
+ */
+function ecenter_weathermap_get_hops($src_ip = FALSE) {
+  $client = ecenter_weathermap_get_client();
+  $result = $client->getHubs($src_ip);
+  return $result['response'];
+}
+
+/**
  * Sanitize the get array
  */
 function ecenter_weathermap_sanitize_get() {
@@ -532,7 +540,7 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
 
     foreach (array('traceroute', 'reverse_traceroute') as $direction) {
       // We may not have reverse traceroutes
-      if (empty($data[$direction])) { 
+      if (empty($data[$direction])) {
         continue;
       }
 
@@ -573,10 +581,8 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
             $hop['geolocated'] = TRUE;
           }
   
-          // Add data
-          foreach ($data as $type => $values) {
-            $hop_data[$type] = $values[$hop['hop_id']];
-          }
+          // SNMP
+          $hop_data['snmp'] = $data['snmp'][$hop['hop_id']];
 
           // Calculate netblock
           $mask = (!empty($hop['netmask'])) ? $hop['netmask'] : 24;
@@ -592,12 +598,40 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
       $queries[$response->query][$direction_label] = $parsed;
     }
 
+    // End to end
+    $src_netblock = long2ip(ip2long($src_ip) & ~((1 << 8) - 1));
+    $dst_netblock = long2ip(ip2long($dst_ip) & ~((1 << 8) - 1));
+    $end_to_end = array();
+    foreach (array('bwctl', 'owamp', 'pinger') as $type) {
+      if (!is_array($data[$type])) {
+        continue;
+      }
+      foreach ($data[$type] as $test_ip => $destinations) {
+        $test_netblock = long2ip(ip2long($test_ip) & ~((1 << 8) - 1));
+        if ($test_netblock == $src_netblock) {
+          $end_to_end['forward'][$type] = $destinations;
+        }
+        if ($test_netblock == $dst_netblock) {
+          $end_to_end['reverse'][$type] = $destinations;
+        }
+      }
+    }
+    $queries[$response->query]['end_to_end'] = $end_to_end;
+
     // Calculate diff
     if (!empty($queries[$response->query]['forward']) && !empty($queries[$response->query]['reverse'])) {
-      $forward = array_pop(array_values($queries[$response->query]['forward']));
-      $reverse = array_reverse(array_pop(array_values($queries[$response->query]['reverse'])));
+      $forward = array_shift(array_values($queries[$response->query]['forward']));
+      $reverse = array_reverse(array_shift(array_values($queries[$response->query]['reverse'])));
       $queries[$response->query]['diff'] = traceroute_diff($forward, $reverse);
       $queries[$response->query]['traceroute_max'] = (count($forward) > count($reverse)) ? count($forward) : count($reverse);
+    }
+    elseif (!empty($queries[$response->query]['forward'])) {
+      $diff = array();
+      $forward = array_shift(array_values($queries[$response->query]['forward']));
+      foreach ($forward as $row) {
+        $diff[] = array('match' => array('forward' => $row));
+      }
+      $queries[$response->query]['diff'] = $diff;
     }
   }
   return $queries[$response->query];
@@ -763,8 +797,8 @@ function ecenter_weathermap_map_layers() {
   if ($_REQUEST['form_id'] == 'ecenter_weathermap_select_form') {
     $src_ip = $_REQUEST['ip_select']['src_ip_wrapper']['src_ip'];
     $dst_ip = $_REQUEST['ip_select']['dst_ip_wrapper']['dst_ip'];
-    $start = $_REQUEST['date_wrapper']['start_date']['date'] .' '. $_REQUEST['date_wrapper']['start_date']['time'];
-    $end = $_REQUEST['date_wrapper']['end_date']['date'] .' '. $_REQUEST['date_wrapper']['end_date']['time'];
+    $start = $_REQUEST['ip_select']['date_wrapper']['start_date']['date'] .' '. $_REQUEST['ip_select']['date_wrapper']['start_date']['time'];
+    $end = $_REQUEST['ip_select']['date_wrapper']['end_date']['date'] .' '. $_REQUEST['ip_select']['date_wrapper']['end_date']['time'];
   }
   else {
     extract($_REQUEST);
@@ -964,8 +998,8 @@ function ecenter_weathermap_openlayers_map_preprocess_alter(&$map) {
     if ($_REQUEST['ip_select']) {
       $src_ip = $_REQUEST['ip_select']['src_ip_wrapper']['src_ip'];
       $dst_ip = $_REQUEST['ip_select']['dst_ip_wrapper']['dst_ip'];
-      $start = $_REQUEST['date_wrapper']['start_date']['date'] .' '. $_REQUEST['date_wrapper']['start_date']['time'];
-      $end = $_REQUEST['date_wrapper']['end_date']['date'] .' '. $_REQUEST['date_wrapper']['end_date']['time'];
+      $start = $_REQUEST['ip_select']['date_wrapper']['start_date']['date'] .' '. $_REQUEST['ip_select']['date_wrapper']['start_date']['time'];
+      $end = $_REQUEST['ip_select']['date_wrapper']['end_date']['date'] .' '. $_REQUEST['ip_select']['date_wrapper']['end_date']['time'];
     }
     else {
       extract($_REQUEST);

@@ -8,8 +8,8 @@ Drupal.behaviors.EcenterDatehide = function(context) {
   $('#date-wrapper').datehide({
     'startDateSelector' : '#edit-ip-select-date-wrapper-start-date-datepicker-popup-0',
     'startTimeSelector' : '#edit-ip-select-date-wrapper-start-date-timeEntry-popup-1',
-    'endDateSelector' : '#edit-ip-select-date-wrapper-end-date-datepicker-popup-0',
-    'endTimeSelector' : '#edit-ip-select-date-wrapper-end-date-timeEntry-popup-1'
+    'endDateSelector'   : '#edit-ip-select-date-wrapper-end-date-datepicker-popup-0',
+    'endTimeSelector'   : '#edit-ip-select-date-wrapper-end-date-timeEntry-popup-1'
   });
 }
 

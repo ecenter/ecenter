@@ -6,82 +6,15 @@
  */
 function template_preprocess_ecenter_weathermap_data(&$vars) {
   $vars['permalink'] = l('Permalink', 'weathermap', array('query' => http_build_query($vars['params'])));
+  $vars['snmp'] = theme('ecenter_weathermap_render_data_snmp', $vars['data']['diff']);
+  dpm($vars['data']);
 }
 
 /**
  * Theme SNMP data
  */
 function theme_ecenter_weathermap_render_data_snmp($data) {
-  //jquerytools_add('tooltip');
-
-  /*$headers = array(t('Time'), t('Percent utilization'));
-  $table = array();
-  $days = array();
-  $min = 0;
-  $max = 0;
-  $total = 0;
-  foreach ($data as $item) {
-    $class = '';
-    $utilization = ($item['utilization'] / $item['capacity']) * 100;
-    $max = ($utilization > $max) ? $utilization : $max;
-    $min = ($utilization < $min || $min == 0) ? $utilization : $min;
-    $total += $utilization;
-
-    if ($utilization > variable_get('ecenter_weathermap_threshold_critical_snmp_utilization', 40)) {
-      $class = 'ecenter-critical';
-    }
-    if ($utilization > variable_get('ecenter_weathermap_threshold_marginal_snmp_utilization', 20)) {
-      $class = 'ecenter-marginal';
-    }
-
-    global $user;
-    if (variable_get('configurable_timezones', 1) && $user->uid && strlen($user->timezone)) {
-      $timezone = $user->timezone;
-    }
-    else {
-      $timezone = variable_get('date_default_timezone', 0);
-    }
-
-    $table[] = array(
-      'label' => array(
-        'data' => format_date($item['timestamp'], 'custom', 'Y-m-d H:i:s'),
-        'header' => TRUE,
-      ),
-      'utilization' => array(
-        'data' => sprintf('%01.2f', $utilization),
-        'class' => $class,
-      ),
-    );
-
-    $day = format_date($item['timestamp'], 'custom', 'Y-m-d');
-    $days[$day] = $day;
-  }
-
-  // Format date
-  $date_label = array_shift($days);
-  $end_day = array_pop($days);
-  if ($end_day) {
-    $date_label .= ' - '. $end_day;
-  }
-
-  // Get average
-  $avg = $total / count($data);
-
-  $aggregate_table = array(
-    'max' => array(
-      'label' => array('data' => t('Maximum'), 'header' => TRUE,),
-      'value' => array('data' => sprintf('%01.2f', $max)),
-    ),
-    'min' => array(
-      'label' => array('data' => t('Minimum'), 'header' => TRUE,),
-      'value' => array('data' => sprintf('%01.2f', $min),),
-    ),
-    'avg' => array(
-      'label' => array('data' => t('Average'), 'header' => TRUE,),
-      'value' => array('data' => sprintf('%01.2f', $avg),),
-    ),
-  );
-
+  
   $plot_options = array(
     'width' => 650,
     'height' => 250,
@@ -102,7 +35,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
           'tickOptions' => array(
             'formatString' => "%H:%M",
           ),
-          'label' => t('Time (@date)', array('@date' => $date_label)),
+          //'label' => t('Time (@date)', array('@date' => $date_label)),
           'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
         ),
         'yaxis' => array(
@@ -143,40 +76,37 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
   $critical = variable_get('ecenter_weathermap_threshold_critical_snmp_utilization', 60);
   $marginal = variable_get('ecenter_weathermap_threshold_marginal_snmp_utilization', 40);
 
-  // Max
-  if ($max > $critical) {
-    $aggregate_table['max']['value']['class'] = 'ecenter-critical';
-  }
-  else if ($max > $marginal) {
-    $aggregate_table['max']['value']['class'] = 'ecenter-marginal';
-  }
-  else {
-    $aggregate_table['max']['value']['class'] = 'ecenter-good';
-  }
+  $headers = array(t('Time'), t('Percent utilization'));
 
-  // Min
-  if ($min > $critical) {
-    $aggregate_table['min']['value']['class'] = 'ecenter-critical';
-  }
-  else if ($min > $marginal) {
-    $aggregate_table['min']['value']['class'] = 'ecenter-marginal';
-  }
-  else {
-    $aggregate_table['min']['value']['class'] = 'ecenter-good';
-  }
+  $i = 0;
 
-  // Line color: @TODO -- confusingly, not working right...
-  if ($max > $critical || $avg > $critical) {
-    $plot_options['plotOptions']['seriesDefaults']['color'] = variable_get('ecenter_weathermap_threshold_critical_color', '#cc0000');
-  }
-  else if ($max > $marginal || $avg > $marginal) {
-    $plot_options['plotOptions']['seriesDefaults']['color'] = variable_get('ecenter_weathermap_threshold_marginal_color', '#fe890c');
-  }
+  foreach ($data as $row) {
+    // For matches, create "couplets" of tables to be plotted on the same chart
+    if (!empty($row['match'])) {
+      foreach (array('forward', 'reverse') as $direction) {
+        foreach ($row['match'][$direction] as $hop) {
+          if (!empty($hop['data']['snmp']) && is_array($hop['data']['snmp'])) {
+            $table = array();
+            dpm($hop['data']['snmp']);
+            foreach ($hop['data']['snmp'] as $item) {
+              $table[] = array(
+                'label' => array(
+                  //'data' => format_date($item['timestamp'], 'custom', 'Y-m-d H:i:s'),
+                  'data' => $item['timestamp'],
+                  'header' => TRUE,
+                ),
+                'utilization' => array(
+                  'data' => sprintf('%01.2f', $utilization),
+                  'class' => $class,
+                ),
+              );
+            }
 
-  jqplot_register_tablechart('.snmp-chart', $plot_options);*/
-  $title = '<h4>'. t('SNMP Utilization') .'</h4>';
-  return 'fixing problematic data stuff';
-  //return $title . theme('table', $headers, $table, array('class' => 'snmp-chart')) . theme('table', NULL, $aggregate_table);
+          }
+        }
+      }
+    }
+  }
 }
 
 /**

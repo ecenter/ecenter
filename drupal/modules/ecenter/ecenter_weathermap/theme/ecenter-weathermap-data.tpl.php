@@ -1,6 +1,15 @@
 <p><?php print $permalink; ?></p>
 
-<div id="traceroute">
+<div class="clearfix">
+
+  <div id="traceroute">
+  </div>
+
+  <div id="results">
+    <p>Results!</p> 
+    <?php print $snmp; ?>
+  </div>
+
 </div>
 
 <?php /*

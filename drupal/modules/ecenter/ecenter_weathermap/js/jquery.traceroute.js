@@ -36,7 +36,7 @@ $.fn.traceroute.defaults = {
     'arrowHeight' : 6,
     'arrowWidth' : 8,
     'style' : {
-      'fillStyle' : '#555555'
+      'fillStyle' : '#888888'
     }
   },
   'hop' : {
@@ -113,7 +113,8 @@ TraceRoute.prototype.initCanvas = function() {
   linkCenter = (o.hop.radius / 2) + (o.link.style.lineWidth / 3);
   this.forwardLinkX = linkCenter;
   this.reverseLinkX = linkCenter + o.hop.radius;
- 
+  this.singleLinkX = this.hopRadius;
+
   // Set size for both canvases
   hopCanvas.width = linkCanvas.width = (this.hopSize * 2) + o.hop.extraMargin;
   hopCanvas.height = linkCanvas.height = (o.link.linkLength * (o.tracerouteLength - 1)) + (this.hopSize * o.tracerouteLength);
@@ -175,8 +176,12 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
 
         // If the old row was another matching hop, just draw regular lines back
         if (old_row.match != undefined) {
-          this.drawSegment(this.forwardLinkX, last_match_y, this.forwardLinkX, hopY, linkStyle, arrowStyle);
-          this.drawSegment(this.reverseLinkX, hopY, this.reverseLinkX, last_match_y, linkStyle, arrowStyle);
+          if (old_row.match.reverse != undefined) {
+            this.drawSegment(this.forwardLinkX, last_match_y, this.forwardLinkX, hopY, linkStyle, arrowStyle);
+            this.drawSegment(this.reverseLinkX, hopY, this.reverseLinkX, last_match_y, linkStyle, arrowStyle);
+          } else {
+            this.drawSegment(this.singleLinkX, last_match_y, this.singleLinkX, hopY, linkStyle, arrowStyle);
+          }
         }
 
         // The old row had asymmetry, but contributed no hops in the reverse direction (a skip)
@@ -185,7 +190,7 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
           this.drawCurve(this.reverseLinkX, this.hopAsymOffset, last_match_y, hopY, linkStyle, arrowStyle);
         }
 
-        // The old row contributed hops in the reverse direction 
+        // The old row contributed hops in the reverse direction
         if (old_row.diff != undefined && old_row.diff.reverse.length) {
           this.drawSegment(this.forwardLinkX, last_forward_diff_y, this.forwardLinkX, hopY, linkStyle, arrowStyle);
           this.drawSegment(this.hopRadius, hopY, this.hopAsymOffset, last_reverse_diff_y, linkStyle, arrowStyle);
@@ -203,7 +208,7 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
       leastHops = (row.diff.forward.length > row.diff.reverse.length) ? 'reverse' : 'forward';
       longestSegment = (o.link.linkLength * (row.diff[mostHops].length + 1)) + (this.hopSize * row.diff[mostHops].length);
       adjustedLinkLength = (longestSegment - (row.diff[leastHops].length * this.hopSize)) / (row.diff[leastHops].length + 1);
-      adjustedSegmentHeight = adjustedLinkLength + this.hopSize; 
+      adjustedSegmentHeight = adjustedLinkLength + this.hopSize;
 
       // Forward
       for (var j = 0; j < row.diff.forward.length; j++) {
@@ -256,13 +261,12 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
         } else {
           this.drawSegment(this.hopAsymOffset, hopY, this.hopAsymOffset, lastHopY, linkStyle, arrowStyle);
         }
-
       }
 
       // Set extra increment for next match
       if (j > 1 || k > 1) {
-        extra_inc += (k > j) ? k - 1 : j - 1; 
-      } 
+        extra_inc += (k > j) ? k - 1 : j - 1;
+      }
 
     }
 
@@ -355,7 +359,6 @@ TraceRoute.prototype.drawSegment = function(x1, y1, x2, y2, options, arrow_optio
       ctx.moveTo(-arrowX, arrowY);
       ctx.lineTo(arrowX, arrowY);
       ctx.lineTo(0, arrowY + o.arrow.arrowHeight);
-      ctx.fill();
     }
     else {
       arrowY = (-hypotenuse / 2) + (o.arrow.arrowHeight / 2);
@@ -367,11 +370,11 @@ TraceRoute.prototype.drawSegment = function(x1, y1, x2, y2, options, arrow_optio
     for (option in arrow_options) {
       ctx[option] = arrow_options[option];
     }
+
     ctx.fill();
 
   }
   ctx.restore();
-  
 }
 
 TraceRoute.prototype.drawHopLabel = function(hop, x, y, align) {

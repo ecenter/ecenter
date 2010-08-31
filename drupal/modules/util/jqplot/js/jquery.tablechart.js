@@ -34,20 +34,21 @@ function TableChart(el, options) {
   this.el = el;
 
   this.chartId = $.uuid('chart-');
-  this.chartContainer = $('<div>').attr('id', this.chartId);
+  this.chartContainer = $('<div class="tablechart">').attr('id', this.chartId);
 
   if (options.height) { this.chartContainer.height(options.height); }
   if (options.width) { this.chartContainer.width(options.width); }
 
   // Attach chart
-  if (!options.append) {
-    $(el).before(this.chartContainer);
-  }
-  else {
-    $(options.appendSelector).append(this.chartContainer);
-  }
+  //if (!options.append) {
+  $(el).prepend(this.chartContainer);
+  //}
+  //else {
+  //  $(options.appendSelector).append(this.chartContainer);
+  //}
 
   this.draw();
+  $('.tablechart').hide();
 
 }
 

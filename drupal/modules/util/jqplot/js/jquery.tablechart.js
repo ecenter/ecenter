@@ -16,7 +16,14 @@ $.fn.tablechart = function(options) {
         for (i in tabledata.data) {
           //chart.series[i].data = series[i];
         }
-        chart.replot({resetAxes: true});
+        var reset_axes = [];
+        for (var name in o.plotOptions.axes) {
+          var axis = o.plotOptions.axes[name];
+          if (axis.min == undefined || axis.max == undefined) {
+            reset_axes.push[name];
+          }
+        }
+        chart.replot({resetAxes: reset_axes});
       } else {
         // Push scraped labels into series options 
         $.extend(true, o.plotOptions.series, tabledata.labels);

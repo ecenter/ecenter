@@ -10,7 +10,7 @@
  * Theme main data display
  */
 function template_preprocess_ecenter_weathermap_data(&$vars) {
-  $vars['permalink'] = l('Permalink', 'weathermap', array('query' => http_build_query($vars['params'])));
+  $vars['permalink'] = l('Permalink', 'weathermap', array('query' => $vars['params']));
   $vars['snmp'] = theme('ecenter_weathermap_render_data_snmp', $vars['data']['diff']);
 }
 

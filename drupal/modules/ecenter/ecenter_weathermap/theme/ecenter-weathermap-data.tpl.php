@@ -6,7 +6,6 @@
   </div>
 
   <div id="results">
-    <p>Results!</p> 
     <?php print $snmp; ?>
   </div>
 

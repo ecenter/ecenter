@@ -5,6 +5,9 @@ Drupal.behaviors.ecenter_weathermap_behavior_dynamicload = function(context) {
     var data = $('#' + key).data('openlayers');
     var openlayers = data.openlayers;
 
+    console.log('---');
+    console.log(data);
+
     if (data) {
       // Remove all layers (that aren't a base layer)
       for (var i = openlayers.layers.length - 1; i >= 0; i--) {

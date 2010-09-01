@@ -74,6 +74,7 @@ function TraceRoute(el, data, options) {
 
   // Draw traceroute
   this.drawTraceroute();
+
 }
 
 TraceRoute.prototype.initCanvas = function() {

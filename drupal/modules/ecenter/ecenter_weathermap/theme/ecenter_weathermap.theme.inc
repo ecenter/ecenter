@@ -11,7 +11,9 @@
  */
 function template_preprocess_ecenter_weathermap_data(&$vars) {
   $vars['permalink'] = l('Permalink', 'weathermap', array('query' => $vars['params']));
-  $vars['snmp'] = theme('ecenter_weathermap_render_data_snmp', $vars['data']['diff']);
+  if (!empty($vars['data']['diff'])) {
+    $vars['snmp'] = theme('ecenter_weathermap_render_data_snmp', $vars['data']['diff']);
+  }
 }
 
 /**

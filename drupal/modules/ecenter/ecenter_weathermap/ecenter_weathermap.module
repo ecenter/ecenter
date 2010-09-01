@@ -440,8 +440,19 @@ function ecenter_weathermap_get_client($status_check = '503') {
 
 /**
  * Get/cache data
+ * 
+ * @param src_ip
+ *  Source IP address
+ * @param dst_ip
+ *  Destination IP address
+ * @param start
+ *  Start time
+ * @param end
+ *  End time
+ * @return
+ *  An array of parsed data
  */
-function ecenter_weathermap_get_data($src_ip, $dst_ip, $start, $end, $debug=FALSE) {
+function ecenter_weathermap_get_data($src_ip, $dst_ip, $start, $end) {
   $query = http_build_query(array(
     'src_ip' => $src_ip,
     'dst_ip' => $dst_ip,
@@ -449,15 +460,7 @@ function ecenter_weathermap_get_data($src_ip, $dst_ip, $start, $end, $debug=FALS
     'end' => $end,
   ));
 
-  //dpm($start);
-  //dpm($end);
-
   $caching = variable_get('ecenter_weathermap_cache_enabled', 0);
-
-  // REALLY janky debug
-  if ($debug) {
-
-  }
 
   if ($caching && $result = cache_get($query, 'cache_ecenter_weathermap')) {
     return $result->data;
@@ -819,7 +822,7 @@ function ecenter_weathermap_map_layers() {
 
     $data = ecenter_weathermap_get_data($src_ip, $dst_ip, $start_date_adjusted, $end_date_adjusted);
 
-    if ($data) {
+    if ($data && $data['forward']) {
       foreach ($data['forward'] as $trace_id => $traceroute) {
         // Initialize some counters, etc
         $old_hop = NULL;
@@ -891,6 +894,20 @@ function ecenter_weathermap_map_layers() {
   return $layers;
 }
 
+/**
+ * Create a curve the E-center weathermap
+ *
+ * @param from
+ *  Array consisting with keys for latitude and longitude
+ * @param to
+ *  Array consisting with keys for latitude and longitude
+ * @param index
+ *  An integer scaling factor for the control points used
+ * @param flip
+ *  Boolean: If true, flip curve upside down
+ * @return
+ *  An array of points on the curve
+ */
 function _ecenter_weathermap_curve($from, $to, $index = 0, $flip = FALSE) {
   $p0 = new Vector2d($from['longitude'], $from['latitude']);
   $p3 = new Vector2d($to['longitude'], $to['latitude']);
@@ -905,6 +922,24 @@ function _ecenter_weathermap_curve($from, $to, $index = 0, $flip = FALSE) {
   return _ecenter_weathermap_get_bezier($p0, $c1, $c2, $p3, $steps);
 }
 
+/**
+ * Create a bezier curve
+ *
+ * Calculate a bezier curve using the standard bezier algorithm.
+ *
+ * @param p0
+ *  Endpoint 1
+ * @param c1
+ *  Control point 1
+ * @param c2 
+ *  Control point 2
+ * @param p3
+ *  Endpoint 2
+ * @param steps
+ *  Number of steps (i.e. segments) to take
+ * @return
+ *  An array of points on the curve
+ */
 function _ecenter_weathermap_get_bezier($p0, $c1, $c2, $p3, $steps) {
   $div = 1 / $steps;
 
@@ -1019,7 +1054,7 @@ function ecenter_weathermap_openlayers_map_preprocess_alter(&$map) {
 
       $data = ecenter_weathermap_get_data($src_ip, $dst_ip, $start_date_adjusted, $end_date_adjusted);
 
-      if ($data) {
+      if ($data && !empty($data['forward'])) {
         $start = TRUE;
         foreach (array_keys($data['forward']) as $trace_id) {
           $map['layers']['ecenter_traceroute_'. $trace_id] = 'ecenter_traceroute_'. $trace_id;

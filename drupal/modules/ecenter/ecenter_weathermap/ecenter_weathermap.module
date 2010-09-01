@@ -273,7 +273,6 @@ function _ecenter_weathermap_select_form() {
  * primarily processes the form.
  */
 function ecenter_weathermap_select_form(&$form_state) {
-  $client = ecenter_weathermap_get_client();
 
   // Get base form and register with ahah_helper
   $form = _ecenter_weathermap_select_form();
@@ -440,17 +439,17 @@ function ecenter_weathermap_get_client($status_check = '503') {
 
 /**
  * Get/cache data
- * 
- * @param src_ip
- *  Source IP address
- * @param dst_ip
- *  Destination IP address
- * @param start
- *  Start time
- * @param end
- *  End time
+ *
+ * @param $src_ip
+ *   Source IP address
+ * @param $dst_ip
+ *   Destination IP address
+ * @param $start
+ *   Start time
+ * @param $end
+ *   End time
  * @return
- *  An array of parsed data
+ *   An array of parsed data
  */
 function ecenter_weathermap_get_data($src_ip, $dst_ip, $start, $end) {
   $query = http_build_query(array(
@@ -541,7 +540,7 @@ function _ecenter_weathermap_get_data_types() {
  *  - @TODO Calculate netblock based on mask
  *
  * @param $response
- *  A response object from the E-center webservice.
+ *   A response object from the E-center webservice.
  */
 function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
   static $queries = array();
@@ -897,16 +896,16 @@ function ecenter_weathermap_map_layers() {
 /**
  * Create a curve the E-center weathermap
  *
- * @param from
- *  Array consisting with keys for latitude and longitude
- * @param to
- *  Array consisting with keys for latitude and longitude
- * @param index
- *  An integer scaling factor for the control points used
- * @param flip
- *  Boolean: If true, flip curve upside down
+ * @param $from
+ *   Array consisting with keys for latitude and longitude
+ * @param $to
+ *   Array consisting with keys for latitude and longitude
+ * @param $index
+ *   An integer scaling factor for the control points used
+ * @param $flip
+ *   Boolean: If true, flip curve upside down
  * @return
- *  An array of points on the curve
+ *   An array of points on the curve
  */
 function _ecenter_weathermap_curve($from, $to, $index = 0, $flip = FALSE) {
   $p0 = new Vector2d($from['longitude'], $from['latitude']);
@@ -927,16 +926,16 @@ function _ecenter_weathermap_curve($from, $to, $index = 0, $flip = FALSE) {
  *
  * Calculate a bezier curve using the standard bezier algorithm.
  *
- * @param p0
- *  Endpoint 1
- * @param c1
- *  Control point 1
- * @param c2 
- *  Control point 2
- * @param p3
- *  Endpoint 2
- * @param steps
- *  Number of steps (i.e. segments) to take
+ * @param $p0
+ *   Endpoint 1
+ * @param $c1
+ *   Control point 1
+ * @param $c2
+ *   Control point 2
+ * @param $p3
+ *   Endpoint 2
+ * @param $steps
+ *   Number of steps (i.e. segments) to take
  * @return
  *  An array of points on the curve
  */
@@ -967,16 +966,16 @@ function _ecenter_weathermap_get_bezier($p0, $c1, $c2, $p3, $steps) {
  * Calculate control points for drawing Bezier curve between points
  *
  * @param $from
- *  Source coordinates
+ *   Source coordinates
  * @param $to
- *  Destination coordinates
+ *   Destination coordinates
  * @param $mag_scale
- *  A scaling factor for the control point vector
+ *   A scaling factor for the control point vector
  * @param $angle
- *  The angle of control point vector relative to the line
- *  between source and destination.
+ *   The angle of control point vector relative to the line
+ *   between source and destination.
  * @return
- *  Array of control points
+ *   Array of control points
  */
 function _ecenter_weathermap_get_control_points($to, $from, $mag_scale, $angle, $flip = FALSE) {
   $dirX = $to->x - $from->x;
@@ -1080,9 +1079,9 @@ function ecenter_weathermap_openlayers_map_preprocess_alter(&$map) {
  * so that AJAX/AHAH will work properly.
  *
  * @param $preset
- *  A string preset name.
+ *   A string preset name.
  * @param $id
- *  Optional ID to use for map.
+ *   Optional ID to use for map.
  */
 function ecenter_weathermap_refresh_map($preset, $id = NULL) {
   openlayers_include();
@@ -1103,11 +1102,11 @@ function ecenter_weathermap_refresh_map($preset, $id = NULL) {
  * Adjust local date to UTC
  *
  * @param $date
- *  A date string
+ *   A date string
  * @param $format
- *  Format to use for return value.
+ *   Format to use for return value.
  * @return string
- *  Formatted, converted date
+ *   Formatted, converted date
  */
 function _ecenter_weathermap_date_to_utc($date, $format = 'Y-m-d H:i:s') {
   $tz = date_default_timezone_name(TRUE);

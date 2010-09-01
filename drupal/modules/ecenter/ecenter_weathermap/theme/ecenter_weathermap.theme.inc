@@ -14,6 +14,7 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
   if (!empty($vars['data']['diff'])) {
     $vars['snmp'] = theme('ecenter_weathermap_render_data_snmp', $vars['data']['diff']);
   }
+  //dpm($vars['data']);
 }
 
 /**

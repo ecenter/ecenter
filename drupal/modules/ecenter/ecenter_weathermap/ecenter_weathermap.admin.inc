@@ -1,6 +1,11 @@
 <?php
 // $Id$
 
+/**
+ * @file
+ * Administrative configuration for E-center weathermap.
+ */
+
 function ecenter_weathermap_admin_form() {
   $client = ecenter_weathermap_get_client('message');
 

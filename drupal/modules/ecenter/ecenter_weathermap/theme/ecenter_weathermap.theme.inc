@@ -2,6 +2,11 @@
 // $Id$
 
 /**
+ * @file
+ * E-Center Weathermap theming.
+ */
+
+/**
  * Theme main data display
  */
 function template_preprocess_ecenter_weathermap_data(&$vars) {

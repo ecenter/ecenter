@@ -126,9 +126,9 @@ function ecenter_weathermap_init() {
     drupal_add_css(drupal_get_path('module', 'ecenter_weathermap') .'/css/plot.css');
 
     $inline_css = array(
-      '.ecenter-critical' => array('color' => variable_get('ecenter_weathermap_threshold_critical_color', '#cc0000'),),
-      '.ecenter-marginal' => array('color' => variable_get('ecenter_weathermap_threshold_marginal;_color', '#fe890c'),),
-      '.ecenter-good' => array('color' => variable_get('ecenter_weathermap_threshold_marginal;_color', '#1c8a24'),),
+      '.ecenter-critical' => array('color' => variable_get('ecenter_weathermap_threshold_critical_color', '#cc0000')),
+      '.ecenter-marginal' => array('color' => variable_get('ecenter_weathermap_threshold_marginal;_color', '#fe890c')),
+      '.ecenter-good' => array('color' => variable_get('ecenter_weathermap_threshold_marginal;_color', '#1c8a24')),
     );
     inline_css_add_css($inline_css);
   }
@@ -295,20 +295,20 @@ function ecenter_weathermap_select_form(&$form_state) {
   if (is_array($form_state['storage']['ip_select']['date_wrapper']['start_date'])) {
     $start_date = $form_state['storage']['ip_select']['date_wrapper']['start_date']['date'] .' '. $form_state['storage']['ip_select']['date_wrapper']['start_date']['time'];
   }
-  else if (!empty($form_state['storage']['ip_select']['date_wrapper']['start_date'])) {
+  elseif (!empty($form_state['storage']['ip_select']['date_wrapper']['start_date'])) {
     $start_date = $form_state['storage']['ip_select']['date_wrapper']['start_date'];
   }
-  else if (!empty($_REQUEST['start'])) {
+  elseif (!empty($_REQUEST['start'])) {
     $start_date = $_REQUEST['start'];
   }
 
   if (is_array($form_state['storage']['ip_select']['date_wrapper']['end_date'])) {
     $end_date = $form_state['storage']['ip_select']['date_wrapper']['end_date']['date'] .' '. $form_state['storage']['ip_select']['date_wrapper']['end_date']['time'];
   }
-  else if (!empty($form_state['storage']['ip_select']['date_wrapper']['end_date'])) {
+  elseif (!empty($form_state['storage']['ip_select']['date_wrapper']['end_date'])) {
     $end_date = $form_state['storage']['ip_select']['date_wrapper']['end_date'];
   }
-  else if (!empty($_REQUEST['end'])) {
+  elseif (!empty($_REQUEST['end'])) {
     $end_date = $_REQUEST['end'];
   }
 
@@ -571,7 +571,7 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
             'hop_ip' => $src_ip,
           ));
         }
-        else if ($direction == 'reverse_traceroute') {
+        elseif ($direction == 'reverse_traceroute') {
           array_unshift($traceroute, array(
             'hop_id' => 'end',
             'hop_ip' => $dst_ip,
@@ -734,7 +734,7 @@ function ecenter_weathermap_openlayers_styles() {
   $styles = array();
 
   // Default
-  $style = new stdclass();
+  $style = new stdClass();
   $style->api_version = 1;
   $style->name = 'ecenter_default';
   $style->title = t('E-center style');
@@ -749,7 +749,7 @@ function ecenter_weathermap_openlayers_styles() {
   $styles[$style->name] = $style;
 
   // Selected
-  $style = new stdclass();
+  $style = new stdClass();
   $style->api_version = 1;
   $style->name = 'ecenter_selected';
   $style->title = t('E-center selected style');

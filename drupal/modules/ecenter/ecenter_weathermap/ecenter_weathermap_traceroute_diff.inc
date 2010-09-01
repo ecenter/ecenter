@@ -15,13 +15,13 @@
  */
 
 function ecenter_weathermap_traceroute_diff($forward, $reverse) {
-  foreach($forward as $findex => $ovalue){
+  foreach ($forward as $findex => $ovalue) {
     // Find matching sequences
     $rkeys = ecenter_weathermap_traceroute_array_keys($reverse, $ovalue);  
 
-    foreach($rkeys as $rindex){
+    foreach ($rkeys as $rindex) {
       $matrix[$findex][$rindex] = isset($matrix[$findex - 1][$rindex - 1]) ? $matrix[$findex - 1][$rindex - 1] + 1 : 1;
-      if ($matrix[$findex][$rindex] > $maxlen){
+      if ($matrix[$findex][$rindex] > $maxlen) {
         $maxlen = $matrix[$findex][$rindex];
         $fmax = $findex + 1 - $maxlen;
         $rmax = $rindex + 1 - $maxlen;
@@ -66,7 +66,7 @@ function ecenter_weathermap_traceroute_diff($forward, $reverse) {
 
 function ecenter_weathermap_traceroute_array_keys($hops, $match) {
   $return = array();
-  foreach($hops as $k => $hop) {
+  foreach ($hops as $k => $hop) {
     if ($hop['hop']['netblock'] == $match['hop']['netblock']) {
       $return[] = $k;
     }

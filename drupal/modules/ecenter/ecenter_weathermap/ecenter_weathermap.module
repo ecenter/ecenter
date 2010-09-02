@@ -725,7 +725,7 @@ function ecenter_weathermap_openlayers_presets() {
         'activated' => 0,
       ),
       //'openlayers_behavior_keyboarddefaults' => array(),
-      'openlayers_behavior_layerswitcher' => array(),
+      //'openlayers_behavior_layerswitcher' => array(),
       'openlayers_behavior_navigation' => array(
         'zoomWheelEnabled' => 0,
       ),
@@ -734,8 +734,8 @@ function ecenter_weathermap_openlayers_presets() {
     'default_layer' => 'osm_mapnik',
     'layers' => array(
       'osm_mapnik' => 'osm_mapnik',
-      'google_hybrid' => 'google_hybrid',
-      'google_normal' => 'google_normal',
+      //'google_hybrid' => 'google_hybrid',
+      //'google_normal' => 'google_normal',
     ),
     'layer_styles' => array(
       'ecenter_map_test_display_openlayers_1' => 'ecenter_default',

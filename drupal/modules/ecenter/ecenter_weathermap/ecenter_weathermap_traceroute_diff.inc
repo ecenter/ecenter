@@ -49,8 +49,8 @@ function ecenter_weathermap_traceroute_diff($forward, $reverse) {
   while (!empty($fwd_slices) && !empty($rev_slices)) {
     $slices[] = array(
       'match' => array(
-        'forward' => array_pop($fwd_slices),
-        'reverse' => array_pop($rev_slices),
+        'forward' => array(array_pop($fwd_slices)),
+        'reverse' => array(array_pop($rev_slices)),
       ),
     );
   }
@@ -66,8 +66,6 @@ function ecenter_weathermap_traceroute_diff($forward, $reverse) {
 
 function ecenter_weathermap_traceroute_array_keys($hops, $match) {
   $return = array();
-  //dpm($hops);
-  //dpm($match);
   foreach ($hops as $k => $hop) {
 
     if ($hop['hop']['hop_ip'] == $match['hop']['hop_ip']) {

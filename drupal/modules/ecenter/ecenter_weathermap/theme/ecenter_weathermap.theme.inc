@@ -16,7 +16,7 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
   }
 
   $vars['end_to_end_table'] = theme('ecenter_weathermap_render_data_end_to_end_table', $vars['data']['end_to_end']);
-  dpm($vars['data']);
+  //dpm($vars['data']);
 }
 
 /**
@@ -27,7 +27,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
   $plot_options = array(
     'width' => 580,
     'height' => 200,
-    'hideTables' => TRUE,
+    'hideTables' => FALSE,
     'plotOptions' => array(
       'seriesDefaults' => array(
         'lineWidth' => 1.5,
@@ -91,19 +91,27 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
 
   // @TODO whoa, way nested, really ugly and complicated
   foreach ($data as $row) {
+    $table = array();
+    $match = (!empty($row['match'])) ? TRUE : FALSE;
+    dpm($row);
 
-    // For matches, create "couplets" of tables to be plotted on the same chart
-    if (!empty($row['match'])) {
-      $table = array();
+    $hops = array_shift(array_values($row));
 
-      $id = $row['match']['forward']['hop']['hop_id'];
+    foreach (array('forward', 'reverse') as $direction) {
+      if (empty($hops[$direction]['data']['snmp'])) {
+        continue;
+      }
 
-      foreach (array('forward', 'reverse') as $direction) {
-        if (empty($row['match'][$direction]['data']['snmp'])) {
-          continue;
-        }
+      if ($match) {
+        $hop_array = array($hops[$direction]);;
+        dpm($hop_array);
+      }
+      else {
+        $hop_array = $hops[$direction];
+        dpm($hop_array);
+      }
 
-        $hop = $row['match'][$direction];
+      foreach ($hop_array as $hop) {
         if (!empty($hop['data']['snmp']) && is_array($hop['data']['snmp'])) {
           foreach ($hop['data']['snmp'] as $item) {
             $table[$direction][] = array(
@@ -112,22 +120,41 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
                 'header' => TRUE,
               ),
               'utilization' => array(
-                'data' => sprintf('%01.2f', 100 * ($item[1]['utilization'] / $item[1]['capacity'])),
+                'data' => sprintf('%01.4f', 100 * ($item[1]['utilization'] / $item[1]['capacity'])),
                 'class' => $class,
               ),
             );
           }
-
         }
       }
+    }
 
-      $output = '<div class="snmp-chart-wrapper" id="hop-'. $id .'">';
+    if ($match) {
+      $id = $row['match']['forward']['hop']['hop_id'];
+      $output = '<h1>Match...</h1>';
+      $output .= '<div class="snmp-chart-wrapper" id="hop-'. $id .'">';
       $output .= (!empty($table['forward'])) ? theme('ecenter_weathermap_table', $headers, $table['forward']) : '';
       $output .= (!empty($table['reverse'])) ? theme('ecenter_weathermap_table', $headers, $table['reverse']) : '';
       $output .= '</div>';
       $out[] = $output;
     }
+
+    if (!$match) {
+      $id = $row['diff']['forward']['hop']['hop_id'];
+      $output = '<h1>Diff...</h1>';
+      $output .= '<div class="snmp-chart-wrapper" id="hop-'. $id .'">';
+      $output .= (!empty($table['forward'])) ? theme('ecenter_weathermap_table', $headers, $table['forward']) : '';
+      $output .= '</div>';
+
+      $id = $row['diff']['reverse']['hop']['hop_id'];
+      $output .= '<div class="snmp-chart-wrapper" id="hop-'. $id .'">';
+      $output .= (!empty($table['reverse'])) ? theme('ecenter_weathermap_table', $headers, $table['reverse']) : '';
+      $output .= '</div>';
+      $out[] = $output;
+    }
+
   }
+
   jqplot_register_tablechart('.snmp-chart-wrapper', $plot_options);
 
   return implode("\n", $out);

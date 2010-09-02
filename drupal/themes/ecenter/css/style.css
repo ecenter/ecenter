@@ -11,7 +11,6 @@
  * The absolute base font size, just like Blueprint, is 16px. The effective
  * base font size is 14px (87.5% of 16px).
  */
- /*
 @font-face {
   font-family:'Raleway';
   src:url(../font/raleway_thin.otf) format('opentype');
@@ -139,6 +138,9 @@ h6 {
   font-weight: normal;
   font-size: 0.875em;
 }
+#content-body table thead th a {
+  color: #fff;
+}
 #content-body table td, #content-body table th {
   border: 1px solid #999;
   padding: .2em .5em;
@@ -212,6 +214,7 @@ input.form-submit {
   );
 }
 span.form-quickselect_dropdown {
+  font-size: 1.25em;
   position: relative;
   top: 2px;
   background-color: #ddd;
@@ -464,20 +467,48 @@ h1#site-name a:hover {
 /* }}} */
 
 /* -- Weathermap -- */
+/* Map {{{ */
+#weathermap-wrapper {
+  margin-bottom: 1.5em;
+}
+#weathermap-map {
+  width: 660px;
+  float: left;
+  margin-right: 20px;
+}
+#weathermap-results {
+  float: left;
+  width: 260px;
+}
+/* }}} */
 /* Source/destination selector {{{ */
 #ip-select-wrapper {
   margin-top: 1.5em;
+  background-color: #dedede;
+  padding: 13px 8px;
+  -moz-box-shadow: 3px 2px .4em 0 #888;
+  margin-bottom: 1em;
+  border: 1px solid #999;
 }
 #ecenter-weathermap-select-form .form-quickselect {
-  width: 300px;
+  width: 330px;
+  font-size: 1.25em;
 }
 #ecenter-weathermap-select-form #src-ip-wrapper,
 #ecenter-weathermap-select-form #dst-ip-wrapper {
-  width: 470px;
+  margin-top: .75em;
+  width: 460px;
   float: left;
 }
+#ecenter-weathermap-select-form .form-item {
+  margin-bottom: 0;
+}
 /* }}} */
-/* Progress throbbers {{{ */
+/* Loading {{{ */
+#ecenter-weathermap-select-form.data-loading .datehide-display .date {
+  background-color: #eee;
+  color: #aaa;
+}
 #ecenter-weathermap-select-form .progress-disabled {
   float: none;
 }
@@ -488,6 +519,7 @@ h1#site-name a:hover {
   border-top: 1px solid #aaa;
   border-bottom: 1px solid #aaa;
   padding: 0 7px;
+  background-color: #fff;
 }
 #ecenter-weathermap-select-form .label {
   width: 80px;
@@ -529,7 +561,7 @@ h1#site-name a:hover {
 #date-wrapper .container-inline-date {
   clear: none;
   float: left;
-  width: 350px;
+  width: 410px;
 }
 #date-wrapper .form-item {
   margin-bottom: 0;
@@ -564,6 +596,9 @@ h1#site-name a:hover {
 #results-wrapper {
   margin-top: 1.5em;
 }
+html.js .end-to-end-results {
+  display: none;
+}
 /* }}} */
 /* Traceroute "subway map" {{{ */
 .traceroute-graph-wrapper .traceroute-label {
@@ -573,8 +608,17 @@ h1#site-name a:hover {
 .traceroute-graph-wrapper .labels-left .traceroute-label {
   text-align: right;
 }
-
+.hop-wrapper {
+  background-color: #fff;
+  padding: 14px;
+  border: 3px solid #ccc;
+}
+#traceroute .has-chart {
+  color: #007700;
+}
 /* }}} */
+
+
 
 /* --- Overrides and fixes --- */
 /* Fix vertical tabs and views vertical tabs {{{ */
@@ -626,40 +670,5 @@ h1#site-name a:hover {
   border-top: 1px solid #ccc;
   padding-left: 3px;
   padding-top: 1px;
-}
-/* }}} */
-/* Date popup datepicker {{{ */
-.ui-datepicker-div, .ui-datepicker-inline, #ui-datepicker-div {
-  padding-top: .25em;
-  margin-bottom: .25em;
-}
-#ui-datepicker-div table {
-  width: 100%;
-}
-#ui-datepicker-div table td,
-#ui-datepicker-div table th {
-  text-align: center;
-  width: 14.2%;
-  border: 1px solid #fff;
-}
-#ui-datepicker-div table td {
-  background-color: #ddd;
-  font-weight: bold;
-}
-#ui-datepicker-div table td.ui-datepicker-unselectable {
-  background-color: transparent;
-}
-.ui-datepicker-next,
-.ui-datepicker-prev {
-  background: none;
-  top: .25em;
-}
-.ui-datepicker-next {
-  left: 13em;
-}
-.ui-datepicker-title {
-  text-align: center;
-  margin-bottom: .25em;
-  font-weight: bold;
 }
 /* }}} */

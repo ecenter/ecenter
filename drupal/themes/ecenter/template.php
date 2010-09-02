@@ -16,11 +16,11 @@ function ecenter_theme() {
 /**
  * Preprocess page
  */
-function ecenter_preprocess_page(&$vars) {
+/*function ecenter_preprocess_page(&$vars) {
   if (drupal_is_front_page()) {
     unset($vars['breadcrumb']);
   }
-}
+}*/
 
 function ecenter_preprocess_wiki_node_form(&$vars) {
   $form = $vars['form'];

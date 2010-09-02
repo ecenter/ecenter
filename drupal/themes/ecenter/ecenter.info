@@ -16,8 +16,4 @@ regions[footer] = Footer
 ; Styles
 stylesheets[all][] = css/blueprint/reset.css
 stylesheets[all][] = css/style.css
-
-; Working for kitt compability, see
-; http://drupalcode.org/viewvc/drupal/contributions/modules/kit/kitt.txt?view=co
-; for more information
-kitt = "1.0-draft"
+conditional-stylesheets[if IE][all][] = css/ie.css

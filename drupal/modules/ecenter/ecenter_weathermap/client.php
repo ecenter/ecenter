@@ -162,7 +162,7 @@ class Ecenter_Data_Service_Client {
    * @return
    *   Result for this query.
    */
-  public function getData($src_ip, $dst_ip, $start, $end, $resolution = 40) {
+  public function getData($src_ip, $dst_ip, $start, $end, $resolution = 50) {
     $parameters = array(
       'src_ip' => $src_ip,
       'dst_ip' => $dst_ip,

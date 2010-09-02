@@ -14,6 +14,9 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
   if (!empty($vars['data']['diff'])) {
     $vars['snmp'] = theme('ecenter_weathermap_render_data_snmp', $vars['data']['diff']);
   }
+
+  $vars['end_to_end_table'] = theme('ecenter_weathermap_render_data_end_to_end_table', $vars['data']['end_to_end']);
+  dpm($vars['data']);
 }
 
 /**
@@ -37,11 +40,11 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
       'axes' => array(
         'xaxis' => array(
           'pad' => 0,
-          //'renderer' => '$.jqplot.DateAxisRenderer',
-          //'tickOptions' => array(
-          //  'formatString' => "%H:%M",
-          //),
-          //'label' => t('Time (@date)', array('@date' => $date_label)),
+          'renderer' => '$.jqplot.DateAxisRenderer',
+          'tickOptions' => array(
+            'formatString' => "%H:%M",
+          ),
+          'label' => t('Time (@date)', array('@date' => $date_label)),
           'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
         ),
         'yaxis' => array(
@@ -131,35 +134,10 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
 }
 
 /**
- * Theme pingER data
+ * Theme end to end data table
  */
-function theme_ecenter_weathermap_render_data_pinger($data) {
-  return 'pinger data';
-}
-
-/**
- * Theme bwctl data
- */
-function theme_ecenter_weathermap_render_data_bwctl($data) {
-  return 'bwctl data';
-}
-
-/**
- * Theme owamp data
- */
-function theme_ecenter_weathermap_render_data_owamp($data) {
-  return 'owamp data';
-}
-
-/**
- * Theme traceroute
- */
-function theme_ecenter_weathermap_traceroute($hops) {
-  $output = '';
-  foreach ($hops as $hop) {
-    $output .= ' '. $hop->hop_ip;
-  }
-  return $output;
+function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
+  return '<p>generate and display table here...</p>';
 }
 
 /**

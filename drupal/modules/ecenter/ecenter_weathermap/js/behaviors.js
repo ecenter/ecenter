@@ -24,6 +24,15 @@ Drupal.behaviors.EcenterEvents = function(context) {
 }
 
 /**
+ * @TODO Remove element after moving...
+ */
+Drupal.behaviors.EcenterRepositionResults = function(context) {
+  var results = $('.end-to-end-results');
+  $('#weathermap-end-to-end-results').html(results.html());
+  $('#weathermap-end-to-end-results .end-to-end-results').css('display', 'block');
+}
+
+/**
  * Disable form elements during AHAH request
  *
  * Adding this to Drupal behaviors causes some serious chaos because it winds

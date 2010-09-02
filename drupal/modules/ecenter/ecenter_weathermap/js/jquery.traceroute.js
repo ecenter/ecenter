@@ -197,7 +197,7 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
 
       }
       last_match_y = hopY;
-      this.drawHopLabel(row.match.forward.hop, 0, hopY - this.hopSize);
+      this.drawHopLabel(row.match.forward, 0, hopY - this.hopSize);
     }
 
     if (row.diff != undefined) {
@@ -231,7 +231,7 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
         arrowStyle = (hop.arrowStyle != undefined) ? hop.arrowStyle : o.arrow.style;
         this.drawSegment(this.forwardLinkX, lastHopY, this.forwardLinkX, hopY, linkStyle, arrowStyle);
 
-        this.drawHopLabel(hop.hop, 0, hopY - this.hopSize);
+        this.drawHopLabel(hop, 0, hopY - this.hopSize);
 
       }
 
@@ -253,7 +253,7 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
         last_reverse_diff_y = hopY;
 
         this.drawHop(this.hopAsymOffset, hopY, o.hop.radius, hopStyle);
-        this.drawHopLabel(hop.hop, o.label.width + this.hopAsymOffset + this.hopSize, hopY - this.hopSize, 'right');
+        this.drawHopLabel(hop, o.label.width + this.hopAsymOffset + this.hopSize, hopY - this.hopSize, 'right');
 
         if (k == 0) {
           this.drawSegment(this.hopAsymOffset, hopY, this.hopRadius, last_match_y, linkStyle, arrowStyle);
@@ -376,9 +376,12 @@ TraceRoute.prototype.drawSegment = function(x1, y1, x2, y2, options, arrow_optio
   ctx.restore();
 }
 
-TraceRoute.prototype.drawHopLabel = function(hop, x, y, align) {
+TraceRoute.prototype.drawHopLabel = function(hop_data, x, y, align) {
   var o = this.options;
-  label = $('<div class="trace-label" hopid="' + hop.hop_id + '"><strong>' + hop.hop_ip + '</strong> / ' + hop.netblock + ' (' + hop.hub +')</div>');
+  label = $('<div class="trace-label" hopid="' + hop_data.hop.hop_id + '"><strong>' + hop_data.hop.hop_ip + '</strong> / ' + hop_data.hop.netblock + ' (' + hop_data.hop.hub +')</div>');
+  if (hop_data.data.snmp != null && hop_data.data.snmp.length) {
+    label.addClass('has-chart');
+  }
   label_width = o.label.width - o.label.side_padding;
   css = {
     'width' : label_width + 'px',

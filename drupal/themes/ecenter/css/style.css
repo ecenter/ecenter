@@ -617,7 +617,14 @@ html.js .end-to-end-results {
   color: #007700;
 }
 /* }}} */
-
+/* Charts {{{ */
+.snmp-chart-wrapper table {
+  margin-bottom: .75em;
+}
+.snmp-chart-wrapper {
+  margin-bottom: 1.5em;
+}
+/* }}} */
 
 
 /* --- Overrides and fixes --- */

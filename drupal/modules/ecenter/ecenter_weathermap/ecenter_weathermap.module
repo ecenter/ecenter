@@ -539,6 +539,8 @@ function _ecenter_weathermap_get_data_types() {
  *  - Geolocate IP addresses without geodata
  *  - @TODO Calculate netblock based on mask
  *
+ * @TODO only parse most recent traceroute...
+ *
  * @param $response
  *   A response object from the E-center webservice.
  */
@@ -566,18 +568,40 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
 
         $parsed[$trace_id] = array();
 
-        // Add src ip to forward trace
+        // Synthetic hops
         if ($direction == 'traceroute') {
-          array_unshift($traceroute, array(
-            'hop_id' => 'start',
-            'hop_ip' => $src_ip,
-          ));
+          if ($traceroute[0]['hop_ip'] != $src_ip) {
+            //dpm('added first hop to fwd');
+            array_unshift($traceroute, array(
+              'hop_id' => 'start',
+              'hop_ip' => $src_ip,
+            ));
+          }
+          $last = count($traceroute) -1;
+          if ($traceroute[$last]['hop_ip'] != $dst_ip) {
+            //dpm('added final hop to fwd');
+            array_push($traceroute, array(
+              'hop_id' => 'end',
+              'hop_ip' => $dst_ip,
+            ));
+          }
         }
         elseif ($direction == 'reverse_traceroute') {
-          array_unshift($traceroute, array(
-            'hop_id' => 'end',
-            'hop_ip' => $dst_ip,
-          ));
+          if ($traceroute[0]['hop_ip'] != $dst_ip) {
+            //dpm('added first hop to rev');
+            array_unshift($traceroute, array(
+              'hop_id' => 'end',
+              'hop_ip' => $dst_ip,
+            ));
+          }
+          $last = count($traceroute) -1;
+          if ($traceroute[$last]['hop_ip'] != $src_ip) {
+            //dpm('added final hop to rev');
+            array_push($traceroute, array(
+              'hop_id' => 'start',
+              'hop_ip' => $src_ip,
+            ));
+          }
         }
 
         foreach ($traceroute as $hop) {
@@ -590,7 +614,7 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
             $hop['latitude'] = $geo->latitude;
             $hop['geolocated'] = TRUE;
           }
-  
+
           // SNMP
           $hop_data['snmp'] = $data['snmp'][$hop['hop_id']];
 
@@ -632,8 +656,11 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
     if (!empty($queries[$response->query]['forward']) && !empty($queries[$response->query]['reverse'])) {
       $forward = array_shift(array_values($queries[$response->query]['forward']));
       $reverse = array_reverse(array_shift(array_values($queries[$response->query]['reverse'])));
-      $queries[$response->query]['diff'] = traceroute_diff($forward, $reverse);
+      $queries[$response->query]['diff'] = ecenter_weathermap_traceroute_diff($forward, $reverse);
       $queries[$response->query]['traceroute_max'] = (count($forward) > count($reverse)) ? count($forward) : count($reverse);
+      dpm($forward);
+      dpm($reverse);
+      dpm($queries[$response->query]['diff']);
     }
     elseif (!empty($queries[$response->query]['forward'])) {
       $diff = array();
@@ -855,10 +882,10 @@ function ecenter_weathermap_map_layers() {
               $features[] = array(
                 'wkt' => "LINESTRING($line)",
                 'projection' => "4326",
-                'attributes' => array(
+                /*'attributes' => array(
                   'name' => $old_hop['hub'] .' ('. $old_hop['hop_ip'] .') to '. $hop['hub'] .' ('. $hop['hop_ip'] .')',
                   'description' => 'Stub for useful data',
-                ),
+                ),*/
                 'style' => array(
                   'strokeWidth' => 4,
                   'strokeColor' => '#444444',

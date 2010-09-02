@@ -28,7 +28,7 @@ $.fn.traceroute.defaults = {
   'drawArrows' : true,
   'append' : true,
   'link' : {
-    'linkLength' : 15,
+    'linkLength' : 22,
     'style' : {
       'lineWidth' : 4,
       'strokeStyle' : '#aaaaaa'
@@ -51,7 +51,7 @@ $.fn.traceroute.defaults = {
     }
   },
   'label' : {
-    'width' : 120,
+    'width' : 230,
     'side_padding' : 6,
     'top_padding' : 9,
     'font_size' : '11px'
@@ -378,7 +378,7 @@ TraceRoute.prototype.drawSegment = function(x1, y1, x2, y2, options, arrow_optio
 
 TraceRoute.prototype.drawHopLabel = function(hop, x, y, align) {
   var o = this.options;
-  label = $('<div class="label" hopid="' + hop.hop_id + '">' + hop.hop_id + ' (' + hop.hop_ip + ')</div>');
+  label = $('<div class="trace-label" hopid="' + hop.hop_id + '"><strong>' + hop.hop_ip + '</strong> / ' + hop.netblock + ' (' + hop.hub +')</div>');
   label_width = o.label.width - o.label.side_padding;
   css = {
     'width' : label_width + 'px',

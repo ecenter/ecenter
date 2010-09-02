@@ -14,25 +14,11 @@ Drupal.behaviors.ecenter_weathermap_behavior_dynamicload = function(context) {
         }
       }
 
-      try {
-        console.log('Dynamically loading layers...');
-      }
-      catch(e) {}
-
-
       // Similar to addLayers method in OpenLayers module JS
       for (var name in map.layers) {
         var layer;
         var options = map.layers[name];
         options.drupalID = name;
-
-        try {
-          if (layer.isBaseLayer === false) {
-            console.log('Found a layer to add...');
-            console.log(options);
-          }
-        }
-        catch(e) {}
 
         // Ensure that the layer handler is available
         if (options.layer_handler !== undefined && Drupal.openlayers.layer[options.layer_handler] !== undefined) {
@@ -43,13 +29,6 @@ Drupal.behaviors.ecenter_weathermap_behavior_dynamicload = function(context) {
             if (map.center.wrapdateline === '1') {
               layer.wrapDateLine = true;
             }
-
-            try {
-              console.log('Adding layer...');
-              console.log(layer);
-            }
-            catch(e) {}
-
             openlayers.addLayer(layer);
           }
 

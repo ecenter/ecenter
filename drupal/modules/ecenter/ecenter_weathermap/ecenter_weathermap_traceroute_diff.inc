@@ -10,14 +10,14 @@
  * Available on Github at:
  * http://github.com/paulgb/simplediff/blob/5bfe1d2a8f967c7901ace50f04ac2d9308ed3169/simplediff.php
  *
- * The original code is released under the zlib/libpng license 
+ * The original code is released under the zlib/libpng license
  * (http://www.opensource.org/licenses/zlib-license.php).
  */
 
 function ecenter_weathermap_traceroute_diff($forward, $reverse) {
   foreach ($forward as $findex => $ovalue) {
     // Find matching sequences
-    $rkeys = ecenter_weathermap_traceroute_array_keys($reverse, $ovalue);  
+    $rkeys = ecenter_weathermap_traceroute_array_keys($reverse, $ovalue);
 
     foreach ($rkeys as $rindex) {
       $matrix[$findex][$rindex] = isset($matrix[$findex - 1][$rindex - 1]) ? $matrix[$findex - 1][$rindex - 1] + 1 : 1;
@@ -36,7 +36,7 @@ function ecenter_weathermap_traceroute_diff($forward, $reverse) {
   if ($maxlen == 0) {
     return array(array(
       'diff' => array(
-        'forward' => $forward, 
+        'forward' => $forward,
         'reverse' => $reverse,
       )
     ));
@@ -66,10 +66,19 @@ function ecenter_weathermap_traceroute_diff($forward, $reverse) {
 
 function ecenter_weathermap_traceroute_array_keys($hops, $match) {
   $return = array();
+  //dpm($hops);
+  //dpm($match);
   foreach ($hops as $k => $hop) {
     if ($hop['hop']['netblock'] == $match['hop']['netblock']) {
       $return[] = $k;
     }
+    /*if (!empty($hop['hop']['hub']) && $hop['hop']['hub'] == $match['hop']['hub']) {
+      $return[] = $k;
+    }
+    elseif ($hop['hop']['hop_ip'] == $match['hop']['hop_ip']) {
+      $return[] = $k;
+    }*/
+
   }
   return $return;
 }

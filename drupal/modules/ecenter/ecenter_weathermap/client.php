@@ -75,7 +75,7 @@ class Ecenter_Data_Service_Client {
     $url = str_replace('&amp;', '&', $url);
 
     if (empty($results[$url])) {
-      dpm('Query URL: '. $url);
+      //dpm('Query URL: '. $url);
 
       $handle = curl_init();
 
@@ -162,7 +162,7 @@ class Ecenter_Data_Service_Client {
    * @return
    *   Result for this query.
    */
-  public function getData($src_ip, $dst_ip, $start, $end, $resolution = 20) {
+  public function getData($src_ip, $dst_ip, $start, $end, $resolution = 40) {
     $parameters = array(
       'src_ip' => $src_ip,
       'dst_ip' => $dst_ip,

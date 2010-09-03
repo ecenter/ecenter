@@ -557,7 +557,7 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
     $data =& $queries[$response->query]['data'];
 
     //dpm($data);
-    
+
     foreach (array('traceroute', 'reverse_traceroute') as $direction) {
       // We may not have ANY forward or reverse traceroutes
       if (empty($data[$direction])) {
@@ -642,15 +642,26 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
       if (!is_array($data[$type])) {
         continue;
       }
-      foreach ($data[$type] as $test_ip => $destinations) {
-        $test_netblock = long2ip(ip2long($test_ip) & ~((1 << 8) - 1));
-        if ($test_netblock == $src_netblock) {
-          $end_to_end['forward'][$type] = $destinations;
+
+      // @TODO investigate potential problems with this approach...
+      $end_to_end[$type] = array('forward' => array(), 'reverse' => array());
+
+      foreach ($data[$type] as $test_src_ip => $destinations) {
+        $test_src_netblock = long2ip(ip2long($test_src_ip) & ~((1 << 8) - 1));
+        if ($test_src_netblock == $src_netblock) {
+          //$end_to_end[$type]['forward'] = $destinations;
+          foreach ($destinations as $test_dst_ip => $test_data) {
+            $end_to_end[$type]['forward'] += $test_data;
+          }
         }
-        if ($test_netblock == $dst_netblock) {
-          $end_to_end['reverse'][$type] = $destinations;
+        if ($test_src_netblock == $dst_netblock) {
+          //$end_to_end[$type]['revberse'] = $destinations;
+          foreach ($destinations as $test_src_ip => $test_data) {
+            $end_to_end[$type]['reverse'] += $test_data;
+          }
         }
       }
+
     }
     $queries[$response->query]['end_to_end'] = $end_to_end;
 
@@ -665,7 +676,7 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
       $diff = array();
       $forward = $queries[$response->query]['forward'];
       foreach ($forward as $row) {
-        $diff[] = array('match' => array('forward' => $row));
+        $diff[] = array('match' => array('forward' => array($row)));
       }
       $queries[$response->query]['diff'] = $diff;
     }

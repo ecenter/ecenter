@@ -15,8 +15,12 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
     $vars['snmp'] = theme('ecenter_weathermap_render_data_snmp', $vars['data']['diff']);
   }
 
-  $vars['end_to_end_table'] = theme('ecenter_weathermap_render_data_end_to_end_table', $vars['data']['end_to_end']);
-  //dpm($vars['data']);
+  if (!empty($vars['data']['end_to_end'])) {
+    $vars['end_to_end_table'] = theme('ecenter_weathermap_render_data_end_to_end_table', $vars['data']['end_to_end']);
+  }
+  else {
+    $vars['end_to_end_table'] = t('No end to end data available');
+  }
 }
 
 /**
@@ -27,7 +31,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
   $plot_options = array(
     'width' => 580,
     'height' => 200,
-    'hideTables' => FALSE,
+    'hideTables' => TRUE,
     'plotOptions' => array(
       'seriesDefaults' => array(
         'lineWidth' => 1.5,
@@ -93,45 +97,35 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
   foreach ($data as $row) {
     $table = array();
     $match = (!empty($row['match'])) ? TRUE : FALSE;
-    dpm($row);
 
-    $hops = array_shift(array_values($row));
+    $all_hops = array_shift(array_values($row));
 
-    foreach (array('forward', 'reverse') as $direction) {
-      if (empty($hops[$direction]['data']['snmp'])) {
-        continue;
-      }
+    foreach (array('forward', 'reverse') as $direction) {\
 
-      if ($match) {
-        $hop_array = array($hops[$direction]);;
-        dpm($hop_array);
-      }
-      else {
-        $hop_array = $hops[$direction];
-        dpm($hop_array);
-      }
+      $hops = $all_hops[$direction];
 
-      foreach ($hop_array as $hop) {
-        if (!empty($hop['data']['snmp']) && is_array($hop['data']['snmp'])) {
-          foreach ($hop['data']['snmp'] as $item) {
-            $table[$direction][] = array(
-              'label' => array(
-                'data' => $item[0],
-                'header' => TRUE,
-              ),
-              'utilization' => array(
-                'data' => sprintf('%01.4f', 100 * ($item[1]['utilization'] / $item[1]['capacity'])),
-                'class' => $class,
-              ),
-            );
+      if (!empty($hops) && is_array($hops)) {
+        foreach ($hops as $hop) {
+          if (!empty($hop['data']['snmp']) && is_array($hop['data']['snmp'])) {
+            foreach ($hop['data']['snmp'] as $item) {
+              $table[$direction][] = array(
+                'label' => array(
+                  'data' => $item[0],
+                  'header' => TRUE,
+                ),
+                'utilization' => array(
+                  'data' => sprintf('%01.4f', 100 * ($item[1]['utilization'] / $item[1]['capacity'])),
+                  'class' => $class,
+                ),
+              );
+            }
           }
         }
       }
     }
 
     if ($match) {
-      $id = $row['match']['forward']['hop']['hop_id'];
-      $output = '<h1>Match...</h1>';
+      $id = $row['match']['forward'][0]['hop']['hop_id'];
       $output .= '<div class="snmp-chart-wrapper" id="hop-'. $id .'">';
       $output .= (!empty($table['forward'])) ? theme('ecenter_weathermap_table', $headers, $table['forward']) : '';
       $output .= (!empty($table['reverse'])) ? theme('ecenter_weathermap_table', $headers, $table['reverse']) : '';
@@ -140,13 +134,12 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
     }
 
     if (!$match) {
-      $id = $row['diff']['forward']['hop']['hop_id'];
-      $output = '<h1>Diff...</h1>';
+      $id = $row['diff']['forward'][0]['hop']['hop_id'];
       $output .= '<div class="snmp-chart-wrapper" id="hop-'. $id .'">';
       $output .= (!empty($table['forward'])) ? theme('ecenter_weathermap_table', $headers, $table['forward']) : '';
       $output .= '</div>';
 
-      $id = $row['diff']['reverse']['hop']['hop_id'];
+      $id = $row['diff']['reverse'][0]['hop']['hop_id'];
       $output .= '<div class="snmp-chart-wrapper" id="hop-'. $id .'">';
       $output .= (!empty($table['reverse'])) ? theme('ecenter_weathermap_table', $headers, $table['reverse']) : '';
       $output .= '</div>';
@@ -156,7 +149,6 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
   }
 
   jqplot_register_tablechart('.snmp-chart-wrapper', $plot_options);
-
   return implode("\n", $out);
 }
 
@@ -164,7 +156,100 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
  * Theme end to end data table
  */
 function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
-  return '<p>generate and display table here...</p>';
+  //dpm($data);
+
+  // BWCTL
+  /*foreach ($data['bwctl']['forward'] as $item) {
+    list($timestamp, $values) = $item;
+    $tz = date_default_timezone_name(TRUE);
+    $date = date_make_date($timestamp, $tz, DATE_UNIX);
+    dpm(date_format($date, 'Y-m-d H:i'));
+    dpm($values['throughput']);
+    dpm((float) $values['throughput'] / 1e+06);
+  }*/
+  
+  $table = array();
+  $headers = array('', t('Average'), t('Max'), t('Min'));
+
+  if (!empty($data['pinger']['forward'])) {
+    foreach ($data['pinger']['forward'] as $item) {
+      list($timestamp, $values) = $item;
+
+      $forward_mean_rtt[] = $values['meanRtt'];
+      $forward_max_rtt = ($values['maxRtt'] > $forward_max_rtt) ? $values['maxRtt'] : $forward_max_rtt;
+      $forward_min_rtt = (!$forward_min_rtt || ($values['minRtt'] < $forward_min_rtt)) ? $values['minRtt'] : $forward_min_rtt;
+
+      $forward_mean_iqripd[] = $values['iqrIpd'];
+      $forward_max_iqripd = ($values['iqrIpd'] > $forward_max_iqripd) ? $values['iqrIpd'] : $forward_max_iqripd;
+      $forward_min_iqripd = (!$forward_min_iqr_ipd || ($values['iqrIpd'] < $forward_min_iqripd)) ? $values['iqrIpd'] : $forward_min_iqripd;
+
+      $forward_mean_loss[] = $values['lossPercent'];
+      $forward_max_loss = ($values['lossPercent'] > $forward_max_loss) ? $values['lossPercent'] : $forward_max_loss;
+      $forward_min_loss = (!$forward_min_loss || ($values['lossPercent'] < $forward_min_loss)) ? $values['lossPercent'] : $forward_min_loss;
+    }
+
+    $forward_mean_rtt = array_sum($forward_mean_rtt) / count($forward_mean_rtt);
+    $forward_mean_iqripd = array_sum($forward_mean_iqripd) / count($forward_mean_iqripd);
+    $forward_mean_loss = array_sum($forward_mean_loss) / count($forward_mean_loss);
+
+    $table[] = array(
+      array(
+        'data' => t('Forward RTT'),
+        'header' => TRUE,
+      ),
+      array(
+        'data' => '<span class="value">'. sprintf('%01.1f', $forward_mean_rtt) .'</span><span class="unit">'. t('ms') .'</span>',
+        'class' => 'avg',
+      ),
+      array(
+        'data' => '<span class="value">'. sprintf('%01.1f', $forward_max_rtt) .'</span><span class="unit">'. t('ms') .'</span>',
+        'class' => 'max',
+      ),
+      array(
+        'data' => '<span class="value">'. sprintf('%01.1f', $forward_min_rtt) .'</span><span class="unit">'. t('ms') .'</span>',
+        'class' => 'min',
+      ),
+    );
+
+    $table[] = array(
+      array(
+        'data' => t('Forward Packet Loss'),
+        'header' => TRUE,
+      ),
+      array(
+        'data' => '<span class="value">'. sprintf('%01.1f', $forward_mean_loss) .'</span><span class="unit">'. t('%') .'</span>',
+        'class' => 'avg',
+      ),
+      array(
+        'data' => '<span class="value">'. sprintf('%01.1f', $forward_max_loss) .'</span><span class="unit">'. t('%') .'</span>',
+        'class' => 'max',
+      ),
+      array(
+        'data' => '<span class="value">'. sprintf('%01.1f', $forward_min_loss) .'</span><span class="unit">'. t('%') .'</span>',
+        'class' => 'min',
+      ),
+    );
+
+    $table[] = array(
+      array(
+        'data' => t('Jitter'),
+        'header' => TRUE,
+      ),
+      array(
+        'data' => '<span class="value">'. sprintf('%01.2f', $forward_mean_iqripd) .'</span><span class="unit">'. t('ms') .'</span>',
+        'class' => 'avg',
+      ),
+      array(
+        'data' => '<span class="value">'. sprintf('%01.2f', $forward_max_iqripd) .'</span><span class="unit">'. t('ms') .'</span>',
+        'class' => 'max',
+      ),
+      array(
+        'data' => '<span class="value">'. sprintf('%01.2f', $forward_min_iqripd) .'</span><span class="unit">'. t('ms') .'</span>',
+        'class' => 'min',
+      ),
+    );
+  }
+  return theme('table', $headers, $table);
 }
 
 /**

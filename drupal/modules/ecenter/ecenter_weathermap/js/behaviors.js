@@ -41,6 +41,7 @@ Drupal.behaviors.EcenterRepositionResults = function(context) {
  */
 $(document).ready(function() {
   $('#ecenter-weathermap-select-form').bind('ahah_start', function() {
+    // Add overlay...
     $(this).addClass('data-loading');
     $('input', this).each(function() {
       var disabled = $(this).attr('disabled');
@@ -49,6 +50,7 @@ $(document).ready(function() {
     });
   });
   $('#ecenter-weathermap-select-form').bind('ahah_end', function() {
+    // Add overlay...
     $(this).removeClass('data-loading');
     $('input', this).each(function() {
       var disabled = $(this).data('ecenter_disabled');

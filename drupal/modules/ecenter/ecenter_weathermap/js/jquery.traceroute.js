@@ -166,6 +166,7 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
     if (row.match != undefined) {
       hopStyle = (row.hopStyle != undefined) ? row.hopStyle : o.hop.style;
       hopY = (this.segmentHeight * (i + extra_inc)) + this.hopRadius;
+
       this.drawHop(this.hopRadius, hopY, o.hop.radius, hopStyle);
 
       // If an old row exists, draw backwards lines running to it
@@ -197,7 +198,8 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
 
       }
       last_match_y = hopY;
-      this.drawHopLabel(row.match.forward, 0, hopY - this.hopSize);
+
+      this.drawHopLabel(row.match.forward[0], 0, hopY - this.hopSize);
     }
 
     if (row.diff != undefined) {
@@ -380,6 +382,8 @@ TraceRoute.prototype.drawHopLabel = function(hop_data, x, y, align) {
   var o = this.options;
   label = $('<div class="trace-label" hopid="' + hop_data.hop.hop_id + '"><strong>' + hop_data.hop.hop_ip + '</strong> / ' + hop_data.hop.netblock + ' (' + hop_data.hop.hub +')</div>');
   if (hop_data.data.snmp != null && hop_data.data.snmp.length) {
+    console.log(hop_data.hop.hop_ip);
+    console.log(hop_data.data.snmp);
     label.addClass('has-chart');
   }
   label_width = o.label.width - o.label.side_padding;

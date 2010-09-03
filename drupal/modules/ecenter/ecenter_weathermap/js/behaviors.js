@@ -48,6 +48,21 @@ $(document).ready(function() {
       $(this).data('ecenter_disabled', disabled);
       $(this).attr('disabled', true);
     });
+
+    overlay = $('<div class="loading-overlay"><p>' + Drupal.t('Loading') + '</p></div>');
+    map = $('#weathermap-wrapper').css('position', 'relative');
+    overlay.css({
+      'position' : 'absolute',
+      'top' : 0,
+      'left' : 0,
+      'width' : map.width(),
+      'height' : map.height(),
+      'z-index' : 9999,
+      'display' : 'none'
+    });
+    map.prepend(overlay);
+    overlay.fadeIn('fast');
+
   });
   $('#ecenter-weathermap-select-form').bind('ahah_end', function() {
     // Add overlay...
@@ -55,6 +70,10 @@ $(document).ready(function() {
     $('input', this).each(function() {
       var disabled = $(this).data('ecenter_disabled');
       $(this).attr('disabled', disabled);
+    });
+
+    $('#weathermap-wrapper .loading-overlay').fadeOut('fast', function() {
+      $(this).remove();
     });
   });
 });

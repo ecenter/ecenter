@@ -354,22 +354,27 @@ TraceRoute.prototype.drawSegment = function(x1, y1, x2, y2, options, arrow_optio
     hypotenuse = Math.sqrt(Math.pow(deltaY, 2) + Math.pow(deltaX, 2));
     ctx.beginPath();
 
-    // "Forward" traceroutes
-    if (deltaY > 0) {
-      arrowY = (hypotenuse / 2) - (o.arrow.arrowHeight / 2);
-      ctx.moveTo(-arrowX, arrowY);
-      ctx.lineTo(arrowX, arrowY);
-      ctx.lineTo(0, arrowY + o.arrow.arrowHeight);
-    }
-    else {
-      arrowY = (-hypotenuse / 2) + (o.arrow.arrowHeight / 2);
-      ctx.moveTo(-arrowX, arrowY);
-      ctx.lineTo(arrowX, arrowY);
-      ctx.lineTo(0, arrowY - o.arrow.arrowHeight);
-    }
+    // @TODO Draw arrows for diagonal lines
+    if (deltaX === 0) {
 
-    for (option in arrow_options) {
-      ctx[option] = arrow_options[option];
+      // "Forward" traceroutes
+      if (deltaY > 0) {
+        arrowY = (hypotenuse / 2) - (o.arrow.arrowHeight / 2);
+        ctx.moveTo(-arrowX, arrowY);
+        ctx.lineTo(arrowX, arrowY);
+        ctx.lineTo(0, arrowY + o.arrow.arrowHeight);
+      }
+      else {
+        arrowY = (-hypotenuse / 2) + (o.arrow.arrowHeight / 2);
+        ctx.moveTo(-arrowX, arrowY);
+        ctx.lineTo(arrowX, arrowY);
+        ctx.lineTo(0, arrowY - o.arrow.arrowHeight);
+      }
+
+      for (option in arrow_options) {
+        ctx[option] = arrow_options[option];
+      }
+
     }
 
     ctx.fill();
@@ -382,8 +387,8 @@ TraceRoute.prototype.drawHopLabel = function(hop_data, x, y, align) {
   var o = this.options;
   label = $('<div class="trace-label" hopid="' + hop_data.hop.hop_id + '"><strong>' + hop_data.hop.hop_ip + '</strong> / ' + hop_data.hop.netblock + ' (' + hop_data.hop.hub +')</div>');
   if (hop_data.data.snmp != null && hop_data.data.snmp.length) {
-    console.log(hop_data.hop.hop_ip);
-    console.log(hop_data.data.snmp);
+    //console.log(hop_data.hop.hop_ip);
+    //console.log(hop_data.data.snmp);
     label.addClass('has-chart');
   }
   label_width = o.label.width - o.label.side_padding;

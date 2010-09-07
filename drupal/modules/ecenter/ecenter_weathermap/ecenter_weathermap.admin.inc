@@ -58,20 +58,32 @@ function ecenter_weathermap_admin_form() {
     '#title' => t('Performance'),
     '#type' => 'fieldset',
   );
-  $form['performance']['ecenter_weathermap_cache_enabled'] = array(
-    '#title' => t('Enable result caching'),
+  $form['performance']['ecenter_weathermap_data_cache_enabled'] = array(
+    '#title' => t('Enable data result caching'),
     '#type' => 'checkbox',
     '#description' => t('Should the Ecenter Weathermap cache results?'),
-    '#default_value' => variable_get('ecenter_weathermap_cache_enabled', 0),
+    '#default_value' => variable_get('ecenter_weathermap_data_cache_enabled', 0),
   );
-  $form['performance']['ecenter_weathermap_cache_ttl'] = array(
-    '#title' => t('Cache time to live'),
+  $form['performance']['ecenter_weathermap_data_cache_ttl'] = array(
+    '#title' => t('Data cache time to live'),
     '#type' => 'textfield',
     '#description' => t('How long should results be cached, in seconds?'),
-    '#default_value' => variable_get('ecenter_weathermap_cache_ttl', 300),
+    '#default_value' => variable_get('ecenter_weathermap_data_cache_ttl', 300),
+  );
+  $form['performance']['ecenter_weathermap_hop_cache_enabled'] = array(
+    '#title' => t('Enable hop result caching'),
+    '#type' => 'checkbox',
+    '#description' => t('Should the Ecenter Weathermap cache results?'),
+    '#default_value' => variable_get('ecenter_weathermap_hop_cache_enabled', 0),
+  );
+  $form['performance']['ecenter_weathermap_hop_cache_ttl'] = array(
+    '#title' => t('Hop cache time to live'),
+    '#type' => 'textfield',
+    '#description' => t('How long should results be cached, in seconds?'),
+    '#default_value' => variable_get('ecenter_weathermap_hop_cache_ttl', 600),
   );
 
-  
+
   $form['thresholds_colors'] = array(
     '#title' => t('Threshold colors'),
     '#type' => 'fieldset',

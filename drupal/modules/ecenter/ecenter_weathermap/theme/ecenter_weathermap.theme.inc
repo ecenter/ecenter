@@ -44,6 +44,8 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
       'axes' => array(
         'xaxis' => array(
           'pad' => 0,
+          'autoscale' => TRUE,
+          'numberTicks' => 10,
           'renderer' => '$.jqplot.DateAxisRenderer',
           'tickOptions' => array(
             'formatString' => "%H:%M",
@@ -55,6 +57,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
           'min' => 0,
           'max' => 100,
           'pad' => 0,
+     
           'numberTicks' => 6,
           'label' => t('Percent utilization'),
           'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
@@ -110,7 +113,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
             foreach ($hop['data']['snmp'] as $item) {
               $table[$direction][] = array(
                 'label' => array(
-                  'data' => $item[0],
+                  'data' => $item[0] * 1000,
                   'header' => TRUE,
                 ),
                 'utilization' => array(

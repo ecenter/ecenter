@@ -464,9 +464,9 @@ function ecenter_weathermap_get_data($src_ip, $dst_ip, $start, $end) {
     'end' => $end,
   ));
 
-  $caching = variable_get('ecenter_weathermap_cache_enabled', 0);
+  $caching = variable_get('ecenter_weathermap_data_cache_enabled', 0);
 
-  if ($caching && $result = cache_get($query, 'cache_ecenter_weathermap')) {
+  if ($caching && $result = cache_get($query, 'cache_ecenter_data')) {
     return $result->data;
   }
   else {
@@ -475,8 +475,8 @@ function ecenter_weathermap_get_data($src_ip, $dst_ip, $start, $end) {
     if ($result['code'] == 200) {
       $data = ecenter_weathermap_parse_response($result, $src_ip, $dst_ip);
       if ($caching) {
-        $expires = time() + variable_get('ecenter_weathermap_cache_ttl', 300);
-        cache_set($query, $data, 'cache_ecenter_weathermap', $expires);
+        $expires = time() + variable_get('ecenter_weathermap_data_cache_ttl', 300);
+        cache_set($query, $data, 'cache_ecenter_data', $expires);
       }
       return $data;
     }
@@ -489,12 +489,55 @@ function ecenter_weathermap_get_data($src_ip, $dst_ip, $start, $end) {
 
 /**
  * Get hops
+ *
+ * @param $src_ip
+ *   (optional) Source IP address to determine potential destinations.  If
+     not supplied, list all potential source hops.
+ * @return
+ *   An array of hop objects.
  */
 function ecenter_weathermap_get_hops($src_ip = FALSE) {
-  $client = ecenter_weathermap_get_client();
-  $result = $client->getHubs($src_ip);
-  return $result['response'];
+  $cache_src_ip = ($src_ip) ? $src_ip : 'start';
+  $caching = variable_get('ecenter_weathermap_hop_cache_enabled', 0);
+
+  if ($caching && $result = cache_get($cache_src_ip, 'cache_ecenter_hops')) {
+    return $result->data;
+  }
+  else {
+    $client = ecenter_weathermap_get_client('message');
+    $result = $client->getHubs($src_ip);
+    if ($result['code'] == 200) {
+      $data = $result['response'];
+      $data = array_filter($result['response'], '_ecenter_weathermap_hop_filter');
+      usort($data, '_ecenter_weathermap_hop_sort');
+
+      if ($caching) {
+        $expires = time() + variable_get('ecenter_weathermap_hop_cache_ttl', 600);
+        cache_set($cache_src_ip, $data, 'cache_ecenter_hops', $expires);
+      }
+      return $data;
+    }
+    else {
+      drupal_set_message(t('Request failed with code @code.', array('@code' => $result['code'])));
+    }
+  }
+  return FALSE;
 }
+
+/**
+ * Callback for filtering hops
+ */
+function _ecenter_weathermap_hop_filter($hop) {
+  return !empty($hop->nodename);
+}
+
+/**
+ * Callback for sorting hops
+ */
+function _ecenter_weathermap_hop_sort($a, $b) {
+  return strcmp($a->nodename, $b->nodename);
+}
+
 
 /**
  * Sanitize the get array

@@ -585,12 +585,11 @@ function _ecenter_weathermap_get_data_types() {
  * Parse and prep response from E-Center network data webservice:
  *  - Build an array with forward and reverse traceroutes, their hops, and associated data
  *  - Geolocate IP addresses without geodata
- *  - @TODO Calculate netblock based on mask
- *
- * @TODO only parse most recent traceroute...
  *
  * @param $response
  *   A response object from the E-center webservice.
+ * @return
+ *   A big, complicated array of E-center data
  */
 function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
   static $queries = array();

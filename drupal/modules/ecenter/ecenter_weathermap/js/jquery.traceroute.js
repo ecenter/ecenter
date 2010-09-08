@@ -28,7 +28,7 @@ $.fn.traceroute.defaults = {
   'drawArrows' : true,
   'append' : true,
   'link' : {
-    'linkLength' : 22,
+    'linkLength' : 32,
     'style' : {
       'lineWidth' : 4,
       'strokeStyle' : '#aaaaaa'
@@ -51,7 +51,7 @@ $.fn.traceroute.defaults = {
     }
   },
   'label' : {
-    'width' : 230,
+    'width' : 180,
     'side_padding' : 6,
     'top_padding' : 9,
     'font_size' : '11px'
@@ -385,20 +385,26 @@ TraceRoute.prototype.drawSegment = function(x1, y1, x2, y2, options, arrow_optio
 
 TraceRoute.prototype.drawHopLabel = function(hop_data, x, y, align) {
   var o = this.options;
-  label = $('<div class="trace-label" hopid="' + hop_data.hop.hop_id + '"><strong>' + hop_data.hop.hop_ip + '</strong> / ' + hop_data.hop.netblock + ' (' + hop_data.hop.hub +')</div>');
+
+  label = '<div class="trace-label" hopid="' + hop_data.hop.hop_id + '">';
+  label += (hop_data.hop.nodename) ? '<div class="hostname">' + hop_data.hop.nodename + '</div>' : '';
+  label += '<div class="hop-secondary">';
+  label += '<span class="hop-ip">' + hop_data.hop.hop_ip + '</span>';
+  label += (hop_data.hop.hub) ? ' <span class="hop-hub">(' + hop_data.hop.hub + ')</span>' : '';
+  label += '</div>';
+  label = $(label);
+
   if (hop_data.data.snmp != null && hop_data.data.snmp.length) {
-    //console.log(hop_data.hop.hop_ip);
-    //console.log(hop_data.data.snmp);
     label.addClass('has-chart');
   }
   label_width = o.label.width - o.label.side_padding;
   css = {
     'width' : label_width + 'px',
     'position' : 'absolute',
-    'padding-top' : o.label.top_padding + 'px',
+    //'padding-top' : o.label.top_padding + 'px',
     'left' : x,
     'top' : y,
-    'font-size' : o.label.font_size,
+    //'font-size' : o.label.font_size,
   };
   if (align == 'right') {
     $.extend(css, {
@@ -424,7 +430,7 @@ TraceRoute.prototype.hopBehavior = function(el) {
   var containerWidth = this.containerWidth;
   el.hover(function() {
     hopid = $(this).attr('hopid');
-    chart = $('.tablechart', $('#hop-' + hopid));
+    chart = $('#hop-' + hopid);
     chart.css({
       'position' : 'absolute',
       'z-index' : 1,
@@ -434,7 +440,7 @@ TraceRoute.prototype.hopBehavior = function(el) {
     chart.fadeIn('fast');
   }, function() {
     hopid = $(this).attr('hopid');
-    chart = $('.tablechart', $('#hop-' + hopid));
+    chart = $('#hop-' + hopid);
     chart.fadeOut('fast');
   });
 }

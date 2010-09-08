@@ -10,6 +10,26 @@ function ecenter_weathermap_schema() {
   $schema['cache_ecenter_data']['description'] = 'Cache table for storing saved results.';
   $schema['cache_ecenter_hops'] = drupal_get_schema_unprocessed('system', 'cache');
   $schema['cache_ecenter_hops']['description'] = 'Cache table for storing hops';
+
+  $schema['ecenter_result_archive'] = array(
+    'description' => 'E-Center data result archive',
+    'fields' => array(
+      'query' => array(
+        'description' => 'Primary key: Query string',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'data' => array(
+        'description' => 'Serialized data',
+        'type' => 'blob',
+        'not null' => FALSE,
+        'size' => 'big',
+      ),
+    ),
+    'primary key' => array('query'),
+  );
+
   return $schema;
 }
 

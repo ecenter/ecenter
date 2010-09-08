@@ -10,11 +10,33 @@
  * Theme main data display
  */
 function template_preprocess_ecenter_weathermap_data(&$vars) {
+
+  dpm($vars['data']);
+
+  // Generate permalink
   $vars['permalink'] = l('Permalink', 'weathermap', array('query' => $vars['params']));
+
+  // Generate issue link -- encode params for use with prepopulate module
+  $issue_params = array();
+  foreach ($vars['params'] as $key=>$param) {
+    $issue_params[] = "$key=$param";
+  }
+  $issue_query = urlencode(implode('&', $issue_params));
+
+  $vars['issuelink'] = l('Create issue from this query', 'node/add/issue',
+    array(
+      'query' => array(
+        'edit[field_issue_query][0][value]' => $issue_query,
+      )
+    )
+  );
+
+  // Generate SNMP charts
   if (!empty($vars['data']['diff'])) {
     $vars['snmp'] = theme('ecenter_weathermap_render_data_snmp', $vars['data']['diff']);
   }
 
+  // Generate end to end statistics
   if (!empty($vars['data']['end_to_end'])) {
     $vars['end_to_end_table'] = theme('ecenter_weathermap_render_data_end_to_end_table', $vars['data']['end_to_end']);
   }
@@ -27,7 +49,7 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
  * Theme SNMP data
  */
 function theme_ecenter_weathermap_render_data_snmp($data) {
-  
+
   $plot_options = array(
     'width' => 580,
     'height' => 200,
@@ -57,7 +79,6 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
           'min' => 0,
           'max' => 100,
           'pad' => 0,
-     
           'numberTicks' => 6,
           'label' => t('Percent utilization'),
           'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
@@ -127,23 +148,28 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
       }
     }
 
+    $output = '';
     if ($match) {
       $id = $row['match']['forward'][0]['hop']['hop_id'];
       $output .= '<div class="snmp-chart-wrapper" id="hop-'. $id .'">';
+      $output .= '<h1>' . $row['match']['forward'][0]['hop']['nodename'] . '</h1>';
       $output .= (!empty($table['forward'])) ? theme('ecenter_weathermap_table', $headers, $table['forward']) : '';
       $output .= (!empty($table['reverse'])) ? theme('ecenter_weathermap_table', $headers, $table['reverse']) : '';
       $output .= '</div>';
       $out[] = $output;
     }
 
+    $output = '';
     if (!$match) {
       $id = $row['diff']['forward'][0]['hop']['hop_id'];
       $output .= '<div class="snmp-chart-wrapper" id="hop-'. $id .'">';
+      $output .= '<h1>' . $row['diff']['forward'][0]['hop']['nodename'] . '</h1>';
       $output .= (!empty($table['forward'])) ? theme('ecenter_weathermap_table', $headers, $table['forward']) : '';
       $output .= '</div>';
 
       $id = $row['diff']['reverse'][0]['hop']['hop_id'];
       $output .= '<div class="snmp-chart-wrapper" id="hop-'. $id .'">';
+      $output .= '<h1>' . $row['diff']['reverse'][0]['hop']['nodename'] . '</h1>';
       $output .= (!empty($table['reverse'])) ? theme('ecenter_weathermap_table', $headers, $table['reverse']) : '';
       $output .= '</div>';
       $out[] = $output;
@@ -159,18 +185,18 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
  * Theme end to end data table
  */
 function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
-  //dpm($data);
-
   // BWCTL
-  /*foreach ($data['bwctl']['forward'] as $item) {
-    list($timestamp, $values) = $item;
-    $tz = date_default_timezone_name(TRUE);
-    $date = date_make_date($timestamp, $tz, DATE_UNIX);
-    dpm(date_format($date, 'Y-m-d H:i'));
-    dpm($values['throughput']);
-    dpm((float) $values['throughput'] / 1e+06);
-  }*/
-  
+  if (!empty($data['bwctl']['forward'])) {
+    foreach ($data['bwctl']['forward'] as $item) {
+      list($timestamp, $values) = $item;
+      $tz = date_default_timezone_name(TRUE);
+      $date = date_make_date($timestamp, $tz, DATE_UNIX);
+      dpm(date_format($date, 'Y-m-d H:i'));
+      dpm($values['throughput']);
+      dpm((float) $values['throughput'] / 1e+06);
+    }
+  }
+
   $table = array();
   $headers = array('', t('Average'), t('Max'), t('Min'));
 
@@ -252,7 +278,9 @@ function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
       ),
     );
   }
-  return theme('table', $headers, $table);
+  if (!empty($table)) {
+    return theme('table', $headers, $table);
+  }
 }
 
 /**

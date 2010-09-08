@@ -10,3 +10,4 @@ dependencies[] = quickselect
 dependencies[] = jqplot
 dependencies[] = geoip
 dependencies[] = openlayers
+dependencies[] = prepopulate

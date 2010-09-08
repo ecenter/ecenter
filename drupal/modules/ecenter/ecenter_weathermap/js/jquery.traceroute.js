@@ -28,7 +28,7 @@ $.fn.traceroute.defaults = {
   'drawArrows' : true,
   'append' : true,
   'link' : {
-    'linkLength' : 32,
+    'linkLength' : 28,
     'style' : {
       'lineWidth' : 4,
       'strokeStyle' : '#aaaaaa'
@@ -72,9 +72,19 @@ function TraceRoute(el, data, options) {
   // Initialize canvas
   this.initCanvas();
 
+  // Create labels (need to create these first, to precalculate width)
+  this.createLabels();
+
   // Draw traceroute
   this.drawTraceroute();
 
+}
+
+TraceRoute.prototype.createLabels = function() {
+  console.log(this.data);
+  for (var i = 0; i < this.data.length; i++) {
+    var row = this.data[i];
+  }
 }
 
 TraceRoute.prototype.initCanvas = function() {

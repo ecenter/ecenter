@@ -465,7 +465,6 @@ function ecenter_weathermap_get_data($src_ip, $dst_ip, $start, $end) {
   ));
 
   $caching = variable_get('ecenter_weathermap_data_cache_enabled', 0);
-
   if ($caching && $result = cache_get($query, 'cache_ecenter_data')) {
     return $result->data;
   }
@@ -617,16 +616,18 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
         if ($traceroute[0]['hop_ip'] != $src_ip) {
           //dpm('added first hop to fwd');
           array_unshift($traceroute, array(
-            'hop_id' => 'start',
+            'hop_id' => uniqid('start-'),
             'hop_ip' => $src_ip,
+            'nodename' => t('Source'),
           ));
         }
         $last = count($traceroute) -1;
         if ($traceroute[$last]['hop_ip'] != $dst_ip) {
           //dpm('added final hop to fwd');
           array_push($traceroute, array(
-            'hop_id' => 'end',
+            'hop_id' => uniqid('end-'),
             'hop_ip' => $dst_ip,
+            'nodename' => t('Destination'),
           ));
         }
       }
@@ -634,16 +635,18 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
         if ($traceroute[0]['hop_ip'] != $dst_ip) {
           //dpm('added first hop to rev');
           array_unshift($traceroute, array(
-            'hop_id' => 'end',
+            'hop_id' => uniqid('end-'),
             'hop_ip' => $dst_ip,
+            'nodename' => t('Source'),
           ));
         }
         $last = count($traceroute) -1;
         if ($traceroute[$last]['hop_ip'] != $src_ip) {
           //dpm('added final hop to rev');
           array_push($traceroute, array(
-            'hop_id' => 'start',
+            'hop_id' => uniqid('start-'),
             'hop_ip' => $src_ip,
+            'nodename' => t('Destination'),
           ));
         }
       }
@@ -711,6 +714,10 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
     if (!empty($queries[$response->query]['forward']) && !empty($queries[$response->query]['reverse'])) {
       $forward = $queries[$response->query]['forward'];
       $reverse = array_reverse($queries[$response->query]['reverse']);
+
+      dpm($forward);
+      dpm($reverse);
+
       $queries[$response->query]['diff'] = ecenter_weathermap_traceroute_diff($forward, $reverse);
       $queries[$response->query]['traceroute_max'] = (count($forward) > count($reverse)) ? count($forward) : count($reverse);
     }

@@ -11,7 +11,7 @@
  */
 function template_preprocess_ecenter_weathermap_data(&$vars) {
 
-  dpm($vars['data']);
+  dpm($vars['data']['diff']);
 
   // Generate permalink
   $vars['permalink'] = l('Permalink', 'weathermap', array('query' => $vars['params']));

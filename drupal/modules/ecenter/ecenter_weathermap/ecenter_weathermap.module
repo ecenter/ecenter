@@ -614,40 +614,52 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
       // Synthetic hops
       if ($direction == 'traceroute') {
         if ($traceroute[0]['hop_ip'] != $src_ip) {
-          //dpm('added first hop to fwd');
           array_unshift($traceroute, array(
             'hop_id' => uniqid('start-'),
             'hop_ip' => $src_ip,
             'nodename' => t('Source'),
+            'netblock' => 'src',
           ));
+        }
+        else {
+          $traceroute[0]['netblock'] = 'src';
         }
         $last = count($traceroute) -1;
         if ($traceroute[$last]['hop_ip'] != $dst_ip) {
-          //dpm('added final hop to fwd');
           array_push($traceroute, array(
             'hop_id' => uniqid('end-'),
             'hop_ip' => $dst_ip,
             'nodename' => t('Destination'),
+            'netblock' => 'dst',
           ));
+        }
+        else {
+          $traceroute[$last]['netblock'] = 'dst';
         }
       }
       elseif ($direction == 'reverse_traceroute') {
         if ($traceroute[0]['hop_ip'] != $dst_ip) {
-          //dpm('added first hop to rev');
           array_unshift($traceroute, array(
             'hop_id' => uniqid('end-'),
             'hop_ip' => $dst_ip,
-            'nodename' => t('Source'),
+            'nodename' => t('Destination'),
+            'netblock' => 'dst',
           ));
+        }
+        else {
+          $traceroute[0]['netblock'] = 'dst';
         }
         $last = count($traceroute) -1;
         if ($traceroute[$last]['hop_ip'] != $src_ip) {
-          //dpm('added final hop to rev');
           array_push($traceroute, array(
             'hop_id' => uniqid('start-'),
             'hop_ip' => $src_ip,
-            'nodename' => t('Destination'),
+            'nodename' => t('Source'),
+            'netblock' => 'src',
           ));
+        }
+        else {
+          $traceroute[$last]['netblock'] = 'src';
         }
       }
 
@@ -666,8 +678,10 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
         $hop_data['snmp'] = $data['snmp'][$hop['hop_id']];
 
         // Calculate netblock
-        $mask = (!empty($hop['netmask'])) ? $hop['netmask'] : 24;
-        $hop['netblock'] = long2ip(ip2long($hop['hop_ip']) & ~((1 << (32 - $mask)) - 1));
+        if ($hop['netblock'] != 'src' && $hop['netblock'] != 'dst') {
+          $mask = (!empty($hop['netmask'])) ? $hop['netmask'] : 24;
+          $hop['netblock'] = long2ip(ip2long($hop['hop_ip']) & ~((1 << (32 - $mask)) - 1));
+        }
 
         $parsed[] = array(
           'hop' => $hop,
@@ -714,9 +728,6 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
     if (!empty($queries[$response->query]['forward']) && !empty($queries[$response->query]['reverse'])) {
       $forward = $queries[$response->query]['forward'];
       $reverse = array_reverse($queries[$response->query]['reverse']);
-
-      dpm($forward);
-      dpm($reverse);
 
       $queries[$response->query]['diff'] = ecenter_weathermap_traceroute_diff($forward, $reverse);
       $queries[$response->query]['traceroute_max'] = (count($forward) > count($reverse)) ? count($forward) : count($reverse);

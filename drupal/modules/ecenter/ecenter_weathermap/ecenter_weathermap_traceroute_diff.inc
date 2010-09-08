@@ -44,8 +44,9 @@ function ecenter_weathermap_traceroute_diff($forward, $reverse) {
   }
 
   // Take matches and turn them into a set of associated pairs
-  $fwd_slices = array_slice($forward, $fmax, $maxlen);
-  $rev_slices = array_slice($reverse, $rmax, $maxlen);
+  $fwd_slices = array_reverse(array_slice($forward, $fmax, $maxlen));
+  $rev_slices = array_reverse(array_slice($reverse, $rmax, $maxlen));
+
   $slices = array();
   while (!empty($fwd_slices) && !empty($rev_slices)) {
     $slices[] = array(
@@ -70,11 +71,12 @@ function ecenter_weathermap_traceroute_array_keys($hops, $match) {
   foreach ($hops as $k => $hop) {
     if ($hop['hop']['hop_ip'] == $match['hop']['hop_ip']) {
       $return[] = $k;
-      break; 
     }
+    /*elseif (!empty($hop['hop']['hub']) && !empty($match['hop']['hub']) && $hop['hop']['hub'] == $match['hop']['hub']) {
+      $return[] = $k;
+    }*/
     elseif ($hop['hop']['netblock'] == $match['hop']['netblock']) {
       $return[] = $k;
-      break;
     }
   }
   return $return;

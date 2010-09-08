@@ -81,7 +81,6 @@ function TraceRoute(el, data, options) {
 }
 
 TraceRoute.prototype.createLabels = function() {
-  console.log(this.data);
   for (var i = 0; i < this.data.length; i++) {
     var row = this.data[i];
   }

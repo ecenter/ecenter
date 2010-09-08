@@ -61,7 +61,7 @@ $(document).ready(function() {
       'display' : 'none'
     });
     map.prepend(overlay);
-    overlay.fadeIn('fast');
+    overlay.fadeIn('slow');
 
   });
   $('#ecenter-weathermap-select-form').bind('ahah_end', function() {

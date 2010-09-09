@@ -10,8 +10,7 @@
  * Theme main data display
  */
 function template_preprocess_ecenter_weathermap_data(&$vars) {
-
-  dpm($vars['data']['diff']);
+  dpm($vars['data']);
 
   // Generate permalink
   $vars['permalink'] = l('Permalink', 'weathermap', array('query' => $vars['params']));
@@ -27,9 +26,48 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
     array(
       'query' => array(
         'edit[field_issue_query][0][value]' => $issue_query,
-      )
+      ),
+      'attributes' => array(
+        'class' => 'button',
+      ),
     )
   );
+
+  // Source / dst table
+  $src_hops = ecenter_weathermap_get_hops();
+  $dst_hops = ecenter_weathermap_get_hops($vars['params']['src_ip']);
+  $query_table = array(
+    array(
+      array(
+        'data' => t('Source'),
+        'header' => TRUE,
+      ),
+      array(
+        'data' => $src_hops[$vars['params']['src_ip']]->nodename
+      ),
+    ),
+    array(
+      array(
+        'data' => t('Destination'),
+        'header' => TRUE,
+      ),
+      array(
+        'data' => $dst_hops[$vars['params']['dst_ip']]->nodename
+      ),
+    ),
+  );
+  $vars['query_table'] = theme('ecenter_weathermap_table', array(), $query_table);
+
+  // Generate date range
+  $tz = timezone_open(date_default_timezone_name(TRUE));
+  $dates = array();
+  foreach (array('start', 'end') as $val) {
+    $date = date_create($vars['params'][$val]); //$tz);
+    date_timezone_set($date, $tz);
+    $dates[$val] = date_format($date, 'M d, Y H:i');
+  }
+  // @TODO TZ is wrong?!
+  $vars['date_range'] = t('@start - @end', array('@start' => $dates['start'], '@end' => $dates['end']));
 
   // Generate SNMP charts
   if (!empty($vars['data']['diff'])) {

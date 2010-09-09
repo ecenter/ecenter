@@ -72,9 +72,6 @@ function ecenter_weathermap_traceroute_array_keys($hops, $match) {
     if ($hop['hop']['hop_ip'] == $match['hop']['hop_ip']) {
       $return[] = $k;
     }
-    /*elseif (!empty($hop['hop']['hub']) && !empty($match['hop']['hub']) && $hop['hop']['hub'] == $match['hop']['hub']) {
-      $return[] = $k;
-    }*/
     elseif ($hop['hop']['netblock'] == $match['hop']['netblock']) {
       $return[] = $k;
     }

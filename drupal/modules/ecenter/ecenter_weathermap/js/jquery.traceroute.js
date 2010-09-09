@@ -83,6 +83,7 @@ function TraceRoute(el, data, options) {
 TraceRoute.prototype.createLabels = function() {
   for (var i = 0; i < this.data.length; i++) {
     var row = this.data[i];
+    //console.log(row);
   }
 }
 
@@ -242,6 +243,7 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
         arrowStyle = (hop.arrowStyle != undefined) ? hop.arrowStyle : o.arrow.style;
         this.drawSegment(this.forwardLinkX, lastHopY, this.forwardLinkX, hopY, linkStyle, arrowStyle);
 
+        //console.log(hop);
         this.drawHopLabel(hop, 0, hopY - this.hopSize);
 
       }
@@ -328,7 +330,8 @@ TraceRoute.prototype.drawCurve = function(x, xOffset, y1, y2, options, arrow_opt
   ctx.lineTo(arrowEndX, arrowY);
   ctx.lineTo(offset, arrowY - o.arrow.arrowHeight);
   for (option in arrow_options) {
-    ctx[option] = arrow_options[option];
+    ctx[option] = arrow_options[
+option];
   }
   ctx.fill();
   ctx.restore();
@@ -447,6 +450,10 @@ TraceRoute.prototype.hopBehavior = function(el) {
       'top' : offset.top
     });
     chart.fadeIn('fast');
+    $('.tablechart', chart).show();
+    chart.data('TableChart').draw();
+    //console.log($('.tablechart', chart));
+    //console.log($('.tablechart', chart).data('TableChart'));
   }, function() {
     hopid = $(this).attr('hopid');
     chart = $('#hop-' + hopid);

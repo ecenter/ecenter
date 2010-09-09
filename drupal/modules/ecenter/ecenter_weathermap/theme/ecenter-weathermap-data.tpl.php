@@ -1,12 +1,11 @@
 <div class="end-to-end-results">
-  <p><?php print $permalink; ?></p>
-  <p><?php print $issuelink; ?></p>
+  <div class="issue-link"><?php print $issuelink; ?></div>
 
   <?php print $date_range; ?>
   <?php print $query_table; ?>
-
-
   <?php print $end_to_end_table; ?>
+
+  <p><?php print $permalink; ?></p>
 </div>
 
 <div class="hop-results clearfix">

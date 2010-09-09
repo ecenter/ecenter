@@ -510,6 +510,13 @@ function ecenter_weathermap_get_hops($src_ip = FALSE) {
       $data = array_filter($result['response'], '_ecenter_weathermap_hop_filter');
       usort($data, '_ecenter_weathermap_hop_sort');
 
+      // Key off IP
+      $new_data = array();
+      foreach ($data as $hop) {
+        $new_data[$hop->ip_noted] = $hop;
+      }
+      $data = $new_data;
+
       if ($caching) {
         $expires = time() + variable_get('ecenter_weathermap_hop_cache_ttl', 600);
         cache_set($cache_src_ip, $data, 'cache_ecenter_hops', $expires);
@@ -591,13 +598,14 @@ function _ecenter_weathermap_get_data_types() {
  *   A big, complicated array of E-center data
  */
 function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
+  // @TODO static variable may add level of indirection / instability
   static $queries = array();
 
   if (empty($queries[$response->query])) {
-    $queries[$response->query]['data'] = _ecenter_weathermap_object_to_array($response['response']);
-    $data =& $queries[$response->query]['data'];
+    $data = _ecenter_weathermap_object_to_array($response['response']);
 
-    //dpm($data);
+    $src_hops = ecenter_weathermap_get_hops();
+    $dst_hops = ecenter_weathermap_get_hops($dst_ip);
 
     foreach (array('traceroute', 'reverse_traceroute') as $direction) {
       // We may not have ANY forward or reverse traceroutes
@@ -611,13 +619,13 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
 
       $parsed = array();
 
-      // Synthetic hops
+      // Synthesize forward and reverse hops
       if ($direction == 'traceroute') {
         if ($traceroute[0]['hop_ip'] != $src_ip) {
           array_unshift($traceroute, array(
             'hop_id' => uniqid('start-'),
             'hop_ip' => $src_ip,
-            'nodename' => t('Source'),
+            'nodename' => $src_hops[$src_ip]->nodename,
             'netblock' => 'src',
           ));
         }
@@ -629,7 +637,7 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
           array_push($traceroute, array(
             'hop_id' => uniqid('end-'),
             'hop_ip' => $dst_ip,
-            'nodename' => t('Destination'),
+            'nodename' => $dst_hops[$dst_ip]->nodename,
             'netblock' => 'dst',
           ));
         }
@@ -642,7 +650,7 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
           array_unshift($traceroute, array(
             'hop_id' => uniqid('end-'),
             'hop_ip' => $dst_ip,
-            'nodename' => t('Destination'),
+            'nodename' => $dst_hops[$dst_ip]->nodename,
             'netblock' => 'dst',
           ));
         }
@@ -654,7 +662,7 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
           array_push($traceroute, array(
             'hop_id' => uniqid('start-'),
             'hop_ip' => $src_ip,
-            'nodename' => t('Source'),
+            'nodename' => $src_hops[$src_ip]->nodename,
             'netblock' => 'src',
           ));
         }

@@ -290,7 +290,7 @@ sub process_data {
    
   };
   if($EVAL_ERROR) {
-      error "data callfailed - $EVAL_ERROR";
+      error "data call  failed - $EVAL_ERROR";
   }
    return $data; 
 }
@@ -400,8 +400,9 @@ sub get_e2e{
     my ( $data_hr,  $params,   $md_href, $type) = @_; 
     my %result = ();
     my $e2e_forker = new Parallel::ForkControl( 
-    				MaxKids 		=> 10,
-    			   	MinKids 		=> 1,
+    				MaxKids 		=> 50,
+    			   	MinKids 		=> 5,
+				ProcessTimeOut          => 30,
    				Name			=> 'E2E Forker',
    				Code			=> \&get_remote_e2e);	 
     foreach my $metaid  ( keys %{$md_href} ) {
@@ -449,15 +450,15 @@ sub get_traceroute {
 						       left join node       n_dst on(md.dst_ip = n_dst.ip_addr)
 						     where  
 						             $trace_cond
-						     order by   td.trace_id asc|;
+						     order by   td.trace_id desc limit 3|;
    debug " TRACEROUTE SQL1: $cmd";					     
     my $trace_ref = database->selectall_hashref($cmd, 'trace_id');
     my @trace_ids = keys %$trace_ref;
     my $trace_ins = join("','",@trace_ids);
     
    
-    $cmd = qq|select  distinct  h.trace_id as trace_id, n_hop.netmask,   h.hop_id, h.hop_delay, 
-                                n_hop.ip_noted, h.hop_num,  hb.hub, hb.longitude, hb.latitude  
+    $cmd = qq|select  distinct  h.trace_id as trace_id, n_hop.netmask,  n_hop.nodename, h.hop_id, h.hop_delay, 
+                                n_hop.ip_noted as hop_ip, h.hop_num,  hb.hub, hb.longitude, hb.latitude  
 					             from
 						            hop h 
 						       join node       n_hop on(h.hop_ip  = n_hop.ip_addr)     	
@@ -495,8 +496,9 @@ sub get_snmp {
     
     debug "+++SNMP:: hops::" .  Dumper($hops_ref);
     my $forker = new Parallel::ForkControl( 
-    			   MaxKids		   => 10,
-    			   MinKids		   => 3,
+    			   MaxKids		   => 50,
+    			   MinKids		   => 5,
+			   ProcessTimeOut          => 30,
     			   Debug => 4,
     			   Name 		   => 'SNMP Forker',
     			   Code 		   => \&get_remote_snmp);
@@ -521,7 +523,7 @@ sub get_snmp {
 	     abs($packed->{start_time} - $params->{snmp}{start}) > 1800 ) {
 	      my (undef, $request_params) = each(%$data_ref);
 	      $snmp{$hops_ref->{$hop_ip}} = [];
-	      foreach my $direction (qw/in out/) {
+	      foreach my $direction (qw/out/) {
 	           debug " params to ma: ip=$request_params->{snmp_ip} start=$params->{snmp}{start} end=$params->{snmp}{end} ";
 	           $forker->run( $request_params->{url}, $request_params->{metaid},$request_params->{snmp_ip}, $direction, $params);    
 		     
@@ -602,7 +604,7 @@ sub _pack_snmp_data {
 #
 sub _get_snmp_from_db{
    my ($hop_ip,  $date_cond) = @_;
-   my $cmd = qq|select  inet6_ntop(m.src_ip) as snmp_ip,m.metaid, m.src_ip, s.url, s.service,  
+   my $cmd = qq|select  n.ip_noted  as snmp_ip,m.metaid, s.url, s.service,  
                                                           l2.capacity,  sd.timestamp, AVG(sd.utilization) as utilization  
 	                                               from 
 						                  metadata m

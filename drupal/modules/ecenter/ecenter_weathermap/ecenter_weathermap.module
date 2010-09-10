@@ -378,7 +378,7 @@ function ecenter_weathermap_select_form(&$form_state) {
 
     // If we've got the data (at bare minimum, a traceroute), delegate to rendering function
     if ($data) {
-      drupal_add_js(array('tracerouteData' => $data['diff']), 'setting');
+      drupal_add_js(array('tracerouteData' => $data['js_diff']), 'setting');
       drupal_add_js(array('tracerouteMaxLength' => $data['traceroute_max']), 'setting');
       ecenter_weathermap_refresh_map('ecenter_weathermap', 'openlayers-map-auto-id-0');
       $form['results_wrapper']['results']['#value'] = theme('ecenter_weathermap_data', $data, $params);
@@ -748,7 +748,40 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
       }
       $queries[$response->query]['diff'] = $diff;
     }
+
+    // Recreate diff without hop data
+    $js_diff = array();
+    foreach ($queries[$response->query]['diff'] as $row) {
+      foreach ($row as $type => $directions) {
+        $new_row = array();
+        foreach ($directions as $direction => $hops) {
+          $new_hops = array();
+          foreach ($hops as $hop) {
+            $has_data = FALSE;
+            foreach ($hop['data'] as $hop_data) {
+              if (!empty($hop_data)) {
+                $has_data = TRUE;
+              }
+            }
+            $new_hops[] = array(
+              'hop' => $hop['hop'],
+              'data' => $has_data,
+            );
+          }
+
+          $new_row[$direction] = $new_hops;
+        }
+        $js_diff[] = array(
+          $type => $new_row,
+        );
+      }
+    }
+    $queries[$response->query]['js_diff'] = $js_diff;
   }
+
+  $time_end = microtime(TRUE);
+  $time = $time_end - $time_start;
+
   return $queries[$response->query];
 }
 

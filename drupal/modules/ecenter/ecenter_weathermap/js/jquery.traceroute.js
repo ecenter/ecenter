@@ -330,8 +330,7 @@ TraceRoute.prototype.drawCurve = function(x, xOffset, y1, y2, options, arrow_opt
   ctx.lineTo(arrowEndX, arrowY);
   ctx.lineTo(offset, arrowY - o.arrow.arrowHeight);
   for (option in arrow_options) {
-    ctx[option] = arrow_options[
-option];
+    ctx[option] = arrow_options[option];
   }
   ctx.fill();
   ctx.restore();
@@ -366,6 +365,7 @@ TraceRoute.prototype.drawSegment = function(x1, y1, x2, y2, options, arrow_optio
     hypotenuse = Math.sqrt(Math.pow(deltaY, 2) + Math.pow(deltaX, 2));
     ctx.beginPath();
 
+    //console.log(rotation % Math.PI);
     // @TODO Draw arrows for diagonal lines
     if (deltaX === 0) {
 
@@ -406,7 +406,7 @@ TraceRoute.prototype.drawHopLabel = function(hop_data, x, y, align) {
   label += '</div>';
   label = $(label);
 
-  if (hop_data.data.snmp != null && hop_data.data.snmp.length) {
+  if (hop_data.data) {
     label.addClass('has-chart');
   }
   label_width = o.label.width - o.label.side_padding;
@@ -442,22 +442,25 @@ TraceRoute.prototype.hopBehavior = function(el) {
   var containerWidth = this.containerWidth;
   el.hover(function() {
     hopid = $(this).attr('hopid');
-    chart = $('#hop-' + hopid);
-    chart.css({
+    container = $('#hop-' + hopid);
+    container.css({
       'position' : 'absolute',
       'z-index' : 1,
       'left' : containerWidth,
       'top' : offset.top
     });
-    chart.fadeIn('fast');
-    $('.tablechart', chart).show();
-    chart.data('TableChart').draw();
-    //console.log($('.tablechart', chart));
-    //console.log($('.tablechart', chart).data('TableChart'));
+    chart = container.data('TableChart');
+    if (chart) {
+      container.fadeIn('fast');
+      $('.tablechart', container).show();
+      chart.draw();
+    }
+    //console.log($('.tablecontainer', container));
+    //console.log($('.tablecontainer', container).data('TableChart'));
   }, function() {
     hopid = $(this).attr('hopid');
-    chart = $('#hop-' + hopid);
-    chart.fadeOut('fast');
+    container = $('#hop-' + hopid);
+    container.fadeOut('fast');
   });
 }
 

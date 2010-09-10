@@ -26,11 +26,21 @@ use English qw( -no_match_vars );
 =cut
 
 
-use MooseX::Types -declare => [qw( PositiveInt  IP_addr  MyDateTime )];
+use MooseX::Types -declare => [qw( PositiveInt  IP_addr  HubName MyDateTime )];
 
          # import builtin types
          use MooseX::Types::Moose qw/Int HashRef Str/;
-
+          
+	 # type definition.
+         subtype HubName,
+             as Str,
+             where { $_ =~ /^bnl|anl|ornl|lbl|fnal|slac$/i},
+             message { 'Name from the list - bnl|anl|ornl|lbl|fnal|slac ' };
+         # type coercion
+         coerce HubName,
+             from Str,
+                 via { 1 };
+		 
          # type definition.
          subtype PositiveInt,
              as Int,

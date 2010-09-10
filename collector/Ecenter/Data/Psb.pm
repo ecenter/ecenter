@@ -60,7 +60,6 @@ sub BUILD {
       my $args = shift;  
       $self->logger(get_logger(__PACKAGE__));  
       map {$self->$_($args->{$_}) if $self->can($_)}  keys %$args if $args && ref $args eq ref {};
-      $self->logger(get_logger(__PACKAGE__));  
       return  $self->url if $args->{url};
 };
 

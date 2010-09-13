@@ -83,7 +83,6 @@ function TraceRoute(el, data, options) {
 TraceRoute.prototype.createLabels = function() {
   for (var i = 0; i < this.data.length; i++) {
     var row = this.data[i];
-    //console.log(row);
   }
 }
 
@@ -202,7 +201,8 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
 
         // The old row contributed hops in the reverse direction
         if (old_row.diff != undefined && old_row.diff.reverse.length) {
-          this.drawSegment(this.forwardLinkX, last_forward_diff_y, this.forwardLinkX, hopY, linkStyle, arrowStyle);
+          forwardY  = (last_forward_diff_y > last_match_y) ? last_forward_diff_y : last_match_y;
+          this.drawSegment(this.forwardLinkX, forwardY, this.forwardLinkX, hopY, linkStyle, arrowStyle);
           this.drawSegment(this.hopRadius, hopY, this.hopAsymOffset, last_reverse_diff_y, linkStyle, arrowStyle);
         }
 
@@ -243,9 +243,7 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
         arrowStyle = (hop.arrowStyle != undefined) ? hop.arrowStyle : o.arrow.style;
         this.drawSegment(this.forwardLinkX, lastHopY, this.forwardLinkX, hopY, linkStyle, arrowStyle);
 
-        //console.log(hop);
         this.drawHopLabel(hop, 0, hopY - this.hopSize);
-
       }
 
       // Reverse
@@ -365,7 +363,6 @@ TraceRoute.prototype.drawSegment = function(x1, y1, x2, y2, options, arrow_optio
     hypotenuse = Math.sqrt(Math.pow(deltaY, 2) + Math.pow(deltaX, 2));
     ctx.beginPath();
 
-    //console.log(rotation % Math.PI);
     // @TODO Draw arrows for diagonal lines
     if (deltaX === 0) {
 
@@ -455,8 +452,6 @@ TraceRoute.prototype.hopBehavior = function(el) {
       $('.tablechart', container).show();
       chart.draw();
     }
-    //console.log($('.tablecontainer', container));
-    //console.log($('.tablecontainer', container).data('TableChart'));
   }, function() {
     hopid = $(this).attr('hopid');
     container = $('#hop-' + hopid);
@@ -472,7 +467,10 @@ TraceRoute.prototype.redraw = function(data, options) {
   $(this.hopCanvas).remove();
   $(this.linkCanvas).remove();
 
-    // Get traceroute length if not provided; we need it to size the canvas
+  // @TODO not really generic
+  $('.trace-label', this.el).remove();
+
+  // Get traceroute length if not provided; we need it to size the canvas
   if (this.options.tracerouteLength || this.options.tracerouteLength < 1) {
     this.options.tracerouteLength = this.tracerouteLength();
   }

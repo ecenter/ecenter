@@ -50,15 +50,16 @@ $(document).ready(function() {
     });
 
     overlay = $('<div class="loading-overlay"><p>' + Drupal.t('Loading') + '</p></div>');
+    ip_select = $('#ip-select-wrapper');
     map = $('#weathermap-wrapper').css('position', 'relative');
     overlay.css({
       'position' : 'absolute',
       'top' : 0,
       'left' : 0,
-      'width' : map.width(),
+      'width' : ip_select.outerWidth(),
       'height' : map.height(),
       'z-index' : 9999,
-      'display' : 'none'
+      'display' : 'none',
     });
     map.prepend(overlay);
     overlay.fadeIn('slow');

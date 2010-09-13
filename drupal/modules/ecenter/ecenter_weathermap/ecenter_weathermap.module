@@ -626,11 +626,13 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
             'hop_id' => uniqid('start-'),
             'hop_ip' => $src_ip,
             'nodename' => $src_hops[$src_ip]->nodename,
+            'hub' => 'src',
             'netblock' => 'src',
           ));
         }
         else {
           $traceroute[0]['netblock'] = 'src';
+          $traceroute[0]['hub'] = 'src';
         }
         $last = count($traceroute) -1;
         if ($traceroute[$last]['hop_ip'] != $dst_ip) {
@@ -638,11 +640,13 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
             'hop_id' => uniqid('end-'),
             'hop_ip' => $dst_ip,
             'nodename' => $dst_hops[$dst_ip]->nodename,
+            'hub' => 'dst',
             'netblock' => 'dst',
           ));
         }
         else {
           $traceroute[$last]['netblock'] = 'dst';
+          $traceroute[$last]['hub'] = 'dst';
         }
       }
       elseif ($direction == 'reverse_traceroute') {
@@ -651,11 +655,13 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
             'hop_id' => uniqid('end-'),
             'hop_ip' => $dst_ip,
             'nodename' => $dst_hops[$dst_ip]->nodename,
+            'hub' => 'dst',
             'netblock' => 'dst',
           ));
         }
         else {
           $traceroute[0]['netblock'] = 'dst';
+          $traceroute[0]['hub'] = 'dst';
         }
         $last = count($traceroute) -1;
         if ($traceroute[$last]['hop_ip'] != $src_ip) {
@@ -663,11 +669,13 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
             'hop_id' => uniqid('start-'),
             'hop_ip' => $src_ip,
             'nodename' => $src_hops[$src_ip]->nodename,
+            'hub' => 'src',
             'netblock' => 'src',
           ));
         }
         else {
           $traceroute[$last]['netblock'] = 'src';
+          $traceroute[$last]['hub'] = 'src';
         }
       }
 
@@ -812,6 +820,7 @@ function ecenter_weathermap_openlayers_presets() {
   $openlayers_presets->title = 'E-Center Weathermap';
   $openlayers_presets->description = 'E-Center network weathermap';
   $openlayers_presets->data = array(
+    'image_path' => 'http://js.mapbox.com/theme/dark/',
     'width' => '660px',
     'height' => '360px',
     'image_path' => '',

@@ -10,7 +10,7 @@
  * Theme main data display
  */
 function template_preprocess_ecenter_weathermap_data(&$vars) {
-  //dpm($vars['data']);
+  dpm($vars['data']);
 
   // Generate permalink
   $vars['permalink'] = l('Permalink', 'weathermap', array('query' => $vars['params']));
@@ -224,16 +224,13 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
  */
 function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
   // BWCTL
-  if (!empty($data['bwctl']['forward'])) {
+  /*if (!empty($data['bwctl']['forward'])) {
     foreach ($data['bwctl']['forward'] as $item) {
       list($timestamp, $values) = $item;
       $tz = date_default_timezone_name(TRUE);
       $date = date_make_date($timestamp, $tz, DATE_UNIX);
-      //dpm(date_format($date, 'Y-m-d H:i'));
-      //dpm($values['throughput']);
-      //dpm((float) $values['throughput'] / 1e+06);
     }
-  }
+  }*/
 
   $table = array();
   $headers = array(
@@ -246,84 +243,146 @@ function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
     t('Min')
   );
 
-  if (!empty($data['pinger']['forward'])) {
-    foreach ($data['pinger']['forward'] as $item) {
-      list($timestamp, $values) = $item;
 
-      $forward_mean_rtt[] = $values['meanRtt'];
-      $forward_max_rtt = ($values['maxRtt'] > $forward_max_rtt) ? $values['maxRtt'] : $forward_max_rtt;
-      $forward_min_rtt = (!$forward_min_rtt || ($values['minRtt'] < $forward_min_rtt)) ? $values['minRtt'] : $forward_min_rtt;
+  foreach (array('forward', 'reverse') as $direction) {
+    $dir_label = ($direction == 'forward') ? 'fwd' : 'rev';
 
-      $forward_mean_iqripd[] = $values['iqrIpd'];
-      $forward_max_iqripd = ($values['iqrIpd'] > $forward_max_iqripd) ? $values['iqrIpd'] : $forward_max_iqripd;
-      $forward_min_iqripd = (!$forward_min_iqr_ipd || ($values['iqrIpd'] < $forward_min_iqripd)) ? $values['iqrIpd'] : $forward_min_iqripd;
+    if (!empty($data['bwctl'][$direction])) {
 
-      $forward_mean_loss[] = $values['lossPercent'];
-      $forward_max_loss = ($values['lossPercent'] > $forward_max_loss) ? $values['lossPercent'] : $forward_max_loss;
-      $forward_min_loss = (!$forward_min_loss || ($values['lossPercent'] < $forward_min_loss)) ? $values['lossPercent'] : $forward_min_loss;
+      $mean_throughput = array();
+      $max_throughput = NULL;
+      $min_throughput = NULL;
+
+      foreach ($data['bwctl'][$direction] as $item) {
+        list($timestamp, $values) = $item;
+
+        $mean_throughput[] = $values['throughput'];
+        $max_throughput = ($values['throughput'] > $max_throughput) ? $values['throughput'] : $max_throughput;
+        $min_throughput = (!$min_throughput || ($values['throughput'] < $min_throughput)) ? $values['throughput'] : $min_throughput;
+      }
+
+      $mean_throughput = array_sum($mean_throughput) / count($mean_throughput);
+
+      $table['0_' . $direction] = array(
+        array(
+          'data' => t('@direction Throughput', array('@direction' => ucfirst($dir_label))),
+          'header' => TRUE,
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.1f', $mean_throughput / 1e+6) .'</span><span class="unit">'. t('mbps') .'</span>',
+          'class' => 'avg',
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.1f', $max_throughput / 1e+6) .'</span><span class="unit">'. t('mbps') .'</span>',
+          'class' => 'max',
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.1f', $min_throughput / 1e+6) .'</span><span class="unit">'. t('mbps') .'</span>',
+          'class' => 'min',
+        ),
+      );
+
     }
 
-    $forward_mean_rtt = array_sum($forward_mean_rtt) / count($forward_mean_rtt);
-    $forward_mean_iqripd = array_sum($forward_mean_iqripd) / count($forward_mean_iqripd);
-    $forward_mean_loss = array_sum($forward_mean_loss) / count($forward_mean_loss);
+    if (!empty($data['pinger'][$direction])) {
 
-    $table[] = array(
-      array(
-        'data' => t('Forward RTT'),
-        'header' => TRUE,
-      ),
-      array(
-        'data' => '<span class="value">'. sprintf('%01.1f', $forward_mean_rtt) .'</span><span class="unit">'. t('ms') .'</span>',
-        'class' => 'avg',
-      ),
-      array(
-        'data' => '<span class="value">'. sprintf('%01.1f', $forward_max_rtt) .'</span><span class="unit">'. t('ms') .'</span>',
-        'class' => 'max',
-      ),
-      array(
-        'data' => '<span class="value">'. sprintf('%01.1f', $forward_min_rtt) .'</span><span class="unit">'. t('ms') .'</span>',
-        'class' => 'min',
-      ),
-    );
+      $mean_rtt = array();
+      $mean_iqripd = array();
+      $mean_loss = array();
 
-    $table[] = array(
-      array(
-        'data' => t('Forward Packet Loss'),
-        'header' => TRUE,
-      ),
-      array(
-        'data' => '<span class="value">'. sprintf('%01.1f', $forward_mean_loss) .'</span><span class="unit">'. t('%') .'</span>',
-        'class' => 'avg',
-      ),
-      array(
-        'data' => '<span class="value">'. sprintf('%01.1f', $forward_max_loss) .'</span><span class="unit">'. t('%') .'</span>',
-        'class' => 'max',
-      ),
-      array(
-        'data' => '<span class="value">'. sprintf('%01.1f', $forward_min_loss) .'</span><span class="unit">'. t('%') .'</span>',
-        'class' => 'min',
-      ),
-    );
+      $max_rtt = NULL;
+      $min_rtt = NULL;
+      $max_iqripd = NULL;
+      $min_iqripd = NULL;
+      $max_loss = NULL;
+      $min_loss = NULL;
 
-    $table[] = array(
-      array(
-        'data' => t('Jitter'),
-        'header' => TRUE,
-      ),
-      array(
-        'data' => '<span class="value">'. sprintf('%01.2f', $forward_mean_iqripd) .'</span><span class="unit">'. t('ms') .'</span>',
-        'class' => 'avg',
-      ),
-      array(
-        'data' => '<span class="value">'. sprintf('%01.2f', $forward_max_iqripd) .'</span><span class="unit">'. t('ms') .'</span>',
-        'class' => 'max',
-      ),
-      array(
-        'data' => '<span class="value">'. sprintf('%01.2f', $forward_min_iqripd) .'</span><span class="unit">'. t('ms') .'</span>',
-        'class' => 'min',
-      ),
-    );
+      foreach ($data['pinger'][$direction] as $item) {
+        list($timestamp, $values) = $item;
+
+        $mean_rtt[] = $values['meanRtt'];
+        $max_rtt = ($values['maxRtt'] > $max_rtt) ? $values['maxRtt'] : $max_rtt;
+        $min_rtt = (!$min_rtt || ($values['minRtt'] < $min_rtt)) ? $values['minRtt'] : $min_rtt;
+
+        $mean_iqripd[] = $values['iqrIpd'];
+
+        $mean_loss[] = $values['lossPercent'];
+        $max_loss = ($values['lossPercent'] > $max_loss) ? $values['lossPercent'] : $max_loss;
+        $min_loss = (!$min_loss || ($values['lossPercent'] < $min_loss)) ? $values['lossPercent'] : $min_loss;
+      }
+
+      $mean_rtt = array_sum($mean_rtt) / count($mean_rtt);
+      $mean_iqripd = array_sum($mean_iqripd) / count($mean_iqripd);
+      $mean_loss = array_sum($mean_loss) / count($mean_loss);
+
+      $table['1_' . $direction] = array(
+        array(
+          'data' => t('@direction RTT', array('@direction' => ucfirst($dir_label))),
+          'header' => TRUE,
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.1f', $mean_rtt) .'</span><span class="unit">'. t('ms') .'</span>',
+          'class' => 'avg',
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.1f', $max_rtt) .'</span><span class="unit">'. t('ms') .'</span>',
+          'class' => 'max',
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.1f', $min_rtt) .'</span><span class="unit">'. t('ms') .'</span>',
+          'class' => 'min',
+        ),
+      );
+
+      $table['3_' . $direction] = array(
+        array(
+          'data' => t('@direction Packet Loss', array('@direction' => ucfirst($dir_label))),
+          'header' => TRUE,
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.1f', $mean_loss) .'</span><span class="unit">'. t('%') .'</span>',
+          'class' => 'avg',
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.1f', $max_loss) .'</span><span class="unit">'. t('%') .'</span>',
+          'class' => 'max',
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.1f', $min_loss) .'</span><span class="unit">'. t('%') .'</span>',
+          'class' => 'min',
+        ),
+      );
+
+      $table['4_' . $direction] = array(
+        array(
+          'data' => t('@direction Jitter', array('@direction' => ucfirst($dir_label))),
+          'header' => TRUE,
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.2f', $mean_iqripd) .'</span><span class="unit">'. t('ms') .'</span>',
+          'class' => 'avg',
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.2f', $max_iqripd) .'</span><span class="unit">'. t('ms') .'</span>',
+          'class' => 'max',
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.2f', $min_iqripd) .'</span><span class="unit">'. t('ms') .'</span>',
+          'class' => 'min',
+        ),
+      );
+
+    }
+
+
+    if (!empty($data['owamp'][$direction])) {
+      dpm($data['owamp'][$direction]);
+    }
+
   }
+
+
+  ksort($table);
   if (!empty($table)) {
     return theme('ecenter_weathermap_table', $headers, $table, array('class' => 'end-to-end-table'));
   }

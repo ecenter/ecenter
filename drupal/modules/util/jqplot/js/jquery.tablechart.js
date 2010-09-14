@@ -20,6 +20,7 @@ $.fn.tablechart = function(options) {
 // Defaults
 $.fn.tablechart.defaults = {
   hideTables: false,
+  hideChart: false,
   append: false,
   height: false,
   width: false,
@@ -40,15 +41,13 @@ function TableChart(el, options) {
   if (options.width) { this.chartContainer.width(options.width); }
 
   // Attach chart
-  //if (!options.append) {
-  $(el).prepend(this.chartContainer);
-  //}
-  //else {
-  //  $(options.appendSelector).append(this.chartContainer);
-  //}
+  $(el).append(this.chartContainer);
 
   this.draw();
-  $('.tablechart').hide();
+
+  if (this.options.hideChart) {
+    $('.tablechart').hide();
+  }
 
 }
 

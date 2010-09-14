@@ -820,10 +820,9 @@ function ecenter_weathermap_openlayers_presets() {
   $openlayers_presets->title = 'E-Center Weathermap';
   $openlayers_presets->description = 'E-Center network weathermap';
   $openlayers_presets->data = array(
-    'image_path' => 'http://js.mapbox.com/theme/dark/',
     'width' => '660px',
     'height' => '360px',
-    'image_path' => '',
+    'image_path' => 'http://js.mapbox.com/theme/dark/',
     'css_path' => '',
     'proxy_host' => '',
     'hide_empty_map' => 0,

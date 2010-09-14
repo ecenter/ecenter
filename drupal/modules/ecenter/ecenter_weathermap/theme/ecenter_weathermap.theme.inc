@@ -89,9 +89,9 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
 function theme_ecenter_weathermap_render_data_snmp($data) {
 
   $plot_options = array(
-    'width' => 580,
+    'width' => 550,
     'height' => 200,
-    'hideTables' => TRUE,
+    //'hideTables' => TRUE,
     'plotOptions' => array(
       'seriesDefaults' => array(
         'lineWidth' => 1.5,
@@ -115,20 +115,20 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
         ),
         'yaxis' => array(
           'min' => 0,
-          'max' => 100,
+          /*'max' => 100,*/
           'pad' => 0,
           'numberTicks' => 6,
           'label' => t('Percent utilization'),
           'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
           'tickOptions' => array(
-            'formatString' => '%01.2f%'
+            'formatString' => '%01.0f%'
           ),
         ),
       ),
       'grid' => array(
         'shadow' => FALSE,
         'borderWidth' => 0,
-        'background' => '#eeeeee',
+        'background' => '#dddddd',
         'gridLineColor' => '#ffffff',
       ),
       'highlighter' => array(
@@ -215,7 +215,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
 
   }
 
-  jqplot_register_tablechart('.snmp-chart-wrapper', $plot_options);
+  jqplot_register_tablechart('#results', $plot_options);
   return implode("\n", $out);
 }
 

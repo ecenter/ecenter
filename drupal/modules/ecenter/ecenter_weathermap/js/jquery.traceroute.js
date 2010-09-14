@@ -51,7 +51,7 @@ $.fn.traceroute.defaults = {
     }
   },
   'label' : {
-    'width' : 180,
+    'width' : 150,
     'side_padding' : 6,
     'top_padding' : 9,
     'font_size' : '11px'
@@ -435,7 +435,7 @@ TraceRoute.prototype.drawHopLabel = function(hop_data, x, y, align) {
 }
 
 TraceRoute.prototype.hopBehavior = function(el) {
-  var offset = $(this.el).offset();
+  /*var offset = $(this.el).offset();
   var containerWidth = this.containerWidth;
   el.hover(function() {
     hopid = $(this).attr('hopid');
@@ -456,7 +456,7 @@ TraceRoute.prototype.hopBehavior = function(el) {
     hopid = $(this).attr('hopid');
     container = $('#hop-' + hopid);
     container.fadeOut('fast');
-  });
+  });*/
 }
 
 // @TODO: DRY violation

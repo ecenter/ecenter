@@ -54,13 +54,26 @@ sub BUILD {
 };
 
 sub get_ips {
-    my ( $self, $arg ) =   validated_list(
+    my ( $self, %arg ) =   validated_hash(
                              \@_,
                              hub_name   => { isa => 'Ecenter::Types::HubName', optional => 1});
-    $self->logger->logdie("Missed hub_name argument") unless $arg || $self->hub_name;
-    $arg ||= $self->hub_name;
-    $arg = lc($arg);
-    return $hubs{$arg};
+    if (%arg && $arg{hub_name}) {
+       $arg{hub_name} = lc($arg{hub_name});	     
+       $self->hub_name($arg{hub_name}) 	     
+    }
+    $self->logger->logdie("Missed hub_name argument") unless  $self->hub_name;
+    return  $hubs{$self->hub_name};
+}; 
+
+sub get_ips_sql {
+    my($self, %arg) =  validated_hash(
+                             \@_,
+                             hub_name   => { isa => 'Ecenter::Types::HubName', optional => 1},
+			     type       => { regex => qr/^dst|src$/});
+    my $ips_href = $self->get_ips(@_);
+    my @ips = map{"inet6_mask(md.$arg{type}\_ip, $ips_href->{$_}) = inet6_mask(inet6_pton('$_'), $ips_href->{$_})"} keys %{$ips_href};
+    my $str = join(" or ", @ips);
+    return "($str)";
 }; 
 
  

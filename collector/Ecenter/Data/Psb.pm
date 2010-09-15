@@ -19,7 +19,7 @@ use DateTime;
 
 =head1 NAME
 
- E-Center::Data::Bwctl  data retrieval API for pSB type of service ( i2 services) like Owmap and Bwctl
+ E-Center::Data::Bwctl  data retrieval API for pSB type of service ( i2 services) like Owmap and Bwctl, Traceroute
 
 =head1 DESCRIPTION
 

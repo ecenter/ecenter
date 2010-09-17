@@ -4,6 +4,7 @@ use strict;
 use warnings;
  
 use English qw( -no_match_vars );
+use Net::IP;
  
 =head1 NAME
 
@@ -45,7 +46,7 @@ use MooseX::Types -declare => [qw( PositiveInt  IP_addr  HubName MyDateTime )];
          subtype PositiveInt,
              as Int,
              where { $_ > 0 },
-             message { 'Int is not larger than 0' };
+             message { "$_ is not larger than 0" };
          # type coercion
          coerce PositiveInt,
              from Int,
@@ -63,7 +64,7 @@ use MooseX::Types -declare => [qw( PositiveInt  IP_addr  HubName MyDateTime )];
            via { DateTime->new($_) };
 	 
 	  # type definition.
-	 class_type IP_addr, {class => 'Net::IP'};
+	 class_type IP_addr, {class => 'Net::IP'}, message {Net::IP::Error()};
 	 
          # type coercion
 	 coerce IP_addr,

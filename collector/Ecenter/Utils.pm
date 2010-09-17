@@ -15,6 +15,7 @@ use Net::IPv6Addr;
 use Net::CIDR;
 use Data::Validate::IP qw(is_ipv4 is_ipv6);
 use Data::Validate::Domain qw( is_domain is_hostname);
+use Params::Validate;
 use Socket;
 use Socket6;
 use Net::DNS;
@@ -22,6 +23,7 @@ use English qw(-no_match_vars);
 use Data::Dumper;
 use Log::Log4perl;
 use Time::HiRes qw(usleep);
+use DBI;
 
 use base 'Exporter';
 
@@ -42,9 +44,21 @@ our $logger =   Log::Log4perl->get_logger(__PACKAGE__);
  
 # exported functions  
 
-our @EXPORT = qw/get_ip_name update_create_fixed pool_control ip_ton nto_ip/;
+our @EXPORT = qw/get_ip_name db_connect update_create_fixed pool_control ip_ton nto_ip/;
  
-=head1 FUNCTIONS
+=head1 FUNCTIONS 
+ 
+=head2 db_connect 
+
+=cut
+
+sub db_connect {
+    my ($OPTIONS) = shift;
+    my $dbh = DBI->connect_cached('DBI:mysql:' . $OPTIONS->{db},  $OPTIONS->{user}, $OPTIONS->{password}, {RaiseError => 1, PrintError => 1});
+    $logger->logdie(" DBI connect failed:  $DBI::errstr") unless $dbh;
+    return $dbh; 
+}
+
 
 =head2 get_ip_name()
 
@@ -52,7 +66,7 @@ our @EXPORT = qw/get_ip_name update_create_fixed pool_control ip_ton nto_ip/;
  
 sub get_ip_name {
     my $ip_addr = shift;
-    return () unless $ip_addr;
+    return  unless $ip_addr;
     my $resolver   = Net::DNS::Resolver->new;
     $ip_addr =~ s{^(https?|tcp)://}{}ig;
     my ( $unt_test ) =  $ip_addr  =~ /^([^:]+):?/;
@@ -63,7 +77,7 @@ sub get_ip_name {
 	    $logger->debug(" Its IP: $unt_test  "); 
             return ($unt_test, gethostbyaddr(Socket::inet_aton($unt_test), Socket::AF_INET));
 	 } else {
-	    return ();
+	    return;
 	 }
     }
     if(is_hostname( $unt_test ) &&  $unt_test !~ m/^changeme|localhost/i) {
@@ -81,7 +95,7 @@ sub get_ip_name {
         $logger->debug(" Found IP: $ip_addr2  "); 
        return  ($ip_addr2,  $unt_test);
     } 
-    return ();
+    return;
 }
 
 =head2 pool_control(max_threads, finish_it)

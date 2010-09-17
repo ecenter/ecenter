@@ -73,6 +73,7 @@ use XML::LibXML;
 use Net::Netmask;
 
 use Parallel::ForkManager;
+use DBI;
 
 use perfSONAR_PS::Client::MA;
 use perfSONAR_PS::Client::Topology;
@@ -82,6 +83,7 @@ use perfSONAR_PS::Error;
 use Ecenter::Data::Snmp;
 use Ecenter::Utils;
 use Ecenter::Schema;
+use Ecenter::Data::Hub;
 use DateTime;
 
 our %ESNET_HUB = (
@@ -91,7 +93,7 @@ our %ESNET_HUB = (
         "bnl-mr2"   => "BNL", 
         "pnwg-cr1"  =>  "PNWG", 
         "wash-cr1"  => "WASH",
-        "pantex-rt1"  => "PANTEX",
+        "pantex-rt1" => "PANTEX",
         "bois-cr1"  => "BOIS",
         "atla-cr1"  => "ATLA",
         "denv-cr2"  => "DENV",
@@ -150,6 +152,7 @@ my @esnet_hosts = qw/ps1 ps2 ps3/;
 my $dbh =  Ecenter::Schema->connect('DBI:mysql:' . $OPTIONS{db},  $OPTIONS{user}, $OPTIONS{password}, 
                                     {RaiseError => 1, PrintError => 1});
 $dbh->storage->debug(1)  if $OPTIONS{debug};
+
 		
 foreach my $service ( qw/ps3/ ) {
     my $ts_instance =  "http://$service.es.net:8012/perfSONAR_PS/services/topology";
@@ -163,6 +166,7 @@ foreach my $service ( qw/ps3/ ) {
 	     parse_topo($dbh, $res);
 	}
 	get_snmp($dbh, $pm) if $OPTIONS{snmp};
+	set_end_sites($dbh, $pm);
     }
     catch perfSONAR_PS::Error   with {
         $logger->error( shift);
@@ -177,7 +181,7 @@ foreach my $service ( qw/ps3/ ) {
         $dbh->storage->disconnect if $dbh;
     };
 }
-$pm->wait_all_children;
+$pm->wait_all_children ;
 exit(0);
  
 
@@ -269,6 +273,35 @@ sub parse_topo {
 							 });
     }
     
+}
+
+sub set_end_sites {
+   my ($dbh, $pm ) = @_;
+   my $dbi =  db_connect(\%OPTIONS);
+   foreach my $hub_name (qw/FNAL   LBL   ORNL   SLAC    BNL  ANL/) {
+      my $hub = Ecenter::Data::Hub->new({hub_name => $hub_name});
+      my %subnets =  %{$hub->get_ips()};
+      my $l2_port =   $dbh->resultset('L2_port')->first({'hub.hub_name' => $hub_name}, {join => 'hub'});
+      unless($l2_port && $l2_port->l2_urn) {
+          $logger->error("NO ports available - check topology info or hub_name:$hub_name");
+          next;
+      }
+      foreach my $subnet (keys %subnets) {
+         my $sql = "select n.ip_noted, n.ip_addr from node n left join l2_l3_map llm using(ip_addr) where  llm.l2_urn is NULL and inet6_mask(ip_addr,$subnets{$subnet}) =  inet6_mask(inet6_pton('$subnet'), $subnets{$subnet})";
+	 $logger->debug("SQL::: $sql"); 
+         my $nodes =  $dbi->selectall_hashref($sql, 'ip_noted');;
+	 # found all ips for the endsite, lets mark them with made up urns and hub names
+	 foreach my $ip (keys %$nodes) {
+	    $logger->debug("Checking::: $ip"); 
+	    $dbh->resultset('L2_l3_map')->update_or_create({ ip_addr => $nodes->{$ip}{ip_addr},
+	                                                     l2_urn => $l2_port->l2_urn,
+							  });
+	 }
+     }
+   }
+   $logger->debug("Done");
+   $dbi->disconnect if $dbi;
+   $logger->debug("Back");
 }
 
 sub get_snmp { 

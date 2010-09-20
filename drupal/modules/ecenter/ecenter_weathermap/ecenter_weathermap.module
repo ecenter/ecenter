@@ -756,6 +756,15 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
       }
       $queries[$response->query]['diff'] = $diff;
     }
+    elseif (!empty($queries[$response->query]['reverse'])) {
+      $diff = array();
+      $reverse = $queries[$response->query]['reverse'];
+      foreach ($reverse as $row) {
+        $diff[] = array('match' => array('reverse' => array($row)));
+      }
+      $queries[$response->query]['diff'] = $diff;
+    }
+
 
     // Recreate diff without hop data
     $js_diff = array();
@@ -791,6 +800,16 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
   $time = $time_end - $time_start;
 
   return $queries[$response->query];
+}
+
+/**
+ * Implementation of hook_jqplot_plugins().
+ */
+function ecenter_weathermap_jqplot_plugins() {
+  $path = drupal_get_path('module', 'ecenter_weathermap') .'/js/jqplot';
+  return array(
+    'linehighlighter' => $path .'/jqplot.linehighlighter.js',
+  );
 }
 
 /**

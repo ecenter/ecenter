@@ -544,21 +544,6 @@ function _ecenter_weathermap_hop_sort($a, $b) {
   return strcmp($a->nodename, $b->nodename);
 }
 
-
-/**
- * Sanitize the get array
- */
-function ecenter_weathermap_sanitize_get() {
-  if (!function_exists('filter_input')) {
-    return $_GET;
-  }
-  $get = array();
-  foreach (array_keys($_GET) as $key) {
-    $get[$key] = filter_input(INPUT_GET, $key, FILTER_SANITIZE_STRING);
-  }
-  return $get;
-}
-
 /**
  * Traverse an object, turning all members into arrays or preserving their
  * values.

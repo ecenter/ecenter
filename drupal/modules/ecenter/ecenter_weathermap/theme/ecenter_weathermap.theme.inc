@@ -10,7 +10,7 @@
  * Theme main data display
  */
 function template_preprocess_ecenter_weathermap_data(&$vars) {
-  dpm($vars['data']);
+  //dpm($vars['data']);
 
   // Generate permalink
   $vars['permalink'] = l('Permalink', 'weathermap', array('query' => $vars['params']));
@@ -87,7 +87,6 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
  * Theme SNMP data
  */
 function theme_ecenter_weathermap_render_data_snmp($data) {
-
   $plot_options = array(
     'width' => 550,
     'height' => 200,
@@ -96,9 +95,11 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
       'seriesDefaults' => array(
         'lineWidth' => 1.5,
         'shadow' => FALSE,
-        'fillAndStroke' => TRUE,
+        'fill' => FALSE,
+        'color' => '#aaaaaa',
         'markerOptions' => array(
           'show' => FALSE,
+          'size' => 3,
         ),
       ),
       'axes' => array(
@@ -115,8 +116,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
         ),
         'yaxis' => array(
           'min' => 0,
-          /*'max' => 100,*/
-          'pad' => 0,
+          'max' => 100,
           'numberTicks' => 6,
           'label' => t('Percent utilization'),
           'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
@@ -132,20 +132,26 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
         'gridLineColor' => '#ffffff',
       ),
       'highlighter' => array(
-        'sizeAdjust' => 1,
-        'lineWidthAdjust' => 1,
+        'show' => TRUE,
+        'sizeAdjust' => 2,
+        'lineWidthAdjust' => 3,
         'tooltipLocation' => 'n',
         'tooltipOffset' => 20,
         'tooltipSeparator' => ': ',
       ),
+      'linehighlighter' => array(
+        'threshold' => 4,
+        'lineScale' => 2,
+      ),
       'cursor' => array(
-        'showToolTip' => FALSE,
+        'show' => TRUE,
+        'showTooltip' => FALSE,
         'zoom' => TRUE,
         'clickReset' => TRUE,
-        //'constrainZoomTo' => 'x',
       ),
     ),
   );
+
 
   // @TODO Determine how to set colors...  MESSY!
   $critical = variable_get('ecenter_weathermap_threshold_critical_snmp_utilization', 60);

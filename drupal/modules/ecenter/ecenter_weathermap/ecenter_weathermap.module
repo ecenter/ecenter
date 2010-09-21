@@ -98,7 +98,14 @@ function ecenter_weathermap_theme() {
  * Implementation of hook_init().
  */
 function ecenter_weathermap_init() {
+
+
   if (arg(0) == 'weathermap' && !arg(1)) {
+    // Force load OL
+    openlayers_include();
+    drupal_add_js(drupal_get_path('module', 'openlayers') .
+      '/includes/layer_types/js/raw.js');
+
     // We need quickselect to get added to behaviors first, so when ensure it executes first
     drupal_add_js(drupal_get_path('module', 'quickselect') .'/js/quickselect-behavior.js');
 
@@ -116,6 +123,7 @@ function ecenter_weathermap_init() {
     drupal_add_js($jq_path .'/jqplot/plugins/jqplot.cursor.js');
     drupal_add_js($jq_path .'/jqplot/plugins/jqplot.canvasTextRenderer.js');
     drupal_add_js($jq_path .'/jqplot/plugins/jqplot.canvasAxisLabelRenderer.js');
+    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/jqplot/jqplot.linehighlighter.js');
 
     // Our libraries and behaviors
     drupal_add_js($jq_path .'/js/jquery.uuid.js');
@@ -132,8 +140,8 @@ function ecenter_weathermap_init() {
 
     $inline_css = array(
       '.ecenter-critical' => array('color' => variable_get('ecenter_weathermap_threshold_critical_color', '#cc0000')),
-      '.ecenter-marginal' => array('color' => variable_get('ecenter_weathermap_threshold_marginal;_color', '#fe890c')),
-      '.ecenter-good' => array('color' => variable_get('ecenter_weathermap_threshold_marginal;_color', '#1c8a24')),
+      '.ecenter-marginal' => array('color' => variable_get('ecenter_weathermap_threshold_marginal_color', '#fe890c')),
+      '.ecenter-good' => array('color' => variable_get('ecenter_weathermap_threshold_marginal_color', '#1c8a24')),
     );
     inline_css_add_css($inline_css);
   }
@@ -143,6 +151,7 @@ function ecenter_weathermap_init() {
  * Primary selection form definition.
  */
 function _ecenter_weathermap_select_form() {
+
   // Initialize time-related variables
   $inc = variable_get('ecenter_weathermap_time_increment', 5);
   $now = time();
@@ -506,6 +515,7 @@ function ecenter_weathermap_get_hops($src_ip = FALSE) {
     $client = ecenter_weathermap_get_client('message');
     $result = $client->getHubs($src_ip);
     if ($result['code'] == 200) {
+      $start = microtime(TRUE);
       $data = $result['response'];
       $data = array_filter($result['response'], '_ecenter_weathermap_hop_filter');
       usort($data, '_ecenter_weathermap_hop_sort');
@@ -515,6 +525,7 @@ function ecenter_weathermap_get_hops($src_ip = FALSE) {
       foreach ($data as $hop) {
         $new_data[$hop->ip_noted] = $hop;
       }
+      dpm(microtime(TRUE) - $start, 'Time elapsed sorting and filtering hops');
       $data = $new_data;
 
       if ($caching) {
@@ -586,13 +597,23 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
   // @TODO static variable may add level of indirection / instability
   static $queries = array();
 
+  $start = microtime(TRUE);
+
   if (empty($queries[$response->query])) {
-    $data = _ecenter_weathermap_object_to_array($response['response']);
+    //$data = _ecenter_weathermap_object_to_array($response['response']);
+    
+    dpm(microtime(TRUE) - $start, 'Elapsed before doing much of anything');
 
     $src_hops = ecenter_weathermap_get_hops();
     $dst_hops = ecenter_weathermap_get_hops($dst_ip);
 
+    dpm(microtime(TRUE) - $start, 'Elapsed after getting hops');
+
     foreach (array('traceroute', 'reverse_traceroute') as $direction) {
+
+      dpm($direction);
+      dpm('---------');
+
       // We may not have ANY forward or reverse traceroutes
       if (empty($data[$direction])) {
         continue;
@@ -600,6 +621,9 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
 
       // Sort and grab latest traceroute
       krsort($data[$direction]);
+
+      dpm(microtime(TRUE) - $start, 'Elapsed after sort');
+
       $traceroute = array_shift(array_values($data[$direction]));
 
       $parsed = array();
@@ -664,6 +688,8 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
         }
       }
 
+      dpm(microtime(TRUE) - $start, 'Elapsed after traceroute munging');
+
       foreach ($traceroute as $hop) {
         $hop_data = array();
 
@@ -693,6 +719,9 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
       $direction_label = ($direction == 'reverse_traceroute') ? 'reverse' : 'forward';
       $queries[$response->query][$direction_label] = $parsed;
     }
+
+    $end = microtime(TRUE);
+    dpm($end - $start, 'Elapsed after folding in hop data');
 
     // End to end
     $src_netblock = long2ip(ip2long($src_ip) & ~((1 << 8) - 1));
@@ -725,6 +754,8 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
     }
     $queries[$response->query]['end_to_end'] = $end_to_end;
 
+    dpm(microtime(TRUE) - $start, 'Elapsed after generating end-to-end data');
+
     // Calculate diff
     if (!empty($queries[$response->query]['forward']) && !empty($queries[$response->query]['reverse'])) {
       $forward = $queries[$response->query]['forward'];
@@ -750,6 +781,7 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
       $queries[$response->query]['diff'] = $diff;
     }
 
+    dpm(microtime(TRUE) - $start, 'Elapsed after generating diff');
 
     // Recreate diff without hop data
     $js_diff = array();
@@ -779,10 +811,9 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
       }
     }
     $queries[$response->query]['js_diff'] = $js_diff;
-  }
 
-  $time_end = microtime(TRUE);
-  $time = $time_end - $time_start;
+    dpm(microtime(TRUE) - $start, 'Elapsed after generating secondary diff');
+  }
 
   return $queries[$response->query];
 }
@@ -816,6 +847,7 @@ function ecenter_weathermap_ctools_plugin_api($module, $api) {
  * Implementation of hook_openlayers_presets().
  */
 function ecenter_weathermap_openlayers_presets() {
+
   $items = array();
   $openlayers_presets = new stdClass;
   $openlayers_presets->disabled = FALSE; /* Edit this to true to make a default openlayers_presets disabled initially */
@@ -826,7 +858,7 @@ function ecenter_weathermap_openlayers_presets() {
   $openlayers_presets->data = array(
     'width' => '660px',
     'height' => '360px',
-    'image_path' => 'http://js.mapbox.com/theme/dark/',
+    //'image_path' => 'http://js.mapbox.com/theme/dark/',
     'css_path' => '',
     'proxy_host' => '',
     'hide_empty_map' => 0,
@@ -848,8 +880,6 @@ function ecenter_weathermap_openlayers_presets() {
       'openlayers_behavior_fullscreen' => array(
         'activated' => 0,
       ),
-      //'openlayers_behavior_keyboarddefaults' => array(),
-      //'openlayers_behavior_layerswitcher' => array(),
       'openlayers_behavior_navigation' => array(
         'zoomWheelEnabled' => 0,
       ),
@@ -858,14 +888,9 @@ function ecenter_weathermap_openlayers_presets() {
     'default_layer' => 'osm_mapnik',
     'layers' => array(
       'osm_mapnik' => 'osm_mapnik',
-      //'google_hybrid' => 'google_hybrid',
-      //'google_normal' => 'google_normal',
-    ),
-    'layer_styles' => array(
-      'ecenter_map_test_display_openlayers_1' => 'ecenter_default',
+      //'ecenter_raw_layer' => 'ecenter_raw_layer',
     ),
     'layer_activated' => array(),
-    'layer_switcher' => array(),
     'projection' => '900913',
     'displayProjection' => '4326',
     'styles' => array(

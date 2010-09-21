@@ -59,7 +59,7 @@ class Ecenter_Data_Service_Client {
    * @param $timeout
    *   (optional) Request timeout to use (overrides timeout set in constructor).
    */
-  protected function query($path, $parameters = NULL, $timeout = NULL) {
+  protected function query($path, $parameters = NULL, $timeout = NULL, $assoc = TRUE) {
     static $results = array();
 
     $timeout = ($timeout) ? $timeout : $this->_timeout;
@@ -94,7 +94,7 @@ class Ecenter_Data_Service_Client {
 
       if (!empty($response)) {
         $code = curl_getinfo($handle, CURLINFO_HTTP_CODE);
-        $response = json_decode($response);
+        $response = json_decode($response, $assoc);
       }
       else {
         $code = 0;

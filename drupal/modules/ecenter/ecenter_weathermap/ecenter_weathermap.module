@@ -99,7 +99,6 @@ function ecenter_weathermap_theme() {
  */
 function ecenter_weathermap_init() {
 
-
   if (arg(0) == 'weathermap' && !arg(1)) {
     // Force load OL
     openlayers_include();
@@ -338,7 +337,7 @@ function ecenter_weathermap_select_form(&$form_state) {
 
   $src_options = array('' => t('Select a source'));
   foreach ($src_hops as $hop) {
-    $src_options[$hop->ip_noted] = theme('ecenter_weathermap_hop_option', $hop);
+    $src_options[$hop['ip_noted']] = theme('ecenter_weathermap_hop_option', $hop);
   }
   $form['ip_select']['src_ip_wrapper']['src_ip']['#options'] = $src_options;
 
@@ -354,7 +353,7 @@ function ecenter_weathermap_select_form(&$form_state) {
     $dst_hops = ecenter_weathermap_get_hops($src_ip);
     $dst_options = array('' => t('Select a destination'));
     foreach ($dst_hops as $hop) {
-      $dst_options[$hop->ip_noted] = theme('ecenter_weathermap_hop_option', $hop);
+      $dst_options[$hop['ip_noted']] = theme('ecenter_weathermap_hop_option', $hop);
     }
 
     $form['ip_select']['dst_ip_wrapper']['dst_ip']['#options'] += $dst_options;
@@ -515,7 +514,6 @@ function ecenter_weathermap_get_hops($src_ip = FALSE) {
     $client = ecenter_weathermap_get_client('message');
     $result = $client->getHubs($src_ip);
     if ($result['code'] == 200) {
-      $start = microtime(TRUE);
       $data = $result['response'];
       $data = array_filter($result['response'], '_ecenter_weathermap_hop_filter');
       usort($data, '_ecenter_weathermap_hop_sort');
@@ -523,9 +521,8 @@ function ecenter_weathermap_get_hops($src_ip = FALSE) {
       // Key off IP
       $new_data = array();
       foreach ($data as $hop) {
-        $new_data[$hop->ip_noted] = $hop;
+        $new_data[$hop['ip_noted']] = $hop;
       }
-      dpm(microtime(TRUE) - $start, 'Time elapsed sorting and filtering hops');
       $data = $new_data;
 
       if ($caching) {
@@ -545,14 +542,14 @@ function ecenter_weathermap_get_hops($src_ip = FALSE) {
  * Callback for filtering hops
  */
 function _ecenter_weathermap_hop_filter($hop) {
-  return !empty($hop->nodename);
+  return !empty($hop['nodename']);
 }
 
 /**
  * Callback for sorting hops
  */
 function _ecenter_weathermap_hop_sort($a, $b) {
-  return strcmp($a->nodename, $b->nodename);
+  return strcmp($a['nodename'], $b['nodename']);
 }
 
 /**
@@ -599,20 +596,13 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
 
   $start = microtime(TRUE);
 
-  if (empty($queries[$response->query])) {
-    //$data = _ecenter_weathermap_object_to_array($response['response']);
-    
-    dpm(microtime(TRUE) - $start, 'Elapsed before doing much of anything');
+  if (empty($queries[$response['query']])) {
+    $data = $response['response'];
 
     $src_hops = ecenter_weathermap_get_hops();
     $dst_hops = ecenter_weathermap_get_hops($dst_ip);
 
-    dpm(microtime(TRUE) - $start, 'Elapsed after getting hops');
-
     foreach (array('traceroute', 'reverse_traceroute') as $direction) {
-
-      dpm($direction);
-      dpm('---------');
 
       // We may not have ANY forward or reverse traceroutes
       if (empty($data[$direction])) {
@@ -621,8 +611,6 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
 
       // Sort and grab latest traceroute
       krsort($data[$direction]);
-
-      dpm(microtime(TRUE) - $start, 'Elapsed after sort');
 
       $traceroute = array_shift(array_values($data[$direction]));
 
@@ -634,7 +622,7 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
           array_unshift($traceroute, array(
             'hop_id' => uniqid('start-'),
             'hop_ip' => $src_ip,
-            'nodename' => $src_hops[$src_ip]->nodename,
+            'nodename' => $src_hops[$src_ip]['nodename'],
             'hub' => 'src',
             'netblock' => 'src',
           ));
@@ -648,7 +636,7 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
           array_push($traceroute, array(
             'hop_id' => uniqid('end-'),
             'hop_ip' => $dst_ip,
-            'nodename' => $dst_hops[$dst_ip]->nodename,
+            'nodename' => $dst_hops[$dst_ip]['nodename'],
             'hub' => 'dst',
             'netblock' => 'dst',
           ));
@@ -688,8 +676,6 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
         }
       }
 
-      dpm(microtime(TRUE) - $start, 'Elapsed after traceroute munging');
-
       foreach ($traceroute as $hop) {
         $hop_data = array();
 
@@ -717,11 +703,8 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
       }
 
       $direction_label = ($direction == 'reverse_traceroute') ? 'reverse' : 'forward';
-      $queries[$response->query][$direction_label] = $parsed;
+      $queries[$response['query']][$direction_label] = $parsed;
     }
-
-    $end = microtime(TRUE);
-    dpm($end - $start, 'Elapsed after folding in hop data');
 
     // End to end
     $src_netblock = long2ip(ip2long($src_ip) & ~((1 << 8) - 1));
@@ -752,40 +735,36 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
       }
 
     }
-    $queries[$response->query]['end_to_end'] = $end_to_end;
-
-    dpm(microtime(TRUE) - $start, 'Elapsed after generating end-to-end data');
+    $queries[$response['query']]['end_to_end'] = $end_to_end;
 
     // Calculate diff
-    if (!empty($queries[$response->query]['forward']) && !empty($queries[$response->query]['reverse'])) {
-      $forward = $queries[$response->query]['forward'];
-      $reverse = array_reverse($queries[$response->query]['reverse']);
+    if (!empty($queries[$response['query']]['forward']) && !empty($queries[$response['query']]['reverse'])) {
+      $forward = $queries[$response['query']]['forward'];
+      $reverse = array_reverse($queries[$response['query']]['reverse']);
 
-      $queries[$response->query]['diff'] = ecenter_weathermap_traceroute_diff($forward, $reverse);
-      $queries[$response->query]['traceroute_max'] = (count($forward) > count($reverse)) ? count($forward) : count($reverse);
+      $queries[$response['query']]['diff'] = ecenter_weathermap_traceroute_diff($forward, $reverse);
+      $queries[$response['query']]['traceroute_max'] = (count($forward) > count($reverse)) ? count($forward) : count($reverse);
     }
-    elseif (!empty($queries[$response->query]['forward'])) {
+    elseif (!empty($queries[$response['query']]['forward'])) {
       $diff = array();
-      $forward = $queries[$response->query]['forward'];
+      $forward = $queries[$response['query']]['forward'];
       foreach ($forward as $row) {
         $diff[] = array('match' => array('forward' => array($row)));
       }
-      $queries[$response->query]['diff'] = $diff;
+      $queries[$response['query']]['diff'] = $diff;
     }
-    elseif (!empty($queries[$response->query]['reverse'])) {
+    elseif (!empty($queries[$response['query']]['reverse'])) {
       $diff = array();
-      $reverse = $queries[$response->query]['reverse'];
+      $reverse = $queries[$response['query']]['reverse'];
       foreach ($reverse as $row) {
         $diff[] = array('match' => array('reverse' => array($row)));
       }
-      $queries[$response->query]['diff'] = $diff;
+      $queries[$response['query']]['diff'] = $diff;
     }
-
-    dpm(microtime(TRUE) - $start, 'Elapsed after generating diff');
 
     // Recreate diff without hop data
     $js_diff = array();
-    foreach ($queries[$response->query]['diff'] as $row) {
+    foreach ($queries[$response['query']]['diff'] as $row) {
       foreach ($row as $type => $directions) {
         $new_row = array();
         foreach ($directions as $direction => $hops) {
@@ -810,12 +789,9 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
         );
       }
     }
-    $queries[$response->query]['js_diff'] = $js_diff;
-
-    dpm(microtime(TRUE) - $start, 'Elapsed after generating secondary diff');
+    $queries[$response['query']]['js_diff'] = $js_diff;
   }
-
-  return $queries[$response->query];
+  return $queries[$response['query']];
 }
 
 /**

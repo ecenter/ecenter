@@ -122,7 +122,7 @@ class Ecenter_Data_Service_Client {
    */
   public function checkStatus() {
     $q = 'status';
-    $status = $this->query($q, NULL, $this->_status_timeout);
+    $status = $this->query($q, NULL, $this->_status_timeout, FALSE);
     if ($status['response']->status) {
       return TRUE;
     }

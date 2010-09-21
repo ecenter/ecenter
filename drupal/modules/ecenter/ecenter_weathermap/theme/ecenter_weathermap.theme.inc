@@ -89,14 +89,14 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
 function theme_ecenter_weathermap_render_data_snmp($data) {
   $plot_options = array(
     'width' => 550,
-    'height' => 200,
+    'height' => 300,
     //'hideTables' => TRUE,
     'plotOptions' => array(
       'seriesDefaults' => array(
-        'lineWidth' => 1.5,
+        'lineWidth' => 1,
         'shadow' => FALSE,
         'fill' => FALSE,
-        'color' => '#aaaaaa',
+        'color' => '#999999',
         'markerOptions' => array(
           'show' => FALSE,
           'size' => 3,
@@ -140,8 +140,8 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
         'tooltipSeparator' => ': ',
       ),
       'linehighlighter' => array(
-        'threshold' => 4,
-        'lineScale' => 2,
+        'threshold' => 2,
+        'lineScale' => 1,
       ),
       'cursor' => array(
         'show' => TRUE,
@@ -398,7 +398,7 @@ function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
  * Theme services for use in options list.  Should always return plaintext!
  */
 function theme_ecenter_weathermap_hop_option($hop) {
-  return $hop->nodename .' ('. $hop->ip_noted .')';
+  return $hop['nodename'] .' ('. $hop['ip_noted'].')';
 }
 
 /**

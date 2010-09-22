@@ -227,7 +227,14 @@ sub process_data {
     ### snmp data for each hop - all unique hop IPs
     my %allhops = (%{$traceroute->{hops}}, %{$rev_traceroute->{hops}});
     
-    $data->{snmp} = get_snmp(\%allhops, \%params  );
+    eval {
+        $data->{snmp} = get_snmp(\%allhops, \%params);
+    }; 
+    if($EVAL_ERROR) {
+	error "  No SNMP data - failed $EVAL_ERROR";
+	$data->{snmp} = {};
+    }
+     
     # end to end data  stats if available
     return $data unless $params{src_ip} && $params{dst_ip};
     my %directions = (direct => ['src_ip', 'dst_ip'], reverse => ['dst_ip', 'src_ip'] );
@@ -400,15 +407,16 @@ sub get_e2e{
     my ( $data_hr,  $params,   $md_href, $type) = @_; 
     my %result = ();
     my $e2e_forker = new Parallel::ForkControl( 
-    				MaxKids 		=> 50,
-    			   	MinKids 		=> 5,
-				ProcessTimeOut          => 30,
+    				MaxKids 		=> 10,
+    			   	MinKids 		=> 3,
+				ProcessTimeOut          => 60,
    				Name			=> 'E2E Forker',
    				Code			=> \&get_remote_e2e);	 
     foreach my $metaid  ( keys %{$md_href} ) {
+        
         my  $md_row =  $md_href->{$metaid}; 
 	debug " ------  $type md  $metaid  :::  SRC=$md_row->{src_ip} DST= $md_row->{dst_ip} "; 
-        next if $md_row->{type} ne $type;
+        next if $md_row->{type} ne $type || !$metaid;
         debug " ------ FOUND $type md  $metaid  :::  SRC=$md_row->{src_ip} DST= $md_row->{dst_ip} ";
         my @datas = dbix->resultset($params->{table_map}{$type}{table})->search({ metaid => $metaid, 
                                                                                   timestamp => { '>=' => $params->{$type}{start}, '<=' => $params->{$type}{end}} 
@@ -496,20 +504,19 @@ sub get_snmp {
     
     debug "+++SNMP:: hops::" .  Dumper($hops_ref);
     my $forker = new Parallel::ForkControl( 
-    			   MaxKids		   => 50,
-    			   MinKids		   => 5,
-			   ProcessTimeOut          => 30,
-    			   Debug => 4,
+    			   MaxKids		   => 10,
+    			   MinKids		   => 3,
+			   ProcessTimeOut          => 60,
+    			   Debug => 2,
     			   Name 		   => 'SNMP Forker',
     			   Code 		   => \&get_remote_snmp);
     foreach my $hop_ip (keys %{$hops_ref}) {
         my $data_ref =  _get_snmp_from_db($hop_ip, $date_cond);
-						 
         debug "----SNMP:: DATA1::$hops_ref->{$hop_ip}  $hop_ip "; 
         ### no data, no problem, get any data and send remote request 
-	unless($data_ref && %{$data_ref}) {
+	unless($data_ref && %{$data_ref->{data}}) {
 	    $data_ref =    _get_snmp_from_db($hop_ip,' ');
-	    debug "----- SNMP:$hop_ip: DATA2 -0::" .  join(" :: ", each %{$data_ref} ); 
+	    debug "----- SNMP:$hop_ip: DATA2 -0::" .  join(" :: ", each %{$data_ref->{data}}); 
 	}
         my $packed =   _pack_snmp_data($data_ref);
 	$snmp{$hops_ref->{$hop_ip}} = refactor_result($packed->{data}, $params);
@@ -517,11 +524,11 @@ sub get_snmp {
 	debug "---------SNMP::  Times: start= $packed->{start_time} start_dif=" . ($packed->{start_time} - $params->{snmp}{start}) . 
 	                     "... end=$packed->{end_time} end_dif=" . ( $params->{snmp}{end} - $packed->{end_time});
      	##################### no metadata, skip
-	next  unless  $data_ref && %$data_ref;
+	next  unless  $data_ref && %{$data_ref->{data}};
 	# if we have difference on any end more than 30 minutes  then run remote query
 	if ( abs($packed->{end_time}  - $params->{snmp}{end}) >  1800 ||
 	     abs($packed->{start_time} - $params->{snmp}{start}) > 1800 ) {
-	      my (undef, $request_params) = each(%$data_ref);
+	      my (undef, $request_params) = each(%{$data_ref->{md}});
 	      $snmp{$hops_ref->{$hop_ip}} = [];
 	      foreach my $direction (qw/out/) {
 	           debug " params to ma: ip=$request_params->{snmp_ip} start=$params->{snmp}{start} end=$params->{snmp}{end} ";
@@ -556,7 +563,8 @@ sub get_remote_snmp {
 			     ifAddress =>  $snmp_ip, 
 			     start =>  DateTime->from_epoch( epoch =>  $params->{snmp}{start}),
 			     end =>  DateTime->from_epoch( epoch => $params->{snmp}{end}),
-			     resolution => $period,
+			  #   resolution => $period,
+			     resolution => 5,
 			  });
     };
     if($EVAL_ERROR) {
@@ -590,10 +598,10 @@ sub _pack_snmp_data {
     my $end_time = -1;
     my @result = ();
     my $start_time =  4000000000; 
-    #debug " PACKING SNMP:::" . Dumper($data_ref);
-    foreach my $time (sort {$a<=>$b} grep {$_} keys %$data_ref) { 
+    debug " PACKING SNMP:::" . Dumper($data_ref);
+    foreach my $time (sort {$a<=>$b} grep {$_} keys %{$data_ref->{data}}) { 
 	push @result,   
-	            [ $time, {capacity => $data_ref ->{$time}{capacity},  utilization => $data_ref ->{$time}{utilization} }];
+	            [ $time, {capacity => $data_ref ->{md}{$data_ref ->{data}{$time}{metaid}}{capacity},  utilization => $data_ref ->{data}{$time}{utilization} }];
 	$end_time = $time if $time > $end_time;
 	$start_time = $time if $time < $start_time;
     }
@@ -604,24 +612,31 @@ sub _pack_snmp_data {
 #
 sub _get_snmp_from_db{
    my ($hop_ip,  $date_cond) = @_;
-   my $cmd = qq|select  n.ip_noted  as snmp_ip,m.metaid, s.url, s.service,  
-                                                          l2.capacity,  sd.timestamp, AVG(sd.utilization) as utilization  
+   my $cmd = qq|select   n.ip_noted  as snmp_ip, m.metaid as metaid, s.url, s.service, l2.capacity 
 	                                               from 
 						                  metadata m
                                                 	    join  node n on(m.src_ip = n.ip_addr) 
 							    join  l2_l3_map llm on(m.src_ip = llm.ip_addr) 
 							    join  l2_port l2 using(l2_urn) 
-							    join  hub h using(hub) 
-							    join eventtype e on (m.eventtype_id = e.ref_id)
-							    join service s on (e.service = s.service)
-							    left join snmp_data sd on(sd.metaid = m.metaid)
+							    join  eventtype e on (m.eventtype_id = e.ref_id)
+							    join  service s on (e.service = s.service)
+						       where 
+						            e.service_type = 'snmp' and
+							    inet6_mask(m.src_ip,n.netmask) = inet6_mask(inet6_pton('$hop_ip'), n.netmask)
+						       |;
+   my $md_href =  database->selectall_hashref( $cmd, 'metaid');	
+   return  {data => {}, md => $md_href} unless $md_href && %{$md_href};	
+   my $mds = join("', '", keys %{$md_href});				       
+   $cmd = qq|select   distinct  m.metaid,  sd.timestamp as timestamp,  sd.utilization as utilization  
+	                                               from 
+						            metadata m
+                                                	    join snmp_data sd on(sd.metaid = m.metaid)
 						      where 
 						            $date_cond
-							    inet6_mask(m.src_ip,n.netmask) = inet6_mask(inet6_pton('$hop_ip'), n.netmask)
-						       group by sd.timestamp|;
-    #debug " SNMP SQL: $cmd";						       
-     my $data_ref =  database->selectall_hashref( $cmd, 'timestamp');
-    return  $data_ref;
+							    m.metaid IN ('$mds')|;
+    debug " SNMP SQL: $cmd";
+    my $data_ref =  database->selectall_hashref( $cmd, 'timestamp');
+    return  {data => $data_ref, md => $md_href};
 }
 #---------------------------------------------------------------
 dance;

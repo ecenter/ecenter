@@ -10,7 +10,7 @@
  * Theme main data display
  */
 function template_preprocess_ecenter_weathermap_data(&$vars) {
-  //dpm($vars['data']);
+  dpm($vars['data']);
 
   // Generate permalink
   $vars['permalink'] = l('Permalink', 'weathermap', array('query' => $vars['params']));
@@ -196,7 +196,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
     if ($match) {
       $id = $row['match']['forward'][0]['hop']['hop_id'];
       $output .= '<div class="snmp-chart-wrapper" id="hop-'. $id .'">';
-      $output .= '<h1>' . $row['match']['forward'][0]['hop']['nodename'] . '</h1>';
+      $output .= '<h1>' . $row['match']['forward'][0]['hop']['nodename'] .' ('. t('Match') .')</h1>';
       $output .= (!empty($table['forward'])) ? theme('ecenter_weathermap_table', $headers, $table['forward']) : '';
       $output .= (!empty($table['reverse'])) ? theme('ecenter_weathermap_table', $headers, $table['reverse']) : '';
       $output .= '</div>';
@@ -205,18 +205,17 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
 
     $output = '';
     if (!$match) {
-      $id = $row['diff']['forward'][0]['hop']['hop_id'];
-      $output .= '<div class="snmp-chart-wrapper" id="hop-'. $id .'">';
-      $output .= '<h1>' . $row['diff']['forward'][0]['hop']['nodename'] . '</h1>';
-      $output .= (!empty($table['forward'])) ? theme('ecenter_weathermap_table', $headers, $table['forward']) : '';
-      $output .= '</div>';
-
-      $id = $row['diff']['reverse'][0]['hop']['hop_id'];
-      $output .= '<div class="snmp-chart-wrapper" id="hop-'. $id .'">';
-      $output .= '<h1>' . $row['diff']['reverse'][0]['hop']['nodename'] . '</h1>';
-      $output .= (!empty($table['reverse'])) ? theme('ecenter_weathermap_table', $headers, $table['reverse']) : '';
-      $output .= '</div>';
-      $out[] = $output;
+      foreach (array('forward', 'reverse') as $direction) {
+        foreach ($row['diff'][$direction] as $hop) {
+          $hop = $hop['hop'];
+          $id = $hop['hop_id'];
+          $output .= '<div class="snmp-chart-wrapper" id="hop-'. $id .'">';
+          $output .= '<h1>' . $hop['nodename'] .' ('. t(ucfirst($direction)) .')</h1>';
+          $output .= (!empty($table[$direction])) ? theme('ecenter_weathermap_table', $headers, $table[$direction]) : '';
+          $output .= '</div>';
+          $out[] = $output;
+        }
+      }
     }
 
   }

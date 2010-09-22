@@ -388,6 +388,7 @@ function ecenter_weathermap_select_form(&$form_state) {
     if ($data) {
       drupal_add_js(array('tracerouteData' => $data['js_diff']), 'setting');
       drupal_add_js(array('tracerouteMaxLength' => $data['traceroute_max']), 'setting');
+      drupal_add_js(array('seriesLookup' => $data['series_lookup']), 'setting');
       ecenter_weathermap_refresh_map('ecenter_weathermap', 'openlayers-map-auto-id-0');
       $form['results_wrapper']['results']['#value'] = theme('ecenter_weathermap_data', $data, $params);
     }
@@ -594,8 +595,6 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
   // @TODO static variable may add level of indirection / instability
   static $queries = array();
 
-  $start = microtime(TRUE);
-
   if (empty($queries[$response['query']])) {
     $data = $response['response'];
 
@@ -609,12 +608,12 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
         continue;
       }
 
+      $parsed = array();
+
       // Sort and grab latest traceroute
       krsort($data[$direction]);
-
       $traceroute = array_shift(array_values($data[$direction]));
 
-      $parsed = array();
 
       // Synthesize forward and reverse hops
       if ($direction == 'traceroute') {
@@ -676,6 +675,7 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
         }
       }
 
+      // Main loop
       foreach ($traceroute as $hop) {
         $hop_data = array();
 
@@ -707,9 +707,10 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
     }
 
     // End to end
+    $end_to_end = array();
     $src_netblock = long2ip(ip2long($src_ip) & ~((1 << 8) - 1));
     $dst_netblock = long2ip(ip2long($dst_ip) & ~((1 << 8) - 1));
-    $end_to_end = array();
+
     foreach (array('bwctl', 'owamp', 'pinger') as $type) {
       if (!is_array($data[$type])) {
         continue;
@@ -735,6 +736,7 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
       }
 
     }
+
     $queries[$response['query']]['end_to_end'] = $end_to_end;
 
     // Calculate diff
@@ -790,6 +792,58 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
       }
     }
     $queries[$response['query']]['js_diff'] = $js_diff;
+
+    // Finally, parse JS Diff to create a structure linking hop IDs to series
+    $series_by_id = array();
+    $series_by_idx = array();
+
+    $i = 0;
+    foreach ($js_diff as $row) {
+      if (!empty($row['match'])) {
+        if ($row['match']['forward'][0]['data']) {
+          $series_by_id[$row['match']['forward'][0]['hop']['hop_id']] = array(
+            'index' => $i,
+            'corresponding' => $row['match']['reverse'][0]['hop']['hop_id'],
+            'corresponding_idx' => $i + 1,
+          );
+          $series_by_idx[] = array(
+            'id' => $row['match']['forward'][0]['hop']['hop_id'],
+            'corresponding' => $row['match']['reverse'][0]['hop']['hop_id'],
+            'corresponding_idx' => $i + 1,
+          );
+          $i++;
+        }
+        if ($row['match']['reverse'][0]['data']) {
+          $series_by_id[$row['match']['reverse'][0]['hop']['hop_id']] = array(
+            'index' => $i,
+            'corresponding_id' => $row['match']['forward'][0]['hop']['hop_id'],
+            'corresponding_idx' => $i - 1,
+          );
+          $series_by_idx[] = array(
+            'id' => $row['match']['reverse'][0]['hop']['hop_id'],
+            'corresponding' => $row['match']['forward'][0]['hop']['hop_id'],
+            'corresponding_idx' => $i + 1,
+          );
+          $i++;
+        }
+      }
+      if (!empty($row['diff'])) {
+        foreach (array('forward', 'reverse') as $direction) {
+          foreach ($row['diff'][$direction] as $hop) {
+            if ($hop['data']) {
+              $series_by_id[$hop['hop']['hop_id']] = array(
+                'index' => $i,
+              );
+              $series_by_idx[] = array(
+                'id' => $hop['hop']['hop_id'],
+              );
+              $i++;
+            }
+          }
+        }
+      }
+    }
+    $queries[$response['query']]['series_lookup'] = array('id' => $series_by_id, 'idx' => $series_by_idx);
   }
   return $queries[$response['query']];
 }

@@ -37,11 +37,11 @@ Drupal.behaviors.EcenterRepositionResults = function(context) {
 /**
  * @TODO not working at all, and not all that important
  */
-Drupal.behaviors.EcenterRepositionMessages = function(context) {
+/*Drupal.behaviors.EcenterRepositionMessages = function(context) {
   var messages = $('#ecenter-weathermap-select-form .messages');
   $('#ecenter-weathermap-select-form #weathermap-debug').fadeOut().html(messages.html()).slideDown();
   //messages.remove();
-}
+}*/
 
 /**
  * Disable form elements during AHAH request

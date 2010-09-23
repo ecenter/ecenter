@@ -157,10 +157,10 @@ class Ecenter_Data_Service_Client {
   /**
    * Get data from service
    *
-   * @param $src_ip
-   *   Source IP address.
-   * @param $dst_ip
-   *   Destination IP address.
+   * @param $src_hub
+   *   Source hub name.
+   * @param $dst_hub
+   *   Destination hub name.
    * @param $start
    *   Start time.
    * @param $end
@@ -170,10 +170,10 @@ class Ecenter_Data_Service_Client {
    * @return
    *   Result for this query.
    */
-  public function getData($src_ip, $dst_ip, $start, $end, $resolution = 50) {
+  public function getData($src_hub, $dst_hub, $start, $end, $resolution = 50) {
     $parameters = array(
-      'src_ip' => $src_ip,
-      'dst_ip' => $dst_ip,
+      'src_hub' => $src_hub,
+      'dst_hub' => $dst_hub,
       'start' => $start,
       'end' => $end,
       'resolution' => $resolution,

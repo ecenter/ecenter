@@ -103,9 +103,16 @@ $(document).ready(function() {
     if (hop.corresponding_idx) {
       sidx = hop.corresponding_idx;
       s = tc.chart.series[sidx];
-      series_color = (lh.colors && lh.colors[sidx] != undefined) ? lh.colors[sidx] : s.seriesColors[sidx];
-      var opts = {color: series_color, lineWidth: s.lineWidth + lh.sizeAdjust};
-      lh.highlightSeries(sidx, tc.chart, opts);
+      console.log(hop);
+      console.log(s);
+      if (s == undefined) {
+        console.log(tc.chart.series);
+        console.log(sidx);
+      }
+      console.log('---');
+      //series_color = (lh.colors && lh.colors[sidx] != undefined) ? lh.colors[sidx] : s.seriesColors[sidx];
+      //var opts = {color: series_color, lineWidth: s.lineWidth + lh.sizeAdjust};
+      //lh.highlightSeries(sidx, tc.chart, opts);
     }
 
     $('#trace-hop-label-' + hop.id).addClass('highlight');

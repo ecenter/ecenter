@@ -96,7 +96,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
         'lineWidth' => 1,
         'shadow' => FALSE,
         'fill' => FALSE,
-        'color' => '#aaaaaa',
+        'color' => '#bbbbbb',
         'markerOptions' => array(
           'show' => FALSE,
           'size' => 3,
@@ -115,10 +115,8 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
           'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
         ),
         'yaxis' => array(
-          /*'min' => 0,
-          'max' => 100,
-          'numberTicks' => 6,*/
           'min' => 0,
+          'max' => 100,
           'numberTicks' => 6,
           'label' => t('Percent utilization'),
           'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
@@ -142,8 +140,8 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
         'tooltipSeparator' => ': ',
       ),
       'linehighlighter' => array(
-        'threshold' => 4,
-        'lineScale' => 2,
+        'threshold' => 2,
+        'sizeAdjust' => 1.5,
       ),
       'cursor' => array(
         'show' => TRUE,
@@ -368,11 +366,14 @@ function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
 /**
  * Theme utilization table
  */
-function theme_ecenter_weathermap_utilization_table($hop, $direction, $table) {\
+function theme_ecenter_weathermap_utilization_table($hop, $direction, $table) {
+  $attributes = array();
+  $attributes['class'] = ($direction == 'forward') ? "{lineWidth : 2}" : "{lineWidth : .5, sizeAdjust: .5}";
+
   $headers = array(t('Time'), t('Percent utilization'));
   $output = '<div class="snmp-data-table">';
   $output .= '<h3>'. $hop['nodename'] .' ('. t(ucfirst($direction)) .')</h3>';
-  $output .= theme('ecenter_weathermap_table', $headers, $table);
+  $output .= theme('ecenter_weathermap_table', $headers, $table, $attributes);
   $output .= '</div>';
   return $output;
 }

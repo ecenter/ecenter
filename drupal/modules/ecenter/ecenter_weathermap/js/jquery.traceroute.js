@@ -448,15 +448,25 @@ TraceRoute.prototype.hopBehavior = function(el) {
       // Highlight corresponding line first
       if (cidx) {
         s = tc.chart.series[cidx];
+        if (s.sizeAdjust !== false) {
+          sizeAdjust = s.sizeAdjust;
+        } else {
+          sizeAdjust = lh.sizeAdjust;
+        }
         series_color = (lh.colors && lh.colors[cidx] != undefined) ? lh.colors[cidx] : s.seriesColors[cidx];
-        var opts = {color: series_color, lineWidth: s.lineWidth + lh.sizeAdjust};
+        var opts = {color: series_color, lineWidth: s.lineWidth + sizeAdjust};
         lh.highlightSeries(cidx, tc.chart, opts);
       }
 
       // Highlight forward line
       s = tc.chart.series[sidx];
+      if (s.sizeAdjust !== false) {
+        sizeAdjust = s.sizeAdjust;
+      } else {
+        sizeAdjust = lh.sizeAdjust;
+      }
       series_color = (lh.colors && lh.colors[sidx] != undefined) ? lh.colors[sidx] : s.seriesColors[sidx];
-      var opts = {color: series_color, lineWidth: s.lineWidth + lh.sizeAdjust};
+      var opts = {color: series_color, lineWidth: s.lineWidth + sizeAdjust};
       lh.highlightSeries(sidx, tc.chart, opts);
 
       $(this).addClass('highlight');

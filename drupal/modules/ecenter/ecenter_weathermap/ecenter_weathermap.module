@@ -87,6 +87,7 @@ function ecenter_weathermap_theme() {
         'hop' => NULL,
         'direction' => NULL,
         'table' => NULL,
+        'attributes' => NULL,
       ),
     ) + $options,
 
@@ -577,8 +578,7 @@ function ecenter_weathermap_parse_response($response, $src_hub, $dst_hub) {
   if (empty($queries[$response['query']])) {
     $data = $response['response'];
 
-    $src_hops = ecenter_weathermap_get_hops();
-    $dst_hops = ecenter_weathermap_get_hops($dst_hub);
+    $hops = $src_hops = $dst_hops = ecenter_weathermap_get_hops();
 
     foreach (array('traceroute', 'reverse_traceroute') as $direction) {
 
@@ -593,10 +593,16 @@ function ecenter_weathermap_parse_response($response, $src_hub, $dst_hub) {
       krsort($data[$direction]);
       $traceroute = array_shift(array_values($data[$direction]));
 
+      //dpm($direction);
+      //dpm($traceroute);
+
+      dpm($src_hub);
+      dpm($hops);
+      dpm($hops[$src_hub]);
 
       // Synthesize forward and reverse hops
       if ($direction == 'traceroute') {
-        if ($traceroute[0]['hop_ip'] != $src_hub) {
+        if ($traceroute[0]['hub'] != $src_hub) {
           array_unshift($traceroute, array(
             'hop_id' => uniqid('start-'),
             'hop_ip' => $src_hub,

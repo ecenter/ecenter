@@ -48,20 +48,25 @@ our  $logger = Log::Log4perl->get_logger(__PACKAGE__);
 =cut
 
 ##  status URL
-any ['get', 'post'] =>  "/status.:format" => 
+any ['get'] =>  "/status.:format" => 
        sub {
  	       return  { status => 'ok'}
        };
 ## get all hubs for src_ip/dst_ip
-any ['get', 'post'] =>  "/hub.:format" => 
+any ['get'] =>  "/source.:format" => 
        sub {
- 	       return process_hub();
+ 	       return process_source();
        };
-any ['get', 'post'] =>  "/hub/src_ip/:ip.:format" => 
+any ['get'] =>  "/destination/:ip.:format" => 
        sub {
- 	       return process_hub(src_ip => params->{ip});
+ 	       return process_source(src_ip => params->{ip});
        };
-
+## get all hubs for src_ip/dst_ip
+any ['get'] =>  "/hub.:format" => 
+       sub {
+ 	       return  database->selectall_hashref( qq|select * from  hub |, 'hub');
+       };
+ 
 #########   get services(all of them -------------------------------------
  
 any ['get', 'post'] =>  "/service.:format" => 
@@ -110,9 +115,9 @@ any ['get', 'post'] =>  '/data.:format' =>
 	return $data;
     };
 #
-# return list of hubs with coordinates
+# return list of destinations for the source ip or just listof source ips
 #
-sub process_hub {
+sub process_source {
     my %params = validate(@_, {src_ip => {type => SCALAR, regex => $REG_IP, optional => 1} }); 
     my @hubs =(); 
     my $hash_ref;
@@ -122,9 +127,9 @@ sub process_hub {
      		   traceroute_data td 
      	      join metadata m using(metaid) 
      	      join node n on(m.dst_ip = n.ip_addr)
-     	left  join l2_l3_map llm on(n.ip_addr = llm.ip_addr) 
-     	left  join l2_port l2p on(llm.l2_urn =l2p.l2_urn) 
-     	left  join hub h using(hub) 
+         join l2_l3_map llm on(n.ip_addr = llm.ip_addr) 
+         join l2_port l2p on(llm.l2_urn =l2p.l2_urn) 
+         join hub h using(hub) 
      	where m.dst_ip is not NULL  and m.src_ip = inet6_pton('$params{src_ip}')|, 'ip_noted');
     } else {
         $hash_ref =  database->selectall_hashref(
@@ -139,6 +144,7 @@ sub process_hub {
     #debug Dumper(\@hubs);
     return \@hubs;
 }
+# 
 #
 # return list of services 
 #

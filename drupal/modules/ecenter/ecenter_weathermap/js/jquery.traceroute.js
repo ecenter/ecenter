@@ -395,7 +395,7 @@ TraceRoute.prototype.drawSegment = function(x1, y1, x2, y2, options, arrow_optio
 TraceRoute.prototype.drawHopLabel = function(hop_data, x, y, align) {
   var o = this.options;
 
-  label = '<div class="trace-label" hopid="' + hop_data.hop.hop_id + '">';
+  label = '<div class="trace-label" id="trace-hop-label-' + hop_data.hop.hop_id + '" hopid="' + hop_data.hop.hop_id + '">';
   label += (hop_data.hop.nodename) ? '<div class="hostname">' + hop_data.hop.nodename + '</div>' : '';
   label += '<div class="hop-secondary">';
   label += '<span class="hop-ip">' + hop_data.hop.hop_ip + '</span>';
@@ -434,29 +434,41 @@ TraceRoute.prototype.drawHopLabel = function(hop_data, x, y, align) {
   this.hopBehavior(label);
 }
 
+// @TODO Provide generic behavior and override elsewhere
 TraceRoute.prototype.hopBehavior = function(el) {
-  /*var offset = $(this.el).offset();
-  var containerWidth = this.containerWidth;
   el.hover(function() {
-    hopid = $(this).attr('hopid');
-    container = $('#hop-' + hopid);
-    container.css({
-      'position' : 'absolute',
-      'z-index' : 1,
-      'left' : containerWidth,
-      'top' : offset.top
-    });
-    chart = container.data('TableChart');
-    if (chart) {
-      container.fadeIn('fast');
-      $('.tablechart', container).show();
-      chart.draw();
+    if ($(this).hasClass('has-chart')) {
+      var tc = $('#results').data('TableChart');
+      var hopid = $(this).attr('hopid');
+      var hop = Drupal.settings.ecenterWeathermap.seriesLookup.id[hopid];
+      var sidx = hop.idx;
+      var cidx = hop.corresponding_idx;
+      var lh = tc.chart.plugins.linehighlighter;
+
+      // Highlight corresponding line first
+      if (cidx) {
+        s = tc.chart.series[cidx];
+        series_color = (lh.colors && lh.colors[cidx] != undefined) ? lh.colors[cidx] : s.seriesColors[cidx];
+        var opts = {color: series_color, lineWidth: s.lineWidth + lh.sizeAdjust};
+        lh.highlightSeries(cidx, tc.chart, opts);
+      }
+
+      // Highlight forward line
+      s = tc.chart.series[sidx];
+      series_color = (lh.colors && lh.colors[sidx] != undefined) ? lh.colors[sidx] : s.seriesColors[sidx];
+      var opts = {color: series_color, lineWidth: s.lineWidth + lh.sizeAdjust};
+      lh.highlightSeries(sidx, tc.chart, opts);
     }
   }, function() {
-    hopid = $(this).attr('hopid');
-    container = $('#hop-' + hopid);
-    container.fadeOut('fast');
-  });*/
+    if ($(this).hasClass('has-chart')) {
+      var tc = $('#results').data('TableChart');
+      var hopid = $(this).attr('hopid');
+      var hop = Drupal.settings.ecenterWeathermap.seriesLookup.id[hopid];
+      var sidx = hop.idx;
+      var lh = tc.chart.plugins.linehighlighter;
+      lh.unhighlightSeries(sidx, tc.chart);
+    }
+  });
 }
 
 // @TODO: DRY violation

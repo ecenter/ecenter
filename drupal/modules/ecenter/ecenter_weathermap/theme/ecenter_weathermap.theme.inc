@@ -88,15 +88,15 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
  */
 function theme_ecenter_weathermap_render_data_snmp($data) {
   $plot_options = array(
-    'width' => 550,
-    'height' => 300,
+    'width' => 570,
+    'height' => 320,
     //'hideTables' => TRUE,
     'plotOptions' => array(
       'seriesDefaults' => array(
         'lineWidth' => 1,
         'shadow' => FALSE,
         'fill' => FALSE,
-        'color' => '#999999',
+        'color' => '#aaaaaa',
         'markerOptions' => array(
           'show' => FALSE,
           'size' => 3,
@@ -140,7 +140,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
         'tooltipSeparator' => ': ',
       ),
       'linehighlighter' => array(
-        'threshold' => 2,
+        'threshold' => 4,
         'lineScale' => 1,
       ),
       'cursor' => array(
@@ -157,26 +157,23 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
   $critical = variable_get('ecenter_weathermap_threshold_critical_snmp_utilization', 60);
   $marginal = variable_get('ecenter_weathermap_threshold_marginal_snmp_utilization', 40);
 
-  $headers = array(t('Time'), t('Percent utilization'));
+  $tables = array();
 
-  $i = 0;
-
-  // @TODO whoa, way nested, really ugly and complicated
+  // Create tables for scrapin'
   foreach ($data as $row) {
-    $table = array();
     $match = (!empty($row['match'])) ? TRUE : FALSE;
-
     $all_hops = array_shift(array_values($row));
 
-    foreach (array('forward', 'reverse') as $direction) {\
+    foreach (array('forward', 'reverse') as $direction) {
 
       $hops = $all_hops[$direction];
 
       if (!empty($hops) && is_array($hops)) {
         foreach ($hops as $hop) {
           if (!empty($hop['data']['snmp']) && is_array($hop['data']['snmp'])) {
+            $table = array();
             foreach ($hop['data']['snmp'] as $item) {
-              $table[$direction][] = array(
+              $table[] = array(
                 'label' => array(
                   'data' => $item[0] * 1000,
                   'header' => TRUE,
@@ -187,41 +184,14 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
                 ),
               );
             }
+            $tables[] = theme('ecenter_weathermap_utilization_table', $hop['hop'], $direction, $table);
           }
         }
       }
     }
-
-    $output = '';
-    if ($match) {
-      $id = $row['match']['forward'][0]['hop']['hop_id'];
-      $output .= '<div class="snmp-chart-wrapper" id="hop-'. $id .'">';
-      $output .= '<h1>' . $row['match']['forward'][0]['hop']['nodename'] .' ('. t('Match') .')</h1>';
-      $output .= (!empty($table['forward'])) ? theme('ecenter_weathermap_table', $headers, $table['forward']) : '';
-      $output .= (!empty($table['reverse'])) ? theme('ecenter_weathermap_table', $headers, $table['reverse']) : '';
-      $output .= '</div>';
-      $out[] = $output;
-    }
-
-    $output = '';
-    if (!$match) {
-      foreach (array('forward', 'reverse') as $direction) {
-        foreach ($row['diff'][$direction] as $hop) {
-          $hop = $hop['hop'];
-          $id = $hop['hop_id'];
-          $output .= '<div class="snmp-chart-wrapper" id="hop-'. $id .'">';
-          $output .= '<h1>' . $hop['nodename'] .' ('. t(ucfirst($direction)) .')</h1>';
-          $output .= (!empty($table[$direction])) ? theme('ecenter_weathermap_table', $headers, $table[$direction]) : '';
-          $output .= '</div>';
-          $out[] = $output;
-        }
-      }
-    }
-
   }
-
   jqplot_register_tablechart('#results', $plot_options);
-  return implode("\n", $out);
+  return implode("\n", $tables);
 }
 
 /**
@@ -381,7 +351,7 @@ function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
 
 
     if (!empty($data['owamp'][$direction])) {
-      dpm($data['owamp'][$direction]);
+      //dpm($data['owamp'][$direction]);
     }
 
   }
@@ -393,11 +363,20 @@ function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
   }
 }
 
+function theme_ecenter_weathermap_utilization_table($hop, $direction, $table) {\
+  $headers = array(t('Time'), t('Percent utilization'));
+  $output = '<div class="snmp-data-table">';
+  $output .= '<h3>'. $hop['nodename'] .' ('. t(ucfirst($direction)) .')</h3>';
+  $output .= theme('ecenter_weathermap_table', $headers, $table);
+  $output .= '</div>';
+  return $output;
+}
+
 /**
  * Theme services for use in options list.  Should always return plaintext!
  */
 function theme_ecenter_weathermap_hop_option($hop) {
-  return $hop['nodename'] .' ('. $hop['ip_noted'].')';
+  return $hop['hub_name'] .' ('. $hop['hub'].')';
 }
 
 /**

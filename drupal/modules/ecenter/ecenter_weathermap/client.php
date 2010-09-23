@@ -132,19 +132,27 @@ class Ecenter_Data_Service_Client {
   /**
    * Get hubs
    *
+   * @return 
+   *   An array of hubs.
+   */
+  public function getHubs() {
+    return $this->query('hub');
+  }
+
+  /**
+   * Get hops
+   *
    * @param $src_ip
    *   (optional) Source IP.  If provided, will return all destinations for this
    *   source.
    * @return 
    *   An array of hubs.
    */
-  public function getHubs($src_ip='') {
-    $q = 'hub';
-    if (!empty($src_ip)) {
-      $q .= '/src_ip/'. $src_ip;
-    }
+  public function getHops($src_ip='') {
+    $q = (!empty($src_ip)) ? 'destination/' . $src_ip : 'source';
     return $this->query($q);
   }
+
 
   /**
    * Get data from service

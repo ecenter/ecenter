@@ -1,6 +1,8 @@
 // Add traceroute
 Drupal.behaviors.EcenterTraceroute = function(context) {
-  $('#traceroute').traceroute(Drupal.settings.tracerouteData);
+  if (Drupal.settings.ecenterWeathermap && Drupal.settings.ecenterWeathermap.tracerouteData) {
+    $('#traceroute').traceroute(Drupal.settings.ecenterWeathermap.tracerouteData);
+  }
 }
 
 // Add date hiding / showing widget
@@ -33,6 +35,15 @@ Drupal.behaviors.EcenterRepositionResults = function(context) {
 }
 
 /**
+ * @TODO not working at all, and not all that important
+ */
+Drupal.behaviors.EcenterRepositionMessages = function(context) {
+  var messages = $('#ecenter-weathermap-select-form .messages');
+  $('#ecenter-weathermap-select-form #weathermap-debug').fadeOut().html(messages.html()).slideDown();
+  //messages.remove();
+}
+
+/**
  * Disable form elements during AHAH request
  *
  * Adding this to Drupal behaviors causes some serious chaos because it winds
@@ -40,6 +51,8 @@ Drupal.behaviors.EcenterRepositionResults = function(context) {
  * and executed once.
  */
 $(document).ready(function() {
+
+  // Bind to ahah_start event
   $('#ecenter-weathermap-select-form').bind('ahah_start', function() {
     // Add overlay...
     $(this).addClass('data-loading');
@@ -65,6 +78,8 @@ $(document).ready(function() {
     overlay.fadeIn('slow');
 
   });
+
+  // Behind to ahah_end event
   $('#ecenter-weathermap-select-form').bind('ahah_end', function() {
     // Add overlay...
     $(this).removeClass('data-loading');
@@ -77,4 +92,32 @@ $(document).ready(function() {
       $(this).remove();
     });
   });
+
+  // Bind to series highlighting
+  $('#results').bind('jqplotHighlightSeries', function(e, sidx, plot) {
+    var hop = Drupal.settings.ecenterWeathermap.seriesLookup.idx[sidx];
+    var tc = $('#results').data('TableChart');
+    var lh = tc.chart.plugins.linehighlighter;
+
+    // Highlight corresponding line
+    if (hop.corresponding_idx) {
+      sidx = hop.corresponding_idx;
+      s = tc.chart.series[sidx];
+      series_color = (lh.colors && lh.colors[sidx] != undefined) ? lh.colors[sidx] : s.seriesColors[sidx];
+      var opts = {color: series_color, lineWidth: s.lineWidth + lh.sizeAdjust};
+      lh.highlightSeries(sidx, tc.chart, opts);
+    }
+
+    $('#trace-hop-label-' + hop.id).addClass('highlight');
+    if (hop.corresponding_id) {
+      $('#trace-hop-label-' + hop.corresponding_id).addClass('highlight');
+    }
+  });
+
+  $('#results').bind('jqplotUnhighlightSeries', function(e, sidx, plot) {
+    $('.trace-label').removeClass('highlight');
+  });
+
 });
+
+

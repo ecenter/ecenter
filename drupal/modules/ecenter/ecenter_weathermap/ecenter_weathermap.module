@@ -40,7 +40,7 @@ function ecenter_weathermap_menu() {
  * Implementation of hook_perm().
  */
 function ecenter_weathermap_perm() {
-  return array('access ecenter weathermap', 'administer ecenter weathermap');
+  return array('access ecenter weathermap', 'administer ecenter weathermap', 'debug ecenter weathermap');
 }
 
 /**
@@ -82,15 +82,15 @@ function ecenter_weathermap_theme() {
         'data' => NULL,
       ),
     ) + $options,
-  );
-
-  /*foreach (_ecenter_weathermap_get_data_types() as $type) {
-    $registry['ecenter_weathermap_render_data_'. $type] = array(
+    'ecenter_weathermap_utilization_table' => array(
       'arguments' => array(
-        'data' => NULL,
+        'hop' => NULL,
+        'direction' => NULL,
+        'table' => NULL,
       ),
-    ) + $options;
-  }*/
+    ) + $options,
+
+  );
   return $registry;
 }
 
@@ -166,6 +166,12 @@ function _ecenter_weathermap_select_form() {
     'maxHeight' => '400px',
     'exactMatch' => TRUE,
   );
+
+  if (user_access('debug ecenter weathermap')) {
+    $form['debug'] = array(
+      '#value' => '<div id="weathermap-debug"></div>',
+    );
+  }
 
   // Select source and destination IP -- convoluted because of AHAH
   $form['ip_select'] = array(
@@ -337,7 +343,7 @@ function ecenter_weathermap_select_form(&$form_state) {
 
   $src_options = array('' => t('Select a source'));
   foreach ($src_hops as $hop) {
-    $src_options[$hop['ip_noted']] = theme('ecenter_weathermap_hop_option', $hop);
+    $src_options[$hop['hub_name']] = theme('ecenter_weathermap_hop_option', $hop);
   }
   $form['ip_select']['src_ip_wrapper']['src_ip']['#options'] = $src_options;
 
@@ -386,9 +392,9 @@ function ecenter_weathermap_select_form(&$form_state) {
 
     // If we've got the data (at bare minimum, a traceroute), delegate to rendering function
     if ($data) {
-      drupal_add_js(array('tracerouteData' => $data['js_diff']), 'setting');
-      drupal_add_js(array('tracerouteMaxLength' => $data['traceroute_max']), 'setting');
-      drupal_add_js(array('seriesLookup' => $data['series_lookup']), 'setting');
+      drupal_add_js(array('ecenterWeathermap' => array('tracerouteData' => $data['js_diff'])), 'setting');
+      drupal_add_js(array('ecenterWeathermap' => array('tracerouteMaxLength' => $data['traceroute_max'])), 'setting');
+      drupal_add_js(array('ecenterWeathermap' => array('seriesLookup' => $data['series_lookup'])), 'setting');
       ecenter_weathermap_refresh_map('ecenter_weathermap', 'openlayers-map-auto-id-0');
       $form['results_wrapper']['results']['#value'] = theme('ecenter_weathermap_data', $data, $params);
     }
@@ -505,30 +511,19 @@ function ecenter_weathermap_get_data($src_ip, $dst_ip, $start, $end) {
  *   An array of hop objects.
  */
 function ecenter_weathermap_get_hops($src_ip = FALSE) {
-  $cache_src_ip = ($src_ip) ? $src_ip : 'start';
   $caching = variable_get('ecenter_weathermap_hop_cache_enabled', 0);
-
-  if ($caching && $result = cache_get($cache_src_ip, 'cache_ecenter_hops')) {
+  if ($caching && $result = cache_get('hub', 'cache_ecenter_hops')) {
     return $result->data;
   }
   else {
     $client = ecenter_weathermap_get_client('message');
-    $result = $client->getHubs($src_ip);
+    $result = $client->getHubs();
     if ($result['code'] == 200) {
       $data = $result['response'];
-      $data = array_filter($result['response'], '_ecenter_weathermap_hop_filter');
-      usort($data, '_ecenter_weathermap_hop_sort');
-
-      // Key off IP
-      $new_data = array();
-      foreach ($data as $hop) {
-        $new_data[$hop['ip_noted']] = $hop;
-      }
-      $data = $new_data;
-
+      ksort($data);
       if ($caching) {
         $expires = time() + variable_get('ecenter_weathermap_hop_cache_ttl', 600);
-        cache_set($cache_src_ip, $data, 'cache_ecenter_hops', $expires);
+        cache_set('hub', $data, 'cache_ecenter_hops', $expires);
       }
       return $data;
     }
@@ -776,6 +771,7 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
             foreach ($hop['data'] as $hop_data) {
               if (!empty($hop_data)) {
                 $has_data = TRUE;
+                $j++;
               }
             }
             $new_hops[] = array(
@@ -802,20 +798,20 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
       if (!empty($row['match'])) {
         if ($row['match']['forward'][0]['data']) {
           $series_by_id[$row['match']['forward'][0]['hop']['hop_id']] = array(
-            'index' => $i,
-            'corresponding' => $row['match']['reverse'][0]['hop']['hop_id'],
+            'idx' => $i,
+            'corresponding_id' => $row['match']['reverse'][0]['hop']['hop_id'],
             'corresponding_idx' => $i + 1,
           );
           $series_by_idx[] = array(
             'id' => $row['match']['forward'][0]['hop']['hop_id'],
-            'corresponding' => $row['match']['reverse'][0]['hop']['hop_id'],
+            'corresponding_id' => $row['match']['reverse'][0]['hop']['hop_id'],
             'corresponding_idx' => $i + 1,
           );
           $i++;
         }
         if ($row['match']['reverse'][0]['data']) {
           $series_by_id[$row['match']['reverse'][0]['hop']['hop_id']] = array(
-            'index' => $i,
+            'idx' => $i,
             'corresponding_id' => $row['match']['forward'][0]['hop']['hop_id'],
             'corresponding_idx' => $i - 1,
           );
@@ -832,7 +828,7 @@ function ecenter_weathermap_parse_response($response, $src_ip, $dst_ip) {
           foreach ($row['diff'][$direction] as $hop) {
             if ($hop['data']) {
               $series_by_id[$hop['hop']['hop_id']] = array(
-                'index' => $i,
+                'idx' => $i,
               );
               $series_by_idx[] = array(
                 'id' => $hop['hop']['hop_id'],

@@ -458,6 +458,8 @@ TraceRoute.prototype.hopBehavior = function(el) {
       series_color = (lh.colors && lh.colors[sidx] != undefined) ? lh.colors[sidx] : s.seriesColors[sidx];
       var opts = {color: series_color, lineWidth: s.lineWidth + lh.sizeAdjust};
       lh.highlightSeries(sidx, tc.chart, opts);
+
+      $(this).addClass('highlight');
     }
   }, function() {
     if ($(this).hasClass('has-chart')) {
@@ -467,6 +469,8 @@ TraceRoute.prototype.hopBehavior = function(el) {
       var sidx = hop.idx;
       var lh = tc.chart.plugins.linehighlighter;
       lh.unhighlightSeries(sidx, tc.chart);
+
+      $(this).removeClass('highlight');
     }
   });
 }

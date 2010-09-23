@@ -89,7 +89,7 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
 function theme_ecenter_weathermap_render_data_snmp($data) {
   $plot_options = array(
     'width' => 570,
-    'height' => 320,
+    'height' => 280,
     //'hideTables' => TRUE,
     'plotOptions' => array(
       'seriesDefaults' => array(
@@ -115,8 +115,10 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
           'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
         ),
         'yaxis' => array(
-          'min' => 0,
+          /*'min' => 0,
           'max' => 100,
+          'numberTicks' => 6,*/
+          'min' => 0,
           'numberTicks' => 6,
           'label' => t('Percent utilization'),
           'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
@@ -141,7 +143,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
       ),
       'linehighlighter' => array(
         'threshold' => 4,
-        'lineScale' => 1,
+        'lineScale' => 2,
       ),
       'cursor' => array(
         'show' => TRUE,
@@ -363,6 +365,9 @@ function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
   }
 }
 
+/**
+ * Theme utilization table
+ */
 function theme_ecenter_weathermap_utilization_table($hop, $direction, $table) {\
   $headers = array(t('Time'), t('Percent utilization'));
   $output = '<div class="snmp-data-table">';

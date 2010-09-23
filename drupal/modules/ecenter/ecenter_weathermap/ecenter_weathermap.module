@@ -346,12 +346,18 @@ function ecenter_weathermap_select_form(&$form_state) {
   $form['ip_select']['src_hub_wrapper']['src_hub']['#options'] = $src_options;
 
   if ($src_hub) {
+    $form['ip_select']['src_hub_wrapper']['src_hub']['#default_value'] = $src_hub;
+
     $dst_options = array('' => t('Select a destination'));
     foreach ($hops as $hop) {
       $dst_options[$hop['hub_name']] = theme('ecenter_weathermap_hop_option', $hop);
     }
     $form['ip_select']['dst_hub_wrapper']['dst_hub']['#options'] = $dst_options;
     $form['ip_select']['dst_hub_wrapper']['dst_hub']['#disabled'] = FALSE;
+  }
+
+  if ($dst_hub) {
+    $form['ip_select']['dst_hub_wrapper']['dst_hub']['#default_value'] = $dst_hub;
   }
 
   if ($src_hub && $dst_hub && $start_date && $end_date) {

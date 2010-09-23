@@ -100,7 +100,7 @@ $(document).ready(function() {
     var lh = tc.chart.plugins.linehighlighter;
 
     // Highlight corresponding line
-    if (hop.corresponding_idx) {
+    /*if (hop.corresponding_idx) {
       sidx = hop.corresponding_idx;
       s = tc.chart.series[sidx];
       console.log(hop);
@@ -113,7 +113,7 @@ $(document).ready(function() {
       //series_color = (lh.colors && lh.colors[sidx] != undefined) ? lh.colors[sidx] : s.seriesColors[sidx];
       //var opts = {color: series_color, lineWidth: s.lineWidth + lh.sizeAdjust};
       //lh.highlightSeries(sidx, tc.chart, opts);
-    }
+    }*/
 
     $('#trace-hop-label-' + hop.id).addClass('highlight');
     if (hop.corresponding_id) {

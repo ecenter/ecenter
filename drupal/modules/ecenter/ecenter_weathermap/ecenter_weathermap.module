@@ -87,7 +87,6 @@ function ecenter_weathermap_theme() {
         'hop' => NULL,
         'direction' => NULL,
         'table' => NULL,
-        'attributes' => NULL,
       ),
     ) + $options,
 
@@ -593,70 +592,53 @@ function ecenter_weathermap_parse_response($response, $src_hub, $dst_hub) {
       krsort($data[$direction]);
       $traceroute = array_shift(array_values($data[$direction]));
 
-      //dpm($direction);
-      //dpm($traceroute);
-
-      dpm($src_hub);
-      dpm($hops);
-      dpm($hops[$src_hub]);
-
       // Synthesize forward and reverse hops
       if ($direction == 'traceroute') {
-        if ($traceroute[0]['hub'] != $src_hub) {
-          array_unshift($traceroute, array(
+        $hub = array_shift(explode('-', $traceroute[0]['hub']));
+        if ($hub != $src_hub) {
+          $new_hop = $hops[$src_hub] + array(
             'hop_id' => uniqid('start-'),
             'hop_ip' => $src_hub,
-            'nodename' => $src_hops[$src_hub]['nodename'],
-            'hub' => 'src',
+            'nodename' => $src_hub,
             'netblock' => 'src',
-          ));
+          );
+          array_unshift($traceroute, $new_hop);
         }
-        else {
-          $traceroute[0]['netblock'] = 'src';
-          $traceroute[0]['hub'] = 'src';
-        }
+
         $last = count($traceroute) -1;
-        if ($traceroute[$last]['hop_ip'] != $dst_hub) {
-          array_push($traceroute, array(
-            'hop_id' => uniqid('end-'),
+        $hub = array_shift(explode('-', $traceroute[$last]['hub']));
+        if ($hub != $dst_hub) {
+          $new_hop = $hops[$dst_hub] + array(
+            'hop_id' => uniqid('start-'),
             'hop_ip' => $dst_hub,
-            'nodename' => $dst_hops[$dst_hub]['nodename'],
-            'hub' => 'dst',
+            'nodename' => $dst_hub,
             'netblock' => 'dst',
-          ));
-        }
-        else {
-          $traceroute[$last]['netblock'] = 'dst';
-          $traceroute[$last]['hub'] = 'dst';
+          );
+          array_push($traceroute, $new_hop);
         }
       }
       elseif ($direction == 'reverse_traceroute') {
-        if ($traceroute[0]['hop_ip'] != $dst_hub) {
-          array_unshift($traceroute, array(
-            'hop_id' => uniqid('end-'),
-            'hop_ip' => $dst_hub,
-            'nodename' => $dst_hops[$dst_hub]->nodename,
-            'hub' => 'dst',
-            'netblock' => 'dst',
-          ));
-        }
-        else {
-          $traceroute[0]['netblock'] = 'dst';
-          $traceroute[0]['hub'] = 'dst';
-        }
-        $last = count($traceroute) -1;
-        if ($traceroute[$last]['hop_ip'] != $src_hub) {
-          array_push($traceroute, array(
+        $hub = array_shift(explode('-', $traceroute[0]['hub']));
+        if ($hub != $src_hub) {
+          $new_hop = $hops[$src_hub] + array(
             'hop_id' => uniqid('start-'),
             'hop_ip' => $src_hub,
-            'nodename' => $src_hops[$src_hub]->nodename,
-            'hub' => 'src',
+            'nodename' => $src_hub,
             'netblock' => 'src',
-          ));
+          );
+          array_unshift($traceroute, $new_hop);
         }
-        else {
-          $traceroute[$last]['netblock'] = 'src';
-          $traceroute[$last]['hub'] = 'src';
+
+        $last = count($traceroute) -1;
+        $hub = array_shift(explode('-', $traceroute[$last]['hub']));
+        if ($hub != $dst_hub) {
+          $new_hop = $hops[$dst_hub] + array(
+            'hop_id' => uniqid('start-'),
+            'hop_ip' => $dst_hub,
+            'nodename' => $dst_hub,
+            'netblock' => 'dst',
+          );
+          array_push($traceroute, $new_hop);
         }
       }
 

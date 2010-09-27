@@ -60,8 +60,6 @@ class Ecenter_Data_Service_Client {
    *   (optional) Request timeout to use (overrides timeout set in constructor).
    */
   protected function query($path, $parameters = NULL, $timeout = NULL, $assoc = TRUE) {
-    static $results = array();
-
     $timeout = ($timeout) ? $timeout : $this->_timeout;
 
     $url = $this->_url .'/'. $path .'.'. $this->data_type;
@@ -71,46 +69,42 @@ class Ecenter_Data_Service_Client {
       $url .= '?'. $querystring;
     }
 
-    // @TODO Dancer does not support encoded ampersands in the querystring
+    // @TODO Fix... somewhere: Dancer does not support encoded ampersands in the querystring
     $url = str_replace('&amp;', '&', $url);
 
-    if (empty($results[$url])) {
-      dpm('Query URL: '. $url);
+    $handle = curl_init();
 
-      $handle = curl_init();
+    $options = array(
+      CURLOPT_URL => $url,
+      CURLOPT_TIMEOUT => $timeout,
+      CURLOPT_RETURNTRANSFER => 1,
+      CURLOPT_FRESH_CONNECT => 1,
+      CURLOPT_FORBID_REUSE => 1,
+      CURLOPT_VERBOSE => 1,
+    );
 
-      $options = array(
-        CURLOPT_URL => $url,
-        CURLOPT_TIMEOUT => $timeout,
-        CURLOPT_RETURNTRANSFER => 1,
-        CURLOPT_FRESH_CONNECT => 1,
-        CURLOPT_FORBID_REUSE => 1,
-        CURLOPT_VERBOSE => 1,
-      );
+    curl_setopt_array($handle, $options);
 
-      curl_setopt_array($handle, $options);
+    $response = curl_exec($handle);
 
-      $response = curl_exec($handle);
-
-      if (!empty($response)) {
-        $code = curl_getinfo($handle, CURLINFO_HTTP_CODE);
-        $response = json_decode($response, $assoc);
-      }
-      else {
-        $code = 0;
-        $response = 'Timed out after '. $timeout .' seconds.';
-      }
-
-      curl_close($handle);
-
-      $results[$url] = array(
-        'parameters' => $parameters,
-        'query' => $querystring,
-        'code' => $code,
-        'response' => $response,
-      );
-
+    if (!empty($response)) {
+      $code = curl_getinfo($handle, CURLINFO_HTTP_CODE);
+      $response = json_decode($response, $assoc);
     }
+    else {
+      $code = 0;
+      $response = 'Timed out after '. $timeout .' seconds.';
+    }
+
+    curl_close($handle);
+
+    $results[$url] = array(
+      'parameters' => $parameters,
+      'query' => $querystring,
+      'code' => $code,
+      'response' => $response,
+    );
+
     return $results[$url];
   }
 

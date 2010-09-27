@@ -36,7 +36,7 @@ class Ecenter_Data_Service_Client {
    * @param $timeout
    *   Request timeout.
    * @param $status_timeout
-   *   Timeout for a status request. This can/should be much shorter than the 
+   *   Timeout for a status request. This can/should be much shorter than the
    *   regular data timeout.
    */
   public function __construct($host = 'localhost', $port = 8099, $path = '', $timeout = 30, $status_timeout = 2) {
@@ -126,7 +126,7 @@ class Ecenter_Data_Service_Client {
   /**
    * Get hubs
    *
-   * @return 
+   * @return
    *   An array of hubs.
    */
   public function getHubs() {
@@ -139,7 +139,7 @@ class Ecenter_Data_Service_Client {
    * @param $src_ip
    *   (optional) Source IP.  If provided, will return all destinations for this
    *   source.
-   * @return 
+   * @return
    *   An array of hubs.
    */
   public function getHops($src_ip='') {

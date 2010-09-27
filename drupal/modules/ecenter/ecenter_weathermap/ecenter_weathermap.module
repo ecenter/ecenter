@@ -428,8 +428,8 @@ function ecenter_weathermap_get_client($status_check = '503') {
  * @return
  *   An array of parsed data
  */
-function ecenter_weathermap_get_data($src_hub, $dst_hub, $start, $end) {
-
+function ecenter_weathermap_get_data($src_hub, $dst_hub, $start, $end, $debug_url = FALSE) {
+  static $results = array();
 
   $query = http_build_query(array(
     'src_hub' => $src_hub,
@@ -438,26 +438,32 @@ function ecenter_weathermap_get_data($src_hub, $dst_hub, $start, $end) {
     'end' => $end,
   ));
 
-  $caching = variable_get('ecenter_weathermap_data_cache_enabled', 0);
-  if ($caching && $result = cache_get($query, 'cache_ecenter_data')) {
-    return $result->data;
-  }
-  else {
-    $client = ecenter_weathermap_get_client('message');
-    $result = $client->getData($src_hub, $dst_hub, $start, $end);
-    if ($result['code'] == 200) {
-      $data = ecenter_weathermap_parse_response($result, $src_hub, $dst_hub);
-      if ($caching) {
-        $expires = time() + variable_get('ecenter_weathermap_data_cache_ttl', 300);
-        cache_set($query, $data, 'cache_ecenter_data', $expires);
-      }
-      return $data;
+  if (!array_key_exists($query, $results)) {
+
+    // @TODO remove for good in production
+    dpm('Query URL: http://xenmon.fnal.gov:8055/data.json?' . str_replace('&amp;', '&', $query));
+
+    $caching = variable_get('ecenter_weathermap_data_cache_enabled', 0);
+    if ($caching && $result = cache_get($query, 'cache_ecenter_data')) {
+      $results[$query] = $result->data;
     }
     else {
-      drupal_set_message(t('Request failed with code @code.', array('@code' => $result['code'])));
+      $client = ecenter_weathermap_get_client('message');
+      $result = $client->getData($src_hub, $dst_hub, $start, $end);
+      if ($result['code'] == 200) {
+        $data = ecenter_weathermap_parse_response($result, $src_hub, $dst_hub);
+        if ($caching) {
+          $expires = time() + variable_get('ecenter_weathermap_data_cache_ttl', 300);
+          cache_set($query, $data, 'cache_ecenter_data', $expires);
+        }
+        $results[$query] = $data;
+      }
+      else { // Note that the static variable is NOT set in this case
+        drupal_set_message(t('Request failed with code @code.', array('@code' => $result['code'])));
+      }
     }
   }
-  return FALSE;
+  return $results[$query];
 }
 
 /**
@@ -470,27 +476,31 @@ function ecenter_weathermap_get_data($src_hub, $dst_hub, $start, $end) {
  *   An array of hop objects.
  */
 function ecenter_weathermap_get_hops($src_hub = FALSE) {
-  $caching = variable_get('ecenter_weathermap_hop_cache_enabled', 0);
-  if ($caching && $result = cache_get('hub', 'cache_ecenter_hops')) {
-    return $result->data;
-  }
-  else {
-    $client = ecenter_weathermap_get_client('message');
-    $result = $client->getHubs();
-    if ($result['code'] == 200) {
-      $data = $result['response'];
-      ksort($data);
-      if ($caching) {
-        $expires = time() + variable_get('ecenter_weathermap_hop_cache_ttl', 600);
-        cache_set('hub', $data, 'cache_ecenter_hops', $expires);
-      }
-      return $data;
+  static $hops = array();
+
+  if (empty($hops)) {
+    $caching = variable_get('ecenter_weathermap_hop_cache_enabled', 0);
+    if ($caching && $result = cache_get('hub', 'cache_ecenter_hops')) {
+      $hops = $result->data;
     }
     else {
-      drupal_set_message(t('Request failed with code @code.', array('@code' => $result['code'])));
+      $client = ecenter_weathermap_get_client('message');
+      $result = $client->getHubs();
+      if ($result['code'] == 200) {
+        $data = $result['response'];
+        ksort($data);
+        if ($caching) {
+          $expires = time() + variable_get('ecenter_weathermap_hop_cache_ttl', 600);
+          cache_set('hub', $data, 'cache_ecenter_hops', $expires);
+        }
+        $hops = $data;
+      }
+      else {
+        drupal_set_message(t('Request failed with code @code.', array('@code' => $result['code'])));
+      }
     }
   }
-  return FALSE;
+  return $hops;
 }
 
 /**

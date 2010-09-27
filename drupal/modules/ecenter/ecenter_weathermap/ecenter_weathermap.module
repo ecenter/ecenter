@@ -429,6 +429,8 @@ function ecenter_weathermap_get_client($status_check = '503') {
  *   An array of parsed data
  */
 function ecenter_weathermap_get_data($src_hub, $dst_hub, $start, $end) {
+
+
   $query = http_build_query(array(
     'src_hub' => $src_hub,
     'dst_hub' => $dst_hub,
@@ -544,249 +546,245 @@ function _ecenter_weathermap_get_data_types() {
  *   A big, complicated array of E-center data
  */
 function ecenter_weathermap_parse_response($response, $src_hub, $dst_hub) {
-  // @TODO static variable may add level of indirection / instability
-  static $queries = array();
+  $parsed_data = array();
+  $data = $response['response'];
+  $hops = ecenter_weathermap_get_hops();
 
-  if (empty($queries[$response['query']])) {
-    $data = $response['response'];
+  foreach (array('traceroute', 'reverse_traceroute') as $direction) {
 
-    $hops = $src_hops = $dst_hops = ecenter_weathermap_get_hops();
+    // We may not have ANY forward or reverse traceroutes
+    if (empty($data[$direction])) {
+      continue;
+    }
 
-    foreach (array('traceroute', 'reverse_traceroute') as $direction) {
+    $parsed = array();
 
-      // We may not have ANY forward or reverse traceroutes
-      if (empty($data[$direction])) {
-        continue;
+    // Sort and grab latest traceroute
+    krsort($data[$direction]);
+    $traceroute = array_shift(array_values($data[$direction]));
+
+    // Synthesize forward and reverse hops
+    if ($direction == 'traceroute') {
+      $hub = array_shift(explode('-', $traceroute[0]['hub']));
+      if ($hub != $src_hub) {
+        $new_hop = $hops[$src_hub] + array(
+          'hop_id' => uniqid('start-'),
+          'hop_ip' => $src_hub,
+          'nodename' => $src_hub,
+          'netblock' => 'src',
+        );
+        array_unshift($traceroute, $new_hop);
       }
 
-      $parsed = array();
-
-      // Sort and grab latest traceroute
-      krsort($data[$direction]);
-      $traceroute = array_shift(array_values($data[$direction]));
-
-      // Synthesize forward and reverse hops
-      if ($direction == 'traceroute') {
-        $hub = array_shift(explode('-', $traceroute[0]['hub']));
-        if ($hub != $src_hub) {
-          $new_hop = $hops[$src_hub] + array(
-            'hop_id' => uniqid('start-'),
-            'hop_ip' => $src_hub,
-            'nodename' => $src_hub,
-            'netblock' => 'src',
-          );
-          array_unshift($traceroute, $new_hop);
-        }
-
-        $last = count($traceroute) -1;
-        $hub = array_shift(explode('-', $traceroute[$last]['hub']));
-        if ($hub != $dst_hub) {
-          $new_hop = $hops[$dst_hub] + array(
-            'hop_id' => uniqid('start-'),
-            'hop_ip' => $dst_hub,
-            'nodename' => $dst_hub,
-            'netblock' => 'dst',
-          );
-          array_push($traceroute, $new_hop);
-        }
+      $last = count($traceroute) -1;
+      $hub = array_shift(explode('-', $traceroute[$last]['hub']));
+      if ($hub != $dst_hub) {
+        $new_hop = $hops[$dst_hub] + array(
+          'hop_id' => uniqid('start-'),
+          'hop_ip' => $dst_hub,
+          'nodename' => $dst_hub,
+          'netblock' => 'dst',
+        );
+        array_push($traceroute, $new_hop);
       }
-      elseif ($direction == 'reverse_traceroute') {
-        $hub = array_shift(explode('-', $traceroute[0]['hub']));
-        if ($hub != $src_hub) {
-          $new_hop = $hops[$src_hub] + array(
-            'hop_id' => uniqid('start-'),
-            'hop_ip' => $src_hub,
-            'nodename' => $src_hub,
-            'netblock' => 'src',
-          );
-          array_unshift($traceroute, $new_hop);
-        }
-
-        $last = count($traceroute) -1;
-        $hub = array_shift(explode('-', $traceroute[$last]['hub']));
-        if ($hub != $dst_hub) {
-          $new_hop = $hops[$dst_hub] + array(
-            'hop_id' => uniqid('start-'),
-            'hop_ip' => $dst_hub,
-            'nodename' => $dst_hub,
-            'netblock' => 'dst',
-          );
-          array_push($traceroute, $new_hop);
-        }
+    }
+    elseif ($direction == 'reverse_traceroute') {
+      $hub = array_shift(explode('-', $traceroute[0]['hub']));
+      if ($hub != $src_hub) {
+        $new_hop = $hops[$src_hub] + array(
+          'hop_id' => uniqid('start-'),
+          'hop_ip' => $src_hub,
+          'nodename' => $src_hub,
+          'netblock' => 'src',
+        );
+        array_unshift($traceroute, $new_hop);
       }
 
-      // Main loop
-      foreach ($traceroute as $hop) {
-        $hop_data = array();
+      $last = count($traceroute) -1;
+      $hub = array_shift(explode('-', $traceroute[$last]['hub']));
+      if ($hub != $dst_hub) {
+        $new_hop = $hops[$dst_hub] + array(
+          'hop_id' => uniqid('start-'),
+          'hop_ip' => $dst_hub,
+          'nodename' => $dst_hub,
+          'netblock' => 'dst',
+        );
+        array_push($traceroute, $new_hop);
+      }
+    }
 
-        // Geolocate IP if no geo data available
-        if (!$hop['longitude'] || !$hop['latitude']) {
-          $geo = geoip_city($hop['hop_ip']);
-          $hop['longitude'] = $geo->longitude;
-          $hop['latitude'] = $geo->latitude;
-          $hop['geolocated'] = TRUE;
+    // Main loop
+    foreach ($traceroute as $hop) {
+      $hop_data = array();
+
+      // Geolocate IP if no geo data available
+      if (!$hop['longitude'] || !$hop['latitude']) {
+        $geo = geoip_city($hop['hop_ip']);
+        $hop['longitude'] = $geo->longitude;
+        $hop['latitude'] = $geo->latitude;
+        $hop['geolocated'] = TRUE;
+      }
+
+      // SNMP
+      $hop_data['snmp'] = $data['snmp'][$hop['hop_id']];
+
+      // Calculate netblock
+      if ($hop['netblock'] != 'src' && $hop['netblock'] != 'dst') {
+        $mask = (!empty($hop['netmask'])) ? $hop['netmask'] : 24;
+        $hop['netblock'] = long2ip(ip2long($hop['hop_ip']) & ~((1 << (32 - $mask)) - 1));
+      }
+
+      $parsed[] = array(
+        'hop' => $hop,
+        'data' => $hop_data,
+      );
+    }
+
+    $direction_label = ($direction == 'reverse_traceroute') ? 'reverse' : 'forward';
+    $parsed_data[$direction_label] = $parsed;
+  }
+
+  // End to end
+  $end_to_end = array();
+  $src_netblock = long2ip(ip2long($src_hub) & ~((1 << 8) - 1));
+  $dst_netblock = long2ip(ip2long($dst_hub) & ~((1 << 8) - 1));
+
+  foreach (array('bwctl', 'owamp', 'pinger') as $type) {
+    if (!is_array($data[$type])) {
+      continue;
+    }
+
+    // @TODO investigate potential problems with this approach...
+    $end_to_end[$type] = array('forward' => array(), 'reverse' => array());
+
+    foreach ($data[$type] as $test_src_hub => $destinations) {
+      $test_src_netblock = long2ip(ip2long($test_src_hub) & ~((1 << 8) - 1));
+      if ($test_src_netblock == $src_netblock) {
+        foreach ($destinations as $test_dst_hub => $test_data) {
+          $end_to_end[$type]['forward'] += $test_data;
         }
-
-        // SNMP
-        $hop_data['snmp'] = $data['snmp'][$hop['hop_id']];
-
-        // Calculate netblock
-        if ($hop['netblock'] != 'src' && $hop['netblock'] != 'dst') {
-          $mask = (!empty($hop['netmask'])) ? $hop['netmask'] : 24;
-          $hop['netblock'] = long2ip(ip2long($hop['hop_ip']) & ~((1 << (32 - $mask)) - 1));
+      }
+      if ($test_src_netblock == $dst_netblock) {
+        foreach ($destinations as $test_src_hub => $test_data) {
+          $end_to_end[$type]['reverse'] += $test_data;
         }
+      }
+    }
 
-        $parsed[] = array(
-          'hop' => $hop,
-          'data' => $hop_data,
+  }
+
+  $parsed_data['end_to_end'] = $end_to_end;
+
+  // Calculate diff
+  if (!empty($parsed_data['forward']) && !empty($parsed_data['reverse'])) {
+    $forward = $parsed_data['forward'];
+    $reverse = array_reverse($parsed_data['reverse']);
+
+    $parsed_data['diff'] = ecenter_weathermap_traceroute_diff($forward, $reverse);
+    $parsed_data['traceroute_max'] = (count($forward) > count($reverse)) ? count($forward) : count($reverse);
+  }
+  elseif (!empty($parsed_data['forward'])) {
+    $diff = array();
+    $forward = $parsed_data['forward'];
+    foreach ($forward as $row) {
+      $diff[] = array('match' => array('forward' => array($row)));
+    }
+    $parsed_data['diff'] = $diff;
+  }
+  elseif (!empty($parsed_data['reverse'])) {
+    $diff = array();
+    $reverse = $parsed_data['reverse'];
+    foreach ($reverse as $row) {
+      $diff[] = array('match' => array('reverse' => array($row)));
+    }
+    $parsed_data['diff'] = $diff;
+  }
+
+  // Recreate diff without hop data
+  if (!empty($parsed_data['forward']) && !empty($parsed_data['reverse'])) {
+    $js_diff = array();
+    foreach ($parsed_data['diff'] as $row) {
+      foreach ($row as $type => $directions) {
+        $new_row = array();
+        foreach ($directions as $direction => $hops) {
+          $new_hops = array();
+          foreach ($hops as $hop) {
+            $has_data = FALSE;
+            foreach ($hop['data'] as $hop_data) {
+              if (!empty($hop_data)) {
+                $has_data = TRUE;
+                $j++;
+              }
+            }
+            $new_hops[] = array(
+              'hop' => $hop['hop'],
+              'data' => $has_data,
+            );
+          }
+
+          $new_row[$direction] = $new_hops;
+        }
+        $js_diff[] = array(
+          $type => $new_row,
         );
       }
-
-      $direction_label = ($direction == 'reverse_traceroute') ? 'reverse' : 'forward';
-      $queries[$response['query']][$direction_label] = $parsed;
     }
+    $parsed_data['js_diff'] = $js_diff;
 
-    // End to end
-    $end_to_end = array();
-    $src_netblock = long2ip(ip2long($src_hub) & ~((1 << 8) - 1));
-    $dst_netblock = long2ip(ip2long($dst_hub) & ~((1 << 8) - 1));
+    // Finally, parse JS Diff to create a structure linking hop IDs to series
+    $series_by_id = array();
+    $series_by_idx = array();
 
-    foreach (array('bwctl', 'owamp', 'pinger') as $type) {
-      if (!is_array($data[$type])) {
-        continue;
-      }
-
-      // @TODO investigate potential problems with this approach...
-      $end_to_end[$type] = array('forward' => array(), 'reverse' => array());
-
-      foreach ($data[$type] as $test_src_hub => $destinations) {
-        $test_src_netblock = long2ip(ip2long($test_src_hub) & ~((1 << 8) - 1));
-        if ($test_src_netblock == $src_netblock) {
-          foreach ($destinations as $test_dst_hub => $test_data) {
-            $end_to_end[$type]['forward'] += $test_data;
-          }
-        }
-        if ($test_src_netblock == $dst_netblock) {
-          foreach ($destinations as $test_src_hub => $test_data) {
-            $end_to_end[$type]['reverse'] += $test_data;
-          }
-        }
-      }
-
-    }
-
-    $queries[$response['query']]['end_to_end'] = $end_to_end;
-
-    // Calculate diff
-    if (!empty($queries[$response['query']]['forward']) && !empty($queries[$response['query']]['reverse'])) {
-      $forward = $queries[$response['query']]['forward'];
-      $reverse = array_reverse($queries[$response['query']]['reverse']);
-
-      $queries[$response['query']]['diff'] = ecenter_weathermap_traceroute_diff($forward, $reverse);
-      $queries[$response['query']]['traceroute_max'] = (count($forward) > count($reverse)) ? count($forward) : count($reverse);
-    }
-    elseif (!empty($queries[$response['query']]['forward'])) {
-      $diff = array();
-      $forward = $queries[$response['query']]['forward'];
-      foreach ($forward as $row) {
-        $diff[] = array('match' => array('forward' => array($row)));
-      }
-      $queries[$response['query']]['diff'] = $diff;
-    }
-    elseif (!empty($queries[$response['query']]['reverse'])) {
-      $diff = array();
-      $reverse = $queries[$response['query']]['reverse'];
-      foreach ($reverse as $row) {
-        $diff[] = array('match' => array('reverse' => array($row)));
-      }
-      $queries[$response['query']]['diff'] = $diff;
-    }
-
-    // Recreate diff without hop data
-    if (!empty($queries[$response['query']]['forward']) && !empty($queries[$response['query']]['reverse'])) {
-      $js_diff = array();
-      foreach ($queries[$response['query']]['diff'] as $row) {
-        foreach ($row as $type => $directions) {
-          $new_row = array();
-          foreach ($directions as $direction => $hops) {
-            $new_hops = array();
-            foreach ($hops as $hop) {
-              $has_data = FALSE;
-              foreach ($hop['data'] as $hop_data) {
-                if (!empty($hop_data)) {
-                  $has_data = TRUE;
-                  $j++;
-                }
-              }
-              $new_hops[] = array(
-                'hop' => $hop['hop'],
-                'data' => $has_data,
-              );
-            }
-
-            $new_row[$direction] = $new_hops;
-          }
-          $js_diff[] = array(
-            $type => $new_row,
+    $i = 0;
+    foreach ($js_diff as $row) {
+      if (!empty($row['match'])) {
+        if ($row['match']['forward'][0]['data']) {
+          $series_by_id[$row['match']['forward'][0]['hop']['hop_id']] = array(
+            'idx' => $i,
+            'corresponding_id' => $row['match']['reverse'][0]['hop']['hop_id'],
+            'corresponding_idx' => $i + 1,
           );
+          $series_by_idx[] = array(
+            'id' => $row['match']['forward'][0]['hop']['hop_id'],
+            'corresponding_id' => $row['match']['reverse'][0]['hop']['hop_id'],
+            'corresponding_idx' => $i + 1,
+          );
+          $i++;
+        }
+        if ($row['match']['reverse'][0]['data']) {
+          $series_by_id[$row['match']['reverse'][0]['hop']['hop_id']] = array(
+            'idx' => $i,
+            'corresponding_id' => $row['match']['forward'][0]['hop']['hop_id'],
+            'corresponding_idx' => $i - 1,
+          );
+          $series_by_idx[] = array(
+            'id' => $row['match']['reverse'][0]['hop']['hop_id'],
+            'corresponding' => $row['match']['forward'][0]['hop']['hop_id'],
+            'corresponding_idx' => $i + 1,
+          );
+          $i++;
         }
       }
-      $queries[$response['query']]['js_diff'] = $js_diff;
-
-      // Finally, parse JS Diff to create a structure linking hop IDs to series
-      $series_by_id = array();
-      $series_by_idx = array();
-
-      $i = 0;
-      foreach ($js_diff as $row) {
-        if (!empty($row['match'])) {
-          if ($row['match']['forward'][0]['data']) {
-            $series_by_id[$row['match']['forward'][0]['hop']['hop_id']] = array(
-              'idx' => $i,
-              'corresponding_id' => $row['match']['reverse'][0]['hop']['hop_id'],
-              'corresponding_idx' => $i + 1,
-            );
-            $series_by_idx[] = array(
-              'id' => $row['match']['forward'][0]['hop']['hop_id'],
-              'corresponding_id' => $row['match']['reverse'][0]['hop']['hop_id'],
-              'corresponding_idx' => $i + 1,
-            );
-            $i++;
-          }
-          if ($row['match']['reverse'][0]['data']) {
-            $series_by_id[$row['match']['reverse'][0]['hop']['hop_id']] = array(
-              'idx' => $i,
-              'corresponding_id' => $row['match']['forward'][0]['hop']['hop_id'],
-              'corresponding_idx' => $i - 1,
-            );
-            $series_by_idx[] = array(
-              'id' => $row['match']['reverse'][0]['hop']['hop_id'],
-              'corresponding' => $row['match']['forward'][0]['hop']['hop_id'],
-              'corresponding_idx' => $i + 1,
-            );
-            $i++;
-          }
-        }
-        if (!empty($row['diff'])) {
-          foreach (array('forward', 'reverse') as $direction) {
-            foreach ($row['diff'][$direction] as $hop) {
-              if ($hop['data']) {
-                $series_by_id[$hop['hop']['hop_id']] = array(
-                  'idx' => $i,
-                );
-                $series_by_idx[] = array(
-                  'id' => $hop['hop']['hop_id'],
-                );
-                $i++;
-              }
+      if (!empty($row['diff'])) {
+        foreach (array('forward', 'reverse') as $direction) {
+          foreach ($row['diff'][$direction] as $hop) {
+            if ($hop['data']) {
+              $series_by_id[$hop['hop']['hop_id']] = array(
+                'idx' => $i,
+              );
+              $series_by_idx[] = array(
+                'id' => $hop['hop']['hop_id'],
+              );
+              $i++;
             }
           }
         }
       }
-      $queries[$response['query']]['series_lookup'] = array('id' => $series_by_id, 'idx' => $series_by_idx);
     }
+    $parsed_data['series_lookup'] = array('id' => $series_by_id, 'idx' => $series_by_idx);
   }
-  return $queries[$response['query']];
+
+  return $parsed_data;
 }
 
 /**

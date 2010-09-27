@@ -96,11 +96,14 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
         'lineWidth' => 1,
         'shadow' => FALSE,
         'fill' => FALSE,
-        'color' => '#bbbbbb',
+        'color' => '#cccccc',
         'markerOptions' => array(
           'show' => FALSE,
           'size' => 3,
         ),
+      ),
+      'axesDefaults' => array(
+        'showTickMarks' => FALSE,
       ),
       'axes' => array(
         'xaxis' => array(
@@ -121,15 +124,16 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
           'label' => t('Percent utilization'),
           'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
           'tickOptions' => array(
-            'formatString' => '%01.0f%'
+            'formatString' => '%01.0f%',
+            'color' => '#cccccc',
           ),
         ),
       ),
       'grid' => array(
         'shadow' => FALSE,
         'borderWidth' => 0,
-        'background' => '#dddddd',
-        'gridLineColor' => '#ffffff',
+        'background' => '#ffffff',
+        'gridLineColor' => '#cccccc',
       ),
       'highlighter' => array(
         'show' => TRUE,
@@ -140,7 +144,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
         'tooltipSeparator' => ': ',
       ),
       'linehighlighter' => array(
-        'threshold' => 2,
+        'threshold' => 4,
         'sizeAdjust' => 1.5,
       ),
       'cursor' => array(

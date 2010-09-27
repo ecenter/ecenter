@@ -689,13 +689,11 @@ function ecenter_weathermap_parse_response($response, $src_hub, $dst_hub) {
       foreach ($data[$type] as $test_src_hub => $destinations) {
         $test_src_netblock = long2ip(ip2long($test_src_hub) & ~((1 << 8) - 1));
         if ($test_src_netblock == $src_netblock) {
-          //$end_to_end[$type]['forward'] = $destinations;
           foreach ($destinations as $test_dst_hub => $test_data) {
             $end_to_end[$type]['forward'] += $test_data;
           }
         }
         if ($test_src_netblock == $dst_netblock) {
-          //$end_to_end[$type]['revberse'] = $destinations;
           foreach ($destinations as $test_src_hub => $test_data) {
             $end_to_end[$type]['reverse'] += $test_data;
           }

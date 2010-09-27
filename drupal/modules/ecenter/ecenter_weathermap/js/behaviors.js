@@ -106,14 +106,18 @@ $(document).ready(function() {
       console.log(hop);
       console.log(s);
       if (s == undefined) {
-        console.log(tc.chart.series);
+        console.log('no series...');
         console.log(sidx);
+        console.log(tc.chart.series);
       }
       console.log('---');
-      //series_color = (lh.colors && lh.colors[sidx] != undefined) ? lh.colors[sidx] : s.seriesColors[sidx];
-      //var opts = {color: series_color, lineWidth: s.lineWidth + lh.sizeAdjust};
-      //lh.highlightSeries(sidx, tc.chart, opts);
+      if (s) {
+        series_color = (lh.colors && lh.colors[sidx] != undefined) ? lh.colors[sidx] : s.seriesColors[sidx];
+        var opts = {color: series_color, lineWidth: s.lineWidth + lh.sizeAdjust};
+        lh.highlightSeries(sidx, tc.chart, opts);
+      }
     }*/
+
 
     $('#trace-hop-label-' + hop.id).addClass('highlight');
     if (hop.corresponding_id) {

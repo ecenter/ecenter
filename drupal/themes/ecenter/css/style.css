@@ -683,7 +683,7 @@ html.js .end-to-end-results {
 /* Traceroute "subway map" {{{ */
 .trace-label {
   line-height: 1.1;
-  font-size: 12px;
+  font-size: 11px;
 }
 .hostname {
   font-weight: bold;
@@ -699,23 +699,26 @@ html.js .end-to-end-results {
 #traceroute .has-chart {
   color: #007700;
 }
+
+#traceroute {
+  float: left;
+  width: 368px;
+  margin-right: 12px;
+}
+#results {
+  float: left;
+  width: 560px;
+}
+#traceroute .highlight {
+  background-color: #ffffaa;
+}
 /* }}} */
 /* Charts {{{ */
-.snmp-chart-wrapper table {
-  margin-bottom: .75em;
-}
-.snmp-chart-wrapper {
+html.js #results .snmp-data-table {
   display: none;
-  margin-bottom: 1.5em;
-  background-color: #000;
-  padding: 10px;
-  color: #fff;
 }
-.snmp-chart-wrapper h1 {
-  color: #fff;
-}
-
 /* }}} */
+
 
 /* --- Overrides and fixes --- */
 /* Fix vertical tabs and views vertical tabs {{{ */

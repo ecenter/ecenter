@@ -10,8 +10,6 @@
  * Theme main data display
  */
 function template_preprocess_ecenter_weathermap_data(&$vars) {
-  dpm($vars['data']);
-
   // Generate permalink
   $vars['permalink'] = l('Permalink', 'weathermap', array('query' => $vars['params']));
 
@@ -34,8 +32,8 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
   );
 
   // Source / dst table
-  $src_hops = ecenter_weathermap_get_hops();
-  $dst_hops = ecenter_weathermap_get_hops($vars['params']['src_ip']);
+  $hops = ecenter_weathermap_get_hops();
+
   $query_table = array(
     array(
       array(
@@ -43,7 +41,7 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
         'header' => TRUE,
       ),
       array(
-        'data' => $src_hops[$vars['params']['src_ip']]->nodename
+        'data' => $hops[$vars['params']['src_hub']]['hub_name'],
       ),
     ),
     array(
@@ -52,7 +50,7 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
         'header' => TRUE,
       ),
       array(
-        'data' => $dst_hops[$vars['params']['dst_ip']]->nodename
+        'data' => $hops[$vars['params']['dst_hub']]['hub_name'],
       ),
     ),
   );
@@ -63,7 +61,7 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
   $tz = timezone_open(date_default_timezone_name(TRUE));
   $dates = array();
   foreach (array('start', 'end') as $val) {
-    $date = date_create($vars['params'][$val], $utc);
+   $date = date_create($vars['params'][$val], $utc);
     date_timezone_set($date, $tz);
     $dates[$val] = date_format($date, 'M j, Y H:i');
   }
@@ -73,13 +71,16 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
   if (!empty($vars['data']['diff'])) {
     $vars['snmp'] = theme('ecenter_weathermap_render_data_snmp', $vars['data']['diff']);
   }
+  else {
+    $vars['snmp'] = '<p class="missing">'. t('No path or utilization data available.') .'</p>';
+  }
 
   // Generate end to end statistics
   if (!empty($vars['data']['end_to_end'])) {
     $vars['end_to_end_table'] = theme('ecenter_weathermap_render_data_end_to_end_table', $vars['data']['end_to_end']);
   }
   else {
-    $vars['end_to_end_table'] = t('No end to end data available');
+    $vars['end_to_end_table'] = '<p class="missing">'. t('No end to end data available') .'</p>';
   }
 }
 
@@ -355,7 +356,7 @@ function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
 
 
     if (!empty($data['owamp'][$direction])) {
-      //dpm($data['owamp'][$direction]);
+      dpm($data['owamp'][$direction]);
     }
 
   }

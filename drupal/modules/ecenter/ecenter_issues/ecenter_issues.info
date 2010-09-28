@@ -1,0 +1,10 @@
+;$Id$
+name = E-Center Issues
+package = E-Center Project
+description = Basic 'issue tracking' for E-center project. This module allows query results to be saved and discussed.
+core = 6.x
+
+dependencies[] = content
+dependencies[] = content_copy
+dependencies[] = text
+dependencies[] = date

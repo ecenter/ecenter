@@ -10,7 +10,7 @@
 function ecenter_issues_form_alter(&$form, &$form_state) {
   if ($form['#token'] == 'issue_node_form') {
     //$form['field_issue_query'][0]['#type'] = 'value';
-    dpm($form);
+    /*dpm($form);
     dpm($_REQUEST);
     //urldecode($_REQUEST['query']);
 
@@ -22,7 +22,7 @@ function ecenter_issues_form_alter(&$form, &$form_state) {
     $form['field_issue_query'][0]['#value']['value'] = $query;
     $form['field_issue_query']['#type'] = 'value';
 
-    $data = ecenter_weathermap_get_data($params['src_hub'] 
+    $data = ecenter_weathermap_get_data($params['src_hub']*/
   }
 }
 

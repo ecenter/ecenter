@@ -11,7 +11,6 @@
  * The absolute base font size, just like Blueprint, is 16px. The effective
  * base font size is 14px (87.5% of 16px).
  */
- /*
 @font-face {
   font-family:'Raleway';
   src:url(../font/raleway_thin.otf) format('opentype');
@@ -139,6 +138,9 @@ h6 {
   font-weight: normal;
   font-size: 0.875em;
 }
+#content-body table thead th a {
+  color: #fff;
+}
 #content-body table td, #content-body table th {
   border: 1px solid #999;
   padding: .2em .5em;
@@ -163,6 +165,32 @@ h6 {
 .messages {
   margin-bottom: 1.5em;
 }
+/* }}} */
+/* Link button style {{{ */
+a.button {
+  -moz-border-radius: 6px;
+  -webkit-border-radius: 6px;
+  background-color: #ddd;
+  border: 1px solid #777;
+  text-shadow: 1px 1px #eee;
+  font-family: "Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif;
+  font-weight: bold;
+  padding: 2px 5px;
+  color: #444;
+  background-image: -webkit-gradient(
+    linear,
+    left bottom,
+    left top,
+    color-stop(0.22, rgb(204,204,204)),
+    color-stop(0.57, rgb(238,238,238))
+  );
+  background-image: -moz-linear-gradient(
+    center bottom,
+    rgb(204,204,204) 22%,
+    rgb(238,238,238) 57%
+  );
+}
+
 /* }}} */
 
 /* --- Sidebar markup --- */
@@ -212,6 +240,7 @@ input.form-submit {
   );
 }
 span.form-quickselect_dropdown {
+  font-size: 1.25em;
   position: relative;
   top: 2px;
   background-color: #ddd;
@@ -464,22 +493,63 @@ h1#site-name a:hover {
 /* }}} */
 
 /* -- Weathermap -- */
+/* Map {{{ */
+#weathermap-wrapper {
+  margin-bottom: 1.5em;
+}
+#weathermap-map {
+  width: 660px;
+  float: left;
+  margin-right: 10px;
+}
+#weathermap-results {
+  float: left;
+  width: 260px;
+}
+/* }}} */
 /* Source/destination selector {{{ */
 #ip-select-wrapper {
   margin-top: 1.5em;
+  background-color: #dedede;
+  padding: 13px 8px;
+  -moz-box-shadow: 3px 2px .4em 0 #888;
+  margin-bottom: 1em;
+  border: 1px solid #999;
+  width: 100%;
 }
 #ecenter-weathermap-select-form .form-quickselect {
-  width: 300px;
+  width: 330px;
+  font-size: 1.25em;
 }
 #ecenter-weathermap-select-form #src-ip-wrapper,
 #ecenter-weathermap-select-form #dst-ip-wrapper {
-  width: 470px;
+  margin-top: .75em;
+  width: 460px;
   float: left;
 }
+#ecenter-weathermap-select-form .form-item {
+  margin-bottom: 0;
+}
 /* }}} */
-/* Progress throbbers {{{ */
+/* Loading {{{ */
+#ecenter-weathermap-select-form.data-loading .datehide-display .date {
+  background-color: #eee;
+  color: #aaa;
+}
 #ecenter-weathermap-select-form .progress-disabled {
   float: none;
+}
+#ecenter-weathermap-select-form .ahah-progress {
+  display: none;
+}
+.loading-overlay {
+  background-color:rgba(255,255,255,0.75);
+  text-align: center;
+}
+.loading-overlay p {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 3em;
 }
 /* }}} */
 /* Date selector {{{ */
@@ -488,32 +558,13 @@ h1#site-name a:hover {
   border-top: 1px solid #aaa;
   border-bottom: 1px solid #aaa;
   padding: 0 7px;
+  background-color: #fff;
 }
 #ecenter-weathermap-select-form .label {
   width: 80px;
   font-weight: bold;
   float: left;
 }
-#ecenter-weathermap-select-form .button {
-  background-color: #ddd;
-  border: 1px solid #aaa;
-  padding: 0 3px;
-  color: #777;
-  cursor: pointer;
-  background-image: -webkit-gradient(
-    linear,
-    left bottom,
-    left top,
-    color-stop(0.22, rgb(204,204,204)),
-    color-stop(0.57, rgb(238,238,238))
-  );
-  background-image: -moz-linear-gradient(
-    center bottom,
-    rgb(204,204,204) 22%,
-    rgb(238,238,238) 57%
-  );
-}
-
 #ecenter-weathermap-select-form .hover .date,
 #ecenter-weathermap-select-form .hover .button {
   border-color: #555;
@@ -529,7 +580,7 @@ h1#site-name a:hover {
 #date-wrapper .container-inline-date {
   clear: none;
   float: left;
-  width: 350px;
+  width: 410px;
 }
 #date-wrapper .form-item {
   margin-bottom: 0;
@@ -564,17 +615,110 @@ h1#site-name a:hover {
 #results-wrapper {
   margin-top: 1.5em;
 }
-/* }}} */
-/* Traceroute "subway map" {{{ */
-.traceroute-graph-wrapper .traceroute-label {
-  line-height: 1;
+html.js .end-to-end-results {
+  display: none;
+}
+#weathermap-end-to-end-results {
+  float: left;
+  width: 270px;
+  font-family: "Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif;
+}
+#weathermap-end-to-end-results .issue-link a {
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+#weathermap-end-to-end-results .issue-link,
+#weathermap-end-to-end-results .date-range {
+  margin-bottom: 1em;
+}
+#weathermap-end-to-end-results table {
+  font-size: 11px;
+  margin-bottom: 1em;
+  width: 100%;
+}
+#weathermap-end-to-end-results .date-range {
+  font-weight: bold;
   font-size: 12px;
 }
-.traceroute-graph-wrapper .labels-left .traceroute-label {
+#weathermap-end-to-end-results table th {
+  padding: 0;
+}
+#weathermap-end-to-end-results table tr {
+  background-color: transparent !important;
+}
+#weathermap-end-to-end-results table thead th,
+#weathermap-end-to-end-results table tbody th {
+  color: #222;
+  background: none;
+  border: none;
+  text-transform: uppercase;
+}
+#weathermap-end-to-end-results table thead th {
+  border-left: 5px solid #fff;
+  border-bottom: 1px solid #999;
+  text-align: center;
+}
+#weathermap-end-to-end-results table thead th.empty {
+  border: none;
+}
+#weathermap-end-to-end-results table td {
+  border: none;
+}
+#weathermap-end-to-end-results table.end-to-end-table td {
+  text-align: center;
+}
+#weathermap-end-to-end-results table td .value {
+  font-size: 12px;
+}
+#weathermap-end-to-end-results table td.avg .value {
+  font-size: 14px; 
+  font-weight: bold;
+}
+#weathermap-end-to-end-results table.path-table th {
+  width: 80px;
+  font-weight: bold;
+}
+/* }}} */
+/* Traceroute "subway map" {{{ */
+.trace-label {
+  line-height: 1.1;
+  font-size: 11px;
+}
+.hostname {
+  font-weight: bold;
+}
+.traceroute-graph-wrapper .labels-left .trace-label {
   text-align: right;
 }
+.hop-wrapper {
+  background-color: #fff;
+  padding: 14px;
+  border: 3px solid #ccc;
+}
+#traceroute .has-chart {
+  color: #007700;
+}
 
+#traceroute {
+  float: left;
+  width: 368px;
+  margin-right: 12px;
+}
+#results {
+  float: left;
+  width: 560px;
+}
+#traceroute .highlight {
+  background-color: #ffffaa;
+}
 /* }}} */
+/* Charts {{{ */
+html.js #results .snmp-data-table {
+  display: none;
+}
+/* }}} */
+
 
 /* --- Overrides and fixes --- */
 /* Fix vertical tabs and views vertical tabs {{{ */
@@ -626,40 +770,5 @@ h1#site-name a:hover {
   border-top: 1px solid #ccc;
   padding-left: 3px;
   padding-top: 1px;
-}
-/* }}} */
-/* Date popup datepicker {{{ */
-.ui-datepicker-div, .ui-datepicker-inline, #ui-datepicker-div {
-  padding-top: .25em;
-  margin-bottom: .25em;
-}
-#ui-datepicker-div table {
-  width: 100%;
-}
-#ui-datepicker-div table td,
-#ui-datepicker-div table th {
-  text-align: center;
-  width: 14.2%;
-  border: 1px solid #fff;
-}
-#ui-datepicker-div table td {
-  background-color: #ddd;
-  font-weight: bold;
-}
-#ui-datepicker-div table td.ui-datepicker-unselectable {
-  background-color: transparent;
-}
-.ui-datepicker-next,
-.ui-datepicker-prev {
-  background: none;
-  top: .25em;
-}
-.ui-datepicker-next {
-  left: 13em;
-}
-.ui-datepicker-title {
-  text-align: center;
-  margin-bottom: .25em;
-  font-weight: bold;
 }
 /* }}} */

@@ -14,6 +14,7 @@ $.fn.traceroute = function(data, options) {
     var trace = $(this).data('TraceRoute');
     if (trace == undefined) {
       trace = new TraceRoute(this, data, options);
+      $(this).data('TraceRoute', trace);
     }
     else {
       trace.redraw(data, options);
@@ -25,8 +26,9 @@ $.fn.traceroute = function(data, options) {
 $.fn.traceroute.defaults = {
   'tracerouteLength' : null,
   'drawArrows' : true,
+  'append' : true,
   'link' : {
-    'linkLength' : 15,
+    'linkLength' : 28,
     'style' : {
       'lineWidth' : 4,
       'strokeStyle' : '#aaaaaa'
@@ -36,7 +38,7 @@ $.fn.traceroute.defaults = {
     'arrowHeight' : 6,
     'arrowWidth' : 8,
     'style' : {
-      'fillStyle' : '#555555'
+      'fillStyle' : '#666666'
     }
   },
   'hop' : {
@@ -49,7 +51,7 @@ $.fn.traceroute.defaults = {
     }
   },
   'label' : {
-    'width' : 120,
+    'width' : 150,
     'side_padding' : 6,
     'top_padding' : 9,
     'font_size' : '11px'
@@ -70,13 +72,18 @@ function TraceRoute(el, data, options) {
   // Initialize canvas
   this.initCanvas();
 
+  // Create labels (need to create these first, to precalculate width)
+  this.createLabels();
+
   // Draw traceroute
   this.drawTraceroute();
 
-  // Save
-  $(this.el).data('TraceRoute', this);
+}
 
-  return this;
+TraceRoute.prototype.createLabels = function() {
+  for (var i = 0; i < this.data.length; i++) {
+    var row = this.data[i];
+  }
 }
 
 TraceRoute.prototype.initCanvas = function() {
@@ -113,17 +120,19 @@ TraceRoute.prototype.initCanvas = function() {
   linkCenter = (o.hop.radius / 2) + (o.link.style.lineWidth / 3);
   this.forwardLinkX = linkCenter;
   this.reverseLinkX = linkCenter + o.hop.radius;
- 
+  this.singleLinkX = this.hopRadius;
+
   // Set size for both canvases
   hopCanvas.width = linkCanvas.width = (this.hopSize * 2) + o.hop.extraMargin;
   hopCanvas.height = linkCanvas.height = (o.link.linkLength * (o.tracerouteLength - 1)) + (this.hopSize * o.tracerouteLength);
 
   // Position container
-  container_width = (o.label.width * 2) + hopCanvas.width;
+  this.containerWidth = (o.label.width * 2) + hopCanvas.width;
+
   $(this.el).css({
     'position' : 'relative',
     'height' : hopCanvas.height,
-    'width' : container_width + 'px'
+    'width' : this.containerWidth + 'px'
   }).append(linkCanvas).append(hopCanvas);
 
   // Provide canvases as part of traceroute object
@@ -166,6 +175,7 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
     if (row.match != undefined) {
       hopStyle = (row.hopStyle != undefined) ? row.hopStyle : o.hop.style;
       hopY = (this.segmentHeight * (i + extra_inc)) + this.hopRadius;
+
       this.drawHop(this.hopRadius, hopY, o.hop.radius, hopStyle);
 
       // If an old row exists, draw backwards lines running to it
@@ -175,8 +185,12 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
 
         // If the old row was another matching hop, just draw regular lines back
         if (old_row.match != undefined) {
-          this.drawSegment(this.forwardLinkX, last_match_y, this.forwardLinkX, hopY, linkStyle, arrowStyle);
-          this.drawSegment(this.reverseLinkX, hopY, this.reverseLinkX, last_match_y, linkStyle, arrowStyle);
+          if (old_row.match.reverse != undefined) {
+            this.drawSegment(this.forwardLinkX, last_match_y, this.forwardLinkX, hopY, linkStyle, arrowStyle);
+            this.drawSegment(this.reverseLinkX, hopY, this.reverseLinkX, last_match_y, linkStyle, arrowStyle);
+          } else {
+            this.drawSegment(this.singleLinkX, last_match_y, this.singleLinkX, hopY, linkStyle, arrowStyle);
+          }
         }
 
         // The old row had asymmetry, but contributed no hops in the reverse direction (a skip)
@@ -185,15 +199,17 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
           this.drawCurve(this.reverseLinkX, this.hopAsymOffset, last_match_y, hopY, linkStyle, arrowStyle);
         }
 
-        // The old row contributed hops in the reverse direction 
+        // The old row contributed hops in the reverse direction
         if (old_row.diff != undefined && old_row.diff.reverse.length) {
-          this.drawSegment(this.forwardLinkX, last_forward_diff_y, this.forwardLinkX, hopY, linkStyle, arrowStyle);
+          forwardY  = (last_forward_diff_y > last_match_y) ? last_forward_diff_y : last_match_y;
+          this.drawSegment(this.forwardLinkX, forwardY, this.forwardLinkX, hopY, linkStyle, arrowStyle);
           this.drawSegment(this.hopRadius, hopY, this.hopAsymOffset, last_reverse_diff_y, linkStyle, arrowStyle);
         }
 
       }
       last_match_y = hopY;
-      this.drawHopLabel(row.match.forward.hop, 0, hopY - this.hopSize);
+
+      this.drawHopLabel(row.match.forward[0], 0, hopY - this.hopSize);
     }
 
     if (row.diff != undefined) {
@@ -203,7 +219,7 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
       leastHops = (row.diff.forward.length > row.diff.reverse.length) ? 'reverse' : 'forward';
       longestSegment = (o.link.linkLength * (row.diff[mostHops].length + 1)) + (this.hopSize * row.diff[mostHops].length);
       adjustedLinkLength = (longestSegment - (row.diff[leastHops].length * this.hopSize)) / (row.diff[leastHops].length + 1);
-      adjustedSegmentHeight = adjustedLinkLength + this.hopSize; 
+      adjustedSegmentHeight = adjustedLinkLength + this.hopSize;
 
       // Forward
       for (var j = 0; j < row.diff.forward.length; j++) {
@@ -227,8 +243,7 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
         arrowStyle = (hop.arrowStyle != undefined) ? hop.arrowStyle : o.arrow.style;
         this.drawSegment(this.forwardLinkX, lastHopY, this.forwardLinkX, hopY, linkStyle, arrowStyle);
 
-        this.drawHopLabel(hop.hop, 0, hopY - this.hopSize);
-
+        this.drawHopLabel(hop, 0, hopY - this.hopSize);
       }
 
       // Reverse
@@ -249,20 +264,19 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
         last_reverse_diff_y = hopY;
 
         this.drawHop(this.hopAsymOffset, hopY, o.hop.radius, hopStyle);
-        this.drawHopLabel(hop.hop, o.label.width + this.hopAsymOffset + this.hopSize, hopY - this.hopSize, 'right');
+        this.drawHopLabel(hop, o.label.width + this.hopAsymOffset + this.hopSize, hopY - this.hopSize, 'right');
 
         if (k == 0) {
           this.drawSegment(this.hopAsymOffset, hopY, this.hopRadius, last_match_y, linkStyle, arrowStyle);
         } else {
           this.drawSegment(this.hopAsymOffset, hopY, this.hopAsymOffset, lastHopY, linkStyle, arrowStyle);
         }
-
       }
 
       // Set extra increment for next match
       if (j > 1 || k > 1) {
-        extra_inc += (k > j) ? k - 1 : j - 1; 
-      } 
+        extra_inc += (k > j) ? k - 1 : j - 1;
+      }
 
     }
 
@@ -349,42 +363,57 @@ TraceRoute.prototype.drawSegment = function(x1, y1, x2, y2, options, arrow_optio
     hypotenuse = Math.sqrt(Math.pow(deltaY, 2) + Math.pow(deltaX, 2));
     ctx.beginPath();
 
-    // "Forward" traceroutes
-    if (deltaY > 0) {
-      arrowY = (hypotenuse / 2) - (o.arrow.arrowHeight / 2);
-      ctx.moveTo(-arrowX, arrowY);
-      ctx.lineTo(arrowX, arrowY);
-      ctx.lineTo(0, arrowY + o.arrow.arrowHeight);
-      ctx.fill();
-    }
-    else {
-      arrowY = (-hypotenuse / 2) + (o.arrow.arrowHeight / 2);
-      ctx.moveTo(-arrowX, arrowY);
-      ctx.lineTo(arrowX, arrowY);
-      ctx.lineTo(0, arrowY - o.arrow.arrowHeight);
+    // @TODO Draw arrows for diagonal lines
+    if (deltaX === 0) {
+
+      // "Forward" traceroutes
+      if (deltaY > 0) {
+        arrowY = (hypotenuse / 2) - (o.arrow.arrowHeight / 2);
+        ctx.moveTo(-arrowX, arrowY);
+        ctx.lineTo(arrowX, arrowY);
+        ctx.lineTo(0, arrowY + o.arrow.arrowHeight);
+      }
+      else {
+        arrowY = (-hypotenuse / 2) + (o.arrow.arrowHeight / 2);
+        ctx.moveTo(-arrowX, arrowY);
+        ctx.lineTo(arrowX, arrowY);
+        ctx.lineTo(0, arrowY - o.arrow.arrowHeight);
+      }
+
+      for (option in arrow_options) {
+        ctx[option] = arrow_options[option];
+      }
+
     }
 
-    for (option in arrow_options) {
-      ctx[option] = arrow_options[option];
-    }
     ctx.fill();
 
   }
   ctx.restore();
-  
 }
 
-TraceRoute.prototype.drawHopLabel = function(hop, x, y, align) {
+TraceRoute.prototype.drawHopLabel = function(hop_data, x, y, align) {
   var o = this.options;
-  label = $('<div class="label">' + hop.hop_id + ' (' + hop.hop_ip + ')</div>');
+
+  label = '<div class="trace-label" id="trace-hop-label-' + hop_data.hop.hop_id + '" hopid="' + hop_data.hop.hop_id + '">';
+  label += (hop_data.hop.nodename) ? '<div class="hostname">' + hop_data.hop.nodename + '</div>' : '';
+  label += '<div class="hop-secondary">';
+  label += '<span class="hop-ip">' + hop_data.hop.hop_ip + '</span>';
+  label += (hop_data.hop.hub) ? ' <span class="hop-hub">(' + hop_data.hop.hub + ')</span>' : '';
+  label += '</div>';
+  label = $(label);
+
+  if (hop_data.data) {
+    label.addClass('has-chart');
+  }
   label_width = o.label.width - o.label.side_padding;
   css = {
     'width' : label_width + 'px',
     'position' : 'absolute',
-    'padding-top' : o.label.top_padding + 'px',
+    //'padding-top' : o.label.top_padding + 'px',
     'left' : x,
     'top' : y,
-    'font-size' : o.label.font_size,
+    //'font-size' : o.label.font_size,
   };
   if (align == 'right') {
     $.extend(css, {
@@ -405,15 +434,37 @@ TraceRoute.prototype.drawHopLabel = function(hop, x, y, align) {
   this.hopBehavior(label);
 }
 
+// @TODO Provide generic behavior and override elsewhere
 TraceRoute.prototype.hopBehavior = function(el) {
   el.hover(function() {
-    $('#stubhover').remove();
-    foo = $('<h1 id="stubhover">stub for hover</h1>');
-    foo.css({'position': 'absolute', 'top': 250, 'left': 30, 'background-color': '#000000', 'font-size': '200%', 'color': '#ffffff', 'display': 'none'});
-    $('body').append(foo);
-    foo.fadeIn('slow');
+    if ($(this).hasClass('has-chart')) {
+      var tc = $('#results').data('TableChart');
+      var hopid = $(this).attr('hopid');
+      var hop = Drupal.settings.ecenterWeathermap.seriesLookup.id[hopid];
+      var sidx = hop.idx;
+      var cidx = hop.corresponding_idx;
+      var lh = tc.chart.plugins.linehighlighter;
+
+      // Highlight corresponding line first
+      if (cidx) {
+        lh.highlightSeries(cidx, tc.chart);
+      }
+      lh.highlightSeries(sidx, tc.chart);
+
+      $(this).addClass('highlight');
+    }
   }, function() {
-    $('#stubhover').fadeOut('slow');
+    if ($(this).hasClass('has-chart')) {
+      var tc = $('#results').data('TableChart');
+      var hopid = $(this).attr('hopid');
+      var hop = Drupal.settings.ecenterWeathermap.seriesLookup.id[hopid];
+      var sidx = hop.idx;
+      var lh = tc.chart.plugins.linehighlighter;
+
+      lh.unhighlightSeries(sidx, tc.chart);
+
+      $(this).removeClass('highlight');
+    }
   });
 }
 
@@ -425,7 +476,10 @@ TraceRoute.prototype.redraw = function(data, options) {
   $(this.hopCanvas).remove();
   $(this.linkCanvas).remove();
 
-    // Get traceroute length if not provided; we need it to size the canvas
+  // @TODO not really generic
+  $('.trace-label', this.el).remove();
+
+  // Get traceroute length if not provided; we need it to size the canvas
   if (this.options.tracerouteLength || this.options.tracerouteLength < 1) {
     this.options.tracerouteLength = this.tracerouteLength();
   }

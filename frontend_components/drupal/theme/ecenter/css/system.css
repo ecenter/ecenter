@@ -88,7 +88,7 @@ html.js .resizable-textarea textarea {
   float: left; /* LTR */
   height: 1.7em;
   margin: -0.4em 0 -0.4em -0.5em; /* LTR */
-  padding: 0.42em 1.5em 0.42em 0.5em; /* LTR */
+  padding: 0.42em 0.5em 0.42em 0.5em; /* LTR */
   text-decoration: none;
 }
 a.tabledrag-handle:hover {
@@ -162,3 +162,12 @@ html.js .no-js {
   display: none;
 }
 /* }}} */
+/* Other common styles {{{ */
+div.indentation {
+  width: 14px;
+  height: 1.7em;
+  margin: -0.4em 0.2em -0.4em -0.4em; /* LTR */
+  padding: 0.42em 0 0.42em 0.6em; /* LTR */
+  float: left; /* LTR */
+}
+/* }}) */

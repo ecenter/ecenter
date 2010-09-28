@@ -2,102 +2,115 @@
 // $Id$
 
 /**
+ * @file
+ * E-Center Weathermap theming.
+ */
+
+/**
  * Theme main data display
  */
 function template_preprocess_ecenter_weathermap_data(&$vars) {
-  $vars['permalink'] = l('Permalink', 'weathermap', array('query' => http_build_query($vars['params'])));
+  // Generate permalink
+  $vars['permalink'] = l('Permalink', 'weathermap', array('query' => $vars['params']));
+
+  // Generate issue link -- encode params for use with prepopulate module
+  $issue_params = array();
+  foreach ($vars['params'] as $key=>$param) {
+    $issue_params[] = "$key=$param";
+  }
+  $issue_query = urlencode(implode('&', $issue_params));
+
+  $vars['issuelink'] = l('Create issue from this query', 'node/add/issue',
+    array(
+      'query' => array(
+        'edit[field_issue_query][0][value]' => $issue_query,
+      ),
+      'attributes' => array(
+        'class' => 'button',
+      ),
+    )
+  );
+
+  // Source / dst table
+  $hops = ecenter_weathermap_get_hops();
+
+  $query_table = array(
+    array(
+      array(
+        'data' => t('Source'),
+        'header' => TRUE,
+      ),
+      array(
+        'data' => $hops[$vars['params']['src_hub']]['hub_name'],
+      ),
+    ),
+    array(
+      array(
+        'data' => t('Destination'),
+        'header' => TRUE,
+      ),
+      array(
+        'data' => $hops[$vars['params']['dst_hub']]['hub_name'],
+      ),
+    ),
+  );
+  $vars['query_table'] = theme('ecenter_weathermap_table', array(), $query_table, array('class' => 'path-table'));
+
+  // Generate date range -- internal date is stored as UTC
+  $utc = timezone_open('UTC');
+  $tz = timezone_open(date_default_timezone_name(TRUE));
+  $dates = array();
+  foreach (array('start', 'end') as $val) {
+   $date = date_create($vars['params'][$val], $utc);
+    date_timezone_set($date, $tz);
+    $dates[$val] = date_format($date, 'M j, Y H:i');
+  }
+  $vars['date_range'] = t('@start - @end', array('@start' => $dates['start'], '@end' => $dates['end']));
+
+  // Generate SNMP charts
+  if (!empty($vars['data']['diff'])) {
+    $vars['snmp'] = theme('ecenter_weathermap_render_data_snmp', $vars['data']['diff']);
+  }
+  else {
+    $vars['snmp'] = '<p class="missing">'. t('No path or utilization data available.') .'</p>';
+  }
+
+  // Generate end to end statistics
+  if (!empty($vars['data']['end_to_end'])) {
+    $vars['end_to_end_table'] = theme('ecenter_weathermap_render_data_end_to_end_table', $vars['data']['end_to_end']);
+  }
+  else {
+    $vars['end_to_end_table'] = '<p class="missing">'. t('No end to end data available') .'</p>';
+  }
 }
 
 /**
  * Theme SNMP data
  */
 function theme_ecenter_weathermap_render_data_snmp($data) {
-  //jquerytools_add('tooltip');
-
-  /*$headers = array(t('Time'), t('Percent utilization'));
-  $table = array();
-  $days = array();
-  $min = 0;
-  $max = 0;
-  $total = 0;
-  foreach ($data as $item) {
-    $class = '';
-    $utilization = ($item['utilization'] / $item['capacity']) * 100;
-    $max = ($utilization > $max) ? $utilization : $max;
-    $min = ($utilization < $min || $min == 0) ? $utilization : $min;
-    $total += $utilization;
-
-    if ($utilization > variable_get('ecenter_weathermap_threshold_critical_snmp_utilization', 40)) {
-      $class = 'ecenter-critical';
-    }
-    if ($utilization > variable_get('ecenter_weathermap_threshold_marginal_snmp_utilization', 20)) {
-      $class = 'ecenter-marginal';
-    }
-
-    global $user;
-    if (variable_get('configurable_timezones', 1) && $user->uid && strlen($user->timezone)) {
-      $timezone = $user->timezone;
-    }
-    else {
-      $timezone = variable_get('date_default_timezone', 0);
-    }
-
-    $table[] = array(
-      'label' => array(
-        'data' => format_date($item['timestamp'], 'custom', 'Y-m-d H:i:s'),
-        'header' => TRUE,
-      ),
-      'utilization' => array(
-        'data' => sprintf('%01.2f', $utilization),
-        'class' => $class,
-      ),
-    );
-
-    $day = format_date($item['timestamp'], 'custom', 'Y-m-d');
-    $days[$day] = $day;
-  }
-
-  // Format date
-  $date_label = array_shift($days);
-  $end_day = array_pop($days);
-  if ($end_day) {
-    $date_label .= ' - '. $end_day;
-  }
-
-  // Get average
-  $avg = $total / count($data);
-
-  $aggregate_table = array(
-    'max' => array(
-      'label' => array('data' => t('Maximum'), 'header' => TRUE,),
-      'value' => array('data' => sprintf('%01.2f', $max)),
-    ),
-    'min' => array(
-      'label' => array('data' => t('Minimum'), 'header' => TRUE,),
-      'value' => array('data' => sprintf('%01.2f', $min),),
-    ),
-    'avg' => array(
-      'label' => array('data' => t('Average'), 'header' => TRUE,),
-      'value' => array('data' => sprintf('%01.2f', $avg),),
-    ),
-  );
-
   $plot_options = array(
-    'width' => 650,
-    'height' => 250,
-    'hideTable' => TRUE,
+    'width' => 570,
+    'height' => 280,
+    //'hideTables' => TRUE,
     'plotOptions' => array(
       'seriesDefaults' => array(
-        'lineWidth' => 1.5,
+        'lineWidth' => 1,
         'shadow' => FALSE,
-        'fillAndStroke' => TRUE,
+        'fill' => FALSE,
+        'color' => '#cccccc',
         'markerOptions' => array(
           'show' => FALSE,
+          'size' => 3,
         ),
+      ),
+      'axesDefaults' => array(
+        'showTickMarks' => FALSE,
       ),
       'axes' => array(
         'xaxis' => array(
           'pad' => 0,
+          'autoscale' => TRUE,
+          'numberTicks' => 10,
           'renderer' => '$.jqplot.DateAxisRenderer',
           'tickOptions' => array(
             'formatString' => "%H:%M",
@@ -108,106 +121,265 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
         'yaxis' => array(
           'min' => 0,
           'max' => 100,
-          'pad' => 0,
-          'numberTicks' => 5,
+          'numberTicks' => 6,
           'label' => t('Percent utilization'),
           'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
           'tickOptions' => array(
-            'formatString' => '%01.2f%'
+            'formatString' => '%01.0f%',
+            'color' => '#cccccc',
           ),
         ),
       ),
       'grid' => array(
         'shadow' => FALSE,
         'borderWidth' => 0,
-        'background' => '#eeeeee',
-        'gridLineColor' => '#ffffff',
+        'background' => '#ffffff',
+        'gridLineColor' => '#cccccc',
       ),
       'highlighter' => array(
-        'sizeAdjust' => 1,
-        'lineWidthAdjust' => 1,
+        'show' => TRUE,
+        'sizeAdjust' => 2,
+        'lineWidthAdjust' => 3,
         'tooltipLocation' => 'n',
         'tooltipOffset' => 20,
         'tooltipSeparator' => ': ',
       ),
+      'linehighlighter' => array(
+        'threshold' => 4,
+        'sizeAdjust' => 1.5,
+      ),
       'cursor' => array(
-        'showToolTip' => FALSE,
+        'show' => TRUE,
+        'showTooltip' => FALSE,
         'zoom' => TRUE,
         'clickReset' => TRUE,
-        //'constrainZoomTo' => 'x',
       ),
     ),
   );
+
 
   // @TODO Determine how to set colors...  MESSY!
   $critical = variable_get('ecenter_weathermap_threshold_critical_snmp_utilization', 60);
   $marginal = variable_get('ecenter_weathermap_threshold_marginal_snmp_utilization', 40);
 
-  // Max
-  if ($max > $critical) {
-    $aggregate_table['max']['value']['class'] = 'ecenter-critical';
-  }
-  else if ($max > $marginal) {
-    $aggregate_table['max']['value']['class'] = 'ecenter-marginal';
-  }
-  else {
-    $aggregate_table['max']['value']['class'] = 'ecenter-good';
-  }
+  $tables = array();
 
-  // Min
-  if ($min > $critical) {
-    $aggregate_table['min']['value']['class'] = 'ecenter-critical';
-  }
-  else if ($min > $marginal) {
-    $aggregate_table['min']['value']['class'] = 'ecenter-marginal';
-  }
-  else {
-    $aggregate_table['min']['value']['class'] = 'ecenter-good';
-  }
+  // Create tables for scrapin'
+  foreach ($data as $row) {
+    $match = (!empty($row['match'])) ? TRUE : FALSE;
+    $all_hops = array_shift(array_values($row));
 
-  // Line color: @TODO -- confusingly, not working right...
-  if ($max > $critical || $avg > $critical) {
-    $plot_options['plotOptions']['seriesDefaults']['color'] = variable_get('ecenter_weathermap_threshold_critical_color', '#cc0000');
-  }
-  else if ($max > $marginal || $avg > $marginal) {
-    $plot_options['plotOptions']['seriesDefaults']['color'] = variable_get('ecenter_weathermap_threshold_marginal_color', '#fe890c');
-  }
+    foreach (array('forward', 'reverse') as $direction) {
 
-  jqplot_register_tablechart('.snmp-chart', $plot_options);*/
-  $title = '<h4>'. t('SNMP Utilization') .'</h4>';
-  return 'fixing problematic data stuff';
-  //return $title . theme('table', $headers, $table, array('class' => 'snmp-chart')) . theme('table', NULL, $aggregate_table);
+      $hops = $all_hops[$direction];
+
+      if (!empty($hops) && is_array($hops)) {
+        foreach ($hops as $hop) {
+          if (!empty($hop['data']['snmp']) && is_array($hop['data']['snmp'])) {
+            $table = array();
+            foreach ($hop['data']['snmp'] as $item) {
+              $table[] = array(
+                'label' => array(
+                  'data' => $item[0] * 1000,
+                  'header' => TRUE,
+                ),
+                'utilization' => array(
+                  'data' => sprintf('%01.4f', 100 * ($item[1]['utilization'] / $item[1]['capacity'])),
+                  'class' => $class,
+                ),
+              );
+            }
+            $tables[] = theme('ecenter_weathermap_utilization_table', $hop['hop'], $direction, $table);
+          }
+        }
+      }
+    }
+  }
+  jqplot_register_tablechart('#results', $plot_options);
+  return implode("\n", $tables);
 }
 
 /**
- * Theme pingER data
+ * Theme end to end data table
  */
-function theme_ecenter_weathermap_render_data_pinger($data) {
-  return 'pinger data';
-}
+function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
+  // BWCTL
+  /*if (!empty($data['bwctl']['forward'])) {
+    foreach ($data['bwctl']['forward'] as $item) {
+      list($timestamp, $values) = $item;
+      $tz = date_default_timezone_name(TRUE);
+      $date = date_make_date($timestamp, $tz, DATE_UNIX);
+    }
+  }*/
 
-/**
- * Theme bwctl data
- */
-function theme_ecenter_weathermap_render_data_bwctl($data) {
-  return 'bwctl data';
-}
+  $table = array();
+  $headers = array(
+    array(
+      'data' => '',
+      'class' => 'empty',
+    ),
+    t('Average'),
+    t('Max'),
+    t('Min')
+  );
 
-/**
- * Theme owamp data
- */
-function theme_ecenter_weathermap_render_data_owamp($data) {
-  return 'owamp data';
-}
 
-/**
- * Theme traceroute
- */
-function theme_ecenter_weathermap_traceroute($hops) {
-  $output = '';
-  foreach ($hops as $hop) {
-    $output .= ' '. $hop->hop_ip;
+  foreach (array('forward', 'reverse') as $direction) {
+    $dir_label = ($direction == 'forward') ? 'fwd' : 'rev';
+
+    if (!empty($data['bwctl'][$direction])) {
+
+      $mean_throughput = array();
+      $max_throughput = NULL;
+      $min_throughput = NULL;
+
+      foreach ($data['bwctl'][$direction] as $item) {
+        list($timestamp, $values) = $item;
+
+        $mean_throughput[] = $values['throughput'];
+        $max_throughput = ($values['throughput'] > $max_throughput) ? $values['throughput'] : $max_throughput;
+        $min_throughput = (!$min_throughput || ($values['throughput'] < $min_throughput)) ? $values['throughput'] : $min_throughput;
+      }
+
+      $mean_throughput = array_sum($mean_throughput) / count($mean_throughput);
+
+      $table['0_' . $direction] = array(
+        array(
+          'data' => t('@direction Throughput', array('@direction' => ucfirst($dir_label))),
+          'header' => TRUE,
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.1f', $mean_throughput / 1e+6) .'</span><span class="unit">'. t('mbps') .'</span>',
+          'class' => 'avg',
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.1f', $max_throughput / 1e+6) .'</span><span class="unit">'. t('mbps') .'</span>',
+          'class' => 'max',
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.1f', $min_throughput / 1e+6) .'</span><span class="unit">'. t('mbps') .'</span>',
+          'class' => 'min',
+        ),
+      );
+
+    }
+
+    if (!empty($data['pinger'][$direction])) {
+
+      $mean_rtt = array();
+      $mean_iqripd = array();
+      $mean_loss = array();
+
+      $max_rtt = NULL;
+      $min_rtt = NULL;
+      $max_iqripd = NULL;
+      $min_iqripd = NULL;
+      $max_loss = NULL;
+      $min_loss = NULL;
+
+      foreach ($data['pinger'][$direction] as $item) {
+        list($timestamp, $values) = $item;
+
+        $mean_rtt[] = $values['meanRtt'];
+        $max_rtt = ($values['maxRtt'] > $max_rtt) ? $values['maxRtt'] : $max_rtt;
+        $min_rtt = (!$min_rtt || ($values['minRtt'] < $min_rtt)) ? $values['minRtt'] : $min_rtt;
+
+        $mean_iqripd[] = $values['iqrIpd'];
+
+        $mean_loss[] = $values['lossPercent'];
+        $max_loss = ($values['lossPercent'] > $max_loss) ? $values['lossPercent'] : $max_loss;
+        $min_loss = (!$min_loss || ($values['lossPercent'] < $min_loss)) ? $values['lossPercent'] : $min_loss;
+      }
+
+      $mean_rtt = array_sum($mean_rtt) / count($mean_rtt);
+      $mean_iqripd = array_sum($mean_iqripd) / count($mean_iqripd);
+      $mean_loss = array_sum($mean_loss) / count($mean_loss);
+
+      $table['1_' . $direction] = array(
+        array(
+          'data' => t('@direction RTT', array('@direction' => ucfirst($dir_label))),
+          'header' => TRUE,
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.1f', $mean_rtt) .'</span><span class="unit">'. t('ms') .'</span>',
+          'class' => 'avg',
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.1f', $max_rtt) .'</span><span class="unit">'. t('ms') .'</span>',
+          'class' => 'max',
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.1f', $min_rtt) .'</span><span class="unit">'. t('ms') .'</span>',
+          'class' => 'min',
+        ),
+      );
+
+      $table['3_' . $direction] = array(
+        array(
+          'data' => t('@direction Packet Loss', array('@direction' => ucfirst($dir_label))),
+          'header' => TRUE,
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.1f', $mean_loss) .'</span><span class="unit">'. t('%') .'</span>',
+          'class' => 'avg',
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.1f', $max_loss) .'</span><span class="unit">'. t('%') .'</span>',
+          'class' => 'max',
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.1f', $min_loss) .'</span><span class="unit">'. t('%') .'</span>',
+          'class' => 'min',
+        ),
+      );
+
+      $table['4_' . $direction] = array(
+        array(
+          'data' => t('@direction Jitter', array('@direction' => ucfirst($dir_label))),
+          'header' => TRUE,
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.2f', $mean_iqripd) .'</span><span class="unit">'. t('ms') .'</span>',
+          'class' => 'avg',
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.2f', $max_iqripd) .'</span><span class="unit">'. t('ms') .'</span>',
+          'class' => 'max',
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.2f', $min_iqripd) .'</span><span class="unit">'. t('ms') .'</span>',
+          'class' => 'min',
+        ),
+      );
+
+    }
+
+
+    if (!empty($data['owamp'][$direction])) {
+      dpm($data['owamp'][$direction]);
+    }
+
   }
+
+
+  ksort($table);
+  if (!empty($table)) {
+    return theme('ecenter_weathermap_table', $headers, $table, array('class' => 'end-to-end-table'));
+  }
+}
+
+/**
+ * Theme utilization table
+ */
+function theme_ecenter_weathermap_utilization_table($hop, $direction, $table) {
+  $attributes = array();
+  $attributes['class'] = ($direction == 'forward') ? "{lineWidth : 2}" : "{lineWidth : .5, sizeAdjust: .5}";
+
+  $headers = array(t('Time'), t('Percent utilization'));
+  $output = '<div class="snmp-data-table">';
+  $output .= '<h3>'. $hop['nodename'] .' ('. t(ucfirst($direction)) .')</h3>';
+  $output .= theme('ecenter_weathermap_table', $headers, $table, $attributes);
+  $output .= '</div>';
   return $output;
 }
 
@@ -215,5 +387,83 @@ function theme_ecenter_weathermap_traceroute($hops) {
  * Theme services for use in options list.  Should always return plaintext!
  */
 function theme_ecenter_weathermap_hop_option($hop) {
-  return $hop->nodename .' ('. $hop->ip_noted .')';
+  return check_plain($hop['hub_name']);
+}
+
+/**
+ * Theme a table for Ecenter.
+ *
+ * Similar to regular theme_table, minus the stupid sticky headers.
+ */
+function theme_ecenter_weathermap_table($header, $rows, $attributes = array(), $caption = NULL) {
+  $output = '<table'. drupal_attributes($attributes) .">\n";
+
+  if (isset($caption)) {
+    $output .= '<caption>'. $caption ."</caption>\n";
+  }
+
+  // Format the table header:
+  if (count($header)) {
+    $ts = tablesort_init($header);
+    // HTML requires that the thead tag has tr tags in it followed by tbody
+    // tags. Using ternary operator to check and see if we have any rows.
+    $output .= (count($rows) ? ' <thead><tr>' : ' <tr>');
+    foreach ($header as $cell) {
+      $cell = tablesort_header($cell, $header, $ts);
+      $output .= _theme_table_cell($cell, TRUE);
+    }
+    // Using ternary operator to close the tags based on whether or not there are rows
+    $output .= (count($rows) ? " </tr></thead>\n" : "</tr>\n");
+  }
+  else {
+    $ts = array();
+  }
+
+  // Format the table rows:
+  if (count($rows)) {
+    $output .= "<tbody>\n";
+    $flip = array('even' => 'odd', 'odd' => 'even');
+    $class = 'even';
+    foreach ($rows as $number => $row) {
+      $attributes = array();
+
+      // Check if we're dealing with a simple or complex row
+      if (isset($row['data'])) {
+        foreach ($row as $key => $value) {
+          if ($key == 'data') {
+            $cells = $value;
+          }
+          else {
+            $attributes[$key] = $value;
+          }
+        }
+      }
+      else {
+        $cells = $row;
+      }
+      if (count($cells)) {
+        // Add odd/even class
+        $class = $flip[$class];
+        if (isset($attributes['class'])) {
+          $attributes['class'] .= ' '. $class;
+        }
+        else {
+          $attributes['class'] = $class;
+        }
+
+        // Build row
+        $output .= ' <tr'. drupal_attributes($attributes) .'>';
+        $i = 0;
+        foreach ($cells as $cell) {
+          $cell = tablesort_cell($cell, $header, $ts, $i++);
+          $output .= _theme_table_cell($cell);
+        }
+        $output .= " </tr>\n";
+      }
+    }
+    $output .= "</tbody>\n";
+  }
+
+  $output .= "</table>\n";
+  return $output;
 }

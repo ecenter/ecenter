@@ -3,7 +3,7 @@
 
 /**
  * @file
- * Provides functional tests for the E-Center project
+ * Provides functional tests for the E-center project and a sandbox for 
  */
 
 function ecenter_test_menu() {
@@ -23,12 +23,6 @@ function ecenter_test_menu() {
     'title' => 'HTML Element Test',
     'page callback' => 'theme',
     'page arguments' => array('ecenter_html_test'),
-    'access arguments' => array('access ecenter test pages'),
-    'type' => MENU_CALLBACK,
-  );
-  $items['admin/ecenter/tests/service-render'] = array(
-    'title' => 'Test Weathermap theming',
-    'page callback' => 'ecenter_test_service_render',
     'access arguments' => array('access ecenter test pages'),
     'type' => MENU_CALLBACK,
   );
@@ -101,88 +95,111 @@ function ecenter_test_select_form($form_state, $quickselect_options = NULL) {
 }
 
 function ecenter_test_jqplot() {
+  $tables = array();
+  $results = array();
+
   // Get some data!
   db_set_active('data');
-  $result = db_query('SELECT FROM_UNIXTIME(s.timestamp) as timestamp, s.utilization as utilization, s.errors as error, s.drops as drops FROM {snmp_data} s WHERE metaid=4690 ORDER BY s.timestamp');
+  foreach (array(5527, 5535, 5565, 5566) as $metaid) {
+    $results[] = db_query("SELECT s.timestamp as timestamp, s.utilization as utilization FROM {snmp_data} s WHERE metaid=$metaid ORDER BY s.timestamp LIMIT 100");
+  }
   db_set_active('default');
 
-  $table = array();
-  $i = 0;
-  while ($row = db_fetch_array($result)) {
-    $data = array();
-    foreach ($row as $key=>$value) {
-      $new_data = array('data' => $value, 'class' => $key);
-      if ($key == 'timestamp') {
-        $new_data['header'] = TRUE;
-      }
-      $data[] = $new_data;
-    }
-    $table[] = $data;
-  }
+  foreach ($results as $result) {
 
-  // Add JS
-  drupal_add_js(drupal_get_path('module', 'ecenter_test') .'/jqplot/excanvas.min.js');
-  drupal_add_js(drupal_get_path('module', 'ecenter_test') .'/jqplot/jquery.jqplot.js');
-
-  // Plugins...
-  drupal_add_js(drupal_get_path('module', 'ecenter_test') .'/jqplot/plugins/jqplot.dateAxisRenderer.js');
-  drupal_add_js(drupal_get_path('module', 'ecenter_test') .'/jqplot/plugins/jqplot.highlighter.min.js');
-  drupal_add_js(drupal_get_path('module', 'ecenter_test') .'/jqplot/plugins/jqplot.cursor.min.js');
-
-  // Libraries and behaviors
-  drupal_add_js(drupal_get_path('module', 'ecenter_test') .'/js/jquery.uuid.js');
-  drupal_add_js(drupal_get_path('module', 'ecenter_test') .'/js/tablechart.js');
-
-  // Add CSS
-  drupal_add_css(drupal_get_path('module', 'ecenter_test') .'/jqplot/jquery.jqplot.css');
-  drupal_add_css(drupal_get_path('module', 'ecenter_weathermap') .'/css/plot.css');
-
-  return theme('table', array('Timestamp', 'Utilization', 'Errors', 'Drops'), $table, array('class' => 'graph-me'));
-}
-
-function template_preprocess_ecenter_jqplot_test() {}
-
-/* Return straight HTML */
-function template_preprocess_ecenter_html_test() {}
-
-/* Return array of fake stuff */
-function _ecenter_test_fake_services() {
-  require_once 'lib/LoremIpsum.class.php';
-  $generator = new LoremIpsumGenerator;
-
-  $i = 0;
-  $output = array();
-  while ($i < 225) {
-    $i++;
-    $max = $i + 24;
-    $ip = rand(1, $max) .'.'. rand(1, $max) .'.'. rand(1, $max) .'.'. rand(1, $max);
-    $output[$ip] = $generator->getContent(3, 'plain', FALSE) .'('. $ip . ')';
-  }
-  shuffle($output);
-  return $output;
-}
-
-function ecenter_test_service_render() {
-  $client = ecenter_weathermap_get_client();
-  $response = $client->getData('131.243.24.11', '198.32.44.130', '2010-07-09 10:00:00', '2010-07-09 12:00:00');
-  $data = ecenter_weathermap_parse_data($response['response']);
-
-  $output = '';
-
-  foreach ($data as $traceroute=>$hops) {
-    foreach ($hops as $hop) {
-      foreach ($hop['data'] as $type => $hop_data) {
-        $output .= '<h2>'. $hop['hop']['hop_id'] .'</h2>';
-        if (!empty($hop_data)) {
-          $output .= theme('ecenter_weathermap_render_data_'. $type, $hop_data);
+    $table = array();
+    $i = 0;
+    while ($row = db_fetch_array($result)) {
+      $data = array();
+      foreach ($row as $key=>$value) {
+        $new_data = array('data' => $value, 'class' => $key);
+        if ($key == 'timestamp') {
+          $new_data['header'] = TRUE;
+          $new_data['data'] = $value * 1000;
         }
+        if ($key == 'utilization') {
+          $new_data['data'] = $value / 1e+8;
+        }
+        $data[] = $new_data;
       }
+      $table[] = $data;
     }
-    //$output .= '<h2>'. $hops[0]['hop']['hop_id'] .'</h2>';
-    //$output .= theme('ecenter_weathermap_render_data_'. 'snmp', $hops[0]['data']['snmp']);
+
+    $tables[] = theme('ecenter_weathermap_table', array('Timestamp', 'Utilization'), $table, array('class' => 'graph-table'));
+
   }
 
-  return $output;
+  $plot_options = array(
+    'width' => 700,
+    'height' => 300,
+    //'hideTables' => TRUE,
+    'plotOptions' => array(
+      'seriesDefaults' => array(
+        'lineWidth' => 1.5,
+        'shadow' => FALSE,
+        //'fillAndStroke' => TRUE,
+        'fill' => FALSE,
+        'color' => '#aaaaaa',
+        'threshold' => 1,
+        'markerOptions' => array(
+          'show' => FALSE,
+          'size' => 5,
+        ),
+      ),
+      'axes' => array(
+        'xaxis' => array(
+          'pad' => 0,
+          'autoscale' => TRUE,
+          'numberTicks' => 10,
+          'renderer' => '$.jqplot.DateAxisRenderer',
+          'tickOptions' => array(
+            'formatString' => "%H:%M",
+          ),
+          'label' => t('Time (@date)', array('@date' => $date_label)),
+          'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
+        ),
+        'yaxis' => array(
+          'min' => 0,
+          'max' => 100,
+          'numberTicks' => 6,
+          'label' => t('Percent utilization'),
+          'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
+          'tickOptions' => array(
+            'formatString' => '%01.0f%'
+          ),
+        ),
+      ),
+      'grid' => array(
+        'shadow' => FALSE,
+        'borderWidth' => 0,
+        'background' => '#dddddd',
+        'gridLineColor' => '#ffffff',
+      ),
+      'highlighter' => array(
+        'show' => TRUE,
+        'sizeAdjust' => 2,
+        'lineWidthAdjust' => 3,
+        'tooltipLocation' => 'n',
+        'tooltipOffset' => 20,
+        'tooltipSeparator' => ': ',
+      ),
+      'linehighlighter' => array(
+        'threshold' => 4,
+        'lineScale' => 2,
+        'colors' => array(),
+      ),
+      'cursor' => array(
+        'show' => TRUE,
+        'showTooltip' => FALSE,
+        'zoom' => TRUE,
+        'clickReset' => TRUE,
+        //'constrainZoomTo' => 'x',
+      ),
+    ),
+  );
+
+  jqplot_register_tablechart('#graph-table', $plot_options);
+  return '<div id="graph-table">' . implode('', $tables) . '</div>';
 }
 
 function ecenter_test_traceroute_render() {
@@ -190,13 +207,13 @@ function ecenter_test_traceroute_render() {
   drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/jquery.datehide.js');
   drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/behaviors.js');
 
-  $client = ecenter_weathermap_get_client('message');
+  //$client = ecenter_weathermap_get_client('message');
   //result = $client->getData('198.49.208.3', '131.243.24.11', '2010-07-09 14:00:00', '2010-07-09 15:00:00');
   //$data = ecenter_weathermap_parse_response($result, '198.49.208.3', '131.243.24.11');
   //$result = $client->getData('192.12.15.26', '131.243.24.11', '2010-08-11 10:00:00', '2010-08-11 11:00:00');
   //$data = ecenter_weathermap_parse_response($result, '192.12.15.26', '131.243.24.11');
-  $result = $client->getData('131.243.24.11', '198.49.208.3', '2010-08-11 10:00:00', '2010-08-11 11:00:00');
-  $data = ecenter_weathermap_parse_response($result, '131.243.24.11', '198.49.208.3');
+  //$result = $client->getData('131.243.24.11', '198.49.208.3', '2010-08-11 10:00:00', '2010-08-11 11:00:00');
+  //$data = ecenter_weathermap_parse_response($result, '131.243.24.11', '198.49.208.3');
 
   drupal_add_js(array('tracerouteData' => $data['diff']), 'setting');
   drupal_add_js(array('tracerouteMaxLength' => $data['traceroute_max']), 'setting');
@@ -204,125 +221,13 @@ function ecenter_test_traceroute_render() {
   return theme('ecenter_traceroute_test');
 }
 
-/**
- *
- * Adapted for E-center from http://paulbutler.org/archives/a-simple-diff-algorithm-in-php/
- *
- * Available at:
- * http://github.com/paulgb/simplediff/blob/5bfe1d2a8f967c7901ace50f04ac2d9308ed3169/simplediff.php
- *
- * The original code is released under the zlib/libpng license 
- * (http://www.opensource.org/licenses/zlib-license.php).
- */
-function traceroute_diff($old, $new){
-  foreach($old as $oindex => $ovalue){
-    // Find matching sequences
-    $nkeys = traceroute_array_keys($new, $ovalue);  
-
-    foreach($nkeys as $nindex){
-      $matrix[$oindex][$nindex] = isset($matrix[$oindex - 1][$nindex - 1]) ? $matrix[$oindex - 1][$nindex - 1] + 1 : 1;
-      if ($matrix[$oindex][$nindex] > $maxlen){
-        $maxlen = $matrix[$oindex][$nindex];
-        $omax = $oindex + 1 - $maxlen;
-        $nmax = $nindex + 1 - $maxlen;
-      }
-    }
-  }
-
-  // Ignore extraneous empty diffs
-  if (empty($old) && empty($new)) {
-    return array();
-  }
-  if ($maxlen == 0) {
-    return array(array(
-      'diff' => array(
-        'forward'=> $old, 
-        'reverse'=> $new,
-      )
-    ));
-  }
-
-  // Take matches and turn them into a set of associated pairs
-  $fwd_slices = array_slice($old, $omax, $maxlen);
-  $rev_slices = array_slice($new, $nmax, $maxlen);
-  $slices = array();
-  while (!empty($fwd_slices) && !empty($rev_slices)) {
-    $slices[] = array(
-      'match' => array(
-        'forward' => array_pop($fwd_slices),
-        'reverse' => array_pop($rev_slices),
-      ),
-    );
-  }
-
-  // Recurse into non-matching sequences while mashing together with matching
-  // sequences
-  return array_merge(
-    traceroute_diff(array_slice($old, 0, $omax), array_slice($new, 0, $nmax)),
-    $slices,
-    traceroute_diff(array_slice($old, $omax + $maxlen), array_slice($new, $nmax + $maxlen))
+/*function ecenter_test_jqplot_plugins() {
+  $path = drupal_get_path('module', 'ecenter_test');
+  return array(
+    'linehighlighter' => $path .'/js/jqplot.linehighlighter.js',
   );
-}
+}*/
 
-function traceroute_array_keys($hops, $match) {
-  $return = array();
-  foreach($hops as $k => $hop) {
-    if ($hop['hop']['netblock'] == $match['hop']['netblock']) {
-      $return[] = $k;
-    }
-  }
-  return $return;
-}
-
+function template_preprocess_ecenter_jqplot_test(&$vars) {}
+function template_preprocess_ecenter_html_test(&$vars) {}
 function template_preprocess_ecenter_traceroute_test(&$vars) {}
-
-function ecenter_test_parse_response($response) {
-  static $queries = array();
-
-  if (empty($queries[$response->query])) {
-    $data = _ecenter_weathermap_object_to_array($response['response']);
-
-    foreach (array('traceroute', 'reverse_traceroute') as $direction) {
-
-      // Pull out traceroutes and sort: we use them to stitch together our
-      // data structure
-      $traceroutes = $data[$direction];
-      krsort($traceroutes);
-      unset($data[$direction]);
-
-      // Loop over each traceroute
-      $parsed = array();
-
-      foreach ($traceroutes as $trace_id => $traceroute) {
-
-        $parsed[$trace_id] = array();
-
-        foreach ($traceroute as $hop) {
-          $hop_data = array();
-
-          // Geolocate IP if no geo data available
-          if (!$hop['longitude'] || !$hop['latitude']) {
-            $geo = geoip_city($hop['hop_ip']);
-            $hop['longitude'] = $geo->longitude;
-            $hop['latitude'] = $geo->latitude;
-            $hop['geolocated'] = TRUE;
-          }
-
-          // Pull in data for hop
-          // @TODO -- Make this more efficient -- looping not really required...
-          foreach ($data as $type => $values) {
-            $hop_data[$type] = $values[$hop['hop_id']];
-          }
-
-          $parsed[$trace_id][] = array(
-            'hop' => $hop,
-            'data' => $hop_data,
-          );
-        }
-      }
-
-      $queries[$response->query][$direction] = $parsed;
-    }
-  }
-  return $queries[$response->query];
-}

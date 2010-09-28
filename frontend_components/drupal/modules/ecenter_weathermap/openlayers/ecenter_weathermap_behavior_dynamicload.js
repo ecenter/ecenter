@@ -50,6 +50,7 @@ Drupal.behaviors.ecenter_weathermap_behavior_dynamicload = function(context) {
   }
 }
 
+
 // See http://stackoverflow.com/questions/359788/javascript-function-name-as-a-string
 function executeFunctionByName(functionName, context /*, args */) {
   var args = Array.prototype.slice.call(arguments).splice(2);

@@ -5,96 +5,22 @@ $.fn.tablechart = function(options) {
   var o = $.extend(true, {}, $.fn.tablechart.defaults, options);
 
   this.each(function(i) {
-    var table = $(this);
-    var tabledata = $.fn.tablechart.scrapeTable(table);
-
-    if (tabledata.data.length) {
-      var chart = table.data('chart');
-
-      // Get and redraw chart, or create a new one
-      if (chart != undefined) {
-        for (i in tabledata.data) {
-          //chart.series[i].data = series[i];
-        }
-        var reset_axes = [];
-        for (var name in o.plotOptions.axes) {
-          var axis = o.plotOptions.axes[name];
-          if (axis.min == undefined || axis.max == undefined) {
-            reset_axes.push[name];
-          }
-        }
-        chart.replot({resetAxes: reset_axes});
-      } else {
-        // Push scraped labels into series options 
-        $.extend(true, o.plotOptions.series, tabledata.labels);
-
-        chartId = $.uuid('chart-');
-        chartContainer = $('<div>').attr('id', chartId);
-
-        if (o.height) { chartContainer.height(o.height); }
-        if (o.width) { chartContainer.width(o.width); }
-
-        // Attach chart
-        if (!o.append) {
-          table.before(chartContainer);
-        }
-        else {
-          $(o.appendSelector).append(chartContainer);
-        }
-        if (o.hideTable) {
-          table.hide();
-        }
-
-        // Draw, store chart
-        chart = $.jqplot(chartId, tabledata.data, o.plotOptions);
-        table.data('chart', chart);
-      }
+    chart = $(this).data('TableChart');
+    if (chart == undefined) {
+      tablechart = new TableChart(this, o);
+      $(this).data('TableChart', tablechart);
+    } else {
+      chart.draw();
     }
-
   });
 
   return this;
 };
 
-/**
- * Scrape "2-d" table for series and data values.
- * - Table must have series labels as table header columns in the table header.
- * - Table must use th tag as first element in tbody rows to provide x axis 
- *   values.
- *
- * Returns an associative array with 'labels' and 'data'.
- */
-$.fn.tablechart.scrapeTable = function(table) {
-  var series = [];
-  var labels = [];
-  var j = 0;
-
-  table.find('thead th').each(function(i) {
-    if (i > 0) {
-      series[i-1] = [];
-    }
-    labels.push({label: $(this).text()});
-  });
-
-  table.find('tbody tr').each(function(i) {
-    var val = 0, xval = 0, data = [];
-    $(this).find('th').each(function(j) {
-      xval = $.fn.tablechart.parseTH(this);
-    });
-    $(this).find('td').each(function(j) {
-      series[j].push([xval, $.fn.tablechart.parseTD(this)]);
-    });
-  });
-
-  return {
-    labels: labels,
-    data: series
-  };
-}
-
 // Defaults
 $.fn.tablechart.defaults = {
-  hideTable: false,
+  hideTables: false,
+  hideChart: false,
   append: false,
   height: false,
   width: false,
@@ -104,14 +30,97 @@ $.fn.tablechart.defaults = {
   }
 };
 
-$.fn.tablechart.parseTH = function(element) {
-  return $(element).text();
+function TableChart(el, options) {
+  this.options = options;
+  this.el = el;
+
+  this.chartId = $.uuid('chart-');
+  this.chartContainer = $('<div class="tablechart">').attr('id', this.chartId);
+
+  if (options.height) { this.chartContainer.height(options.height); }
+  if (options.width) { this.chartContainer.width(options.width); }
+
+  // Attach chart
+  $(el).prepend(this.chartContainer);
+
+  this.draw();
+
+  if (this.options.hideChart) {
+    $('.tablechart').hide();
+  }
+
 }
 
-$.fn.tablechart.parseTD = function(element) {
+TableChart.prototype.draw = function() {
+  var tables;
+  var series = [];
+  var series_opts = [];
+  var tablechart = this;
+
+  // If element is not a table, look for them
+  if (!$.nodeName(this.el, 'table')) {
+    tables = $('table', this.el);
+  } else {
+    tables = $(this.el);
+  }
+
+  // Get each table, add the series
+  tables.each(function(i) {
+    series.push(tablechart.scrapeTable($(this)));
+    // Extract 
+    if ($.metadata) {
+      metadata = $(this).metadata();
+      if (metadata) {
+        series_opts[i] = metadata;
+      }
+    }
+  });
+
+  // Extend series options with metadata from table
+  additional_opts = {series: series_opts}
+  $.extend(true, this.options.plotOptions, additional_opts);
+
+  // Hide tables
+  if (this.options.hideTables) {
+    tables.hide();
+  }
+
+  // Draw the chart
+  if (series.length > 0) {
+    this.chart = $.jqplot(this.chartId, series, this.options.plotOptions);
+  }
+}
+
+/**
+ * Scrape "2-d" table for series and data values.
+ * - Table must have series labels as table header columns in the table header.
+ * - Table must use th tag as first element in tbody rows to provide x axis 
+ *   values.
+ *
+ * Returns an associative array with 'labels' and 'data'.
+ */
+TableChart.prototype.scrapeTable = function(table) {
+  var series = [];
+  var labels = [];
+  var tablechart = this;
+  var j = 0;
+
+  table.find('tbody tr').each(function(i) {
+    var val = 0, xval = 0, data = [];
+    $(this).find('th').each(function(j) {
+      xval = tablechart.parseValue(this);
+    });
+    $(this).find('td').each(function(j) {
+      series.push([xval, tablechart.parseValue(this)]);
+    });
+  });
+
+  return series;
+}
+
+// Potentially vestigal function
+TableChart.prototype.parseValue = function(element) {
   return parseFloat($(element).text());
 }
 
-
 })(jQuery);
-

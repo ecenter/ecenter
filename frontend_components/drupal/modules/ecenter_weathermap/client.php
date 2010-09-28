@@ -7,7 +7,6 @@
  * service.
  */
 
-
 class Ecenter_Data_Service_Client {
 
   /**
@@ -26,14 +25,19 @@ class Ecenter_Data_Service_Client {
   public $data_type = 'json';
 
   /**
+   * Client constructor
+   *
    * @param $host
    *   The hostname of the network data web service.
-   *
    * @param $port
    *   The port used by the network data web service.
-   *
    * @param $path
    *   The base path of the query service.
+   * @param $timeout
+   *   Request timeout.
+   * @param $status_timeout
+   *   Timeout for a status request. This can/should be much shorter than the
+   *   regular data timeout.
    */
   public function __construct($host = 'localhost', $port = 8099, $path = '', $timeout = 30, $status_timeout = 2) {
     $this->_host = $host;
@@ -46,15 +50,16 @@ class Ecenter_Data_Service_Client {
   }
 
   /**
+   * Query the data service
+   *
    * @param $path
    *   The path to the web service resource.
-   *
    * @param $parameters
    *   An array of search/filter parameters, if required.
+   * @param $timeout
+   *   (optional) Request timeout to use (overrides timeout set in constructor).
    */
-  protected function query($path, $parameters = NULL, $timeout = NULL) {
-    static $results = array();
-
+  protected function query($path, $parameters = NULL, $timeout = NULL, $assoc = TRUE) {
     $timeout = ($timeout) ? $timeout : $this->_timeout;
 
     $url = $this->_url .'/'. $path .'.'. $this->data_type;
@@ -64,70 +69,105 @@ class Ecenter_Data_Service_Client {
       $url .= '?'. $querystring;
     }
 
-    // @TODO Dancer does not support encoded ampersands in the querystring
+    // @TODO Fix... somewhere: Dancer does not support encoded ampersands in the querystring
     $url = str_replace('&amp;', '&', $url);
 
-    if (empty($results[$url])) {
-      dpm('Query URL: '. $url);
+    $handle = curl_init();
 
-      $handle = curl_init();
+    $options = array(
+      CURLOPT_URL => $url,
+      CURLOPT_TIMEOUT => $timeout,
+      CURLOPT_RETURNTRANSFER => 1,
+      CURLOPT_FRESH_CONNECT => 1,
+      CURLOPT_FORBID_REUSE => 1,
+      CURLOPT_VERBOSE => 1,
+    );
 
-      $options = array(
-        CURLOPT_URL => $url,
-        CURLOPT_TIMEOUT => $timeout,
-        CURLOPT_RETURNTRANSFER => 1,
-        CURLOPT_FRESH_CONNECT => 1,
-        CURLOPT_FORBID_REUSE => 1,
-        CURLOPT_VERBOSE => 1,
-      );
+    curl_setopt_array($handle, $options);
 
-      curl_setopt_array($handle, $options);
+    $response = curl_exec($handle);
 
-      $response = curl_exec($handle);
-
-      if (!empty($response)) {
-        $code = curl_getinfo($handle, CURLINFO_HTTP_CODE);
-        $response = json_decode($response);
-      }
-      else {
-        $code = 0;
-        $response = 'Timed out after '. $timeout .' seconds.';
-      }
-
-      curl_close($handle);
-
-      $results[$url] = array(
-        'parameters' => $parameters,
-        'query' => $querystring,
-        'code' => $code,
-        'response' => $response,
-      );
-
+    if (!empty($response)) {
+      $code = curl_getinfo($handle, CURLINFO_HTTP_CODE);
+      $response = json_decode($response, $assoc);
     }
+    else {
+      $code = 0;
+      $response = 'Timed out after '. $timeout .' seconds.';
+    }
+
+    curl_close($handle);
+
+    $results[$url] = array(
+      'parameters' => $parameters,
+      'query' => $querystring,
+      'code' => $code,
+      'response' => $response,
+    );
+
     return $results[$url];
   }
 
+  /**
+   * Check server status
+   *
+   * @return
+   *   True if server is operational.
+   */
   public function checkStatus() {
     $q = 'status';
-    $status = $this->query($q, NULL, $this->_status_timeout);
+    $status = $this->query($q, NULL, $this->_status_timeout, FALSE);
     if ($status['response']->status) {
       return TRUE;
     }
     return FALSE;
   }
 
-  public function getHubs($src_ip='') {
-    $q = 'hub';
-    if (!empty($src_ip)) {
-      $q .= '/src_ip/'. $src_ip;
-    }
+  /**
+   * Get hubs
+   *
+   * @return
+   *   An array of hubs.
+   */
+  public function getHubs() {
+    return $this->query('hub');
+  }
+
+  /**
+   * Get hops
+   *
+   * @param $src_ip
+   *   (optional) Source IP.  If provided, will return all destinations for this
+   *   source.
+   * @return
+   *   An array of hubs.
+   */
+  public function getHops($src_ip='') {
+    $q = (!empty($src_ip)) ? 'destination/' . $src_ip : 'source';
     return $this->query($q);
   }
 
-  public function getData($src_ip, $dst_ip, $start, $end, $resolution = 20) {
+
+  /**
+   * Get data from service
+   *
+   * @param $src_hub
+   *   Source hub name.
+   * @param $dst_hub
+   *   Destination hub name.
+   * @param $start
+   *   Start time.
+   * @param $end
+   *   End time.
+   * @param $resolution
+   *   (optional) Maximum number of data points to return for any measurement.
+   * @return
+   *   Result for this query.
+   */
+  public function getData($src_hub, $dst_hub, $start, $end, $resolution = 50) {
     $parameters = array(
-      'src_ip' => $src_ip,
-      'dst_ip' => $dst_ip,
+      'src_hub' => $src_hub,
+      'dst_hub' => $dst_hub,
       'start' => $start,
       'end' => $end,
       'resolution' => $resolution,
@@ -135,96 +175,4 @@ class Ecenter_Data_Service_Client {
     return $this->query('data', $parameters);
   }
 
-  /* -- The rest of these should probably get removed... -- */
-
-  /**
-   * @param $src_ip
-   *   The source IPv4 or IPv6 address.
-   *
-   * @param $dst_ip
-   *   The destination IPv4 or IPv6 address.
-   *
-   * @param $debug
-   *   Include query debugging information in the response.
-   */
-  public function getMetadata($src_ip, $dst_ip, $debug=FALSE) {
-    $parameters = array(
-      'src_ip' => $src_ip,
-      'dst_ip' => $dst_ip,
-    );
-    if ($debug) {
-      $parameters += array('debug' => TRUE);
-    }
-    return $this->query('metadata', $parameters);
-  }
-
-  /**
-   * @param $src_ip
-   *   The source IPv4 or IPv6 address.
-   *
-   * @param $dst_ip
-   *   The destination IPv4 or IPv6 address.
-   *
-   * @param $start_date
-   *   The start date for data, formatted as YYYY-MM-DD HH:mm:ss
-   *
-   * @param $end_date
-   *   The end date for data, formatted as YYYY-MM-DD HH:mm:ss
-   *
-   * @param $debug
-   *   Include query debugging information in the response.
-   */
-  public function getPathData($src_ip, $dst_ip, $start_date, $end_date, $debug=FALSE) {
-    $parameters = array(
-      'src_ip' => $src_ip,
-      'dst_ip' => $dst_ip,
-      'start' => $start_date,
-      'end' => $end_date,
-    );
-    if ($debug) {
-      $parameters += array('debug' => TRUE);
-    }
-    return $this->query('data', $parameters);
-  }
-
-  /**
-   * @param $service_id
-   *   The id of the service we'd like information about.
-   *
-   * @param $debug
-   *   Include query debugging information in the response.
-   */
-  public function getService($service_id, $debug=FALSE) {
-    $parameters = array();
-    if ($debug) {
-      $parameters = array('debug' => TRUE);
-    }
-    return $this->query('service/'. $service_id, $parameters);
-  }
-
-  /**
-   * @param $debug
-   *   Include query debugging information in the response.
-   */
-  public function getServices($debug=FALSE) {
-    $parameters = array();
-    if ($debug) {
-      $parameters['debug'] = TRUE;
-    }
-    return $this->query('services', $parameters);
-  }
-
-  /**
-   * @param $src_ip
-   *   Source IP
-   *
-   * @param $debug
-   *   Include query debugging information in the response.
-   */
-  public function getDestinationServices($src_ip, $debug=FALSE) {
-    if ($debug) {
-      $parameters['debug'] = TRUE;
-    }
-    return $this->query('destination-services/'. $src_ip, $parameters);
-  }
 }

@@ -1,4 +1,10 @@
 <?php
+// $Id$
+
+/**
+ * @file
+ * Dynamically load map layers
+ */
 
 class ecenter_weathermap_behavior_dynamicload extends openlayers_behavior {
 

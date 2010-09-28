@@ -504,20 +504,6 @@ function ecenter_weathermap_get_hops($src_hub = FALSE) {
 }
 
 /**
- * Callback for filtering hops
- */
-function _ecenter_weathermap_hop_filter($hop) {
-  return !empty($hop['nodename']);
-}
-
-/**
- * Callback for sorting hops
- */
-function _ecenter_weathermap_hop_sort($a, $b) {
-  return strcmp($a['nodename'], $b['nodename']);
-}
-
-/**
  * Traverse an object, turning all members into arrays or preserving their
  * values.
  */

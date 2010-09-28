@@ -13,23 +13,26 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
   // Generate permalink
   $vars['permalink'] = l('Permalink', 'weathermap', array('query' => $vars['params']));
 
-  // Generate issue link -- encode params for use with prepopulate module
-  $issue_params = array();
-  foreach ($vars['params'] as $key=>$param) {
-    $issue_params[] = "$key=$param";
-  }
-  $issue_query = urlencode(implode('&', $issue_params));
+  // Generate issue link -- encode params for use with custom ecenter_issues 
+  // module
+  if (user_access('create issue content')) {
+    $issue_params = array();
+    foreach ($vars['params'] as $key=>$param) {
+      $issue_params[] = "$key=$param";
+    }
+    $issue_query = urlencode(implode('&', $issue_params));
 
-  $vars['issuelink'] = l('Create issue from this query', 'node/add/issue',
-    array(
-      'query' => array(
-        'edit[field_issue_query][0][value]' => $issue_query,
-      ),
-      'attributes' => array(
-        'class' => 'button',
-      ),
-    )
-  );
+    $vars['issuelink'] = l('Create issue from this query', 'node/add/issue',
+      array(
+        'query' => array(
+          'query' => $issue_query,
+        ),
+        'attributes' => array(
+          'class' => 'button',
+        ),
+      )
+    );
+  }
 
   // Source / dst table
   $hops = ecenter_weathermap_get_hops();
@@ -387,7 +390,7 @@ function theme_ecenter_weathermap_utilization_table($hop, $direction, $table) {
  * Theme services for use in options list.  Should always return plaintext!
  */
 function theme_ecenter_weathermap_hop_option($hop) {
-  return $hop['hub_name'] .' ('. $hop['hub'].')';
+  return check_plain($hop['hub_name']);
 }
 
 /**

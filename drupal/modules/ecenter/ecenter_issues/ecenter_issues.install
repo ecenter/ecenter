@@ -1,3 +1,317 @@
 <?php
+// $Id$
 
+/**
+ * @file ecenter_issues.install
+ */
 
+/** 
+ * Implementation of hook_install().
+ */
+function ecenter_issues_install() {
+  // CCK content_copy.module may not be enabled in production, so make sure it is included
+  require_once './' . drupal_get_path('module', 'content') .  '/modules/content_copy/content_copy.module';
+
+  // Import content type
+  $content = _ecenter_issues_content_type_issue();
+  $form_state['values']['type_name'] = '<create>';
+  $form_state['values']['macro'] = '$content = ' . var_export($content, TRUE) . ';';
+  drupal_execute('content_copy_import_form', $form_state);
+  content_clear_type_cache();
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function ecenter_issues_uninstall() {
+  // @TODO uninstall content types
+}
+
+function _ecenter_issues_content_type_issue() {
+  $content['type']  = array (
+    'name' => 'Issue',
+    'type' => 'issue',
+    'description' => 'An issue related to network performance.  Issues may be edited by their author for 30 minutes after creation (this functionality is <strong>incomplete</strong> at this time), at which time they may no longer be edited.  Issues are automatically versioned, but the interface is hidden from the user.  Issues support comments.',
+    'title_label' => 'Title',
+    'body_label' => 'Body',
+    'min_word_count' => '0',
+    'help' => '',
+    'node_options' => 
+    array (
+      'status' => true,
+      'revision' => true,
+      'promote' => false,
+      'sticky' => false,
+    ),
+    'subscriptions_workflow' => 
+    array (
+      0 => 'n_new',
+      1 => 'n_unpub',
+      2 => 'n_pub',
+      3 => 'c_new',
+      4 => 'c_unpub',
+      5 => 'c_pub',
+    ),
+    'show_preview_changes' => 0,
+    'show_diff_inline' => false,
+    'enable_revisions_page' => true,
+    'old_type' => 'issue',
+    'orig_type' => '',
+    'module' => 'node',
+    'custom' => '1',
+    'modified' => '1',
+    'locked' => '0',
+    'comment' => '2',
+    'comment_default_mode' => '4',
+    'comment_default_order' => '2',
+    'comment_default_per_page' => '50',
+    'comment_controls' => '3',
+    'comment_anonymous' => 0,
+    'comment_subject_field' => '0',
+    'comment_preview' => '0',
+    'comment_form_location' => '1',
+    'nh_parent' => 0,
+    'nh_child' => 0,
+    'nh_defaultparent' => '0',
+    'nh_createmenu' => 'optional_no',
+  );
+  $content['groups']  = array (
+    0 => 
+    array (
+      'label' => 'Query',
+      'group_type' => 'standard',
+      'settings' => 
+      array (
+        'form' => 
+        array (
+          'style' => 'fieldset',
+          'description' => '',
+        ),
+        'display' => 
+        array (
+          'description' => '',
+          'teaser' => 
+          array (
+            'format' => 'fieldset',
+            'exclude' => 0,
+          ),
+          'full' => 
+          array (
+            'format' => 'fieldset',
+            'exclude' => 0,
+          ),
+          4 => 
+          array (
+            'format' => 'fieldset',
+            'exclude' => 0,
+          ),
+          2 => 
+          array (
+            'format' => 'fieldset',
+            'exclude' => 0,
+          ),
+          3 => 
+          array (
+            'format' => 'fieldset',
+            'exclude' => 0,
+          ),
+          'token' => 
+          array (
+            'format' => 'fieldset',
+            'exclude' => 0,
+          ),
+          'label' => 'above',
+        ),
+      ),
+      'weight' => '-1',
+      'group_name' => 'group_issue_query',
+    ),
+  );
+  $content['fields']  = array (
+    0 => 
+    array (
+      'label' => 'Query',
+      'field_name' => 'field_issue_query',
+      'type' => 'text',
+      'widget_type' => 'text_textarea',
+      'change' => 'Change basic information',
+      'weight' => '-4',
+      'rows' => '2',
+      'size' => 60,
+      'description' => '',
+      'default_value' => 
+      array (
+        0 => 
+        array (
+          'value' => '',
+          '_error_element' => 'default_value_widget][field_issue_query][0][value',
+        ),
+      ),
+      'default_value_php' => '',
+      'default_value_widget' => NULL,
+      'group' => 'group_issue_query',
+      'required' => 1,
+      'multiple' => '0',
+      'text_processing' => '0',
+      'max_length' => '512',
+      'allowed_values' => '',
+      'allowed_values_php' => '',
+      'op' => 'Save field settings',
+      'module' => 'text',
+      'widget_module' => 'text',
+      'columns' => 
+      array (
+        'value' => 
+        array (
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => false,
+          'sortable' => true,
+          'views' => true,
+        ),
+      ),
+      'display_settings' => 
+      array (
+        'label' => 
+        array (
+          'format' => 'above',
+          'exclude' => 0,
+        ),
+        'teaser' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        'full' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        4 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        2 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        3 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        'token' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+      ),
+    ),
+    1 => 
+    array (
+      'label' => 'Query results',
+      'field_name' => 'field_issue_query_results',
+      'type' => 'text',
+      'widget_type' => 'text_textarea',
+      'change' => 'Change basic information',
+      'weight' => '-3',
+      'rows' => '10',
+      'size' => 60,
+      'description' => '',
+      'default_value' => 
+      array (
+        0 => 
+        array (
+          'value' => '',
+          '_error_element' => 'default_value_widget][field_issue_query_results][0][value',
+        ),
+      ),
+      'default_value_php' => '',
+      'default_value_widget' => 
+      array (
+        'field_issue_query_results' => 
+        array (
+          0 => 
+          array (
+            'value' => '',
+            '_error_element' => 'default_value_widget][field_issue_query_results][0][value',
+          ),
+        ),
+      ),
+      'group' => 'group_issue_query',
+      'required' => 0,
+      'multiple' => '0',
+      'text_processing' => '0',
+      'max_length' => '',
+      'allowed_values' => '',
+      'allowed_values_php' => '',
+      'op' => 'Save field settings',
+      'module' => 'text',
+      'widget_module' => 'text',
+      'columns' => 
+      array (
+        'value' => 
+        array (
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => false,
+          'sortable' => true,
+          'views' => true,
+        ),
+      ),
+      'display_settings' => 
+      array (
+        'label' => 
+        array (
+          'format' => 'above',
+          'exclude' => 0,
+        ),
+        'teaser' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        'full' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        4 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        2 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        3 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        'token' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+      ),
+    ),
+  );
+  $content['extra']  = array (
+    'title' => '-5',
+    'body_field' => '-3',
+    'revision_information' => '1',
+    'author' => '5',
+    'options' => '6',
+    'comment_settings' => '3',
+    'menu' => '4',
+    'taxonomy' => '0',
+    'path' => '2',
+    'subscriptions_ui' => '7',
+  );
+  return $content;
+}

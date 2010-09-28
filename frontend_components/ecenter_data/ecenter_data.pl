@@ -52,6 +52,10 @@ any ['get'] =>  "/status.:format" =>
        sub {
  	       return  { status => 'ok'}
        };
+any ['get'] =>  "/health.:format" => 
+       sub {
+ 	      return get_health();
+       };
 ## get all hubs for src_ip/dst_ip
 any ['get'] =>  "/source.:format" => 
        sub {
@@ -64,7 +68,7 @@ any ['get'] =>  "/destination/:ip.:format" =>
 ## get all hubs for src_ip/dst_ip
 any ['get'] =>  "/hub.:format" => 
        sub {
- 	       return  database->selectall_hashref( qq|select * from  hub |, 'hub');
+ 	       return  database->selectall_hashref( qq|select distinct hub_name, longitude, latitude from  hub|, 'hub_name');
        };
  
 #########   get services(all of them -------------------------------------
@@ -114,6 +118,38 @@ any ['get', 'post'] =>  '/data.:format' =>
 	}
 	return $data;
     };
+
+# 
+#
+# return hash with error string for each non-healthy part of the data service
+#
+# 
+#
+#
+
+sub get_health {
+    my @services = ();
+    my %health = ();
+    foreach my $site (qw/anl.gov lbl.gov bnl.gov dmz.net ornl.gov slac.stanford.edu es.net/) {
+        foreach my $type (qw/bwctl pinger owamp/) {
+    	    my $e2e_sql = qq|select  count(distinct m.metaid)   from   metadata m
+					        		join  node n_src on(m.src_ip = n_src.ip_addr) 
+							 	join eventtype e on(m.eventtype_id = e.ref_id)
+								join service s  on (e.service = s.service)
+							  where  
+								n_src.nodename like '%$site%'   and
+								e.service_type  = '$type' and
+								s.url  like 'http%' |;
+	    debug " E2E SQL:: $e2e_sql";
+	    my $count =  database->selectrow_array($e2e_sql );
+	    $health{$site}{$type} = ' no metadata' unless $count;
+        }
+    }
+    
+    # debug Dumper(\@services);
+    return \%health;
+}
+
 #
 # return list of destinations for the source ip or just listof source ips
 #
@@ -123,20 +159,24 @@ sub process_source {
     my $hash_ref;
     if( %params && $params{src_ip}) {
          $hash_ref =  database->selectall_hashref(
-            qq|select distinct n.ip_noted, n.netmask, n.nodename, h.hub, h.longitude, h.latitude  from
-     		   traceroute_data td 
-     	      join metadata m using(metaid) 
+            qq|select distinct n.ip_noted, n.netmask, n.nodename, h.hub_name, h.hub, h.longitude, h.latitude  from
+     	           metadata m using(metaid)
+	      join eventtype e on(e.ref_id=m.eventtype_id)
      	      join node n on(m.dst_ip = n.ip_addr)
          join l2_l3_map llm on(n.ip_addr = llm.ip_addr) 
          join l2_port l2p on(llm.l2_urn =l2p.l2_urn) 
          join hub h using(hub) 
-     	where m.dst_ip is not NULL  and m.src_ip = inet6_pton('$params{src_ip}')|, 'ip_noted');
+     	where m.dst_ip is not NULL  and e.service_type = 'traceroute' and m.src_ip = inet6_pton('$params{src_ip}')|, 'ip_noted');
     } else {
         $hash_ref =  database->selectall_hashref(
-	      qq| select distinct(n.ip_noted), n.netmask,  n.nodename  from 
-    		       traceroute_data td 
-                  join metadata m using(metaid) 
-                  join node n on(m.src_ip = n.ip_addr)|, 'ip_noted');
+	      qq| select distinct n.ip_noted, n.netmask,  n.nodename,  h.hub_name, h.hub, h.longitude, h.latitude   from 
+    		       metadata m using(metaid) 
+		       join eventtype e on(e.ref_id=m.eventtype_id) 
+                       join node n on(m.src_ip = n.ip_addr)  
+		       join l2_l3_map llm on(n.ip_addr = llm.ip_addr) 
+                       join l2_port l2p on(llm.l2_urn =l2p.l2_urn) 
+                       join hub h using(hub) 
+		   where e.service_type = 'traceroute'|, 'ip_noted');
     }
     foreach my $ip (keys %$hash_ref) {
     	push @hubs, $hash_ref->{$ip};
@@ -210,14 +250,21 @@ sub process_data {
     $params{start} = DateTime::Format::MySQL->parse_datetime($params{start})->epoch if $params{start};
     $params{start} ||=  ($params{end}  - 12*3600);
     $logger->info("Before traceroute sql  start=$params{start}  end=$params{end}  ");
+   
     map { $params{$_}{end} =  $params{end};   
           $params{$_}{start} =  $params{start}
 	} 
-    qw/owamp pinger snmp bwctl traceroute/;
-    if(  ($params{end}-$params{start}) < 3600*6) {
+            qw/owamp pinger snmp bwctl traceroute/;
+	      
+    if(  ($params{end}-$params{start}) < 3600*12) {
 	    my $median = $params{start} + int(($params{end}-$params{start})/2);
 	    $params{bwctl}{start} = $median - 6*3600; # 6 hours
-	    $params{bwctl}{end} = $median + 6*3600; # 6 hours
+	    $params{bwctl}{end}   = $median + 6*3600; # 6 hours
+    } 
+    if(  ($params{end}-$params{start}) < 3600*24) {
+	    my $median = $params{start} + int(($params{end}-$params{start})/2);
+	    $params{traceroute}{start} = $median - 12*3600; # 6 hours
+	    $params{traceroute}{end}   = $median + 12*3600; # 6 hours
     }
     my $trace_cond = '';
     my $rev_trace_cond = '';  
@@ -243,7 +290,11 @@ sub process_data {
     ## get direct and reverse traceroutes
     ## 
     # my $trace_cond = qq|  inet6_mask(md.src_ip, 24) = inet6_mask(inet6_pton('$params{src_ip}'), 24) and $dst_cond |;
-   
+    $params{table_map} = { bwctl =>  {table => 'Bwctl_data', class => 'Bwctl',  data => [qw/throughput/]},
+   		      owamp =>  {table => 'Owamp_data', class => 'Owamp', data => [qw/sent loss min_delay max_delay duplicates/]},
+    		      pinger => {table => 'Pinger_data', class => 'PingER', data => [qw/meanRtt maxRtt medianRtt minRtt iqrIpd lossPercent/]},
+		      traceroute => {table => 'Hop', callback => \&process_trace, class => 'Traceroute', data => [qw/hop_ip   hop_num  hop_delay/]},
+    		    };   
     my $traceroute  = get_traceroute($trace_cond, \%params);
     $data->{traceroute} = $traceroute->{traceroute} 
                               if($traceroute && $traceroute->{traceroute} && 
@@ -292,10 +343,7 @@ sub process_data {
        
 	next unless $md_href && %{$md_href};
         %e2e_mds = (%e2e_mds, %{$md_href});
-	$params{table_map} = { bwctl =>  {table => 'Bwctl_data', class => 'Bwctl',  data => [qw/throughput/]},
-                	  owamp =>  {table => 'Owamp_data', class => 'Owamp', data => [qw/sent loss min_delay max_delay duplicates/]},
-			  pinger => {table => 'Pinger_data', class => 'PingER', data => [qw/meanRtt maxRtt medianRtt minRtt iqrIpd lossPercent/]},
-			};
+
 	foreach my $e_type (@data_keys)  {
 	    debug " ...  Running  ------------  $e_type";
 	    $data->{$e_type} = {};
@@ -329,6 +377,14 @@ sub process_data {
       error "data call  failed - $EVAL_ERROR";
   }
    return $data; 
+}
+#
+# traceroute callback to post-process traceroute data after remote call and store it properly
+#
+sub process_trace {
+  my ($sql_datum, $md_row,   $params, $metaid) = @_;
+
+
 }
 # get timestamp and aggregate to return no more than requested data points
 # and return as arrayref => [timestamp, {data_row}] 
@@ -393,9 +449,7 @@ sub get_datums {
 #
 sub get_remote_e2e {
     my ( $md_row,   $params, $type, $metaid) = @_;
-   
     eval {
-        
         my $class =  $params->{table_map}{$type}{class};
         my $ma =  ("Ecenter::Data::$class")->new({ url =>  $md_row->{url} });
         my $ns = $ma->namespace;
@@ -403,7 +457,7 @@ sub get_remote_e2e {
 	my $subject =   $md_row->{subject};
         $subject =~ s/nmwgt:subject/$nsid:subject/gxm;
         $subject =~ s|<$nsid:subject |<$nsid:subject xmlns:$nsid="$ns" xmlns:nmwgt="http://ggf.org/ns/nmwg/topology/2.0/" |xm
-	       if $type eq 'pinger'; ### pinger has no ns definition in the md
+	               if $type eq 'pinger'; ### pinger has no ns definition in the md
 	# fix for short time periods because bwctl only runs every 4 hours or even less frequently
 	 
         my $request = { 
@@ -415,19 +469,22 @@ sub get_remote_e2e {
         $ma->get_data($request);
         debug "MA Data Entries="  . scalar @{$ma->data};
         if($ma->data && @{$ma->data}) {
-	   debug "..process data...";
-	   foreach my $ma_data (@{$ma->data}) { 
-               my $sql_datum = {  metaid => $metaid,  timestamp => $ma_data->[0]};
-               foreach my $data_id (keys %{$ma_data->[1]}) {
-        	   $sql_datum->{$data_id} = $ma_data->[1]{$data_id};
-               }
-               dbix->resultset($params->{table_map}{$type}{table})->update_or_create( $sql_datum,  { key => 'meta_time'}  );
+	    debug "..process data...";
+	    foreach my $ma_data (@{$ma->data}) { 
+                my $sql_datum = {  metaid => $metaid,  timestamp => $ma_data->[0]};
+                foreach my $data_id (keys %{$ma_data->[1]}) {
+        	    $sql_datum->{$data_id} = $ma_data->[1]{$data_id};
+                }
+	        $params->{table_map}{$type}{callback}->($sql_datum, $md_row,   $params,   $metaid) ) 
+		    if exists $params->{table_map}{$type}{callback} && 
+		       ref $params->{table_map}{$type}{callback} eq ref sub{};
+                dbix->resultset($params->{table_map}{$type}{table})->update_or_create( $sql_datum,  { key => 'meta_time'}  );
             }
-       }
-   };
-   if($EVAL_ERROR) {
-       error " remote call failed - $EVAL_ERROR  ";
-   }
+        }
+    };
+    if($EVAL_ERROR) {
+        error " remote call failed - $EVAL_ERROR  ";
+    }
 }
 #
 #  get bwctl/owamp/pinger data for end2end, first for the src_ip, then for the dst_ip
@@ -465,22 +522,12 @@ sub get_e2e{
     $e2e_forker->cleanup() if $e2e_forker->kids();
     %{$data_hr->{$type}}  =  (%{$data_hr->{$type}}, %result) if %result;
 }
- 
- 
-#   process traceroute data
 #
-sub get_traceroute {
-    my ($trace_cond, $params) = @_;
-    my %traces = ();
-    my %hops = ();
-    my $trace_date_cond = ' ( 1 ';
-    $trace_date_cond .= $params->{traceroute}{start}?" AND td.updated >= $params->{traceroute}{start}":'';  
-    $trace_date_cond .= $params->{traceroute}{end}?" AND td.updated <= $params->{traceroute}{end}":'';
-    $trace_date_cond .= ') ';
-    
-    ############################    $trace_date_cond and   ------ ADD BACK WHEN TRACEROUTE WILL BE AVAILABLE !!!!!!!!!!!!!!!
-    # split it up
-    my $cmd =  $trace_cond =~ /hub/?qq|select  distinct td.updated, td.trace_id as trace_id, td.number_hops  
+#     get traceroute id   from the db
+# 
+sub  get_traceroute_ids {
+  my (trace_cond ) = @_;
+  my $cmd =  ($trace_cond =~ /hub/)?qq|select  distinct td.updated, td.trace_id as trace_id, td.number_hops  
 					             from
 						            traceroute_data td
 						       join metadata       md  using(metaid)  
@@ -492,7 +539,7 @@ sub get_traceroute {
 						       join hub         h_dst  on(l2_dst.hub = h_dst.hub)
 						     where  
 						             $trace_cond
-						     order by   td.trace_id desc limit 3| 
+						     order by   td.trace_id desc limit 5|
 	:qq|select  distinct td.updated, td.trace_id as trace_id, td.number_hops  
 					             from
 						            traceroute_data td
@@ -506,7 +553,63 @@ sub get_traceroute {
     my $trace_ref = database->selectall_hashref($cmd, 'trace_id');
     my @trace_ids = keys %$trace_ref;
     my $trace_ins = join("','",@trace_ids);
-    $cmd =    qq|select  distinct  h.trace_id as trace_id, n_hop.netmask,  n_hop.nodename, h.hop_id, h.hop_delay, 
+    return {trace_string => $trace_ins, trace_result => $trace_ref};
+} 
+#
+#     get traceroute md ids   from the db
+# 
+sub  get_traceroute_mds {
+    my (trace_cond) = @_;
+    my $cmd =    $trace_cond =~ /hub/?qq|select  distinct md.* from 
+	                                                    metadata md 
+	                                               join eventtype e on(md.eventtype_id = e.ref_id)  
+						       join l2_l3_map llm_src  on( md.src_ip = llm_src.ip_addr)
+						       join l2_l3_map llm_dst  on( md.dst_ip = llm_dst.ip_addr)
+						       join l2_port    l2_src  on(llm_src.l2_urn = l2_src.l2_urn)
+						       join l2_port    l2_dst  on(llm_dst.l2_urn = l2_dst.l2_urn)
+						       join hub         h_src  on(l2_src.hub = h_src.hub) 
+						       where  
+						             $trace_cond and e.service_type = 'traceroute' |:
+					 select  distinct md.* from 
+	                                                    metadata md 
+	                                               join eventtype e on(md.eventtype_id = e.ref_id)
+						       where  
+						             $trace_cond and e.service_type = 'traceroute' |    ;
+    return database->selectall_hashref($cmd,'metaid');
+} 
+
+#   process traceroute data - get it from the backend if there is no traceroutes available then send request to remote tracerouteMA
+#
+sub get_traceroute {
+    my ($trace_cond, $params) = @_;
+    my %traces = ();
+    my %hops = ();
+    my $e2e_forker = new Parallel::ForkControl( 
+    				MaxKids 		=> 9,
+    			   	MinKids 		=> 3,
+				ProcessTimeOut          => 60,
+   				Name			=> 'E2E Traceroute Forker',
+   				Code			=> \&get_remote_e2e);	 
+    my $trace_date_cond = ' ( 1 ';
+    $trace_date_cond .= $params->{traceroute}{start}?" AND td.updated >= $params->{traceroute}{start}":'';  
+    $trace_date_cond .= $params->{traceroute}{end}?" AND td.updated <= $params->{traceroute}{end}":'';
+    $trace_date_cond .= ') ';
+    #
+    ############################    $trace_date_cond and   ------ ADD BACK WHEN TRACEROUTE WILL BE AVAILABLE !!!!!!!!!!!!!!!
+    # split it up
+    my $ids_result = get_traceroute_ids($trace_cond);
+    #remote call 
+    unless($ids_result->{trace_string} && $ids_result->{trace_string}  !~ /^\s+$/) {
+        my $md_traces =   get_traceroute_mds($trace_cond);
+        foreach my $metaid (keys %{$md_traces}) {
+	    $e2e_forker->run($md_traces->{$metaid}, $params,  'traceroute', $metaid);
+	}
+	debug "cleanup...";
+        $e2e_forker->cleanup() if $e2e_forker->kids();
+        $ids_result = get_traceroute_ids($trace_cond);
+    }
+    return {traceroute => {}, hops => {}} unless $ids_result->{trace_string} && $ids_result->{trace_string}  !~ /^\s+$/;
+    my $cmd =    qq|select  distinct  h.trace_id as trace_id, n_hop.netmask,  n_hop.nodename, h.hop_id, h.hop_delay, 
                                 n_hop.ip_noted as hop_ip, h.hop_num,  hb.hub, hb.longitude, hb.latitude  
 					             from
 						            hop h 
@@ -515,7 +618,7 @@ sub get_traceroute {
      	                                               join l2_port      l2p on(llm.l2_urn =l2p.l2_urn) 
      	                                               join hub           hb using(hub) 
 						     where  
-						             h.trace_id in ('$trace_ins')
+						             h.trace_id in ('$ids_result->{trace_string}')
 						     order by   h.hop_id asc|; 
     debug " TRACEROUTE SQL2: $cmd";		
     my $hops_ref = database->selectall_hashref($cmd, 'hop_id');
@@ -663,7 +766,7 @@ sub _get_snmp_from_db{
 							    join  service s on (e.service = s.service)
 						       where 
 						            e.service_type = 'snmp' and
-							    inet6_mask(m.src_ip,n.netmask) = inet6_mask(inet6_pton('$hop_ip'), n.netmask)
+							     m.src_ip  =  inet6_pton('$hop_ip') 
 						       |;
    my $md_href =  database->selectall_hashref( $cmd, 'metaid');	
    return  {data => {}, md => $md_href} unless $md_href && %{$md_href};	

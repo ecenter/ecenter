@@ -1,1 +1,31 @@
 <?php
+// $Id$
+
+/**
+ * @file ecenter_issues.module
+ *
+ * A cursory exploration of 
+ */
+
+function ecenter_issues_form_alter(&$form, &$form_state) {
+  if ($form['#token'] == 'issue_node_form') {
+    //$form['field_issue_query'][0]['#type'] = 'value';
+    dpm($form);
+    dpm($_REQUEST);
+    //urldecode($_REQUEST['query']);
+
+    // We could do this with a PHP code snippet for the field's default
+    // value, but since we must do processing here, we should populate the
+    // field here as well.
+    $query = urldecode($_REQUEST['query']);
+    $params = explode('&', $query);
+    $form['field_issue_query'][0]['#value']['value'] = $query;
+    $form['field_issue_query']['#type'] = 'value';
+
+    $data = ecenter_weathermap_get_data($params['src_hub'] 
+  }
+}
+
+function ecenter_issues_perm() {
+  return array('administer ecenter issue', 'view ecenter issue results', 'view ecenter issue query');
+}

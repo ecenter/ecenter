@@ -185,13 +185,13 @@ function _ecenter_weathermap_select_form() {
     '#prefix' => '<div id="date-wrapper" class="clearfix">',
     '#suffix' => '</div>',
   );
-  $form['ip_select']['date_wrapper']['start_date'] = array(
+  $form['ip_select']['date_wrapper']['start'] = array(
     '#type' => 'date_popup',
     '#title' => t('Start date'),
     '#date_increment' => $inc,
     '#default_value' => date_format($start, 'Y-m-d H:i'),
   );
-  $form['ip_select']['date_wrapper']['end_date'] = array(
+  $form['ip_select']['date_wrapper']['end'] = array(
     '#type' => 'date_popup',
     '#title' => t('End date'),
     '#date_increment' => $inc,
@@ -315,8 +315,8 @@ function ecenter_weathermap_select_form(&$form_state) {
 
   $hops = ecenter_weathermap_get_hops();
   $src_options = array('' => t('Select a source'));
-  foreach ($hops as $hop) {
-    $src_options[$hop['hub_name']] = theme('ecenter_weathermap_hop_option', $hop);
+  foreach ($hops as $key => $hop) {
+    $src_options[$key] = theme('ecenter_weathermap_hop_option', $hop);
   }
   $form['ip_select']['src_wrapper']['src']['#options'] = $src_options;
 
@@ -324,8 +324,8 @@ function ecenter_weathermap_select_form(&$form_state) {
     $form['ip_select']['src_wrapper']['src']['#default_value'] = $src;
 
     $dst_options = array('' => t('Select a destination'));
-    foreach ($hops as $hop) {
-      $dst_options[$hop['hub_name']] = theme('ecenter_weathermap_hop_option', $hop);
+    foreach ($hops as $key => $hop) {
+      $dst_options[$key] = theme('ecenter_weathermap_hop_option', $hop);
     }
     $form['ip_select']['dst_wrapper']['dst']['#options'] = $dst_options;
     $form['ip_select']['dst_wrapper']['dst']['#disabled'] = FALSE;
@@ -485,19 +485,16 @@ function ecenter_weathermap_get_hops($src = FALSE) {
       $client = ecenter_weathermap_get_client('message');
       $result = $client->getHubs();
       if ($result['code'] == 200) {
-        $data = array();
         $raw_data = $result['response'];
         ksort($raw_data);
-        //dpm($data);
         foreach ($raw_data as $k => $v) {
           $data['hub:'. $k] = $v;
         }
-
+        $hops = $data;
         if ($caching) {
           $expires = time() + variable_get('ecenter_weathermap_hop_cache_ttl', 600);
           cache_set('hub', $data, 'cache_ecenter_hops', $expires);
         }
-        $hops = $data;
       }
       else {
         drupal_set_message(t('Request failed with code @code.', array('@code' => $result['code'])));
@@ -1257,8 +1254,8 @@ function _ecenter_weathermap_extract_query() {
     $vars = array(
       'src' => $_REQUEST['ip_select']['src_wrapper']['src'],
       'dst' => $_REQUEST['ip_select']['dst_wrapper']['dst'],
-      'start' => $_REQUEST['ip_select']['date_wrapper']['start_date']['date'] .' '. $_REQUEST['ip_select']['date_wrapper']['start_date']['time'],
-      'end' => $_REQUEST['ip_select']['date_wrapper']['end_date']['date'] .' '. $_REQUEST['ip_select']['date_wrapper']['end_date']['time'],
+      'start' => $_REQUEST['ip_select']['date_wrapper']['start']['date'] .' '. $_REQUEST['ip_select']['date_wrapper']['start']['time'],
+      'end' => $_REQUEST['ip_select']['date_wrapper']['end']['date'] .' '. $_REQUEST['ip_select']['date_wrapper']['end']['time'],
     );
   }
   else {

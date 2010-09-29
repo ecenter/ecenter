@@ -25,7 +25,7 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
     $vars['issuelink'] = l('Create issue from this query', 'node/add/issue',
       array(
         'query' => array(
-          'query' => $issue_query,
+          'query' => array($issue_query),
         ),
         'attributes' => array(
           'class' => 'button',

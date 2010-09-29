@@ -670,7 +670,9 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
 
   }
 
-  $parsed_data['end_to_end'] = $end_to_end;
+  if (!empty($end_to_end)) {  
+    $parsed_data['end_to_end'] = $end_to_end;
+  }
 
   // Calculate diff
   if (!empty($parsed_data['forward']) && !empty($parsed_data['reverse'])) {

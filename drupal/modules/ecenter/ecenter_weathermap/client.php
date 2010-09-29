@@ -20,9 +20,14 @@ class Ecenter_Data_Service_Client {
   protected $_host, $_port, $_path, $_timeout, $_url, $_status_timeout;
 
   /**
-   * Provide a backdoor method for returning other data types than json
+   * Provide a "backdoor" technique for returning other data types than json
    */
   public $data_type = 'json';
+
+  /**
+   * Provide a "backdoor" technique for extending available datatypes
+   */
+  public $query_types = array('hub', 'ip');
 
   /**
    * Client constructor
@@ -58,6 +63,12 @@ class Ecenter_Data_Service_Client {
    *   An array of search/filter parameters, if required.
    * @param $timeout
    *   (optional) Request timeout to use (overrides timeout set in constructor).
+   * @param $assoc
+   *   (optional) If true (default), return associative array, otherwise return
+   *   an anonymous PHP object.
+   * @return
+   *   An associative array consisting of querystring, query parameters as an
+   *   associative array, response
    */
   protected function query($path, $parameters = NULL, $timeout = NULL, $assoc = TRUE) {
     $timeout = ($timeout) ? $timeout : $this->_timeout;
@@ -151,10 +162,10 @@ class Ecenter_Data_Service_Client {
   /**
    * Get data from service
    *
-   * @param $src_hub
-   *   Source hub name.
-   * @param $dst_hub
-   *   Destination hub name.
+   * @param $src
+   *   Source, of the form <query_type>:<source identifier>.
+   * @param $dst
+   *   Destination, of the form <query_type>:<destination identifier>.
    * @param $start
    *   Start time.
    * @param $end
@@ -164,10 +175,25 @@ class Ecenter_Data_Service_Client {
    * @return
    *   Result for this query.
    */
-  public function getData($src_hub, $dst_hub, $start, $end, $resolution = 50) {
+  public function getData($src, $dst, $start, $end, $resolution = 50) {
+
+    // Parse out query type
+    list($src_type, $src) = explode(':', $src, 2);
+    list($dst_type, $dst) = explode(':', $dst, 2);
+
+    if (array_search($src_type, $this->query_types) === FALSE && array_search($dst_type, $this->query_types) !== FALSE) {
+      throw new Exception('Invalid source query type.');
+    }
+    else if (array_search($src_type, $this->query_types) !== FALSE && array_search($dst_type, $this->query_types) === FALSE) {
+      throw new Exception('Invalid destination query type.');
+    }
+    else if (array_search($src_type, $this->query_types) === FALSE && array_search($dst_type, $this->query_types) === FALSE) {
+      throw new Exception('Invalid source and destination query types.');
+    }
+
     $parameters = array(
-      'src_hub' => $src_hub,
-      'dst_hub' => $dst_hub,
+      'src_'. $src_type => $src,
+      'dst_'. $dst_type => $dst,
       'start' => $start,
       'end' => $end,
       'resolution' => $resolution,

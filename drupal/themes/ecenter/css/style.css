@@ -28,7 +28,12 @@
        local("DroidSans-Bold"),
        url(../font/DroidSans-Bold.ttf) format("truetype");
 }
-*/
+/* }}} */
+/* Un-resets {{{ */
+/* Some styles are clobbered by reset.css that we want to work */
+em {
+  font-style: italic;
+}
 /* }}} */
 /* Document level elements {{{ */
 html {
@@ -308,7 +313,7 @@ fieldset legend {
 fieldset {
   margin-bottom: .5em;
   border: 1px solid #ccc;
-  padding: 0 2.5em 0 0;
+  padding: .75em 1.5em .75em .75em;
 }
 fieldset .description {
   margin-bottom: .5em;
@@ -502,6 +507,9 @@ h1#site-name a:hover {
   float: left;
   margin-right: 10px;
 }
+.no-js #weathermap-map {
+  height: 0;
+}
 #weathermap-results {
   float: left;
   width: 260px;
@@ -521,8 +529,8 @@ h1#site-name a:hover {
   width: 330px;
   font-size: 1.25em;
 }
-#ecenter-weathermap-select-form #src-ip-wrapper,
-#ecenter-weathermap-select-form #dst-ip-wrapper {
+#ecenter-weathermap-select-form #src-wrapper,
+#ecenter-weathermap-select-form #dst-wrapper {
   margin-top: .75em;
   width: 460px;
   float: left;
@@ -718,7 +726,6 @@ html.js #results .snmp-data-table {
   display: none;
 }
 /* }}} */
-
 
 /* --- Overrides and fixes --- */
 /* Fix vertical tabs and views vertical tabs {{{ */

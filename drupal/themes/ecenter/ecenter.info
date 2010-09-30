@@ -17,3 +17,6 @@ regions[footer] = Footer
 stylesheets[all][] = css/blueprint/reset.css
 stylesheets[all][] = css/style.css
 conditional-stylesheets[if IE][all][] = css/ie.css
+
+; Scripts
+scripts[] = js/behaviors.js

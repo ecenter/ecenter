@@ -473,27 +473,29 @@ function ecenter_weathermap_get_data($src, $dst, $start, $end, $debug_url = FALS
  * @return
  *   An array of hop objects.
  */
-function ecenter_weathermap_get_hops($src = FALSE) {
+function ecenter_weathermap_get_hops($src = NULL) {
   static $hops = array();
+  $src_key = (!empty($src)) ? $src : 'sources';
 
-  if (empty($hops)) {
+  if (empty($hops[$src_key])) {
     $caching = variable_get('ecenter_weathermap_hop_cache_enabled', 0);
     if ($caching && $result = cache_get('hub', 'cache_ecenter_hops')) {
       $hops = $result->data;
     }
     else {
       $client = ecenter_weathermap_get_client('message');
-      $result = $client->getHubs();
+      $result = $client->getHops();
       if ($result['code'] == 200) {
         $raw_data = $result['response'];
         ksort($raw_data);
+        dpm($raw_data);
         foreach ($raw_data as $k => $v) {
           $data['hub:'. $k] = $v;
         }
-        $hops = $data;
+        $hops[$src_key] = $data;
         if ($caching) {
           $expires = time() + variable_get('ecenter_weathermap_hop_cache_ttl', 600);
-          cache_set('hub', $data, 'cache_ecenter_hops', $expires);
+          cache_set($src_key, $data, 'cache_ecenter_hops', $expires);
         }
       }
       else {
@@ -501,7 +503,7 @@ function ecenter_weathermap_get_hops($src = FALSE) {
       }
     }
   }
-  return $hops;
+  return $hops[$src_key];
 }
 
 /**

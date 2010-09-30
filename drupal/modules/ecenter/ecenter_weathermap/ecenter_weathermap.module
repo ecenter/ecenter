@@ -350,19 +350,19 @@ function ecenter_weathermap_select_form(&$form_state) {
     );
 
     // If we've got the data (at bare minimum, a traceroute), delegate to rendering function
-    if ($data) {
+    //if ($data) {
       drupal_add_js(array('ecenterWeathermap' => array('tracerouteData' => $data['js_diff'])), 'setting');
       drupal_add_js(array('ecenterWeathermap' => array('tracerouteMaxLength' => $data['traceroute_max'])), 'setting');
       drupal_add_js(array('ecenterWeathermap' => array('seriesLookup' => $data['series_lookup'])), 'setting');
       ecenter_weathermap_refresh_map('ecenter_weathermap', 'openlayers-map-auto-id-0');
       $form['results_wrapper']['results']['#value'] = theme('ecenter_weathermap_data', $data, $params);
-    }
+    /*}
     else {
       watchdog('ecenter', 'Query returned no results: <code>@query</code>', array('@query' => $query), WATCHDOG_INFO);
       $form['results_wrapper']['results']['#value'] = '<p>'. t('Whoops! No data was available for this query. If you believe there should be data for this query, send the site administrator feedback along with executed query, provided below:') .'</p>';
       $form['results_wrapper']['results']['#value'] .= '<pre>'. $query .'</pre>';
       $form['results_wrapper']['results']['#value'] .= '<p>'. l(t('Permalink'), 'weathermap', array('query' => $query_params)) .'</p>';
-    }
+    }*/
   }
   return $form;
 }
@@ -1248,8 +1248,6 @@ function _ecenter_weathermap_date_to_utc($date, $format = 'Y-m-d H:i:s') {
  *
  * @return array
  *  An array of query values
- *
- * @TODO add php 5 filter_var sanitization
  */
 function _ecenter_weathermap_extract_query() {
   if ($_REQUEST['form_id'] == 'ecenter_weathermap_select_form') {

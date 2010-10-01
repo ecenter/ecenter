@@ -84,6 +84,7 @@ use Ecenter::Data::Snmp;
 use Ecenter::Utils;
 use Ecenter::Schema;
 use Ecenter::Data::Hub;
+use Ecenter::Data::Traceroute;
 use DateTime;
 
 our %ESNET_HUB = (
@@ -163,7 +164,7 @@ foreach my $service ( qw/ps3/ ) {
             my $urn = "domain=$IP_TOPOLOGY";
             my ($status, $res) = $client->xQuery("//*[matches(\@id, '$urn', 'xi')]", 'encoded');
             throw  perfSONAR_PS::Error if $status;
-	     parse_topo($dbh, $res);
+	   parse_topo($dbh, $res);
 	}
 	get_snmp($dbh, $pm) if $OPTIONS{snmp};
 	set_end_sites($dbh, $pm);
@@ -253,6 +254,7 @@ sub parse_topo {
 	        next;
 	    }
 	    my $net_ip = Net::Netmask->new("$ip_addr:$netmask");
+	    $ip_name ||= $ip_addr;
 	    update_create_fixed($dbh->resultset('Node'),
 		    					      {ip_addr =>  \"=inet6_pton('$ip_addr')"},
 		    					      {ip_addr => \"inet6_pton('$ip_addr')",
@@ -281,22 +283,32 @@ sub set_end_sites {
    foreach my $hub_name (qw/FNAL   LBL   ORNL   SLAC    BNL  ANL/) {
       my $hub = Ecenter::Data::Hub->new({hub_name => $hub_name});
       my %subnets =  %{$hub->get_ips()};
-      my $l2_port =   $dbh->resultset('L2_port')->first({'hub.hub_name' => $hub_name}, {join => 'hub'});
+      my $l2_port =   $dbh->resultset('L2_port')->search({'hub.hub_name' => $hub_name}, {join => 'hub'})->single;
       unless($l2_port && $l2_port->l2_urn) {
           $logger->error("NO ports available - check topology info or hub_name:$hub_name");
           next;
       }
+       $logger->debug(" LT_urn;;;;;" . $l2_port->l2_urn);
       foreach my $subnet (keys %subnets) {
-         my $sql = "select n.ip_noted, n.ip_addr from node n left join l2_l3_map llm using(ip_addr) where  llm.l2_urn is NULL and inet6_mask(ip_addr,$subnets{$subnet}) =  inet6_mask(inet6_pton('$subnet'), $subnets{$subnet})";
+         my $sql = qq|select n.ip_noted, n.ip_addr 
+	              from 
+	                              node n 
+		            left join l2_l3_map llm using(ip_addr) 
+	              where 
+		            llm.l2_l3_map is NULL and 
+			   ( (inet6_mask(ip_addr,$subnets{$subnet}) =  inet6_mask(inet6_pton('$subnet'), $subnets{$subnet})
+			     )  OR  n.nodename like '%$hub_name%')|;
 	 $logger->debug("SQL::: $sql"); 
          my $nodes =  $dbi->selectall_hashref($sql, 'ip_noted');;
 	 # found all ips for the endsite, lets mark them with made up urns and hub names
 	 foreach my $ip (keys %$nodes) {
-	    $logger->debug("Checking::: $ip"); 
+	    $logger->debug("Checking::: $ip");
 	    $dbh->resultset('L2_l3_map')->update_or_create({ ip_addr => $nodes->{$ip}{ip_addr},
 	                                                     l2_urn => $l2_port->l2_urn,
-							  });
+							   },
+							   { key => 'ip_urn'});
 	 }
+	 
      }
    }
    $logger->debug("Done");

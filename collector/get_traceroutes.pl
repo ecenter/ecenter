@@ -147,6 +147,7 @@ while( my $service = $services->next) {
 							      );
     my $service_ip = $service->node->ip_noted;
     my $mask = ( $service_ip  =~ /^[\d\.]+$/)?'31':'64';
+    $dst_match = qq| and (me.nodename   like '%.gov' or me.nodename   like '%es.net' or  me.nodename   like '%deemz.net') |;
     my $where = "inet6_mask(me.ip_addr, $mask) != inet6_mask(inet6_pton('". $service->node->ip_noted ."'), $mask) $dst_match";
   
     my $pid = $pm->start and next; 

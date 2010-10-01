@@ -42,10 +42,13 @@ augment  'process_datum' => sub {
    $secs = UnixDate($secs,  '%s') if($t_type ne 'unix');
    my $unit =  $dt->getAttribute( "valueUnits");
    $unit =  ($unit eq 'sec')?0.001:1;
+  
    my $hop_ip    = $dt->getAttribute("hop");
    my $hop_num   = $dt->getAttribute("ttl");
-   my $hop_delay = $dt->getAttribute("value") * $unit;
-   $self->logger->debug("parsing..  t=$secs ip=$hop_ip hop_num=$hop_num  hop_delay=$hop_delay");
+   my $hop_delay = $dt->getAttribute("value");
+   return unless   $hop_ip && $hop_num && $hop_delay;
+   $hop_delay *= $unit;
+   $self->logger->debug("parsing..  t=$secs ip=$hop_ip hop_num=$hop_num  hop_delay=$hop_delay") if $hop_ip  && $hop_num  && $hop_delay;
    return  ($secs?[ $secs, {hop_ip  =>  $hop_ip, hop_num => $hop_num,hop_delay => $hop_delay } ]:[]);
 };
 

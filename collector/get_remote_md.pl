@@ -79,7 +79,7 @@ use File::Slurp;
 #use Parallel::ForkControl;
 use Parallel::ForkManager;
 
-use lib  "$FindBin::Bin";
+use lib  ("$FindBin::Bin/topo_lib", "$FindBin::Bin");
 use Ecenter::Schema;
 use aliased 'perfSONAR_PS::PINGER_DATATYPES::v2_0::nmwgt::Message::Metadata::Subject::EndPointPair';
 use aliased 'perfSONAR_PS::PINGERTOPO_DATATYPES::v2_0::nmtl3::Topology::Domain::Node::Port';
@@ -114,6 +114,7 @@ our %SERVICE_LOOKUP = (  'http://ggf.org/ns/nmwg/characteristic/utilization/2.0'
                          'http://ggf.org/ns/nmwg/tools/owamp/2.0' => 'owamp',
 			 'http://ggf.org/ns/nmwg/tools/owamp/1.0' => 'owamp',
                          'http://ggf.org/ns/nmwg/tools/traceroute/1.0' => 'traceroute',
+			 'http://ggf.org/ns/nmwg/tools/traceroute/2.0' => 'traceroute',
                          'http://ggf.org/ns/nmwg/tools/npad/1.0' => 'npad',
                          'http://ggf.org/ns/nmwg/tools/ndt/1.0'  => 'ndt',
                          'http://ggf.org/ns/nmwg/tools/ping/1.0' => 'ping',
@@ -213,9 +214,10 @@ unless(@hlses) {
 foreach my $hls (@hlses) {
     $logger->debug("LSS INDEX BEFORE:	$hls"); 
     $logger->debug("For... $hls");  
-    #if($hls !~ /(anl|ornl|lbl|lbnl|jlab|bnl)\.gov|es\.net|\w+.edu|dmz\.net|[\w\-]+\.org/) { 
-    #	  next;
-    #}	   ### run query/echo/ping async
+  #  if($hls !~ /(anl|ornl|lbl|lbnl|jlab|bnl)\.gov|es\.net|\w+.edu|dmz\.net|[\w\-]+\.org/) { 
+    unless($hls =~ /es\.net/i  || $hls =~ /deemz\.net/i  || $hls =~ /(anl|ornl|lbl|lbnl|jlab|bnl)\.gov/i || $hls =~ /slac\./i) {  
+    	 next;
+    }	  ### run query/echo/ping async
     $logger->info("LSS INDEX PASSED: $hls");
     my $pid = $pm->start and next; 
     chomp $hls;
@@ -343,7 +345,7 @@ sub get_fromHLS {
     $result_query->{response} = unescapeString( $result_query->{response} );
     my ($doc_disc,$doc_query);
     eval {
-    	$doc_disc  = $parser->parse_string( $result_disc->{response} )  if exists $result_disc->{response};
+    	$doc_disc  = $parser->parse_string( $result_disc->{response}  ) if exists $result_disc->{response};
 	$doc_query = $parser->parse_string( $result_query->{response} ) if exists $result_query->{response};
     };
     if($EVAL_ERROR) {
@@ -352,7 +354,7 @@ sub get_fromHLS {
         return;
     }
     my $md_query = find( $doc_query->getDocumentElement, "./nmwg:store/nmwg:metadata", 0 );
-    my $d_disc   = find( $doc_disc->getDocumentElement, "./nmwg:store/nmwg:data",      0 );
+    my $d_disc   = find( $doc_disc->getDocumentElement,  "./nmwg:store/nmwg:data",     0 );
     my $d_query  = find( $doc_query->getDocumentElement, "./nmwg:store/nmwg:data",     0 );
     # create lookup hash to avoid multiple array parsing
     my %look_data_query_id= ();
@@ -403,7 +405,7 @@ sub get_fromHLS {
 	##############  data part processing
         ###my $d1_disc = $look_data_disc_id{$id};
 	unless($look_data_query_id{$id}) {
-	    $logger->error("TID= $$  !!!! Malformed responec, no data element for $id");
+	    $logger->error("TID= $$  !!!! Malformed response no data element for $id");
 	    next; 
 	}
 	my @d1_query = @{$look_data_query_id{$id}};
@@ -429,7 +431,6 @@ sub get_fromHLS {
 								      );
  		 $dbh->resultset('Keywords_Service')->update_or_create( { keyword => $keyword_str,
 									  service =>  $service_obj->service
-									  
 									},
 									{ key => 'keywords_service' } 
 								      );
@@ -481,7 +482,7 @@ sub get_fromHLS {
 		}
 	        my ($dst) =  $subj_md->findnodes( "./*[local-name()='endPointPair']/*[local-name()='dst']");
 	        $ip_addr_h{dst} =  extract(  $dst, 0) if $dst;
-	
+	       
 		my $capacity    =  extract( find( $subj_md, "./*[local-name()='interface']/*[local-name()='capacity']", 1), 0 );
 		next if $capacity || $snmp;  ## skip snmp ma      
 	        $logger->debug("TID=proc=$$ ====== src=$ip_addr_h{src}========== \n");
@@ -493,7 +494,8 @@ sub get_fromHLS {
 		foreach my $ip_key (qw/src dst/) {
 		    next unless $ip_addr_h{$ip_key};
 		    my ($ip_cidr, $ip_name) = get_ip_name($ip_addr_h{$ip_key});
-		   
+		    next  unless( $ip_name =~ /es\.net/i  || $ip_name  =~ /deemz\.net/i ||  $ip_name =~ /slac\./i ||  $ip_name =~ /(anl|ornl|lbl|lbnl|jlab|bnl)\.gov/i);
+    	            
 		    if($ip_addr_h{$ip_key} && $ip_cidr) {
 	                  update_create_fixed(   $dbh->resultset('Node'),
 			                                             { ip_addr  =>  \"=inet6_pton('$ip_cidr')"},
@@ -507,11 +509,12 @@ sub get_fromHLS {
 		        $logger->error("!!! FAILED To get IP/hostname for $ip_key=$ip_addr_h{$ip_key} !!!");
 		    }
 		}
-	        unless ($ip_addr_rs{src}) {
-		    $logger->error("TID=$$ !! End ======  MISSING SRC, skipping...:$ip_addr_h{src}");
+	        unless ( $ip_addr_rs{src} &&
+		        ( $eventtype_obj->service_type !~ /pinger|bwctl|owamp|traceroute/  ||  $ip_addr_rs{dst})) {
+		    $logger->error("TID=$$ !! End ======  MISSING SRC or e2e service with missing dst, skipping...:$ip_addr_h{src}");
 		    next;
 		}
-	       
+	        
 	        eval {
 	               $dbh->resultset('Metadata')->update_or_create ({ 
 							      eventtype_id  => $eventtype_obj->ref_id,

@@ -315,7 +315,7 @@ function ecenter_weathermap_select_form(&$form_state) {
 
   $hops = ecenter_weathermap_get_hops();
   $src_options = array('' => t('Select a source'));
-  foreach ($hops as $key => $hop) {
+  foreach ($hops['hops'] as $key => $hop) {
     $src_options[$key] = theme('ecenter_weathermap_hop_option', $hop);
   }
   $form['ip_select']['src_wrapper']['src']['#options'] = $src_options;
@@ -324,7 +324,7 @@ function ecenter_weathermap_select_form(&$form_state) {
     $form['ip_select']['src_wrapper']['src']['#default_value'] = $src;
 
     $dst_options = array('' => t('Select a destination'));
-    foreach ($hops as $key => $hop) {
+    foreach ($hops['hops'] as $key => $hop) {
       $dst_options[$key] = theme('ecenter_weathermap_hop_option', $hop);
     }
     $form['ip_select']['dst_wrapper']['dst']['#options'] = $dst_options;
@@ -788,16 +788,17 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
 
 /**
  * Parse hops
+ * 
+ * @param $hop_list
+ *  List of hops returns from data service
+ * @return 
+ *  Parsed array consisting of hubs and hops
  */
 function ecenter_weathermap_parse_hops($hop_list) {
-  // Sort..
-  // handle keys...
-  // interleave with hubs...
-  //dpm($hops);
   $hops = array();
   $hubs = array();
 
-  usort($hop_list, '_ecenter_weathermap_sort_hops');
+  usort($hop_list, '_ecenter_weathermap_sort_hopname');
 
   foreach ($hop_list as $hop) {
     // First instance of hub
@@ -809,10 +810,13 @@ function ecenter_weathermap_parse_hops($hop_list) {
     $hops['ip:'. $hop['ip_noted']] = $hop + array('type' => 'ip');
   }
   
-  return $hops;
+  return array('hops' => $hops, 'hubs' => $hubs);
 }
 
-function _ecenter_weathermap_sort_hops($a, $b) {
+/**
+ * Callback for custom hop sort
+ */
+function _ecenter_weathermap_sort_hopname($a, $b) {
   return strcmp($a['hub'], $b['hub']);
 }
 
@@ -886,9 +890,11 @@ function ecenter_weathermap_openlayers_presets() {
     'default_layer' => 'osm_mapnik',
     'layers' => array(
       'osm_mapnik' => 'osm_mapnik',
-      //'ecenter_raw_layer' => 'ecenter_raw_layer',
+      'ecenter_weathermap_sites' => 'ecenter_weathermap_sites',
     ),
-    'layer_activated' => array(),
+    'layer_activated' => array(
+      'ecenter_weathermap_sites' => 'ecenter_weathermap_sites',
+    ),
     'projection' => '900913',
     'displayProjection' => '4326',
     'styles' => array(
@@ -962,22 +968,61 @@ function ecenter_weathermap_openlayers_behaviors() {
  * Implementation of hook_openlayers_layers().
  */
 function ecenter_weathermap_openlayers_layers() {
-  $layers = array();
+  $layers = array(
+    'ecenter_weathermap_sites' => ecenter_weathermap_layers_sites(),
+  );
+
   // Provide dynamic layers for map on
   if ((arg(0) == 'weathermap' && !arg(1)) || ($_REQUEST['form_id'] == 'ecenter_weathermap_select_form')) {
-    $layers = ecenter_weathermap_map_layers();
+    $layers += ecenter_weathermap_layers_traceroute();
   }
   return $layers;
 }
 
 /**
+ * Generate traceroute 
+ */
+function ecenter_weathermap_layers_sites() {
+  $hops = ecenter_weathermap_get_hops();
+
+  // Create layer object
+  $layer = new stdClass();
+  $layer->api_version = 1;
+  $layer->name = 'ecenter_weathermap_sites';
+  $layer->title = t('Traceroute @id', array('@id' => $trace_id));
+  $layer->description = '';
+  $layer->data = array(
+    'layer_type' => 'openlayers_layer_type_raw',
+    'projection' => array('900913'),
+  );
+
+  foreach ($hops['hubs'] as $hub) {
+    $features[] = array(
+      'wkt' => "POINT({$hub['longitude']} {$hub['latitude']})",
+      'projection' => "4326",
+      'style' => array(
+        'pointRadius' => 5,
+        'fillColor' => '#ffffff',
+        'strokeColor' => '#0000aa',
+        'strokeWidth' => 2,
+        'fillOpacity' => 1,
+        'label' => $hub['hub_name'],
+        'labelYOffset' => -20,
+        'fontWeight' => 'bold',
+        'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',
+      ),
+    );
+  }
+
+  $layer->data['features'] = $features;
+  return $layer;
+}
+
+/**
  * Generate dynamic raw layer data for E-center weathermap
  */
-function ecenter_weathermap_map_layers() {
+function ecenter_weathermap_layers_traceroute() {
   $layers = array();
-  $client = ecenter_weathermap_get_client('message');
-
-  // Get variables
   extract(_ecenter_weathermap_extract_query());
 
   if ($src && $dst && $start && $end) {
@@ -997,7 +1042,7 @@ function ecenter_weathermap_map_layers() {
       // Create layer object
       $layer = new stdClass();
       $layer->api_version = 1;
-      $layer->name = 'ecenter_traceroute';
+      $layer->name = 'ecenter_weathermap_traceroute';
       $layer->title = t('Traceroute @id', array('@id' => $trace_id));
       $layer->description = '';
       $layer->data = array(
@@ -1021,10 +1066,6 @@ function ecenter_weathermap_map_layers() {
             $features[] = array(
               'wkt' => "LINESTRING($line)",
               'projection' => "4326",
-              /*'attributes' => array(
-                'name' => $old_hop['hub'] .' ('. $old_hop['hop_ip'] .') to '. $hop['hub'] .' ('. $hop['hop_ip'] .')',
-                'description' => 'Stub for useful data',
-              ),*/
               'style' => array(
                 'strokeWidth' => 4,
                 'strokeColor' => '#444444',
@@ -1035,10 +1076,6 @@ function ecenter_weathermap_map_layers() {
           $features[] = array(
             'wkt' => "POINT({$hop['longitude']} {$hop['latitude']})",
             'projection' => "4326",
-            'attributes' => array(
-              'name' => $hop['hub'] .' ('. $hop['hop_ip'] .')',
-              'description' => 'Hop ID: '. $hop['hop_id'],
-            ),
             'style' => array(
               'pointRadius' => 5,
               'fillColor' => '#ffffff',

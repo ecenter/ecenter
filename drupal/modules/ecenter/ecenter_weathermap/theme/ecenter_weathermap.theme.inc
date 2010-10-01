@@ -396,7 +396,7 @@ function theme_ecenter_weathermap_hop_option($hop) {
     case 'hub':
       return check_plain($hop['hub_name']);
     case 'ip':
-      return check_plain($hop['hub_name']) .' ('. check_plain($hop['hub']) .')';
+      return check_plain($hop['hub_name']) .' ('. check_plain($hop['hub']) .' - '. check_plain($hop['ip_noted']) .')';
   }
 }
 

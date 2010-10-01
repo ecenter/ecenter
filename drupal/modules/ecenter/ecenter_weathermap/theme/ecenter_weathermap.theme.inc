@@ -392,7 +392,12 @@ function theme_ecenter_weathermap_utilization_table($hop, $direction, $table) {
  * Theme services for use in options list.  Should always return plaintext!
  */
 function theme_ecenter_weathermap_hop_option($hop) {
-  return check_plain($hop['hub_name']);
+  switch ($hop['type']) {
+    case 'hub':
+      return check_plain($hop['hub_name']);
+    case 'ip':
+      return check_plain($hop['hub_name']) .' ('. check_plain($hop['hub']) .')';
+  }
 }
 
 /**

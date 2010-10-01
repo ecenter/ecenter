@@ -478,6 +478,7 @@ function ecenter_weathermap_get_hops($src = NULL) {
   $src_key = (!empty($src)) ? $src : 'sources';
 
   if (empty($hops[$src_key])) {
+
     $caching = variable_get('ecenter_weathermap_hop_cache_enabled', 0);
     if ($caching && $result = cache_get('hub', 'cache_ecenter_hops')) {
       $hops = $result->data;
@@ -485,13 +486,9 @@ function ecenter_weathermap_get_hops($src = NULL) {
     else {
       $client = ecenter_weathermap_get_client('message');
       $result = $client->getHops();
+      //$result = _ecenter_weathermap_sources();
       if ($result['code'] == 200) {
-        $raw_data = $result['response'];
-        ksort($raw_data);
-        dpm($raw_data);
-        foreach ($raw_data as $k => $v) {
-          $data['hub:'. $k] = $v;
-        }
+        $data = ecenter_weathermap_parse_hops($result['response']);
         $hops[$src_key] = $data;
         if ($caching) {
           $expires = time() + variable_get('ecenter_weathermap_hop_cache_ttl', 600);
@@ -507,6 +504,7 @@ function ecenter_weathermap_get_hops($src = NULL) {
 }
 
 /**
+ * @TODO Delete, unneeded
  * Traverse an object, turning all members into arrays or preserving their
  * values.
  */
@@ -786,6 +784,36 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
   }
 
   return $parsed_data;
+}
+
+/**
+ * Parse hops
+ */
+function ecenter_weathermap_parse_hops($hop_list) {
+  // Sort..
+  // handle keys...
+  // interleave with hubs...
+  //dpm($hops);
+  $hops = array();
+  $hubs = array();
+
+  usort($hop_list, '_ecenter_weathermap_sort_hops');
+
+  foreach ($hop_list as $hop) {
+    // First instance of hub
+    if (empty($hubs[$hop['hub_name']])) {
+      $hubs[$hop['hub_name']] = $hop;
+      $hops['hub:'. $hop['hub_name']] = $hop + array('type' => 'hub');
+    }
+
+    $hops['ip:'. $hop['ip_noted']] = $hop + array('type' => 'ip');
+  }
+  
+  return $hops;
+}
+
+function _ecenter_weathermap_sort_hops($a, $b) {
+  return strcmp($a['hub'], $b['hub']);
 }
 
 /**
@@ -1269,4 +1297,69 @@ function _ecenter_weathermap_extract_query() {
     );
   }
   return $vars;
+}
+
+/**
+ * @TODO Remove
+ * @TEMPORARY
+ */
+function _ecenter_weathermap_sources() {
+  return array(
+    'code' => 200,
+    'response' => json_decode('
+      [{
+      "longitude":"-88.262",
+      "hub":"fnal-cr1",
+      "hub_name":"FNAL",
+      "nodename":"lhc-dmz-latency.deemz.net",
+      "ip_noted":"198.49.208.3",
+      "latitude":"41.8382",
+      "netmask":"24"
+      },
+      {
+      "longitude":"-72.8805",
+      "hub":"bnl-cr1",
+      "hub_name":"BNL",
+      "nodename":"lhcperfmon.bnl.gov",
+      "ip_noted":"192.12.15.26",
+      "latitude":"40.8703",
+      "netmask":"24"
+      },
+      {
+      "longitude":"-122.252",
+      "hub":"lbl-cr1",
+      "hub_name":"LBL",
+      "nodename":"nettest.lbl.gov",
+      "ip_noted":"131.243.24.11",
+      "latitude":"37.8769",
+      "netmask":"24"
+      },
+      {
+      "longitude":"-72.8805",
+      "hub":"bnl-cr2",
+      "hub_name":"BNL",
+      "nodename":"lhcmon.bnl.gov",
+      "ip_noted":"192.12.15.23",
+      "latitude":"40.8703",
+      "netmask":"24"
+      },
+      {
+      "longitude":"-122.252",
+      "hub":"lbl-cr2",
+      "hub_name":"LBL",
+      "nodename":"lblnet-test.lbl.gov",
+      "ip_noted":"128.3.121.114",
+      "latitude":"37.8769",
+      "netmask":"24"
+      },
+      {
+      "longitude":"-88.262",
+      "hub":"fnal-cr2",
+      "hub_name":"FNAL",
+      "nodename":"lhc-dmz-bw.deemz.net",
+      "ip_noted":"198.49.208.6",
+      "latitude":"41.8382",
+      "netmask":"24"
+      }]', TRUE),
+  );
 }

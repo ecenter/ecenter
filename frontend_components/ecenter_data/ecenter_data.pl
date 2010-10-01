@@ -337,7 +337,7 @@ sub process_data {
 					             group by src_ip, dst_ip, service, type|;
 	debug " E2E SQL:: $e2e_sql";
 	my $md_href =  database->selectall_hashref($e2e_sql, 'metaid');   
-	debug " MD for the E2E ::: " . Dumper $md_href;	
+	#debug " MD for the E2E ::: " . Dumper $md_href;	
        
 	next unless $md_href && %{$md_href};
         %e2e_mds = (%e2e_mds, %{$md_href});
@@ -363,7 +363,7 @@ sub process_data {
     											   });
     		  get_datums(\@datas, $md_row,  $data, \%params, $e_type) if @datas;
 		  debug "\u$e_type- " . $md_row->{src_ip} . " Data ::" . scalar @datas if @datas; 
-		  debug "\u$e_type -----------   Data dump::" . Dumper $data->{$e_type}; 
+		 # debug "\u$e_type -----------   Data dump::" . Dumper $data->{$e_type}; 
     	     }
     	 
     	 }
@@ -400,7 +400,7 @@ sub refactor_result {
     my ($data_raw, $params) = @_;
     my $count = scalar @{$data_raw};
     my $result = [];
-    debug "refactoring..resolution=$params->{resolution}  ==  Data_raw - $count";
+    #debug "refactoring..resolution=$params->{resolution}  ==  Data_raw - $count";
     if($count > $params->{resolution}) {
 	my $bin = $count/$params->{resolution};
 	my $j = 0;
@@ -418,13 +418,13 @@ sub refactor_result {
 	        $old_j = $j; 
 	    }
 	    $count_j++;       
-	    debug "REFACTOR: i=$i j=$j old_j=$old_j count_j=$count_j  raw=$data_raw->[$i][0]  result=$result->[$old_j][0] new=$result->[$j][0] ";
+	    #debug "REFACTOR: i=$i j=$j old_j=$old_j count_j=$count_j  raw=$data_raw->[$i][0]  result=$result->[$old_j][0] new=$result->[$j][0] ";
 	 
 	}	   
     } else {
         $result =  $data_raw;
     }
-    debug "refactoring..resolution=$params->{resolution}   ==  Data_raw - " . scalar @$result;
+    #debug "refactoring..resolution=$params->{resolution}   ==  Data_raw - " . scalar @$result;
     return $result;
 }
 #
@@ -609,7 +609,7 @@ sub get_traceroute {
 					             from
 						            hop h 
 						       join node       n_hop on(h.hop_ip  = n_hop.ip_addr)     	
-						       join l2_l3_map    llm on(inet6_mask(n_hop.ip_addr, n_hop.netmask) = inet6_mask(llm.ip_addr, n_hop.netmask)) 
+						       join l2_l3_map    llm on( n_hop.ip_addr=llm.ip_addr) 
      	                                               join l2_port      l2p on(llm.l2_urn =l2p.l2_urn) 
      	                                               join hub           hb using(hub) 
 						     where  
@@ -617,9 +617,9 @@ sub get_traceroute {
 						     order by   h.hop_id asc|; 
     debug " TRACEROUTE SQL_hhops: $cmd";		
     my $hops_ref = database->selectall_hashref($cmd, 'hop_id');
-    					     
+    debug " TRACEROUTE  N=hops: $cmd";					     
     foreach my $hop_id (sort {$a<=>$b} keys %$hops_ref) {
-        push @{$traces{$hops_ref->{$hop_id}{trace_id}}}, {(%{$hops_ref->{$hop_id}},%{$ids_result->{trace_result}{$hops_ref->{$hop_id}{trace_id}}})};
+        push @{$traces{$hops_ref->{$hop_id}{trace_id}}}, {(%{$hops_ref->{$hop_id}},%{$ids_result->{trace_result}})};
 	$hops{$hops_ref->{$hop_id}{hop_ip}} = $hops_ref->{$hop_id}{hop_id} 
 	                                            if $hops_ref->{$hop_id}{hop_ip} && 
 						       (!(exists $hops{$hops_ref->{$hop_id}{hop_ip}}) ||
@@ -641,7 +641,7 @@ sub get_snmp {
     $date_cond .= $params->{snmp}{end}?" AND sd.timestamp <= $params->{snmp}{end}":'';
     $date_cond .= ') and';
     
-    debug "+++SNMP:: hops::" .  Dumper($hops_ref);
+    #debug "+++SNMP:: hops::" .  Dumper($hops_ref);
     my $forker = new Parallel::ForkControl( 
     			   MaxKids		   => 10,
     			   MinKids		   => 3,
@@ -737,7 +737,7 @@ sub _pack_snmp_data {
     my $end_time = -1;
     my @result = ();
     my $start_time =  4000000000; 
-    debug " PACKING SNMP:::" . Dumper($data_ref);
+    #debug " PACKING SNMP:::" . Dumper($data_ref);
     foreach my $time (sort {$a<=>$b} grep {$_} keys %{$data_ref->{data}}) { 
 	push @result,   
 	            [ $time, {capacity => $data_ref ->{md}{$data_ref ->{data}{$time}{metaid}}{capacity},  utilization => $data_ref ->{data}{$time}{utilization} }];

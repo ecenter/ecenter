@@ -106,7 +106,7 @@ function ecenter_weathermap_init() {
       '/includes/layer_types/js/raw.js');
 
     // We need quickselect to get added to behaviors first, so when ensure it executes first
-    drupal_add_js(drupal_get_path('module', 'quickselect') .'/js/quickselect-behavior.js');
+    //drupal_add_js(drupal_get_path('module', 'quickselect') .'/js/quickselect-behavior.js');
 
     // Also need the jquery form library
     drupal_add_js('misc/jquery.form.js');
@@ -130,6 +130,7 @@ function ecenter_weathermap_init() {
     drupal_add_js($jq_path .'/js/jqplot-behaviors.js');
 
     // Query UI behaviors and libraries
+    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/jquery.metadata.js');
     drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/jquery.datehide.js');
     drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/jquery.traceroute.js');
     drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/behaviors.js');
@@ -211,14 +212,14 @@ function _ecenter_weathermap_select_form() {
   );
   $form['ip_select']['src_wrapper']['src'] = array(
     '#title' => t('Source'),
-    '#type' => 'quickselect',
-    '#options' => array('' => 'Select a source'),
+    '#type' => 'combobox',
     '#cols' => 50,
     '#required' => TRUE,
-    '#quickselect_options' => $quickselect_options,
+    '#options' => array('' => t('Select a source')),
+    //'#quickselect_options' => $quickselect_options,
     '#ahah' => array(
       'event' => 'change',
-      'path' => ahah_helper_path(array('ip_select', 'dst_wrapper')),
+      'path' => ahah_helper_path(array('ip_select', 'dst_wrapper', 'dst')),
       'wrapper' => 'dst-wrapper',
     ),
   );
@@ -230,12 +231,12 @@ function _ecenter_weathermap_select_form() {
   );
   $form['ip_select']['dst_wrapper']['dst'] = array(
     '#title' => t('Destination'),
-    '#type' => 'quickselect',
-    '#options' => array('' => 'Select a destination'),
+    '#type' => 'combobox',
     '#cols' => 50,
     '#required' => FALSE,
     '#disabled' => TRUE,
-    '#quickselect_options' => $quickselect_options,
+    '#options' => array('' => t('Select a destination')),
+    //'#quickselect_options' => $quickselect_options,
     '#prefix' => '<div class="dst-wrapper">',
     '#suffix' => '</div>',
     '#ahah' => array(
@@ -261,7 +262,7 @@ function _ecenter_weathermap_select_form() {
   );
   $form['weathermap_wrapper']['end_to_end_results'] = array(
     '#prefix' => '<div id="weathermap-end-to-end-results">',
-    '#value' => ' ',
+    '#value' => t('Click a source and destination on the map to get path statistics (currently not functional!), or select source and destination using the form above.'),
     '#suffix' => '</div>',
   );
 
@@ -314,20 +315,18 @@ function ecenter_weathermap_select_form(&$form_state) {
   }
 
   $hops = ecenter_weathermap_get_hops();
-  $src_options = array('' => t('Select a source'));
   foreach ($hops['hops'] as $key => $hop) {
     $src_options[$key] = theme('ecenter_weathermap_hop_option', $hop);
   }
-  $form['ip_select']['src_wrapper']['src']['#options'] = $src_options;
+  $form['ip_select']['src_wrapper']['src']['#options'] += $src_options;
 
   if ($src) {
     $form['ip_select']['src_wrapper']['src']['#default_value'] = $src;
 
-    $dst_options = array('' => t('Select a destination'));
     foreach ($hops['hops'] as $key => $hop) {
       $dst_options[$key] = theme('ecenter_weathermap_hop_option', $hop);
     }
-    $form['ip_select']['dst_wrapper']['dst']['#options'] = $dst_options;
+    $form['ip_select']['dst_wrapper']['dst']['#options'] += $dst_options;
     $form['ip_select']['dst_wrapper']['dst']['#disabled'] = FALSE;
   }
 
@@ -384,7 +383,8 @@ function ecenter_weathermap_select_form_submit($form, &$form_state) {
  *  '503', 'message', or FALSE.  What to do if status_check fails.
  */
 function ecenter_weathermap_get_client($status_check = '503') {
-  static $client = False;
+  static $client = FALSE;
+  return TRUE;
   if (!$client) {
     require_once(dirname(__FILE__) . '/client.php');
     $host = variable_get('ecenter_weathermap_host', 'localhost');
@@ -485,8 +485,8 @@ function ecenter_weathermap_get_hops($src = NULL) {
     }
     else {
       $client = ecenter_weathermap_get_client('message');
-      $result = $client->getHops();
-      //$result = _ecenter_weathermap_sources();
+      //$result = $client->getHops();
+      $result = _ecenter_weathermap_sources();
       if ($result['code'] == 200) {
         $data = ecenter_weathermap_parse_hops($result['response']);
         $hops[$src_key] = $data;
@@ -998,15 +998,17 @@ function ecenter_weathermap_layers_sites() {
       'wkt' => "POINT({$hub['longitude']} {$hub['latitude']})",
       'projection' => "4326",
       'style' => array(
-        'pointRadius' => 5,
+        'pointRadius' => 6,
         'fillColor' => '#ffffff',
+        'fillOpacity' => .6,
         'strokeColor' => '#0000aa',
-        'strokeWidth' => 2,
-        'fillOpacity' => 1,
+        'strokeWidth' => 3,
+        'strokeOpacity' => .6,
         'label' => $hub['hub_name'],
         'labelYOffset' => -20,
         'fontWeight' => 'bold',
         'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',
+        'fontColor' => '#555555',
       ),
     );
   }

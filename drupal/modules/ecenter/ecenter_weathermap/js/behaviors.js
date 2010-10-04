@@ -6,14 +6,14 @@ Drupal.behaviors.EcenterTraceroute = function(context) {
 }
 
 // Add date hiding / showing widget
-Drupal.behaviors.EcenterDatehide = function(context) {
+/*Drupal.behaviors.EcenterDatehide = function(context) {
   $('#date-wrapper').datehide({
     'startDateSelector' : '#edit-ip-select-date-wrapper-start-datepicker-popup-0',
     'startTimeSelector' : '#edit-ip-select-date-wrapper-start-timeEntry-popup-1',
     'endDateSelector'   : '#edit-ip-select-date-wrapper-end-datepicker-popup-0',
     'endTimeSelector'   : '#edit-ip-select-date-wrapper-end-timeEntry-popup-1'
   });
-}
+}*/
 
 // Catchall for minor behavior modifications
 Drupal.behaviors.EcenterEvents = function(context) {
@@ -30,8 +30,10 @@ Drupal.behaviors.EcenterEvents = function(context) {
  */
 Drupal.behaviors.EcenterRepositionResults = function(context) {
   var results = $('.end-to-end-results');
-  $('#weathermap-end-to-end-results').html(results.html());
-  $('#weathermap-end-to-end-results .end-to-end-results').css('display', 'block');
+  if (results.length) {
+    $('#weathermap-end-to-end-results').html(results.html());
+    $('#weathermap-end-to-end-results .end-to-end-results').css('display', 'block');
+  }
 }
 
 /**

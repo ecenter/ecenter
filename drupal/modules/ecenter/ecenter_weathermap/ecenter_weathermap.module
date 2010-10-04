@@ -876,9 +876,6 @@ function ecenter_weathermap_openlayers_presets() {
     ),
     'behaviors' => array(
       'ecenter_weathermap_behavior_dynamicload' => array(),
-      'openlayers_behavior_tooltip' => array(
-        'layers' => array(),
-      ),
       'openlayers_behavior_fullscreen' => array(
         'activated' => 0,
       ),

@@ -55,7 +55,7 @@ any ['get'] =>  "/status.:format" =>
        };
 any ['get'] =>  "/health.:format" => 
        sub {
- 	      return get_health();
+ 	      return get_health(params('query'));
        };
 ## get all hubs for src_ip/dst_ip
 any ['get'] =>  "/source.:format" => 
@@ -119,7 +119,27 @@ any ['get', 'post'] =>  '/data.:format' =>
 	}
 	return $data;
     };
-
+sub _params_to_date {
+     my %params = validate(@_, { start  => {type => SCALAR, regex => $REG_DATE, optional => 1},
+		                 end    => {type => SCALAR, regex => $REG_DATE, optional => 1},
+			    }
+	       );
+    $params{end} =  DateTime::Format::MySQL->parse_datetime( $params{end} )->epoch if $params{end};
+    $params{end} ||=  time();
+    $params{start} = DateTime::Format::MySQL->parse_datetime($params{start})->epoch if $params{start};
+    $params{start} ||=  ($params{end}  - 12*3600);
+    map { $params{$_}{end} =  $params{end};   
+          $params{$_}{start} =  $params{start}
+	} 
+    qw/owamp pinger snmp bwctl traceroute/;
+	      
+    if(  ($params{end}-$params{start}) < 3600*12) {
+	    my $median = $params{start} + int(($params{end}-$params{start})/2);
+	    $params{bwctl}{start} = $median - 6*3600; # 6 hours
+	    $params{bwctl}{end}   = $median + 6*3600; # 6 hours
+    }
+    return \%params;
+}
 # 
 #
 # return hash with error string for each non-healthy part of the data service
@@ -129,12 +149,13 @@ any ['get', 'post'] =>  '/data.:format' =>
 #
 
 sub get_health {
+    my $params = _params_to_date(@_);
     my @services = ();
     my %health = ();
     foreach my $site (qw/anl.gov lbl.gov bnl.gov dmz.net ornl.gov slac.stanford.edu es.net/) {
-        foreach my $type (qw/bwctl pinger owamp/) {
-    	    my $e2e_sql = qq|select  count(distinct m.metaid)   from   metadata m
-					        		join  node n_src on(m.src_ip = n_src.ip_addr) 
+        foreach my $type (qw/bwctl pinger owamp traceroute/) {
+    	    my $e2e_sql = qq|select  distinct m.metaid  from metadata m
+					        		join node n_src on(m.src_ip = n_src.ip_addr) 
 							 	join eventtype e on(m.eventtype_id = e.ref_id)
 								join service s  on (e.service = s.service)
 							  where  
@@ -142,8 +163,23 @@ sub get_health {
 								e.service_type  = '$type' and
 								s.url  like 'http%' |;
 	    debug " E2E SQL:: $e2e_sql";
-	    my $count =  database->selectrow_array($e2e_sql );
-	    $health{$site}{$type} = ' no metadata' unless $count;
+	    my @mds=  @{database->selectall_arrayref($e2e_sql)}; 
+	    debug " MDS::" . Dumper \@mds;
+	    $health{metadata}{$site}{$type}{metadata_count} = scalar @mds;
+	    $health{time_period}{$type}{start} =   $params->{$type}{start};
+	    $health{time_period}{$type}{end} =   $params->{$type}{end};
+	    if(@mds) {
+	        my $md_ins = join("','", map {$_->[0]} @mds);
+		my $timekey = $type eq 'traceroute'?'updated':'timestamp';
+		my $date_cond = ' ( 1 ';
+                $date_cond .= $params->{$type}{start}?" AND  $timekey>= $params->{$type}{start}":'';  
+                $date_cond .= $params->{$type}{end}?" AND  $timekey <= $params->{$type}{end}":'';
+                $date_cond .= ')';
+		my $sql = qq|select count(*) from $type\_data where metaid in  ('$md_ins') and $date_cond|;
+		debug "Data::sql::$sql";
+	        $health{metadata}{$site}{$type}{cached_data_count} = database->selectrow_array($sql);
+	    }
+	    
         }
     }
     
@@ -246,27 +282,8 @@ sub process_data {
     
     #   get epoch or set end default to NOW and start to end-12 hours
    
-    $params{end} =  DateTime::Format::MySQL->parse_datetime( $params{end} )->epoch if $params{end};
-    $params{end} ||=  time();
-    $params{start} = DateTime::Format::MySQL->parse_datetime($params{start})->epoch if $params{start};
-    $params{start} ||=  ($params{end}  - 12*3600);
-    $logger->info("Before traceroute sql  start=$params{start}  end=$params{end}  ");
-   
-    map { $params{$_}{end} =  $params{end};   
-          $params{$_}{start} =  $params{start}
-	} 
-            qw/owamp pinger snmp bwctl traceroute/;
-	      
-    if(  ($params{end}-$params{start}) < 3600*12) {
-	    my $median = $params{start} + int(($params{end}-$params{start})/2);
-	    $params{bwctl}{start} = $median - 6*3600; # 6 hours
-	    $params{bwctl}{end}   = $median + 6*3600; # 6 hours
-    } 
-    #if(  ($params{end}-$params{start}) < 3600*24) {
-    #	    my $median = $params{start} + int(($params{end}-$params{start})/2);
-    #	    $params{traceroute}{start} = $median - 12*3600; # 6 hours
-    #	    $params{traceroute}{end}   = $median + 12*3600; # 6 hours
-   #   }
+    my $date_params  =  _params_to_date({start => $params{start},end => $params{end}});
+    map { $params{$_} = $date_params->{$_} } keys %{$date_params};
     my $trace_cond = {};
     
     if($params{src_ip}) {

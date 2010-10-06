@@ -120,15 +120,25 @@ $(document).ready(function() {
       }
     }*/
 
-
     $('#trace-hop-label-' + hop.id).addClass('highlight');
     if (hop.corresponding_id) {
       $('#trace-hop-label-' + hop.corresponding_id).addClass('highlight');
     }
   });
 
+  // Bind to series unhighlighting
   $('#results').bind('jqplotUnhighlightSeries', function(e, sidx, plot) {
     $('.trace-label').removeClass('highlight');
+  });
+
+  // Bind to feature select
+  $('#weathermap-map').bind('ecenterfeatureselect', function(e, feature, layer) {
+    // No selected features
+    if (layer.selectedFeatures.length) {
+      $('#edit-ip-select-src-wrapper-src-wrapper input')
+        .val(feature.data.hub_name)
+        .change();
+    }
   });
 
 });

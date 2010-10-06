@@ -880,9 +880,9 @@ function ecenter_weathermap_openlayers_presets() {
       'openlayers_behavior_fullscreen' => array(
         'activated' => 0,
       ),
-      'openlayers_behavior_navigation' => array(
-        'zoomWheelEnabled' => 0,
-      ),
+      //'openlayers_behavior_navigation' => array(
+      //  'zoomWheelEnabled' => 0,
+      //),
       'openlayers_behavior_panzoombar' => array(),
     ),
     'default_layer' => 'osm_mapnik',
@@ -1017,19 +1017,6 @@ function ecenter_weathermap_layers_sites() {
         'strokeWidth' => 3,
         'strokeOpacity' => .6,
         'label' => $hub['hub_name'],
-        'labelYOffset' => -20,
-        'fontWeight' => 'bold',
-        'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',
-        'fontColor' => '#555555',
-      ),
-      'selectStyle' => array(
-        'pointRadius' => 6,
-        'fillColor' => '#ffffff',
-        'fillOpacity' => 1,
-        'strokeColor' => '#0000aa',
-        'strokeWidth' => 5,
-        'strokeOpacity' => 1,
-        'label' => 'fooooooooo',
         'labelYOffset' => -20,
         'fontWeight' => 'bold',
         'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',

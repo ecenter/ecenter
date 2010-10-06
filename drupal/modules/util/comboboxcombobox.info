@@ -1,0 +1,7 @@
+;$Id$
+name = Combobox
+package = Utilities
+description = Add combobox FAPI element
+core = 6.x
+
+dependencies[] = jquery_ui

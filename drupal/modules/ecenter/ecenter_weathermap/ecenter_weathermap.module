@@ -384,7 +384,6 @@ function ecenter_weathermap_select_form_submit($form, &$form_state) {
  */
 function ecenter_weathermap_get_client($status_check = '503') {
   static $client = FALSE;
-  return TRUE;
   if (!$client) {
     require_once(dirname(__FILE__) . '/client.php');
     $host = variable_get('ecenter_weathermap_host', 'localhost');
@@ -485,8 +484,8 @@ function ecenter_weathermap_get_hops($src = NULL) {
     }
     else {
       $client = ecenter_weathermap_get_client('message');
-      //$result = $client->getHops();
-      $result = _ecenter_weathermap_sources();
+      $result = $client->getHops();
+      //$result = _ecenter_weathermap_sources();
       if ($result['code'] == 200) {
         $data = ecenter_weathermap_parse_hops($result['response']);
         $hops[$src_key] = $data;

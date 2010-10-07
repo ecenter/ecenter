@@ -134,10 +134,30 @@ $(document).ready(function() {
   // Bind to feature select
   $('#weathermap-map').bind('ecenterfeatureselect', function(e, feature, layer) {
     // No selected features
-    if (layer.selectedFeatures.length) {
+    if (layer.selectedFeatures.length == 1) {
+      // Set value, then call autocomplete's change function
       $('#edit-ip-select-src-wrapper-src-wrapper input')
-        .val(feature.data.hub_name)
-        .change();
+        .val(feature.data.hub_name).data('autocomplete')._trigger('change');
+    }
+    else if (layer.selectedFeatures.length == 2) {
+      // Set value, then call autocomplete's change function
+      $('#edit-ip-select-dst-wrapper-dst-wrapper input')
+        .val(feature.data.hub_name).data('autocomplete')._trigger('change');
+    }
+  });
+
+  // Bind to feature select
+  $('#weathermap-map').bind('ecenterfeatureunselect', function(e, feature, layer) {
+    // No selected features
+    if (!layer.selectedFeatures.length) {
+      // Set value, then call autocomplete's change function
+      $('#edit-ip-select-src-wrapper-src-wrapper input')
+        .val('').data('autocomplete')._trigger('change');
+    }
+    else if (layer.selectedFeatures.length == 1) {
+      // Set value, then call autocomplete's change function
+      $('#edit-ip-select-dst-wrapper-dst-wrapper input')
+        .val('').data('autocomplete')._trigger('change');
     }
   });
 

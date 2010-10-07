@@ -384,7 +384,6 @@ function ecenter_weathermap_select_form_submit($form, &$form_state) {
  */
 function ecenter_weathermap_get_client($status_check = '503') {
   static $client = FALSE;
-  return TRUE;
   if (!$client) {
     require_once(dirname(__FILE__) . '/client.php');
     $host = variable_get('ecenter_weathermap_host', 'localhost');
@@ -485,8 +484,8 @@ function ecenter_weathermap_get_hops($src = NULL) {
     }
     else {
       $client = ecenter_weathermap_get_client('message');
-      //$result = $client->getHops();
-      $result = _ecenter_weathermap_sources();
+      $result = $client->getHops();
+      //$result = _ecenter_weathermap_sources();
       if ($result['code'] == 200) {
         $data = ecenter_weathermap_parse_hops($result['response']);
         $hops[$src_key] = $data;
@@ -876,7 +875,7 @@ function ecenter_weathermap_openlayers_presets() {
     ),
     'behaviors' => array(
       'ecenter_weathermap_behavior_weathermap_select' => array(),
-      'ecenter_weathermap_behavior_dynamicload' => array(),
+      //'ecenter_weathermap_behavior_dynamicload' => array(),
       'openlayers_behavior_fullscreen' => array(
         'activated' => 0,
       ),
@@ -1010,17 +1009,17 @@ function ecenter_weathermap_layers_sites() {
       'wkt' => "POINT({$hub['longitude']} {$hub['latitude']})",
       'projection' => "4326",
       'style' => array(
-        'pointRadius' => 6,
+        'pointRadius' => 5,
         'fillColor' => '#ffffff',
-        'fillOpacity' => .6,
-        'strokeColor' => '#0000aa',
-        'strokeWidth' => 3,
-        'strokeOpacity' => .6,
+        'fillOpacity' => 1,
+        'strokeColor' => '#5a5aaa',
+        'strokeWidth' => 2,
+        'strokeOpacity' => 1,
         'label' => $hub['hub_name'],
         'labelYOffset' => -20,
         'fontWeight' => 'bold',
         'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',
-        'fontColor' => '#555555',
+        'fontColor' => '#777777',
       ),
       'attributes' => array('hub_name' => $hub['hub_name']),
     );

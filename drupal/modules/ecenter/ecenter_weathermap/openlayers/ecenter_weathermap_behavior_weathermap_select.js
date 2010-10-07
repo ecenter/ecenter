@@ -24,7 +24,6 @@ Drupal.behaviors.ecenter_weathermap_behavior_weathermap_select = function(contex
       for (var i in options.layers) {
         var selectedLayer = map.getLayersBy('drupalID', options.layers[i]);
         if (typeof selectedLayer[0] != 'undefined') {
-          console.log(selectedLayer);
           layers.push(selectedLayer[0]);
         }
       }
@@ -42,8 +41,9 @@ Drupal.behaviors.ecenter_weathermap_behavior_weathermap_select = function(contex
           clickout: Drupal.ecenterWeathermapSelect.clickout
         },
         selectStyle: {
-          strokeOpacity: 1,
-          fillOpacity: 1,
+          strokeColor: '#0000aa',
+          pointRadius: 7,
+          strokWidth: 3,
           fontColor: '#222222'
         },
         highlight: function(feature) {},
@@ -60,53 +60,41 @@ Drupal.behaviors.ecenter_weathermap_behavior_weathermap_select = function(contex
 Drupal.ecenterWeathermapSelect = {};
 
 Drupal.ecenterWeathermapSelect.click = function(feature) {
+  var layer = feature.layer;
   var selected = (OpenLayers.Util.indexOf(
     feature.layer.selectedFeatures, feature) > -1);
   if (selected) {
     this.unselect(feature);
-    /*if(this.toggleSelect()) {
-    } else if(!this.multipleSelect()) {
-        this.unselectAll({except: feature});
-    }*/
+    Drupal.ecenterWeathermapSelect.out(feature); // Unhighlight
+    $('#weathermap-map').trigger('ecenterfeatureunselect', [feature, feature.layer]);
   } else {
-    /*if (!this.multipleSelect()) {
-      this.unselectAll({except: feature});
-    }*/
     this.select(feature);
-
-    // @TODO -- is this bad?  I'd much prefer to use jQuery's native DOM
-    // event handling here.
     $('#weathermap-map').trigger('ecenterfeatureselect', [feature, feature.layer]);
   }
 }
 
-Drupal.ecenterWeathermapSelect.clickout = function(feature) {
+/*Drupal.ecenterWeathermapSelect.clickout = function(feature) {
   console.log('clickout');
   console.log(feature);
-}
+}*/
 
-// Pretty much a straight up copy of OL's highlight routine 
 Drupal.ecenterWeathermapSelect.over = function(feature) {
-  console.log(this);
   var layer = feature.layer;
-  var cont = this.events.triggerEvent("ecenterbeforefeatureover", {
-      feature : feature
-  });
-  if (cont !== false) {
-    feature._prevHighlighter = feature._lastHighlighter;
-    feature._lastHighlighter = this.id;
-    var style = $.extend({}, feature.style, this.selectStyle);
-    layer.drawFeature(feature, style);
-    this.events.triggerEvent("ecenterfeatureover", {feature : feature});
-  }
-
+  feature._prevHighlighter = feature._lastHighlighter;
+  feature._lastHighlighter = this.id;
+  var style = $.extend({}, feature.style, this.selectStyle);
+  layer.drawFeature(feature, style);
+  this.events.triggerEvent("ecenterfeatureover", {feature : feature});
 }
 
 Drupal.ecenterWeathermapSelect.out = function(feature) {
   var layer = feature.layer;
-  feature._lastHighlighter = feature._prevHighlighter;
-  delete feature._prevHighlighter;
-  layer.drawFeature(feature, feature.style || feature.layer.style ||
-      "default");
-  this.events.triggerEvent("ecenterfeatureout", {feature : feature});
+  var selected = (OpenLayers.Util.indexOf(
+    feature.layer.selectedFeatures, feature) > -1);
+  if (!selected) {
+    feature._lastHighlighter = feature._prevHighlighter;
+    delete feature._prevHighlighter;
+    layer.drawFeature(feature, feature.style || feature.layer.style ||
+        "default");
+  }
 }

@@ -546,7 +546,7 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
   $data = $response['response'];
   $hops = ecenter_weathermap_get_hops();
 
-  foreach (array('traceroute', 'reverse_traceroute') as $direction) {
+  foreach (array('direct_traceroute', 'reverse_traceroute') as $direction) {
 
     // We may not have ANY forward or reverse traceroutes
     if (empty($data[$direction])) {
@@ -560,7 +560,7 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
     $traceroute = array_shift(array_values($data[$direction]));
 
     // Synthesize forward and reverse hops
-    if ($direction == 'traceroute') {
+    /*if ($direction == 'traceroute') {
       $hub = array_shift(explode('-', $traceroute[0]['hub']));
       if ($hub != $src) {
         $new_hop = $hops[$src] + array(
@@ -607,7 +607,7 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
         );
         array_push($traceroute, $new_hop);
       }
-    }
+    }*/
 
     // Main loop
     foreach ($traceroute as $hop) {

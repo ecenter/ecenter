@@ -13,7 +13,9 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
   // Generate permalink
   $vars['permalink'] = l('Permalink', 'weathermap', array('query' => $vars['params']));
 
-  dpm($vars['data']);
+  /*dpm(debug_backtrace());
+  dpm($vars);
+  dpm($vars['data']);*/
 
   // Generate issue link -- encode params for use with custom ecenter_issues
   // module

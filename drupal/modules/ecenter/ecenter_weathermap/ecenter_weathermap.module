@@ -349,19 +349,19 @@ function ecenter_weathermap_select_form(&$form_state) {
     );
 
     // If we've got the data (at bare minimum, a traceroute), delegate to rendering function
-    //if ($data) {
+    if ($data) {
       drupal_add_js(array('ecenterWeathermap' => array('tracerouteData' => $data['js_diff'])), 'setting');
       drupal_add_js(array('ecenterWeathermap' => array('tracerouteMaxLength' => $data['traceroute_max'])), 'setting');
       drupal_add_js(array('ecenterWeathermap' => array('seriesLookup' => $data['series_lookup'])), 'setting');
       ecenter_weathermap_refresh_map('ecenter_weathermap', 'openlayers-map-auto-id-0');
       $form['results_wrapper']['results']['#value'] = theme('ecenter_weathermap_data', $data, $params);
-    /*}
+    }
     else {
       watchdog('ecenter', 'Query returned no results: <code>@query</code>', array('@query' => $query), WATCHDOG_INFO);
       $form['results_wrapper']['results']['#value'] = '<p>'. t('Whoops! No data was available for this query. If you believe there should be data for this query, send the site administrator feedback along with executed query, provided below:') .'</p>';
       $form['results_wrapper']['results']['#value'] .= '<pre>'. $query .'</pre>';
       $form['results_wrapper']['results']['#value'] .= '<p>'. l(t('Permalink'), 'weathermap', array('query' => $query_params)) .'</p>';
-    }*/
+    }
   }
   return $form;
 }
@@ -546,7 +546,13 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
   $data = $response['response'];
   $hops = ecenter_weathermap_get_hops();
 
-  foreach (array('traceroute', 'reverse_traceroute') as $direction) {
+  dpm($hops);
+
+  // @TODO extract from params instead?
+  list($src_type, $src_val) = explode(':', $src, 2);
+  list($dst_type, $dst_valu) = explode(':', $dst, 2);
+
+  foreach (array('direct_traceroute', 'reverse_traceroute') as $direction) {
 
     // We may not have ANY forward or reverse traceroutes
     if (empty($data[$direction])) {
@@ -559,8 +565,43 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
     krsort($data[$direction]);
     $traceroute = array_shift(array_values($data[$direction]));
 
+    dpm($traceroute);
+    dpm($src);
+
     // Synthesize forward and reverse hops
-    if ($direction == 'traceroute') {
+    if ($direction == 'direct_traceroute') {
+      if ($src_type == 'hub') {
+        $hop_id = array_shift(explode('-', $traceroute[0]['hub']));
+        $key = 'hub';
+      }
+      else {
+        $hop_id = $traceroute[0]['hop_ip'];
+
+      }
+      /*if ($hop_id != $src_val) {
+        $new_hop = $hops[$src_val] + array(
+          'hop_id' => uniqid('start-'),
+          'hop_ip' => $src,
+          'nodename' => $src,
+          'netblock' => 'src',
+        );
+        array_unshift($traceroute, $new_hop);
+        dpm($traceroute);
+      }*/
+
+      //$last = count($traceroute) -1;
+      //$hub = array_shift(explode('-', $traceroute[$last]['hub']));
+      //if ($hub != $dst) {
+      //  $new_hop = $hops[$dst] + array(
+      //    'hop_id' => uniqid('start-'),
+      //    'hop_ip' => $dst,
+      //    'nodename' => $dst,
+      //    'netblock' => 'dst',
+      //  );
+      //  array_push($traceroute, $new_hop);
+      //}
+    }
+    /*elseif ($direction == 'reverse_traceroute') {
       $hub = array_shift(explode('-', $traceroute[0]['hub']));
       if ($hub != $src) {
         $new_hop = $hops[$src] + array(
@@ -583,31 +624,7 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
         );
         array_push($traceroute, $new_hop);
       }
-    }
-    elseif ($direction == 'reverse_traceroute') {
-      $hub = array_shift(explode('-', $traceroute[0]['hub']));
-      if ($hub != $src) {
-        $new_hop = $hops[$src] + array(
-          'hop_id' => uniqid('start-'),
-          'hop_ip' => $src,
-          'nodename' => $src,
-          'netblock' => 'src',
-        );
-        array_unshift($traceroute, $new_hop);
-      }
-
-      $last = count($traceroute) -1;
-      $hub = array_shift(explode('-', $traceroute[$last]['hub']));
-      if ($hub != $dst) {
-        $new_hop = $hops[$dst] + array(
-          'hop_id' => uniqid('start-'),
-          'hop_ip' => $dst,
-          'nodename' => $dst,
-          'netblock' => 'dst',
-        );
-        array_push($traceroute, $new_hop);
-      }
-    }
+    }*/
 
     // Main loop
     foreach ($traceroute as $hop) {
@@ -782,24 +799,26 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
     $parsed_data['series_lookup'] = array('id' => $series_by_id, 'idx' => $series_by_idx);
   }
 
+  //dpm($data);
+  //dpm($parsed_data);
   return $parsed_data;
 }
 
 /**
  * Parse hops
- * 
+ *
  * @param $hop_list
  *  List of hops returns from data service
- * @return 
+ * @return
  *  Parsed array consisting of hubs and hops
  */
-function ecenter_weathermap_parse_hops($hop_list) {
-  $hops = array();
+function ecenter_weathermap_parse_hops($hops) {
+  $combined = array();
   $hubs = array();
 
-  usort($hop_list, '_ecenter_weathermap_sort_hopname');
+  usort($hops, '_ecenter_weathermap_sort_hopname');
 
-  foreach ($hop_list as $hop) {
+  foreach ($hops as $hop) {
     // First instance of hub
     if (empty($hubs[$hop['hub_name']])) {
       $hubs[$hop['hub_name']] = $hop;
@@ -808,8 +827,8 @@ function ecenter_weathermap_parse_hops($hop_list) {
 
     $hops['ip:'. $hop['ip_noted']] = $hop + array('type' => 'ip');
   }
-  
-  return array('hops' => $hops, 'hubs' => $hubs);
+
+  return array('combined' => $combined, 'hops' => $hops, 'hubs' => $hubs);
 }
 
 /**
@@ -987,7 +1006,7 @@ function ecenter_weathermap_openlayers_layers() {
 }
 
 /**
- * Generate traceroute 
+ * Generate traceroute
  */
 function ecenter_weathermap_layers_sites() {
   $hops = ecenter_weathermap_get_hops();
@@ -1006,6 +1025,7 @@ function ecenter_weathermap_layers_sites() {
   $i = 0;
   foreach ($hops['hubs'] as $hub) {
     $features[] = array(
+      'fid' => $hub['hub_name'],
       'wkt' => "POINT({$hub['longitude']} {$hub['latitude']})",
       'projection' => "4326",
       'style' => array(

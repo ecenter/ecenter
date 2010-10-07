@@ -120,15 +120,45 @@ $(document).ready(function() {
       }
     }*/
 
-
     $('#trace-hop-label-' + hop.id).addClass('highlight');
     if (hop.corresponding_id) {
       $('#trace-hop-label-' + hop.corresponding_id).addClass('highlight');
     }
   });
 
+  // Bind to series unhighlighting
   $('#results').bind('jqplotUnhighlightSeries', function(e, sidx, plot) {
     $('.trace-label').removeClass('highlight');
+  });
+
+  // Bind to feature select
+  $('#weathermap-map').bind('ecenterfeatureselect', function(e, feature, layer) {
+    // No selected features
+    if (layer.selectedFeatures.length == 1) {
+      // Set value, then call autocomplete's change function
+      $('#edit-ip-select-src-wrapper-src-wrapper input')
+        .val(feature.data.hub_name).data('autocomplete')._trigger('change');
+    }
+    else if (layer.selectedFeatures.length == 2) {
+      // Set value, then call autocomplete's change function
+      $('#edit-ip-select-dst-wrapper-dst-wrapper input')
+        .val(feature.data.hub_name).data('autocomplete')._trigger('change');
+    }
+  });
+
+  // Bind to feature select
+  $('#weathermap-map').bind('ecenterfeatureunselect', function(e, feature, layer) {
+    // No selected features
+    if (!layer.selectedFeatures.length) {
+      // Set value, then call autocomplete's change function
+      $('#edit-ip-select-src-wrapper-src-wrapper input')
+        .val('').data('autocomplete')._trigger('change');
+    }
+    else if (layer.selectedFeatures.length == 1) {
+      // Set value, then call autocomplete's change function
+      $('#edit-ip-select-dst-wrapper-dst-wrapper input')
+        .val('').data('autocomplete')._trigger('change');
+    }
   });
 
 });

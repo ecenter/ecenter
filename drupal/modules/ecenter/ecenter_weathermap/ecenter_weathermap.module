@@ -262,7 +262,7 @@ function _ecenter_weathermap_select_form() {
   );
   $form['weathermap_wrapper']['end_to_end_results'] = array(
     '#prefix' => '<div id="weathermap-end-to-end-results">',
-    '#value' => t('Click a source and destination on the map to get path statistics (currently not functional!), or select source and destination using the form above.'),
+    '#value' => t('Click a source and destination on the map to get path statistics (currently not functional), or select source and destination using the form above.'),
     '#suffix' => '</div>',
   );
 
@@ -874,13 +874,14 @@ function ecenter_weathermap_openlayers_presets() {
       ),
     ),
     'behaviors' => array(
-      'ecenter_weathermap_behavior_dynamicload' => array(),
+      'ecenter_weathermap_behavior_weathermap_select' => array(),
+      //'ecenter_weathermap_behavior_dynamicload' => array(),
       'openlayers_behavior_fullscreen' => array(
         'activated' => 0,
       ),
-      'openlayers_behavior_navigation' => array(
-        'zoomWheelEnabled' => 0,
-      ),
+      //'openlayers_behavior_navigation' => array(
+      //  'zoomWheelEnabled' => 0,
+      //),
       'openlayers_behavior_panzoombar' => array(),
     ),
     'default_layer' => 'osm_mapnik',
@@ -947,7 +948,7 @@ function ecenter_weathermap_openlayers_styles() {
  * Implementation of hook_openlayers_behaviors().
  */
 function ecenter_weathermap_openlayers_behaviors() {
-  return array(
+  $behaviors = array(
     'ecenter_weathermap_behavior_dynamicload' => array(
       'title' => t('E-Center Weathermap: Dynamic Load'),
       'behavior' => array(
@@ -957,7 +958,17 @@ function ecenter_weathermap_openlayers_behaviors() {
         'parent' => 'openlayers_behavior',
       ),
     ),
+    'ecenter_weathermap_behavior_weathermap_select' => array(
+      'title' => t('E-Center Weathermap: Select behavior'),
+      'behavior' => array(
+        'path' => drupal_get_path('module', 'ecenter_weathermap') .'/openlayers',
+        'file' => 'ecenter_weathermap_behavior_weathermap_select.inc',
+        'class' => 'ecenter_weathermap_behavior_weathermap_select',
+        'parent' => 'openlayers_behavior',
+      ),
+    ),
   );
+  return $behaviors;
 }
 
 /**
@@ -985,30 +996,32 @@ function ecenter_weathermap_layers_sites() {
   $layer = new stdClass();
   $layer->api_version = 1;
   $layer->name = 'ecenter_weathermap_sites';
-  $layer->title = t('Traceroute @id', array('@id' => $trace_id));
+  $layer->title = t('E-center Weathermap Sites');
   $layer->description = '';
   $layer->data = array(
     'layer_type' => 'openlayers_layer_type_raw',
     'projection' => array('900913'),
   );
 
+  $i = 0;
   foreach ($hops['hubs'] as $hub) {
     $features[] = array(
       'wkt' => "POINT({$hub['longitude']} {$hub['latitude']})",
       'projection' => "4326",
       'style' => array(
-        'pointRadius' => 6,
+        'pointRadius' => 5,
         'fillColor' => '#ffffff',
-        'fillOpacity' => .6,
-        'strokeColor' => '#0000aa',
-        'strokeWidth' => 3,
-        'strokeOpacity' => .6,
+        'fillOpacity' => 1,
+        'strokeColor' => '#5a5aaa',
+        'strokeWidth' => 2,
+        'strokeOpacity' => 1,
         'label' => $hub['hub_name'],
         'labelYOffset' => -20,
         'fontWeight' => 'bold',
         'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',
-        'fontColor' => '#555555',
+        'fontColor' => '#777777',
       ),
+      'attributes' => array('hub_name' => $hub['hub_name']),
     );
   }
 

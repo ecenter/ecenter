@@ -586,7 +586,7 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
     dpm($traceroute, $direction .' before');
 
     // Synthesize forward and reverse hops
-    /*if ($direction == 'direct_traceroute') {
+    if ($direction == 'direct_traceroute') {
       if ($src_type == 'hub') {
         $hop_identifier = strtoupper(array_shift(explode('-', $traceroute[0]['hub'])));
       }
@@ -596,8 +596,6 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
       if ($hop_identifier != $src_val) {
         $new_hop = $hops['combined'][$src] + array(
           'hop_id' => uniqid('start-'),
-          'fake_key' => 'start',
-          //$key => $hop_identifier,
         );
         array_unshift($traceroute, $new_hop);
       }
@@ -612,7 +610,6 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
       if ($hop_identifier != $dst_val) {
         $new_hop = $hops['combined'][$dst] + array(
           'hop_id' => uniqid('end-'),
-          'fake_key' => 'end',
         );
         array_push($traceroute, $new_hop);
       }
@@ -627,7 +624,6 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
       if ($hop_identifier != $dst_val) {
         $new_hop = $hops['combined'][$dst] + array(
           'hop_id' => uniqid('end-'),
-          'fake_key' => 'end',
         );
         array_unshift($traceroute, $new_hop);
       }
@@ -642,11 +638,10 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
       if ($hop_identifier != $src_val) {
         $new_hop = $hops['combined'][$src] + array(
           'hop_id' => uniqid('start-'),
-          'fake_key' => 'start',
         );
         array_push($traceroute, $new_hop);
       }
-    }*/
+    }
     /*elseif ($direction == 'reverse_traceroute') {
 
       if ($dst_type == 'hub') {
@@ -888,7 +883,6 @@ function ecenter_weathermap_parse_hops($hops) {
 
     $combined['ip:'. $hop['ip_noted']] = $hop + array('type' => 'ip');
   }
-
   return array('combined' => $combined, 'hops' => $hops, 'hubs' => $hubs);
 }
 
@@ -954,23 +948,25 @@ function ecenter_weathermap_openlayers_presets() {
       ),
     ),
     'behaviors' => array(
-      'ecenter_weathermap_behavior_weathermap_select' => array(),
-      'ecenter_weathermap_behavior_dynamicload' => array(),
+      'openlayers_behavior_navigation' => array(
+        'zoomWheelEnabled' => 0,
+      ),
+      'openlayers_behavior_panzoombar' => array(),
+      //'ecenter_weathermap_behavior_weathermap_select' => array(),
+      //'ecenter_weathermap_behavior_dynamicload' => array(),
       'openlayers_behavior_fullscreen' => array(
         'activated' => 0,
       ),
-      //'openlayers_behavior_navigation' => array(
-      //  'zoomWheelEnabled' => 0,
-      //),
-      'openlayers_behavior_panzoombar' => array(),
     ),
     'default_layer' => 'osm_mapnik',
     'layers' => array(
       'osm_mapnik' => 'osm_mapnik',
       'ecenter_weathermap_sites' => 'ecenter_weathermap_sites',
+      'ecenter_weathermap_traceroute' => 'ecenter_weathermap_traceroute',
     ),
     'layer_activated' => array(
       'ecenter_weathermap_sites' => 'ecenter_weathermap_sites',
+      'ecenter_weathermap_traceroute' => 'ecenter_weathermap_traceroute',
     ),
     'projection' => '900913',
     'displayProjection' => '4326',
@@ -1055,14 +1051,13 @@ function ecenter_weathermap_openlayers_behaviors() {
  * Implementation of hook_openlayers_layers().
  */
 function ecenter_weathermap_openlayers_layers() {
-  $layers = array(
-    'ecenter_weathermap_sites' => ecenter_weathermap_layers_sites(),
-  );
+  $layers = array();
 
   // Provide dynamic layers for map on
   if ((arg(0) == 'weathermap' && !arg(1)) || ($_REQUEST['form_id'] == 'ecenter_weathermap_select_form')) {
     $layers += ecenter_weathermap_layers_traceroute();
   }
+  $layer['ecenter_weathermap_sites'] = ecenter_weathermap_layers_sites();
   return $layers;
 }
 
@@ -1086,7 +1081,6 @@ function ecenter_weathermap_layers_sites() {
   $i = 0;
   foreach ($hops['hubs'] as $hub) {
     $features[] = array(
-      'fid' => $hub['hub_name'],
       'wkt' => "POINT({$hub['longitude']} {$hub['latitude']})",
       'projection' => "4326",
       'style' => array(

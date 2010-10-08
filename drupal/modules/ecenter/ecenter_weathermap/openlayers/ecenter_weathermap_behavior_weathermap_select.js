@@ -34,6 +34,7 @@ Drupal.behaviors.ecenter_weathermap_behavior_weathermap_select = function(contex
     // SelectFeature at all...
     weathermapSelect = new OpenLayers.Control.SelectFeature(layers,
       {
+        ecenterID: 'ecenter_weathermap_select',
         callbacks: {
           over: Drupal.ecenterWeathermapSelect.over,
           out: Drupal.ecenterWeathermapSelect.out,
@@ -72,11 +73,6 @@ Drupal.ecenterWeathermapSelect.click = function(feature) {
     $('#weathermap-map').trigger('ecenterfeatureselect', [feature, feature.layer]);
   }
 }
-
-/*Drupal.ecenterWeathermapSelect.clickout = function(feature) {
-  console.log('clickout');
-  console.log(feature);
-}*/
 
 Drupal.ecenterWeathermapSelect.over = function(feature) {
   var layer = feature.layer;

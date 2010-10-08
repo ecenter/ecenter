@@ -380,7 +380,7 @@ function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
  */
 function theme_ecenter_weathermap_utilization_table($hop, $direction, $table) {
   $attributes = array();
-  $attributes['class'] = ($direction == 'forward') ? "{lineWidth : 2}" : "{lineWidth : .5, sizeAdjust: .5}";
+  //$attributes['class'] = ($direction == 'forward') ? "{lineWidth : 2}" : "{lineWidth : .5, sizeAdjust: .5}";
 
   $headers = array(t('Time'), t('Percent utilization'));
   $output = '<div class="snmp-data-table">';

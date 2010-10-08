@@ -116,10 +116,10 @@ class Ecenter_Data_Service_Client {
       'response' => $response,
     );
 
-    /*if ($path == 'data') {
+    if ($path == 'data') {
       dpm($url);
-      dpm($result);
-    }*/
+      //dpm($result);
+    }
 
     return $result;
   }

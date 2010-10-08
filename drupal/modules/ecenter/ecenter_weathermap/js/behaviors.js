@@ -45,6 +45,37 @@ Drupal.behaviors.EcenterRepositionResults = function(context) {
   //messages.remove();
 }*/
 
+EcenterWeathermap = {};
+
+/**
+ * select param calls select function on feature
+ */
+EcenterWeathermap.selectFeature = function(select) {
+   var maps = Drupal.settings.openlayers.maps;
+   var val = $(this).val().split(':', 2);
+   var query_type = val[0];
+   var query_value = val[1];
+
+   // Iterate over "all" maps for ease.  There should be but one.
+   if (query_type == 'hub') {
+     for (key in maps) {
+       var ol = $('#' + maps[key].id).data('openlayers');
+       var layer = ol.openlayers.getLayersBy('drupalID', 'ecenter_weathermap_sites').pop();
+       var control = ol.openlayers.getControlsBy('ecenterID', 'ecenter_weathermap_select').pop();
+       var feature = layer.getFeatureBy('ecenterID', query_value);
+
+       // If this is called while loading, we have a problem
+       if (feature) { 
+         control.callbacks.over.call(control, feature);
+         if (select) {
+           control.select.call(control, feature);
+         }
+       }
+     }
+   }
+}
+
+
 /**
  * Disable form elements during AHAH request
  *
@@ -53,6 +84,11 @@ Drupal.behaviors.EcenterRepositionResults = function(context) {
  * and executed once.
  */
 $(document).ready(function() {
+
+  $('#ecenter-weathermap-select-form #src-wrapper select, #ecenter-weathermap-select-form #dst-wrapper select')
+  .change(function(e) { 
+    EcenterWeathermap.selectFeature.call(this, true);
+  });
 
   // Bind to ahah_start event
   $('#ecenter-weathermap-select-form').bind('ahah_start', function() {
@@ -97,32 +133,34 @@ $(document).ready(function() {
 
   // Bind to series highlighting
   $('#results').bind('jqplotHighlightSeries', function(e, sidx, plot) {
-    var hop = Drupal.settings.ecenterWeathermap.seriesLookup.idx[sidx];
-    var tc = $('#results').data('TableChart');
-    var lh = tc.chart.plugins.linehighlighter;
+    if (Drupal.settings.ecenterWeathermap.seriesLookup) {
+      var hop = Drupal.settings.ecenterWeathermap.seriesLookup.idx[sidx];
+      var tc = $('#results').data('TableChart');
+      var lh = tc.chart.plugins.linehighlighter;
 
-    // Highlight corresponding line
-    /*if (hop.corresponding_idx) {
-      sidx = hop.corresponding_idx;
-      s = tc.chart.series[sidx];
-      console.log(hop);
-      console.log(s);
-      if (s == undefined) {
-        console.log('no series...');
-        console.log(sidx);
-        console.log(tc.chart.series);
-      }
-      console.log('---');
-      if (s) {
-        series_color = (lh.colors && lh.colors[sidx] != undefined) ? lh.colors[sidx] : s.seriesColors[sidx];
-        var opts = {color: series_color, lineWidth: s.lineWidth + lh.sizeAdjust};
-        lh.highlightSeries(sidx, tc.chart, opts);
-      }
-    }*/
+      // Highlight corresponding line
+      /*if (hop.corresponding_idx) {
+        sidx = hop.corresponding_idx;
+        s = tc.chart.series[sidx];
+        console.log(hop);
+        console.log(s);
+        if (s == undefined) {
+          console.log('no series...');
+          console.log(sidx);
+          console.log(tc.chart.series);
+        }
+        console.log('---');
+        if (s) {
+          series_color = (lh.colors && lh.colors[sidx] != undefined) ? lh.colors[sidx] : s.seriesColors[sidx];
+          var opts = {color: series_color, lineWidth: s.lineWidth + lh.sizeAdjust};
+          lh.highlightSeries(sidx, tc.chart, opts);
+        }
+      }*/
 
-    $('#trace-hop-label-' + hop.id).addClass('highlight');
-    if (hop.corresponding_id) {
-      $('#trace-hop-label-' + hop.corresponding_id).addClass('highlight');
+      $('#trace-hop-label-' + hop.id).addClass('highlight');
+      if (hop.corresponding_id) {
+        $('#trace-hop-label-' + hop.corresponding_id).addClass('highlight');
+      }
     }
   });
 
@@ -133,13 +171,12 @@ $(document).ready(function() {
 
   // Bind to feature select
   $('#weathermap-map').bind('ecenterfeatureselect', function(e, feature, layer) {
-    // No selected features
     if (layer.selectedFeatures.length == 1) {
       // Set value, then call autocomplete's change function
       $('#edit-ip-select-src-wrapper-src-wrapper input')
         .val(feature.data.hub_name).data('autocomplete')._trigger('change');
     }
-    else if (layer.selectedFeatures.length == 2) {
+    else if (layer.selectedFeatures.length > 1) {
       // Set value, then call autocomplete's change function
       $('#edit-ip-select-dst-wrapper-dst-wrapper input')
         .val(feature.data.hub_name).data('autocomplete')._trigger('change');

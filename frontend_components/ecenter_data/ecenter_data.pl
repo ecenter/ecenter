@@ -33,8 +33,8 @@ my $REG_DATE = qr/^\d{4}\-\d{2}\-\d{2}\s+\d{2}\:\d{2}\:\d{2}$/;
 #set content_type =>  'application/json';
 prepare_serializer_for_format;
 
-#my $output_level = config->{debug} && config->{debug}> 0 ?$DEBUG:$INFO;
-my $output_level =  $INFO;
+my $output_level = config->{debug} && config->{debug}> 0 ?$DEBUG:$INFO;
+#my $output_level =  $INFO;
 my %logger_opts = (
     level  => $output_level,
     layout => '%d (%P) %p> %F{1}:%L %M - %m%n'
@@ -331,7 +331,7 @@ sub process_data {
     }
      
     # end to end data  stats if available
-    return $data unless $params{src_ip} && $params{dst_ip};
+    ### return $data unless $params{src_ip} && $params{dst_ip};
     my %directions = (direct => ['src_ip', 'dst_ip'], reverse => ['dst_ip', 'src_ip'] );
    
     my @data_keys = qw/bwctl owamp pinger/;
@@ -347,8 +347,7 @@ sub process_data {
 								join eventtype e on(m.eventtype_id = e.ref_id)
 								join service s  on (e.service = s.service)
 							  where  
-								inet6_mask(m.src_ip, n_src.netmask) = inet6_mask(inet6_pton('$params{$directions{$dir}->[0]}'),  n_src.netmask) and
-								inet6_mask(m.dst_ip, n_dst.netmask) = inet6_mask(inet6_pton('$params{$directions{$dir}->[1]}'),  n_dst.netmask) and
+								$trace_cond->{"$dir\_traceroute"}{src} and $trace_cond->{"$dir\_traceroute"}{dst} and 
 								e.service_type in ('pinger','bwctl','owamp') and
 								s.url  like 'http%'
 					             group by src_ip, dst_ip, service, type|;
@@ -599,7 +598,7 @@ sub get_traceroute {
     			   	MinKids 		=> 5,
 				ProcessTimeOut          => 60,
    				Name			=> 'E2E Traceroute Forker',
-   				Code			=> \&get_remote_e2e);	 
+   				Code			=> \&get_remote_e2e);
     my $trace_date_cond = ' ( 1 ';
     $trace_date_cond .= $params->{traceroute}{start}?" AND td.updated >= $params->{traceroute}{start}":'';  
     $trace_date_cond .= $params->{traceroute}{end}?" AND td.updated <= $params->{traceroute}{end}":'';

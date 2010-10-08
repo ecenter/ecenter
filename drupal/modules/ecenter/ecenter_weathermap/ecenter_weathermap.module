@@ -133,6 +133,7 @@ function ecenter_weathermap_init() {
     drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/jquery.metadata.js');
     drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/jquery.datehide.js');
     drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/jquery.traceroute.js');
+    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/openlayers.js');
     drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/behaviors.js');
 
     // Additional CSS overrides
@@ -875,7 +876,7 @@ function ecenter_weathermap_openlayers_presets() {
     ),
     'behaviors' => array(
       'ecenter_weathermap_behavior_weathermap_select' => array(),
-      //'ecenter_weathermap_behavior_dynamicload' => array(),
+      'ecenter_weathermap_behavior_dynamicload' => array(),
       'openlayers_behavior_fullscreen' => array(
         'activated' => 0,
       ),
@@ -888,9 +889,11 @@ function ecenter_weathermap_openlayers_presets() {
     'layers' => array(
       'osm_mapnik' => 'osm_mapnik',
       'ecenter_weathermap_sites' => 'ecenter_weathermap_sites',
+      'ecenter_weathermap_traceroute' => 'ecenter_weathermap_traceroute',
     ),
     'layer_activated' => array(
       'ecenter_weathermap_sites' => 'ecenter_weathermap_sites',
+      'ecenter_weathermap_traceroute' => 'ecenter_weathermap_traceroute',
     ),
     'projection' => '900913',
     'displayProjection' => '4326',
@@ -1009,11 +1012,11 @@ function ecenter_weathermap_layers_sites() {
       'wkt' => "POINT({$hub['longitude']} {$hub['latitude']})",
       'projection' => "4326",
       'style' => array(
-        'pointRadius' => 5,
+        'pointRadius' => 6,
         'fillColor' => '#ffffff',
         'fillOpacity' => 1,
         'strokeColor' => '#5a5aaa',
-        'strokeWidth' => 2,
+        'strokeWidth' => 3,
         'strokeOpacity' => 1,
         'label' => $hub['hub_name'],
         'labelYOffset' => -20,
@@ -1022,6 +1025,9 @@ function ecenter_weathermap_layers_sites() {
         'fontColor' => '#777777',
       ),
       'attributes' => array('hub_name' => $hub['hub_name']),
+      'extra' => array(
+        'ecenterID' => $hub['hub_name'],
+      ),
     );
   }
 
@@ -1078,8 +1084,8 @@ function ecenter_weathermap_layers_traceroute() {
               'wkt' => "LINESTRING($line)",
               'projection' => "4326",
               'style' => array(
-                'strokeWidth' => 4,
-                'strokeColor' => '#444444',
+                'strokeWidth' => 3,
+                'strokeColor' => '#777777',
                 'strokeOpacity' => '0.75',
               ),
             );
@@ -1088,11 +1094,17 @@ function ecenter_weathermap_layers_traceroute() {
             'wkt' => "POINT({$hop['longitude']} {$hop['latitude']})",
             'projection' => "4326",
             'style' => array(
-              'pointRadius' => 5,
+              'pointRadius' => 4,
               'fillColor' => '#ffffff',
               'strokeColor' => '#0000aa',
               'strokeWidth' => 2,
               'fillOpacity' => 1,
+              'label' => $hop['hub'],
+              'labelYOffset' => -20,
+              'fontSize' => '12px',
+              'fontWeight' => 'normal',
+              'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',
+              'fontColor' => '#777777',
             ),
           );
         }

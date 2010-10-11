@@ -17,7 +17,7 @@ require_once(dirname(__FILE__) . '/ecenter_weathermap_traceroute_diff.inc');
  */
 function ecenter_weathermap_menu() {
   $items['weathermap'] = array(
-    'title' => 'E-Center Weather Map',
+    //'title' => 'E-Center Weather Map',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('ecenter_weathermap_select_form'),
     'access arguments' => array('access ecenter weathermap'),
@@ -169,42 +169,34 @@ function _ecenter_weathermap_select_form() {
     );
   }
 
-  // Select source and destination IP -- convoluted structure because of AHAH
-  $form['ip_select'] = array(
-    '#prefix' => '<div id="ip-select-wrapper" class="clearfix">',
+  // Map
+  $preset = openlayers_preset_load('ecenter_weathermap');
+  $map = openlayers_render_map($preset->data, $preset->name);
+
+  // Network map
+  $form['weathermap_wrapper'] = array(
+    '#prefix' => '<div id="weathermap-wrapper" class="clearfix">',
+    '#suffix' => '</div>',
+  );
+  $form['weathermap_wrapper']['weathermap'] = array(
+    '#prefix' => '<div id="weathermap-map">',
+    '#value' => $map,
     '#suffix' => '</div>',
   );
 
-  // Date select
-  $form['ip_select']['date_wrapper'] = array(
-    '#prefix' => '<div id="date-wrapper" class="clearfix">',
+  // Select source and destination IP -- convoluted structure because of AHAH
+  $form['weathermap_wrapper']['query'] = array(
+    '#prefix' => '<div id="query-wrapper">',
     '#suffix' => '</div>',
-  );
-  $form['ip_select']['date_wrapper']['start'] = array(
-    '#type' => 'date_popup',
-    '#title' => t('Start date'),
-    '#date_increment' => $inc,
-    '#default_value' => date_format($start, 'Y-m-d H:i'),
-  );
-  $form['ip_select']['date_wrapper']['end'] = array(
-    '#type' => 'date_popup',
-    '#title' => t('End date'),
-    '#date_increment' => $inc,
-    '#default_value' => date_format($end, 'Y-m-d H:i'),
-  );
-  $form['ip_select']['date_wrapper']['description'] = array(
-    '#prefix' => '<div id="description-wrapper">',
-    '#suffix' => '</div>',
-    '#value' => '<p class="small">'. t('The time specified is expressed in your local time zone (@tz). You may change your timezone on your !link.',
-      array('@tz' => date_default_timezone_name(TRUE), '!link' => l('user profile', 'user/'. $user->uid .'/edit'))) .'</p>',
+    '#value' => '<p id="instructions">'. t('Select source and destination by clicking sites on the map, or specify below.') .'</p>',
   );
 
   // Source IP
-  $form['ip_select']['src_wrapper'] = array(
+  $form['weathermap_wrapper']['query']['src_wrapper'] = array(
     '#prefix' => '<div id="src-wrapper">',
     '#suffix' => '</div>',
   );
-  $form['ip_select']['src_wrapper']['src'] = array(
+  $form['weathermap_wrapper']['query']['src_wrapper']['src'] = array(
     '#title' => t('Source'),
     '#type' => 'combobox',
     '#cols' => 50,
@@ -212,17 +204,17 @@ function _ecenter_weathermap_select_form() {
     '#options' => array('' => t('Select a source')),
     '#ahah' => array(
       'event' => 'change',
-      'path' => ahah_helper_path(array('ip_select', 'dst_wrapper', 'dst')),
+      'path' => ahah_helper_path(array('weathermap_wrapper', 'query', 'dst_wrapper', 'dst')),
       'wrapper' => 'dst-wrapper',
     ),
   );
 
   // Destination IP
-  $form['ip_select']['dst_wrapper'] = array(
+  $form['weathermap_wrapper']['query']['dst_wrapper'] = array(
     '#prefix' => '<div id="dst-wrapper">',
     '#suffix' => '</div>',
   );
-  $form['ip_select']['dst_wrapper']['dst'] = array(
+  $form['weathermap_wrapper']['query']['dst_wrapper']['dst'] = array(
     '#title' => t('Destination'),
     '#type' => 'combobox',
     '#cols' => 50,
@@ -238,24 +230,24 @@ function _ecenter_weathermap_select_form() {
     ),
   );
 
-  // Map
-  $preset = openlayers_preset_load('ecenter_weathermap');
-  $map = openlayers_render_map($preset->data, $preset->name);
-
-  // Network map
-  $form['weathermap_wrapper'] = array(
-    '#prefix' => '<div id="weathermap-wrapper" class="clearfix">',
-    '#suffix' => '</div>',
+  // Date select
+  $form['weathermap_wrapper']['query']['start'] = array(
+    '#type' => 'date_popup',
+    '#title' => t('Start date'),
+    '#date_increment' => $inc,
+    '#default_value' => date_format($start, 'Y-m-d H:i'),
   );
-  $form['weathermap_wrapper']['weathermap'] = array(
-    '#prefix' => '<div id="weathermap-map">',
-    '#value' => $map,
-    '#suffix' => '</div>',
+  $form['weathermap_wrapper']['query']['end'] = array(
+    '#type' => 'date_popup',
+    '#title' => t('End date'),
+    '#date_increment' => $inc,
+    '#default_value' => date_format($end, 'Y-m-d H:i'),
   );
-  $form['weathermap_wrapper']['end_to_end_results'] = array(
-    '#prefix' => '<div id="weathermap-end-to-end-results">',
-    '#value' => t('Click a source and destination on the map to get path statistics (currently not functional), or select source and destination using the form above.'),
+  $form['weathermap_wrapper']['query']['date_description'] = array(
+    '#prefix' => '<div id="date-description-wrapper">',
     '#suffix' => '</div>',
+    '#value' => '<p>'. t('Input time in 24 hour format (e.g. <em>15:30</em>).') .'</p><p>'. t('The query date and time is expressed in your local time zone (@tz). You may change your timezone on your !link.',
+      array('@tz' => str_replace('_', ' ', date_default_timezone_name(TRUE)), '!link' => l('user profile', 'user/'. $user->uid .'/edit'))) .'</p>',
   );
 
   // Submit button
@@ -300,30 +292,30 @@ function ecenter_weathermap_select_form(&$form_state) {
 
   // Set dates
   if (!empty($start)) {
-    $form['ip_select']['date_wrapper']['start']['#default_value'] = $start;
+    $form['weathermap_wrapper']['query']['start']['#default_value'] = $start;
   }
   if (!empty($end)) {
-    $form['ip_select']['date_wrapper']['end']['#default_value'] = $end;
+    $form['weathermap_wrapper']['query']['end']['#default_value'] = $end;
   }
 
   $hops = ecenter_weathermap_get_hops();
   foreach ($hops['combined'] as $key => $hop) {
     $src_options[$key] = theme('ecenter_weathermap_hop_option', $hop);
   }
-  $form['ip_select']['src_wrapper']['src']['#options'] += $src_options;
+  $form['weathermap_wrapper']['query']['src_wrapper']['src']['#options'] += $src_options;
 
   if ($src) {
-    $form['ip_select']['src_wrapper']['src']['#default_value'] = $src;
+    $form['weathermap_wrapper']['query']['src_wrapper']['src']['#default_value'] = $src;
 
     foreach ($hops['combined'] as $key => $hop) {
       $dst_options[$key] = theme('ecenter_weathermap_hop_option', $hop);
     }
-    $form['ip_select']['dst_wrapper']['dst']['#options'] += $dst_options;
-    $form['ip_select']['dst_wrapper']['dst']['#disabled'] = FALSE;
+    $form['weathermap_wrapper']['query']['dst_wrapper']['dst']['#options'] += $dst_options;
+    $form['weathermap_wrapper']['query']['dst_wrapper']['dst']['#disabled'] = FALSE;
   }
 
   if ($dst) {
-    $form['ip_select']['dst_wrapper']['dst']['#default_value'] = $dst;
+    $form['weathermap_wrapper']['query']['dst_wrapper']['dst']['#default_value'] = $dst;
   }
 
   if ($src && $dst && $start && $end) {
@@ -846,6 +838,9 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
   return $parsed_data;
 }
 
+/**
+ * Sort traceroute
+ */
 function _ecenter_weathermap_sort_traceroute($a, $b) {
   return ((int) $a['hop_num'] > (int) $b['hop_num']);
 }
@@ -856,7 +851,8 @@ function _ecenter_weathermap_sort_traceroute($a, $b) {
  * @param $hop_list
  *  List of hops returns from data service
  * @return
- *  Parsed array consisting of hubs and hops
+ *  Parsed array consisting of hubs, hops, and a combined list with urn-style
+ *  keys (i.e. 'hub:BNL' and 'ip:127.0.0.1').
  */
 function ecenter_weathermap_parse_hops($hops) {
   $combined = array();
@@ -923,7 +919,7 @@ function ecenter_weathermap_openlayers_presets() {
   $openlayers_presets->data = array(
     'width' => '660px',
     'height' => '360px',
-    //'image_path' => 'http://js.mapbox.com/theme/dark/',
+    'image_path' => 'http://js.mapbox.com/theme/dark/',
     'css_path' => '',
     'proxy_host' => '',
     'hide_empty_map' => 0,
@@ -1405,10 +1401,12 @@ function _ecenter_weathermap_date_to_utc($date, $format = 'Y-m-d H:i:s') {
 function _ecenter_weathermap_extract_query() {
   if ($_REQUEST['form_id'] == 'ecenter_weathermap_select_form') {
     $vars = array(
-      'src' => $_REQUEST['ip_select']['src_wrapper']['src'],
-      'dst' => $_REQUEST['ip_select']['dst_wrapper']['dst'],
-      'start' => $_REQUEST['ip_select']['date_wrapper']['start']['date'] .' '. $_REQUEST['ip_select']['date_wrapper']['start']['time'],
-      'end' => $_REQUEST['ip_select']['date_wrapper']['end']['date'] .' '. $_REQUEST['ip_select']['date_wrapper']['end']['time'],
+      'src' => $_REQUEST['weathermap_wrapper']['query']['src_wrapper']['src'],
+      'dst' => $_REQUEST['weathermap_wrapper']['query']['dst_wrapper']['dst'],
+      'start' => $_REQUEST['weathermap_wrapper']['query']['start']['date'] 
+        .' '. $_REQUEST['query']['date_wrapper']['start']['time'],
+      'end' => $_REQUEST['weathermap_wrapper']['query']['end']['date']
+        .' '. $_REQUEST['query']['date_wrapper']['end']['time'],
     );
   }
   else {

@@ -61,13 +61,15 @@ EcenterWeathermap.selectFeature = function(select) {
      for (key in maps) {
        var ol = $('#' + maps[key].id).data('openlayers');
        var layer = ol.openlayers.getLayersBy('drupalID', 'ecenter_weathermap_sites').pop();
-       var feature = layer.getFeatureBy('ecenterID', query_value);
        var control = ol.openlayers.getControlsBy('ecenterID', 'ecenter_weathermap_select').pop();
+       var feature = layer.getFeatureBy('ecenterID', query_value);
 
-       control.callbacks.over.call(control, feature);
-
-       if (select) {
-         control.select.call(control, feature);
+       // If this is called while loading, we have a problem
+       if (feature) { 
+         control.callbacks.over.call(control, feature);
+         if (select) {
+           control.select.call(control, feature);
+         }
        }
      }
    }

@@ -83,10 +83,6 @@ class Ecenter_Data_Service_Client {
     // @TODO Fix... somewhere: Dancer does not support encoded ampersands in the querystring
     $url = str_replace('&amp;', '&', $url);
 
-    if ($path == 'data') {
-      dpm($url);
-    }
-
     $handle = curl_init();
 
     $options = array(
@@ -113,14 +109,19 @@ class Ecenter_Data_Service_Client {
 
     curl_close($handle);
 
-    $results[$url] = array(
+    $result = array(
       'parameters' => $parameters,
       'query' => $querystring,
       'code' => $code,
       'response' => $response,
     );
 
-    return $results[$url];
+    if ($path == 'data') {
+      dpm($url);
+      //dpm($result);
+    }
+
+    return $result;
   }
 
   /**

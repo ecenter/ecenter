@@ -163,20 +163,13 @@ function _ecenter_weathermap_select_form() {
   $end = date_make_date($now - $default_end, $tz, DATE_UNIX);
   $start = date_make_date($now - $default_start, $tz, DATE_UNIX);
 
-  // Set up quick select options
-  $quickselect_options = array(
-    'emulateDropdown' => TRUE,
-    'maxHeight' => '400px',
-    'exactMatch' => TRUE,
-  );
-
   if (user_access('debug ecenter weathermap')) {
     $form['debug'] = array(
       '#value' => '<div id="weathermap-debug"></div>',
     );
   }
 
-  // Select source and destination IP -- convoluted because of AHAH
+  // Select source and destination IP -- convoluted structure because of AHAH
   $form['ip_select'] = array(
     '#prefix' => '<div id="ip-select-wrapper" class="clearfix">',
     '#suffix' => '</div>',
@@ -217,7 +210,6 @@ function _ecenter_weathermap_select_form() {
     '#cols' => 50,
     '#required' => TRUE,
     '#options' => array('' => t('Select a source')),
-    //'#quickselect_options' => $quickselect_options,
     '#ahah' => array(
       'event' => 'change',
       'path' => ahah_helper_path(array('ip_select', 'dst_wrapper', 'dst')),
@@ -237,7 +229,6 @@ function _ecenter_weathermap_select_form() {
     '#required' => FALSE,
     '#disabled' => TRUE,
     '#options' => array('' => t('Select a destination')),
-    //'#quickselect_options' => $quickselect_options,
     '#prefix' => '<div class="dst-wrapper">',
     '#suffix' => '</div>',
     '#ahah' => array(

@@ -137,6 +137,7 @@ function ecenter_weathermap_init() {
 
     // Additional CSS overrides
     drupal_add_css(drupal_get_path('module', 'ecenter_weathermap') .'/css/plot.css');
+    drupal_add_css(drupal_get_path('module', 'ecenter_weathermap') .'/css/ecenter-weathermap.css');
 
     $inline_css = array(
       '.ecenter-critical' => array('color' => variable_get('ecenter_weathermap_threshold_critical_color', '#cc0000')),

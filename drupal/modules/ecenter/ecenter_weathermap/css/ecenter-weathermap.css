@@ -1,0 +1,238 @@
+/* -- Weathermap -- */
+/* Map {{{ */
+#weathermap-wrapper {
+  margin-bottom: 1.5em;
+}
+#weathermap-map {
+  width: 660px;
+  float: left;
+  margin-right: 10px;
+}
+.no-js #weathermap-map {
+  height: 0;
+}
+#weathermap-results {
+  float: left;
+  width: 260px;
+}
+/* }}} */
+/* Source/destination selector {{{ */
+#ip-select-wrapper {
+  margin-top: 1.5em;
+  background-color: #dedede;
+  padding: 13px 8px;
+  -moz-box-shadow: 3px 2px .4em 0 #888;
+  margin-bottom: 1em;
+  border: 1px solid #999;
+  width: 100%;
+}
+#ecenter-weathermap-select-form .ui-autocomplete-input {
+  width: 330px;
+  padding-left: 3px;
+  padding-right: 3px;
+  border-right: none;
+}
+#ecenter-weathermap-select-form #src-wrapper,
+#ecenter-weathermap-select-form #dst-wrapper {
+  margin-top: .75em;
+  width: 460px;
+  float: left;
+}
+#ecenter-weathermap-select-form .form-item {
+  margin-bottom: 0;
+}
+#ecenter-weathermap-select-form .ui-button-text {
+  line-height: 1.3;
+  padding: 0;
+}
+#ecenter-weathermap-select-form button.ui-button-icon-only {
+  width: 1.8em;
+  border-color: #999;
+}
+/* }}} */
+/* Loading {{{ */
+#ecenter-weathermap-select-form.data-loading .datehide-display .date {
+  background-color: #eee;
+  color: #aaa;
+}
+#ecenter-weathermap-select-form .progress-disabled {
+  float: none;
+}
+#ecenter-weathermap-select-form .ahah-progress {
+  display: none;
+}
+.loading-overlay {
+  background-color:rgba(255,255,255,0.75);
+  text-align: center;
+}
+.loading-overlay p {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 3em;
+}
+/* }}} */
+/* Date selector {{{ */
+#ecenter-weathermap-select-form .datehide-display .date {
+  border-right: 1px solid #aaa;
+  border-top: 1px solid #aaa;
+  border-bottom: 1px solid #aaa;
+  padding: 0 7px;
+  background-color: #fff;
+}
+#ecenter-weathermap-select-form .label {
+  width: 80px;
+  font-weight: bold;
+  float: left;
+}
+#ecenter-weathermap-select-form .hover .date,
+#ecenter-weathermap-select-form .hover .button {
+  border-color: #555;
+}
+#ecenter-weathermap-select-form .datehide-display-wrapper .open .date {
+  border-bottom: none;
+  border-color: #aaa;
+}
+#ecenter-weathermap-select-form .datehide-display-wrapper .open .button {
+  border-color: #555;
+  border-bottom-color: rgb(204, 204, 204);
+}
+#date-wrapper .container-inline-date {
+  clear: none;
+  float: left;
+  width: 410px;
+}
+#date-wrapper .form-item {
+  margin-bottom: 0;
+}
+#date-wrapper .container-inline-date label {
+  float: left;
+  margin-right: 6px;
+  width: 80px;
+}
+#date-wrapper p {
+  font-size: 12px;
+  margin: .25em 0;
+}
+#date-wrapper #description-wrapper {
+  float: left;
+  width: 100%;
+}
+#ecenter-weathermap-select-form #edit-date-wrapper-start-date-wrapper,
+#ecenter-weathermap-select-form #edit-date-wrapper-end-date-wrapper {
+  float: left;
+}
+#ecenter-weathermap-select-form #date-wrapper .description {
+  display: none;
+}
+#edit-date-wrapper-start-date-timeEntry-popup-1,
+#edit-date-wrapper-end-date-timeEntry-popup-1 {
+  width: 50px;
+}
+/* }}} */
+/* Results display {{{ */
+#results-wrapper {
+  margin-top: 1.5em;
+}
+html.js .end-to-end-results {
+  display: none;
+}
+#weathermap-end-to-end-results {
+  float: left;
+  width: 270px;
+  font-family: "Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif;
+}
+#weathermap-end-to-end-results .issue-link a {
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+#weathermap-end-to-end-results .issue-link,
+#weathermap-end-to-end-results .date-range {
+  margin-bottom: 1em;
+}
+#weathermap-end-to-end-results table {
+  font-size: 11px;
+  margin-bottom: 1em;
+  width: 100%;
+}
+#weathermap-end-to-end-results .date-range {
+  font-weight: bold;
+  font-size: 12px;
+}
+#weathermap-end-to-end-results table th {
+  padding: 0;
+}
+#weathermap-end-to-end-results table tr {
+  background-color: transparent !important;
+}
+#weathermap-end-to-end-results table thead th,
+#weathermap-end-to-end-results table tbody th {
+  color: #222;
+  background: none;
+  border: none;
+  text-transform: uppercase;
+}
+#weathermap-end-to-end-results table thead th {
+  border-left: 5px solid #fff;
+  border-bottom: 1px solid #999;
+  text-align: center;
+}
+#weathermap-end-to-end-results table thead th.empty {
+  border: none;
+}
+#weathermap-end-to-end-results table td {
+  border: none;
+}
+#weathermap-end-to-end-results table.end-to-end-table td {
+  text-align: center;
+}
+#weathermap-end-to-end-results table td .value {
+  font-size: 12px;
+}
+#weathermap-end-to-end-results table td.avg .value {
+  font-size: 14px; 
+  font-weight: bold;
+}
+#weathermap-end-to-end-results table.path-table th {
+  width: 80px;
+  font-weight: bold;
+}
+/* }}} */
+/* Traceroute "subway map" {{{ */
+.trace-label {
+  line-height: 1.1;
+  font-size: 11px;
+}
+.hostname {
+  font-weight: bold;
+}
+.traceroute-graph-wrapper .labels-left .trace-label {
+  text-align: right;
+}
+.hop-wrapper {
+  background-color: #fff;
+  padding: 14px;
+  border: 3px solid #ccc;
+}
+#traceroute .has-chart {
+  color: #007700;
+}
+
+#traceroute {
+  float: left;
+  width: 368px;
+  margin-right: 12px;
+}
+#results {
+  float: left;
+  width: 560px;
+}
+#traceroute .highlight {
+  background-color: #ffffaa;
+}
+/* }}} */
+/* Charts {{{ */
+html.js #results .snmp-data-table {
+  display: none;
+}
+/* }}} */

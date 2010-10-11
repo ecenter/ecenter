@@ -578,12 +578,10 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
     $traceroute = array();
     $parsed = array();
 
-    // Sort and grab latest traceroute
+    // Sort, grab latest traceroute, and sort the traceroute
     krsort($data[$direction]);
     $traceroute = array_shift(array_values($data[$direction]));
     usort($traceroute, '_ecenter_weathermap_sort_traceroute');
-
-    dpm($traceroute, $direction .' before');
 
     // Synthesize forward and reverse hops
     if ($direction == 'direct_traceroute') {
@@ -952,8 +950,12 @@ function ecenter_weathermap_openlayers_presets() {
         'zoomWheelEnabled' => 0,
       ),
       'openlayers_behavior_panzoombar' => array(),
-      //'ecenter_weathermap_behavior_weathermap_select' => array(),
-      //'ecenter_weathermap_behavior_dynamicload' => array(),
+      'ecenter_weathermap_behavior_dynamicload' => array(),
+      'ecenter_weathermap_behavior_weathermap_select' => array(
+        'layers' => array(
+          'ecenter_weathermap_sites' => 'ecenter_weathermap_sites',
+        ),
+      ),
       'openlayers_behavior_fullscreen' => array(
         'activated' => 0,
       ),
@@ -1057,7 +1059,7 @@ function ecenter_weathermap_openlayers_layers() {
   if ((arg(0) == 'weathermap' && !arg(1)) || ($_REQUEST['form_id'] == 'ecenter_weathermap_select_form')) {
     $layers += ecenter_weathermap_layers_traceroute();
   }
-  $layer['ecenter_weathermap_sites'] = ecenter_weathermap_layers_sites();
+  $layers['ecenter_weathermap_sites'] = ecenter_weathermap_layers_sites();
   return $layers;
 }
 
@@ -1091,7 +1093,7 @@ function ecenter_weathermap_layers_sites() {
         'strokeWidth' => 2,
         'strokeOpacity' => 1,
         'label' => $hub['hub_name'],
-        'labelYOffset' => -20,
+        'labelYOffset' => +20,
         'fontWeight' => 'bold',
         'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',
         'fontColor' => '#777777',
@@ -1168,6 +1170,12 @@ function ecenter_weathermap_layers_traceroute() {
               'strokeColor' => '#0000aa',
               'strokeWidth' => 2,
               'fillOpacity' => 1,
+              'label' => $hub['hub_name'],
+              'labelYOffset' => -20,
+              'fontSize' => '12px',
+              'fontWeight' => 'normal',
+              'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',
+              'fontColor' => '#777777',
             ),
           );
         }

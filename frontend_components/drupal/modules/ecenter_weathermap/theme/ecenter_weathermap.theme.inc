@@ -13,26 +13,28 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
   // Generate permalink
   $vars['permalink'] = l('Permalink', 'weathermap', array('query' => $vars['params']));
 
-  // Generate issue link -- encode params for use with prepopulate module
-  $issue_params = array();
-  foreach ($vars['params'] as $key=>$param) {
-    $issue_params[] = "$key=$param";
-  }
-  $issue_query = urlencode(implode('&', $issue_params));
+  // Generate issue link -- encode params for use with custom ecenter_issues
+  // module
+  if (user_access('create issue content')) {
+    $issue_params = array();
+    foreach ($vars['params'] as $key=>$param) {
+      $issue_params[] = "$key=$param";
+    }
+    $issue_query = urlencode(implode('&', $issue_params));
 
-  $vars['issuelink'] = l('Create issue from this query', 'node/add/issue',
-    array(
-      'query' => array(
-        'edit[field_issue_query][0][value]' => $issue_query,
-      ),
-      'attributes' => array(
-        'class' => 'button',
-      ),
-    )
-  );
+    $vars['issuelink'] = l('Create issue from this query', 'node/add/issue',
+      array(
+        'query' => array('query' => array($issue_query)),
+        'attributes' => array('class' => 'button'),
+      )
+    );
+  }
 
   // Source / dst table
   $hops = ecenter_weathermap_get_hops();
+
+  $src_hop = $hops['combined'][$vars['params']['src']];
+  $dst_hop = $hops['combined'][$vars['params']['dst']];
 
   $query_table = array(
     array(
@@ -41,7 +43,7 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
         'header' => TRUE,
       ),
       array(
-        'data' => $hops[$vars['params']['src_hub']]['hub_name'],
+        'data' => $src_hop['hub_name'] .' ('. $src_hop['hub'] .')',
       ),
     ),
     array(
@@ -50,11 +52,19 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
         'header' => TRUE,
       ),
       array(
-        'data' => $hops[$vars['params']['dst_hub']]['hub_name'],
+        'data' => $dst_hop['hub_name'] .' ('. $dst_hop['hub'] .')',
       ),
     ),
   );
-  $vars['query_table'] = theme('ecenter_weathermap_table', array(), $query_table, array('class' => 'path-table'));
+
+  $vars['src_dst'] = t('From @src_hub_name (@src_hub) to @dst_hub_name (@dst_hub)', 
+    array(
+      '@src_hub_name' => $src_hop['hub_name'],
+      '@src_hub' => $src_hop['hub'],
+      '@dst_hub_name' => $dst_hop['hub_name'],
+      '@dst_hub' => $dst_hop['hub'],
+    )
+  );
 
   // Generate date range -- internal date is stored as UTC
   $utc = timezone_open('UTC');
@@ -196,6 +206,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
     }
   }
   jqplot_register_tablechart('#results', $plot_options);
+  //jqplot_register_tablechart('#results .reverse', $plot_options);
   return implode("\n", $tables);
 }
 
@@ -356,7 +367,7 @@ function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
 
 
     if (!empty($data['owamp'][$direction])) {
-      dpm($data['owamp'][$direction]);
+      //dpm($data['owamp'][$direction]);
     }
 
   }
@@ -373,7 +384,8 @@ function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
  */
 function theme_ecenter_weathermap_utilization_table($hop, $direction, $table) {
   $attributes = array();
-  $attributes['class'] = ($direction == 'forward') ? "{lineWidth : 2}" : "{lineWidth : .5, sizeAdjust: .5}";
+  //$attributes['class'] = ($direction == 'forward') ? "{lineWidth : 2}" : "{lineWidth : .5, sizeAdjust: .5}";
+  $attributes['class'] = $direction;
 
   $headers = array(t('Time'), t('Percent utilization'));
   $output = '<div class="snmp-data-table">';
@@ -387,7 +399,12 @@ function theme_ecenter_weathermap_utilization_table($hop, $direction, $table) {
  * Theme services for use in options list.  Should always return plaintext!
  */
 function theme_ecenter_weathermap_hop_option($hop) {
-  return check_plain($hop['hub_name']);
+  switch ($hop['type']) {
+    case 'hub':
+      return check_plain($hop['hub_name']);
+    case 'ip':
+      return check_plain($hop['hub_name']) .' ('. check_plain($hop['hub']) .' - '. check_plain($hop['ip_noted']) .')';
+  }
 }
 
 /**

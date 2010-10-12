@@ -286,7 +286,7 @@ input.form-text, input.form-quickselect {
   color: #c00;
   font-weight: bold;
 }
-#content-body .form-item {
+.form-item {
   margin-bottom: 1.5em;
 }
 #content-body .form-item .description,

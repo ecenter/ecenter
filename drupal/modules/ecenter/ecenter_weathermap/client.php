@@ -117,8 +117,7 @@ class Ecenter_Data_Service_Client {
     );
 
     if ($path == 'data') {
-      dpm(url_decode($url));
-      //dpm($result);
+      //dpm(urldecode($url));
     }
 
     return $result;
@@ -196,7 +195,7 @@ class Ecenter_Data_Service_Client {
       throw new Exception('Invalid source and destination query types.');
     }
 
-    $parameters = array(
+    $params = array(
       'src_'. $src_type => $src,
       'dst_'. $dst_type => $dst,
       'start' => $start,
@@ -204,7 +203,7 @@ class Ecenter_Data_Service_Client {
       'resolution' => $resolution,
     );
 
-    return $this->query('data', $parameters);
+    return $this->query('data', $params);
   }
 
 }

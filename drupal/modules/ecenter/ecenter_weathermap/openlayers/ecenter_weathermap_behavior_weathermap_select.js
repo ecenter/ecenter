@@ -43,8 +43,8 @@ Drupal.behaviors.ecenter_weathermap_behavior_weathermap_select = function(contex
         },
         selectStyle: {
           strokeColor: '#0000aa',
-          pointRadius: 7,
-          strokWidth: 3,
+          pointRadius: 8,
+          strokeWidth: 3,
           fontColor: '#222222'
         },
         highlight: function(feature) {},

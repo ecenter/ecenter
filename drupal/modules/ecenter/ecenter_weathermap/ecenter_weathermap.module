@@ -105,9 +105,6 @@ function ecenter_weathermap_init() {
     drupal_add_js(drupal_get_path('module', 'openlayers') .
       '/includes/layer_types/js/raw.js');
 
-    // We need quickselect to get added to behaviors first, so when ensure it executes first
-    //drupal_add_js(drupal_get_path('module', 'quickselect') .'/js/quickselect-behavior.js');
-
     // Also need the jquery form library
     drupal_add_js('misc/jquery.form.js');
 
@@ -131,8 +128,12 @@ function ecenter_weathermap_init() {
 
     // Query UI behaviors and libraries
     drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/jquery.metadata.js');
-    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/jquery.datehide.js');
     drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/jquery.traceroute.js');
+    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/openlayers.js');
+
+    // Load order matters -- select must be after dynamic load in behaviors
+    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/openlayers/ecenter_weathermap_behavior_dynamicload.js');
+    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/openlayers/ecenter_weathermap_behavior_select.js');
     drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/js/behaviors.js');
 
     // Additional CSS overrides
@@ -290,6 +291,9 @@ function ecenter_weathermap_select_form(&$form_state) {
   // Get variables
   extract(_ecenter_weathermap_extract_query());
 
+  // Refresh map
+  ecenter_weathermap_refresh_map('ecenter_weathermap', 'openlayers-map-auto-id-0');
+
   // Set dates
   if (!empty($start)) {
     $form['weathermap_wrapper']['query']['start']['#default_value'] = $start;
@@ -337,7 +341,6 @@ function ecenter_weathermap_select_form(&$form_state) {
       drupal_add_js(array('ecenterWeathermap' => array('tracerouteData' => $data['js_diff'])), 'setting');
       drupal_add_js(array('ecenterWeathermap' => array('tracerouteMaxLength' => $data['traceroute_max'])), 'setting');
       drupal_add_js(array('ecenterWeathermap' => array('seriesLookup' => $data['series_lookup'])), 'setting');
-      ecenter_weathermap_refresh_map('ecenter_weathermap', 'openlayers-map-auto-id-0');
       $form['results_wrapper']['results']['#value'] = theme('ecenter_weathermap_data', $data, $params);
     }
     else {
@@ -360,7 +363,7 @@ function ecenter_weathermap_select_form_submit($form, &$form_state) {
   $form_state['rebuild'] = TRUE;
 }
 
-/**
+/**send
  * Get the E-Center weather map client
  *
  * @param $status_check
@@ -463,8 +466,8 @@ function ecenter_weathermap_get_hops($src = NULL) {
   if (empty($hops[$src_key])) {
 
     $caching = variable_get('ecenter_weathermap_hop_cache_enabled', 0);
-    if ($caching && $result = cache_get('hub', 'cache_ecenter_hops')) {
-      $hops = $result->data;
+    if ($caching && $result = cache_get($src_key, 'cache_ecenter_hops')) {
+      $hops[$src_key] = $result->data;
     }
     else {
       $client = ecenter_weathermap_get_client('message');
@@ -536,7 +539,7 @@ function _ecenter_weathermap_get_data_types() {
  * Parse data
  *
  * Parse and prep response from E-Center network data webservice:
- *  - Build an array with forward and reverse traceroutes, their hops, and associated data
+ *  - Build an array with fmrward and reverse traceroutes, their hops, and associated data
  *  - Geolocate IP addresses without geodata
  *
  * @param $response
@@ -624,43 +627,6 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
         array_push($traceroute, $new_hop);
       }
     }
-    /*elseif ($direction == 'reverse_traceroute') {
-
-      if ($dst_type == 'hub') {
-        $hop_identifier = strtoupper(array_shift(explode('-', $traceroute[0]['hub'])));
-        $key = 'hub';
-      }
-      else {
-        $hop_identifier = $traceroute[0]['hop_ip'];
-        $key = 'hop_ip';
-      }
-      if ($hop_identifier != $dst_val) {
-        $new_hop = $hops['combined'][$dst] + array(
-          'hop_id' => uniqid('end-'),
-          $key => $hop_identifier,
-        );
-        array_unshift($traceroute, $new_hop);
-      }
-
-      $last = count($traceroute) -1;
-      if ($src_type == 'hub') {
-        $hop_identifier = strtoupper(array_shift(explode('-', $traceroute[$last]['hub'])));
-        $key = 'hub';
-      }
-      else {
-        $hop_identifier = $traceroute[$last]['hop_ip'];
-        $key = 'hop_ip';
-      }
-      if ($hop_identifier != $src_val) {
-        $new_hop = $hops['combined'][$src] + array(
-          'hop_id' => uniqid('start-'),
-          $key => $hop_identifier,
-        );
-        array_push($traceroute, $new_hop);
-      }
-    }
-    */
-    //dpm($traceroute, 'after');
 
     // Main loop
     foreach ($traceroute as $hop) {
@@ -938,7 +904,6 @@ function ecenter_weathermap_openlayers_presets() {
         'zoomWheelEnabled' => 0,
       ),
       'openlayers_behavior_panzoombar' => array(),
-      'ecenter_weathermap_behavior_dynamicload' => array(),
       'ecenter_weathermap_behavior_weathermap_select' => array(
         'layers' => array(
           'ecenter_weathermap_sites' => 'ecenter_weathermap_sites',
@@ -947,6 +912,7 @@ function ecenter_weathermap_openlayers_presets() {
       'openlayers_behavior_fullscreen' => array(
         'activated' => 0,
       ),
+      'ecenter_weathermap_behavior_dynamicload' => array(),
     ),
     'default_layer' => 'osm_mapnik',
     'layers' => array(
@@ -1042,17 +1008,13 @@ function ecenter_weathermap_openlayers_behaviors() {
  */
 function ecenter_weathermap_openlayers_layers() {
   $layers = array();
-
-  // Provide dynamic layers for map on
-  if ((arg(0) == 'weathermap' && !arg(1)) || ($_REQUEST['form_id'] == 'ecenter_weathermap_select_form')) {
-    $layers += ecenter_weathermap_layers_traceroute();
-  }
+  $layers['ecenter_weathermap_traceroute'] = ecenter_weathermap_layers_traceroute();
   $layers['ecenter_weathermap_sites'] = ecenter_weathermap_layers_sites();
   return $layers;
 }
 
 /**
- * Generate traceroute
+ * Generate site map
  */
 function ecenter_weathermap_layers_sites() {
   $hops = ecenter_weathermap_get_hops();
@@ -1068,29 +1030,31 @@ function ecenter_weathermap_layers_sites() {
     'projection' => array('900913'),
   );
 
-  $i = 0;
-  foreach ($hops['hubs'] as $hub) {
-    $features[] = array(
-      'wkt' => "POINT({$hub['longitude']} {$hub['latitude']})",
-      'projection' => "4326",
-      'style' => array(
-        'pointRadius' => 5,
-        'fillColor' => '#ffffff',
-        'fillOpacity' => 1,
-        'strokeColor' => '#5a5aaa',
-        'strokeWidth' => 2,
-        'strokeOpacity' => 1,
-        'label' => $hub['hub_name'],
-        'labelYOffset' => +20,
-        'fontWeight' => 'bold',
-        'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',
-        'fontColor' => '#777777',
-      ),
-      'attributes' => array('hub_name' => $hub['hub_name']),
-    );
+  extract(_ecenter_weathermap_extract_query());
+  if (empty($src) || empty($dst) || empty($start) || empty($end)) {
+    foreach ($hops['hubs'] as $hub) {
+      $features[] = array(
+        'wkt' => "POINT({$hub['longitude']} {$hub['latitude']})",
+        'projection' => "4326",
+        'style' => array(
+          'pointRadius' => 6,
+          'fillColor' => '#ffffff',
+          'fillOpacity' => 1,
+          'strokeColor' => '#5a5aaa',
+          'strokeWidth' => 3,
+          'strokeOpacity' => 1,
+          'label' => $hub['hub_name'],
+          'labelYOffset' => 17,
+          'fontWeight' => 'bold',
+          'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',
+          'fontColor' => '#444444',
+        ),
+        'extra' => array('ecenterID' => $hub['hub_name']),
+      );
+    }
+    $layer->data['features'] = $features;
   }
 
-  $layer->data['features'] = $features;
   return $layer;
 }
 
@@ -1098,8 +1062,17 @@ function ecenter_weathermap_layers_sites() {
  * Generate dynamic raw layer data for E-center weathermap
  */
 function ecenter_weathermap_layers_traceroute() {
-  $layers = array();
   extract(_ecenter_weathermap_extract_query());
+
+  $layer = new stdClass();
+  $layer->api_version = 1;
+  $layer->name = 'ecenter_weathermap_traceroute';
+  $layer->title = t('Dynamic traceroute');
+  $layer->description = '';
+  $layer->data = array(
+    'layer_type' => 'openlayers_layer_type_raw',
+    'projection' => array('900913'),
+  );
 
   if ($src && $dst && $start && $end) {
 
@@ -1114,17 +1087,6 @@ function ecenter_weathermap_layers_traceroute() {
       $old_hop = NULL;
       $count = count($traceroute);
       $i = 0;
-
-      // Create layer object
-      $layer = new stdClass();
-      $layer->api_version = 1;
-      $layer->name = 'ecenter_weathermap_traceroute';
-      $layer->title = t('Traceroute @id', array('@id' => $trace_id));
-      $layer->description = '';
-      $layer->data = array(
-        'layer_type' => 'openlayers_layer_type_raw',
-        'projection' => array('900913'),
-      );
 
       $features = array();
       foreach ($traceroute as $hop_data) {
@@ -1143,9 +1105,8 @@ function ecenter_weathermap_layers_traceroute() {
               'wkt' => "LINESTRING($line)",
               'projection' => "4326",
               'style' => array(
-                'strokeWidth' => 4,
-                'strokeColor' => '#444444',
-                'strokeOpacity' => '0.75',
+                'strokeWidth' => 2,
+                'strokeColor' => '#555555',
               ),
             );
           }
@@ -1158,12 +1119,12 @@ function ecenter_weathermap_layers_traceroute() {
               'strokeColor' => '#0000aa',
               'strokeWidth' => 2,
               'fillOpacity' => 1,
-              'label' => $hub['hub_name'],
-              'labelYOffset' => -20,
-              'fontSize' => '12px',
-              'fontWeight' => 'normal',
+              'label' => $hop['hub'],
+              'labelYOffset' => -14,
+              'fontSize' => '11px',
+              'fontWeight' => 'bold',
               'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',
-              'fontColor' => '#777777',
+              'fontColor' => '#000000',
             ),
           );
         }
@@ -1171,11 +1132,10 @@ function ecenter_weathermap_layers_traceroute() {
         $i += 1;
 
         $layer->data['features'] = $features;
-        $layers[$layer->name] = $layer;
       }
     }
   }
-  return $layers;
+  return $layer;
 }
 
 /**
@@ -1404,9 +1364,9 @@ function _ecenter_weathermap_extract_query() {
       'src' => $_REQUEST['weathermap_wrapper']['query']['src_wrapper']['src'],
       'dst' => $_REQUEST['weathermap_wrapper']['query']['dst_wrapper']['dst'],
       'start' => $_REQUEST['weathermap_wrapper']['query']['start']['date'] 
-        .' '. $_REQUEST['query']['date_wrapper']['start']['time'],
+        .' '. $_REQUEST['weathermap_wrapper']['query']['start']['time'],
       'end' => $_REQUEST['weathermap_wrapper']['query']['end']['date']
-        .' '. $_REQUEST['query']['date_wrapper']['end']['time'],
+        .' '. $_REQUEST['weathermap_wrapper']['query']['end']['time'],
     );
   }
   else {

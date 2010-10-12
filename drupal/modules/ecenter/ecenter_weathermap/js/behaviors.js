@@ -5,45 +5,28 @@ Drupal.behaviors.EcenterTraceroute = function(context) {
   }
 }
 
-// Add date hiding / showing widget
-/*Drupal.behaviors.EcenterDatehide = function(context) {
-  $('#date-wrapper').datehide({
-    'startDateSelector' : '#edit-ip-select-date-wrapper-start-datepicker-popup-0',
-    'startTimeSelector' : '#edit-ip-select-date-wrapper-start-timeEntry-popup-1',
-    'endDateSelector'   : '#edit-ip-select-date-wrapper-end-datepicker-popup-0',
-    'endTimeSelector'   : '#edit-ip-select-date-wrapper-end-timeEntry-popup-1'
-  });
-}*/
-
 // Catchall for minor behavior modifications
 Drupal.behaviors.EcenterEvents = function(context) {
-  $('#ip-select-wrapper input[type=hidden]').change(function() {
+  $('#query input[type=hidden]').change(function() {
     $('#results-wrapper').text('');
   });
-  $('#ip-select-wrapper input#edit-ip-select-src-ip-wrapper-src-ip').change(function() {
+  /*$('#ip-select-wrapper input#edit-ip-select-src-ip-wrapper-src-ip').change(function() {
     $('#ip-select-wrapper input#edit-ip-select-dst-ip-wrapper-dst-ip_quickselect').val('').attr('disabled', true);
-  });
+  });*/
 }
 
-/**
- * @TODO Remove element after moving...
- */
-Drupal.behaviors.EcenterRepositionResults = function(context) {
-  var results = $('.end-to-end-results');
-  if (results.length) {
-    $('#weathermap-end-to-end-results').html(results.html());
-    $('#weathermap-end-to-end-results .end-to-end-results').css('display', 'block');
+// 
+Drupal.behaviors.EcenterSelectSetForm = function(context) {
+  var src = $('#edit-weathermap-wrapper-query-src-wrapper-src');
+  var dst = $('#edit-weathermap-wrapper-query-dst-wrapper-dst');
+
+  if (src.val()) {
+    EcenterWeathermap.selectFeature.call(src.get(0), true)
+  }
+  if (dst.val()) {
+    EcenterWeathermap.selectFeature.call(dst.get(0), true)
   }
 }
-
-/**
- * @TODO not working at all, and not all that important
- */
-/*Drupal.behaviors.EcenterRepositionMessages = function(context) {
-  var messages = $('#ecenter-weathermap-select-form .messages');
-  $('#ecenter-weathermap-select-form #weathermap-debug').fadeOut().html(messages.html()).slideDown();
-  //messages.remove();
-}*/
 
 EcenterWeathermap = {};
 
@@ -64,8 +47,9 @@ EcenterWeathermap.selectFeature = function(select) {
        var control = ol.openlayers.getControlsBy('ecenterID', 'ecenter_weathermap_select').pop();
        var feature = layer.getFeatureBy('ecenterID', query_value);
 
+
        // If this is called while loading, we have a problem
-       if (feature) { 
+       if (control && feature) { 
          control.callbacks.over.call(control, feature);
          if (select) {
            control.select.call(control, feature);
@@ -93,26 +77,26 @@ $(document).ready(function() {
   // Bind to ahah_start event
   $('#ecenter-weathermap-select-form').bind('ahah_start', function() {
     // Add overlay...
-    $(this).addClass('data-loading');
-    $('input', this).each(function() {
+    $(this).addClass('data-loading').css('position', 'relative');
+
+    /*$('input', this).each(function() {
       var disabled = $(this).attr('disabled');
       $(this).data('ecenter_disabled', disabled);
       $(this).attr('disabled', true);
-    });
+    });*/
 
     overlay = $('<div class="loading-overlay"><p>' + Drupal.t('Loading') + '</p></div>');
-    ip_select = $('#ip-select-wrapper');
-    map = $('#weathermap-wrapper').css('position', 'relative');
+    //map = $('#weathermap-wrapper').css('position', 'relative');
     overlay.css({
       'position' : 'absolute',
       'top' : 0,
       'left' : 0,
-      'width' : ip_select.outerWidth(),
-      'height' : map.height(),
-      'z-index' : 9999,
+      'width' : $(this).outerWidth(),
+      'height' : $(this).height(),
+      'z-index' : 5,
       'display' : 'none',
     });
-    map.prepend(overlay);
+    $(this).prepend(overlay);
     overlay.fadeIn('slow');
 
   });
@@ -121,12 +105,12 @@ $(document).ready(function() {
   $('#ecenter-weathermap-select-form').bind('ahah_end', function() {
     // Add overlay...
     $(this).removeClass('data-loading');
-    $('input', this).each(function() {
+    /*$('input', this).each(function() {
       var disabled = $(this).data('ecenter_disabled');
       $(this).attr('disabled', disabled);
-    });
+    });*/
 
-    $('#weathermap-wrapper .loading-overlay').fadeOut('fast', function() {
+    $('.loading-overlay', this).fadeOut('fast', function() {
       $(this).remove();
     });
   });
@@ -169,17 +153,17 @@ $(document).ready(function() {
     $('.trace-label').removeClass('highlight');
   });
 
-  // Bind to feature select
+  // Bind to feature select: Set value, then call autocomplete's change function
   $('#weathermap-map').bind('ecenterfeatureselect', function(e, feature, layer) {
     if (layer.selectedFeatures.length == 1) {
-      // Set value, then call autocomplete's change function
-      $('#edit-ip-select-src-wrapper-src-wrapper input')
-        .val(feature.data.hub_name).data('autocomplete')._trigger('change');
+      var input = $('#edit-weathermap-wrapper-query-src-wrapper-src-wrapper input');
+      input.val(feature.ecenterID);
+      input.data('autocomplete')._trigger('change');
     }
     else if (layer.selectedFeatures.length > 1) {
-      // Set value, then call autocomplete's change function
-      $('#edit-ip-select-dst-wrapper-dst-wrapper input')
-        .val(feature.data.hub_name).data('autocomplete')._trigger('change');
+      var input = $('#edit-weathermap-wrapper-query-dst-wrapper-dst-wrapper input');
+      input.val(feature.ecenterID);
+      input.data('autocomplete')._trigger('change');
     }
   });
 
@@ -187,14 +171,14 @@ $(document).ready(function() {
   $('#weathermap-map').bind('ecenterfeatureunselect', function(e, feature, layer) {
     // No selected features
     if (!layer.selectedFeatures.length) {
-      // Set value, then call autocomplete's change function
-      $('#edit-ip-select-src-wrapper-src-wrapper input')
-        .val('').data('autocomplete')._trigger('change');
+      var input = $('#edit-weathermap-wrapper-query-src-wrapper-src-wrapper input');
+      input.val('');
+      input.data('autocomplete')._trigger('change');
     }
-    else if (layer.selectedFeatures.length == 1) {
-      // Set value, then call autocomplete's change function
-      $('#edit-ip-select-dst-wrapper-dst-wrapper input')
-        .val('').data('autocomplete')._trigger('change');
+    else if (layer.selectedFeatures.length) {
+      var input = $('#edit-weathermap-wrapper-query-dst-wrapper-dst-wrapper input');
+      input.val('');
+      input.data('autocomplete')._trigger('change');
     }
   });
 

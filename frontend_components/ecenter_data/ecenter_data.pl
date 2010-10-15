@@ -71,7 +71,11 @@ any ['get'] =>  "/hub.:format" =>
        sub {
  	       return  database->selectall_hashref( qq|select distinct hub_name, longitude, latitude from  hub|, 'hub_name');
        };
- 
+ ## get all hubs for src_ip/dst_ip
+any ['get'] =>  "/node/:ip.:format" => 
+       sub {
+ 	      return process_source(node_ip => params->{ip});
+       };  
 #########   get services(all of them -------------------------------------
  
 any ['get', 'post'] =>  "/service.:format" => 
@@ -191,7 +195,9 @@ sub get_health {
 # return list of destinations for the source ip or just listof source ips
 #
 sub process_source {
-    my %params = validate(@_, {src_ip => {type => SCALAR, regex => $REG_IP, optional => 1} }); 
+    my %params = validate(@_, {node_ip => {type => SCALAR, regex => $REG_IP, optional => 1},
+                               src_ip => {type => SCALAR, regex => $REG_IP, optional => 1},
+			      }); 
     my @hubs =(); 
     my $hash_ref;
     if( %params && $params{src_ip}) {
@@ -204,6 +210,14 @@ sub process_source {
          join l2_port l2p on(llm.l2_urn =l2p.l2_urn) 
          join hub h using(hub) 
      	where m.dst_ip is not NULL  and e.service_type = 'traceroute' and m.src_ip = inet6_pton('$params{src_ip}')|, 'ip_noted');
+    } elsif(%params && $params{node_ip}) {
+          return database->selectrow_hashref(
+            qq|select distinct n.ip_noted, n.netmask, n.nodename, h.hub_name, h.hub, h.longitude, h.latitude  from
+     	          node n
+         join l2_l3_map llm on(n.ip_addr = llm.ip_addr) 
+         join l2_port l2p on(llm.l2_urn =l2p.l2_urn) 
+         join hub h using(hub) 
+     	where n.ip_noted = '$params{node_ip}'|);
     } else {
         $hash_ref =  database->selectall_hashref(
 	      qq| select  n.ip_noted, n.netmask,  n.nodename,  h.hub_name, h.hub, h.longitude, h.latitude   from 
@@ -287,15 +301,15 @@ sub process_data {
     my $trace_cond = {};
     
     if($params{src_ip}) {
-        $trace_cond->{direct_traceroute}{src}  = qq| inet6_mask(md.src_ip, n_src.netmask) = inet6_mask(inet6_pton('$params{src_ip}'),   n_src.netmask) |;
-        $trace_cond->{reverse_traceroute}{src} = qq| inet6_mask(md.dst_ip, n_dst.netmask ) = inet6_mask(inet6_pton('$params{src_ip}'),  n_dst.netmask ) |;
+        $trace_cond->{direct_traceroute}{src}  = qq|  md.src_ip =  inet6_pton('$params{src_ip}')|;
+        $trace_cond->{reverse_traceroute}{src} = qq|  md.dst_ip  =  inet6_pton('$params{src_ip}') |;
     } else {
         $trace_cond->{direct_traceroute}{src}  = qq| n_src.nodename like   '%$params{src_hub}%'  |;
         $trace_cond->{reverse_traceroute}{src} = qq| n_src.nodename like   '%$params{dst_hub}%' |;
     }
     if($params{dst_ip}) {
-        $trace_cond->{direct_traceroute}{dst}   =   qq|  inet6_mask(md.dst_ip, n_dst.netmask )= inet6_mask(inet6_pton('$params{dst_ip}'),  n_dst.netmask ) |;
-        $trace_cond->{reverse_traceroute}{dst}  =   qq|  inet6_mask(md.src_ip, n_src.netmask)= inet6_mask(inet6_pton('$params{dst_ip}'), n_src.netmask) |; 
+        $trace_cond->{direct_traceroute}{dst}   =   qq|  md.dst_ip =  inet6_pton('$params{dst_ip}') |;
+        $trace_cond->{reverse_traceroute}{dst}  =   qq|  md.src_ip =  inet6_pton('$params{dst_ip}')  |; 
     } else {
         $trace_cond->{direct_traceroute}{dst}   = qq|  n_dst.nodename like   '%$params{dst_hub}%' |;
         $trace_cond->{reverse_traceroute}{dst}  = qq| n_dst.nodename like    '%$params{src_hub}%' |;
@@ -338,13 +352,13 @@ sub process_data {
     # my @data_keys = qw/owamp/;
     my %e2e_mds = ();
     foreach my $dir (keys %directions) {
-	my $e2e_sql = qq|select   m.metaid, n_src.ip_noted as src_ip, m.subject, e.service_type as type,  n_dst.ip_noted  as dst_ip, 
+	my $e2e_sql = qq|select   md.metaid, n_src.ip_noted as src_ip, md.subject, e.service_type as type,  n_dst.ip_noted  as dst_ip, 
                                                               n_src.nodename as src_name, n_dst.nodename as dst_name, s.url, s.service
 	                                        	   from 
-						        	      metadata m
-					        		join  node n_src on(m.src_ip = n_src.ip_addr) 
-								join  node n_dst on(m.dst_ip = n_dst.ip_addr) 
-								join eventtype e on(m.eventtype_id = e.ref_id)
+						        	      metadata md
+					        		join  node n_src on(md.src_ip = n_src.ip_addr) 
+								join  node n_dst on(md.dst_ip = n_dst.ip_addr) 
+								join eventtype e on(md.eventtype_id = e.ref_id)
 								join service s  on (e.service = s.service)
 							  where  
 								$trace_cond->{"$dir\_traceroute"}{src} and $trace_cond->{"$dir\_traceroute"}{dst} and 

@@ -5,7 +5,7 @@
  * @file ecenter_issues.install
  */
 
-/** 
+/**
  * Implementation of hook_install().
  */
 function ecenter_issues_install() {
@@ -18,6 +18,9 @@ function ecenter_issues_install() {
   $form_state['values']['macro'] = '$content = ' . var_export($content, TRUE) . ';';
   drupal_execute('content_copy_import_form', $form_state);
   content_clear_type_cache();
+
+  $ret = array();
+  db_add_index($ret, 'content_field_issue_querystring', 'querystring', array('field_issue_querystring_value'));
 }
 
 /**
@@ -36,32 +39,32 @@ function _ecenter_issues_content_type_issue() {
     'body_label' => 'Body',
     'min_word_count' => '0',
     'help' => '',
-    'node_options' => 
+    'node_options' =>
     array (
       'status' => true,
       'revision' => true,
       'promote' => false,
       'sticky' => false,
     ),
-    'subscriptions_workflow' => 
+    'subscriptions_workflow' =>
     array (
-      0 => 'n_new',
-      1 => 'n_unpub',
-      2 => 'n_pub',
-      3 => 'c_new',
-      4 => 'c_unpub',
-      5 => 'c_pub',
+      'n_new' => 'n_new',
+      'n_unpub' => 'n_unpub',
+      'n_pub' => 'n_pub',
+      'c_new' => 'c_new',
+      'c_unpub' => 'c_unpub',
+      'c_pub' => 'c_pub',
     ),
     'show_preview_changes' => 0,
-    'show_diff_inline' => false,
-    'enable_revisions_page' => true,
+    'show_diff_inline' => 0,
+    'enable_revisions_page' => 1,
     'old_type' => 'issue',
     'orig_type' => '',
     'module' => 'node',
     'custom' => '1',
     'modified' => '1',
     'locked' => '0',
-    'comment' => '2',
+    'comment' => '0',
     'comment_default_mode' => '4',
     'comment_default_order' => '2',
     'comment_default_per_page' => '50',
@@ -70,16 +73,12 @@ function _ecenter_issues_content_type_issue() {
     'comment_subject_field' => '0',
     'comment_preview' => '0',
     'comment_form_location' => '1',
-    'nh_parent' => 0,
-    'nh_child' => 0,
-    'nh_defaultparent' => '0',
-    'nh_createmenu' => 'optional_no',
   );
   $content['groups']  = array (
     0 => 
     array (
       'label' => 'Query',
-      'group_type' => 'standard',
+      'group_type' => 'multigroup',
       'settings' => 
       array (
         'form' => 
@@ -120,40 +119,59 @@ function _ecenter_issues_content_type_issue() {
             'format' => 'fieldset',
             'exclude' => 0,
           ),
-          'label' => 'above',
+          'label' => NULL,
+        ),
+        'multigroup' => 
+        array (
+          'multiple-columns' => 0,
+          'required' => 1,
+          'multiple' => 1,
+          'labels' => 
+          array (
+            0 => '',
+            1 => '',
+            2 => '',
+            3 => '',
+            4 => '',
+            5 => '',
+            6 => '',
+            7 => '',
+            8 => '',
+            9 => '',
+          ),
         ),
       ),
-      'weight' => '-1',
-      'group_name' => 'group_issue_query',
+      'weight' => '-2',
+      'group_name' => 'group_issue_query_group',
     ),
   );
   $content['fields']  = array (
     0 => 
     array (
-      'label' => 'Query',
-      'field_name' => 'field_issue_query',
+      'label' => 'Querystring',
+      'field_name' => 'field_issue_querystring',
       'type' => 'text',
-      'widget_type' => 'text_textarea',
+      'widget_type' => 'text_textfield',
       'change' => 'Change basic information',
-      'weight' => '-4',
-      'rows' => '2',
-      'size' => 60,
+      'weight' => '6',
+      'rows' => 5,
+      'size' => '60',
       'description' => '',
       'default_value' => 
       array (
         0 => 
         array (
           'value' => '',
-          '_error_element' => 'default_value_widget][field_issue_query][0][value',
+          '_error_element' => 'default_value_widget][field_issue_querystring][0][value',
         ),
       ),
       'default_value_php' => '',
       'default_value_widget' => NULL,
-      'group' => 'group_issue_query',
+      'group' => 'group_issue_query_group',
       'required' => 1,
-      'multiple' => '0',
+      'multiple' => 1,
       'text_processing' => '0',
-      'max_length' => '512',
+      'max_length' => '255',
       'allowed_values' => '',
       'allowed_values_php' => '',
       'op' => 'Save field settings',
@@ -211,13 +229,583 @@ function _ecenter_issues_content_type_issue() {
     ),
     1 => 
     array (
+      'label' => 'Source Hub',
+      'field_name' => 'field_issue_src_hub',
+      'type' => 'text',
+      'widget_type' => 'text_textfield',
+      'change' => 'Change basic information',
+      'weight' => '7',
+      'rows' => 5,
+      'size' => '60',
+      'description' => '',
+      'default_value' => 
+      array (
+        0 => 
+        array (
+          'value' => '',
+          '_error_element' => 'default_value_widget][field_issue_src_hub][0][value',
+        ),
+      ),
+      'default_value_php' => '',
+      'default_value_widget' => 
+      array (
+        'field_issue_src_hub' => 
+        array (
+          0 => 
+          array (
+            'value' => '',
+            '_error_element' => 'default_value_widget][field_issue_src_hub][0][value',
+          ),
+        ),
+      ),
+      'group' => 'group_issue_query_group',
+      'required' => 0,
+      'multiple' => 1,
+      'text_processing' => '0',
+      'max_length' => '16',
+      'allowed_values' => '',
+      'allowed_values_php' => '',
+      'op' => 'Save field settings',
+      'module' => 'text',
+      'widget_module' => 'text',
+      'columns' => 
+      array (
+        'value' => 
+        array (
+          'type' => 'varchar',
+          'length' => '16',
+          'not null' => false,
+          'sortable' => true,
+          'views' => true,
+        ),
+      ),
+      'display_settings' => 
+      array (
+        'label' => 
+        array (
+          'format' => 'above',
+          'exclude' => 0,
+        ),
+        'teaser' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        'full' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        4 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        2 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        3 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        'token' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+      ),
+    ),
+    2 => 
+    array (
+      'label' => 'Destination Hub',
+      'field_name' => 'field_issue_dst_hub',
+      'type' => 'text',
+      'widget_type' => 'text_textfield',
+      'change' => 'Change basic information',
+      'weight' => '8',
+      'rows' => 5,
+      'size' => '60',
+      'description' => '',
+      'default_value' => 
+      array (
+        0 => 
+        array (
+          'value' => '',
+          '_error_element' => 'default_value_widget][field_issue_dst_hub][0][value',
+        ),
+      ),
+      'default_value_php' => '',
+      'default_value_widget' => 
+      array (
+        'field_issue_dst_hub' => 
+        array (
+          0 => 
+          array (
+            'value' => '',
+            '_error_element' => 'default_value_widget][field_issue_dst_hub][0][value',
+          ),
+        ),
+      ),
+      'group' => 'group_issue_query_group',
+      'required' => 0,
+      'multiple' => 1,
+      'text_processing' => '0',
+      'max_length' => '16',
+      'allowed_values' => '',
+      'allowed_values_php' => '',
+      'op' => 'Save field settings',
+      'module' => 'text',
+      'widget_module' => 'text',
+      'columns' => 
+      array (
+        'value' => 
+        array (
+          'type' => 'varchar',
+          'length' => '16',
+          'not null' => false,
+          'sortable' => true,
+          'views' => true,
+        ),
+      ),
+      'display_settings' => 
+      array (
+        'label' => 
+        array (
+          'format' => 'above',
+          'exclude' => 0,
+        ),
+        'teaser' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        'full' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        4 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        2 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        3 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        'token' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+      ),
+    ),
+    3 => 
+    array (
+      'label' => 'Source IP',
+      'field_name' => 'field_issue_src_ip',
+      'type' => 'text',
+      'widget_type' => 'text_textfield',
+      'change' => 'Change basic information',
+      'weight' => '9',
+      'rows' => 5,
+      'size' => '60',
+      'description' => '',
+      'default_value' => 
+      array (
+        0 => 
+        array (
+          'value' => '',
+          '_error_element' => 'default_value_widget][field_issue_src_ip][0][value',
+        ),
+      ),
+      'default_value_php' => '',
+      'default_value_widget' => 
+      array (
+        'field_issue_src_ip' => 
+        array (
+          0 => 
+          array (
+            'value' => '',
+            '_error_element' => 'default_value_widget][field_issue_src_ip][0][value',
+          ),
+        ),
+      ),
+      'group' => 'group_issue_query_group',
+      'required' => 0,
+      'multiple' => 1,
+      'text_processing' => '0',
+      'max_length' => '',
+      'allowed_values' => '',
+      'allowed_values_php' => '',
+      'op' => 'Save field settings',
+      'module' => 'text',
+      'widget_module' => 'text',
+      'columns' => 
+      array (
+        'value' => 
+        array (
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => false,
+          'sortable' => true,
+          'views' => true,
+        ),
+      ),
+      'display_settings' => 
+      array (
+        'label' => 
+        array (
+          'format' => 'above',
+          'exclude' => 0,
+        ),
+        'teaser' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        'full' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        4 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        2 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        3 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        'token' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+      ),
+    ),
+    4 => 
+    array (
+      'label' => 'Destination IP',
+      'field_name' => 'field_issue_dst_ip',
+      'type' => 'text',
+      'widget_type' => 'text_textfield',
+      'change' => 'Change basic information',
+      'weight' => '10',
+      'rows' => 5,
+      'size' => '60',
+      'description' => '',
+      'default_value' => 
+      array (
+        0 => 
+        array (
+          'value' => '',
+          '_error_element' => 'default_value_widget][field_issue_dst_ip][0][value',
+        ),
+      ),
+      'default_value_php' => '',
+      'default_value_widget' => 
+      array (
+        'field_issue_dst_ip' => 
+        array (
+          0 => 
+          array (
+            'value' => '',
+            '_error_element' => 'default_value_widget][field_issue_dst_ip][0][value',
+          ),
+        ),
+      ),
+      'group' => 'group_issue_query_group',
+      'required' => 0,
+      'multiple' => 1,
+      'text_processing' => '0',
+      'max_length' => '',
+      'allowed_values' => '',
+      'allowed_values_php' => '',
+      'op' => 'Save field settings',
+      'module' => 'text',
+      'widget_module' => 'text',
+      'columns' => 
+      array (
+        'value' => 
+        array (
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => false,
+          'sortable' => true,
+          'views' => true,
+        ),
+      ),
+      'display_settings' => 
+      array (
+        'label' => 
+        array (
+          'format' => 'above',
+          'exclude' => 0,
+        ),
+        'teaser' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        'full' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        4 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        2 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        3 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        'token' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+      ),
+    ),
+    5 => 
+    array (
+      'label' => 'Start date',
+      'field_name' => 'field_issue_start',
+      'type' => 'date',
+      'widget_type' => 'date_text',
+      'change' => 'Change basic information',
+      'weight' => '11',
+      'default_value' => 'blank',
+      'default_value2' => 'same',
+      'default_value_code' => '',
+      'default_value_code2' => '',
+      'input_format' => 'Y-m-d H:i:s',
+      'input_format_custom' => 'Y-m-d H:i:s',
+      'advanced' => 
+      array (
+        'label_position' => 'above',
+        'text_parts' => 
+        array (
+          'year' => 0,
+          'month' => 0,
+          'day' => 0,
+          'hour' => 0,
+          'minute' => 0,
+          'second' => 0,
+        ),
+      ),
+      'increment' => 1,
+      'year_range' => '-3:+3',
+      'label_position' => 'above',
+      'text_parts' => 
+      array (
+      ),
+      'description' => '',
+      'group' => 'group_issue_query_group',
+      'required' => 1,
+      'multiple' => 1,
+      'repeat' => 0,
+      'todate' => '',
+      'granularity' => 
+      array (
+        'year' => 'year',
+        'month' => 'month',
+        'day' => 'day',
+        'hour' => 'hour',
+        'minute' => 'minute',
+      ),
+      'default_format' => 'medium',
+      'tz_handling' => 'user',
+      'timezone_db' => 'UTC',
+      'op' => 'Save field settings',
+      'module' => 'date',
+      'widget_module' => 'date',
+      'columns' => 
+      array (
+        'value' => 
+        array (
+          'type' => 'varchar',
+          'length' => 20,
+          'not null' => false,
+          'sortable' => true,
+          'views' => true,
+        ),
+      ),
+      'display_settings' => 
+      array (
+        'label' => 
+        array (
+          'format' => 'above',
+          'exclude' => 0,
+        ),
+        'teaser' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        'full' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        4 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        2 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        3 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        'token' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+      ),
+    ),
+    6 => 
+    array (
+      'label' => 'End Date',
+      'field_name' => 'field_issue_end',
+      'type' => 'date',
+      'widget_type' => 'date_text',
+      'change' => 'Change basic information',
+      'weight' => '12',
+      'default_value' => 'blank',
+      'default_value2' => 'same',
+      'default_value_code' => '',
+      'default_value_code2' => '',
+      'input_format' => 'Y-m-d H:i:s',
+      'input_format_custom' => 'Y-m-d H:i:s',
+      'advanced' => 
+      array (
+        'label_position' => 'above',
+        'text_parts' => 
+        array (
+          'year' => 0,
+          'month' => 0,
+          'day' => 0,
+          'hour' => 0,
+          'minute' => 0,
+          'second' => 0,
+        ),
+      ),
+      'increment' => 1,
+      'year_range' => '-3:+3',
+      'label_position' => 'above',
+      'text_parts' => 
+      array (
+      ),
+      'description' => '',
+      'group' => 'group_issue_query_group',
+      'required' => 1,
+      'multiple' => 1,
+      'repeat' => 0,
+      'todate' => '',
+      'granularity' => 
+      array (
+        'year' => 'year',
+        'month' => 'month',
+        'day' => 'day',
+        'hour' => 'hour',
+        'minute' => 'minute',
+      ),
+      'default_format' => 'medium',
+      'tz_handling' => 'user',
+      'timezone_db' => 'UTC',
+      'op' => 'Save field settings',
+      'module' => 'date',
+      'widget_module' => 'date',
+      'columns' => 
+      array (
+        'value' => 
+        array (
+          'type' => 'varchar',
+          'length' => 20,
+          'not null' => false,
+          'sortable' => true,
+          'views' => true,
+        ),
+      ),
+      'display_settings' => 
+      array (
+        'label' => 
+        array (
+          'format' => 'above',
+          'exclude' => 0,
+        ),
+        'teaser' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        'full' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        4 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        2 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        3 => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+        'token' => 
+        array (
+          'format' => 'default',
+          'exclude' => 0,
+        ),
+      ),
+    ),
+    7 => 
+    array (
       'label' => 'Query results',
       'field_name' => 'field_issue_query_results',
       'type' => 'text',
       'widget_type' => 'text_textarea',
       'change' => 'Change basic information',
-      'weight' => '-3',
-      'rows' => '10',
+      'weight' => '13',
+      'rows' => '18',
       'size' => 60,
       'description' => '',
       'default_value' => 
@@ -240,9 +828,9 @@ function _ecenter_issues_content_type_issue() {
           ),
         ),
       ),
-      'group' => 'group_issue_query',
-      'required' => 0,
-      'multiple' => '0',
+      'group' => 'group_issue_query_group',
+      'required' => 1,
+      'multiple' => 1,
       'text_processing' => '0',
       'max_length' => '',
       'allowed_values' => '',
@@ -303,15 +891,15 @@ function _ecenter_issues_content_type_issue() {
   );
   $content['extra']  = array (
     'title' => '-5',
-    'body_field' => '-3',
-    'revision_information' => '1',
-    'author' => '5',
-    'options' => '6',
-    'comment_settings' => '3',
-    'menu' => '4',
-    'taxonomy' => '0',
-    'path' => '2',
-    'subscriptions_ui' => '7',
+    'body_field' => '-4',
+    'revision_information' => '-1',
+    'author' => '3',
+    'options' => '4',
+    'comment_settings' => '1',
+    'menu' => '2',
+    'path' => '0',
+    'subscriptions_ui' => '5',
   );
+
   return $content;
 }

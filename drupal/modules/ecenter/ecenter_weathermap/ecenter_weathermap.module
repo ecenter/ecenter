@@ -156,12 +156,11 @@ function _ecenter_weathermap_select_form() {
   global $user;
 
   // Initialize time-related variables
-  $inc = variable_get('ecenter_weathermap_time_increment', 5);
+  $inc = variable_get('ecenter_weathermap_time_increment', 10);
   $now = time();
-  $default_end = variable_get('ecenter_weathermap_default_end', 1800);
-  $default_start = variable_get('ecenter_weathermap_default_end', 9000);
+  $default_start = variable_get('ecenter_weathermap_default_end', 7200);
   $tz = date_default_timezone_name(TRUE);
-  $end = date_make_date($now - $default_end, $tz, DATE_UNIX);
+  $end = date_make_date($now, $tz, DATE_UNIX);
   $start = date_make_date($now - $default_start, $tz, DATE_UNIX);
 
   if (user_access('debug ecenter weathermap')) {
@@ -247,9 +246,27 @@ function _ecenter_weathermap_select_form() {
   $form['weathermap_wrapper']['query']['date_description'] = array(
     '#prefix' => '<div id="date-description-wrapper">',
     '#suffix' => '</div>',
-    '#value' => '<p>'. t('Input time in 24 hour format (e.g. <em>15:30</em>).') .'</p><p>'. t('The query date and time is expressed in your local time zone (@tz). You may change your timezone on your !link.',
-      array('@tz' => str_replace('_', ' ', date_default_timezone_name(TRUE)), '!link' => l('user profile', 'user/'. $user->uid .'/edit'))) .'</p>',
+    '#value' => '<p>'. t('Input time in 24 hour format (e.g. <em>15:30</em>).') .'</p>',
   );
+
+  if ($user->uid) {
+    $form['weathermap_wrapper']['query']['date_description']['#value'] .= '<p>'. 
+      t('The query date and time is expressed in your local timezone (@tz). You may 
+        change your timezone on your !link.', 
+        array(
+          '@tz' => str_replace('_', ' ', date_default_timezone_name(TRUE)), 
+          '!link' => l('user profile', 'user/'. $user->uid .'/edit')
+        )
+      ) .'</p>';
+  }
+  else {
+    $form['weathermap_wrapper']['query']['date_description']['#value'] .= '<p>'. 
+      t('The query date and time is expressed in site\'s default timezone (@tz).',
+        array(
+          '@tz' => str_replace('_', ' ', date_default_timezone_name(TRUE)), 
+        )
+      ) .'</p>';
+  }
 
   // Submit button
   $form['submit'] = array(
@@ -324,16 +341,13 @@ function ecenter_weathermap_select_form(&$form_state) {
 
   if ($src && $dst && $start && $end) {
 
-    $start_adjusted = _ecenter_weathermap_date_to_utc($start);
-    $end_adjusted = _ecenter_weathermap_date_to_utc($end);
-
-    $data = ecenter_weathermap_get_data($src, $dst, $start_adjusted, $end_adjusted);
+    $data = ecenter_weathermap_get_data($src, $dst, $start, $end);
 
     $params = array(
       'src' => $src,
       'dst' => $dst,
-      'start' => $start_adjusted,
-      'end' => $end_adjusted,
+      'start' => $start,
+      'end' => $end,
     );
 
     // If we've got the data (at bare minimum, a traceroute), delegate to rendering function
@@ -419,6 +433,9 @@ function ecenter_weathermap_get_client($status_check = '503') {
 function ecenter_weathermap_get_data($src, $dst, $start, $end, $debug_url = FALSE) {
   static $results = array();
 
+  $start = _ecenter_weathermap_date_to_utc($start);
+  $end = _ecenter_weathermap_date_to_utc($end);
+
   $query = http_build_query(array(
     'src' => $src,
     'dst' => $dst,
@@ -465,7 +482,7 @@ function ecenter_weathermap_get_hops($src = NULL) {
 
   if (empty($hops[$src_key])) {
 
-    $caching = variable_get('ecenter_weathermap_hop_cache_enabled', 0);
+    //$caching = variable_get('ecenter_weathermap_hop_cache_enabled', 0);
     if ($caching && $result = cache_get($src_key, 'cache_ecenter_hops')) {
       $hops[$src_key] = $result->data;
     }
@@ -552,9 +569,11 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
   $data = $response['response'];
   $hops = ecenter_weathermap_get_hops();
 
+  //dpm($data, 'data');
+
   // @TODO extract from params instead?
   list($src_type, $src_val) = explode(':', $src, 2);
-  list($dst_type, $dst_valu) = explode(':', $dst, 2);
+  list($dst_type, $dst_val) = explode(':', $dst, 2);
 
   foreach (array('direct_traceroute', 'reverse_traceroute') as $direction) {
     // We may not have ANY forward or reverse traceroutes
@@ -570,8 +589,10 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
     $traceroute = array_shift(array_values($data[$direction]));
     usort($traceroute, '_ecenter_weathermap_sort_traceroute');
 
+    //dpm($traceroute, $direction);
+
     // Synthesize forward and reverse hops
-    if ($direction == 'direct_traceroute') {
+    /*if ($direction == 'direct_traceroute') {
       if ($src_type == 'hub') {
         $hop_identifier = strtoupper(array_shift(explode('-', $traceroute[0]['hub'])));
       }
@@ -626,7 +647,7 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
         );
         array_push($traceroute, $new_hop);
       }
-    }
+    }*/
 
     // Main loop
     foreach ($traceroute as $hop) {
@@ -1040,12 +1061,13 @@ function ecenter_weathermap_layers_sites() {
           'pointRadius' => 6,
           'fillColor' => '#ffffff',
           'fillOpacity' => 1,
-          'strokeColor' => '#5a5aaa',
+          'strokeColor' => '#666666',
           'strokeWidth' => 3,
           'strokeOpacity' => 1,
           'label' => $hub['hub_name'],
-          'labelYOffset' => 17,
+          'labelYOffset' => 18,
           'fontWeight' => 'bold',
+          'fontSize' => '15px',
           'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',
           'fontColor' => '#444444',
         ),
@@ -1076,10 +1098,7 @@ function ecenter_weathermap_layers_traceroute() {
 
   if ($src && $dst && $start && $end) {
 
-    $start_date_adjusted = _ecenter_weathermap_date_to_utc($start);
-    $end_date_adjusted = _ecenter_weathermap_date_to_utc($end);
-
-    $data = ecenter_weathermap_get_data($src, $dst, $start_date_adjusted, $end_date_adjusted);
+    $data = ecenter_weathermap_get_data($src, $dst, $start, $end);
 
     if ($data && $traceroute = $data['forward']) {
 
@@ -1287,10 +1306,7 @@ function ecenter_weathermap_openlayers_map_preprocess_alter(&$map) {
     extract(_ecenter_weathermap_extract_query());
 
     if ($src && $dst && $start && $end) {
-      $start_date_adjusted = _ecenter_weathermap_date_to_utc($start);
-      $end_date_adjusted = _ecenter_weathermap_date_to_utc($end);
-
-      $data = ecenter_weathermap_get_data($src, $dst, $start_date_adjusted, $end_date_adjusted);
+      $data = ecenter_weathermap_get_data($src, $dst, $start, $end_date);
 
       if ($data && !empty($data['forward'])) {
         $map['layers']['ecenter_traceroute'] = 'ecenter_traceroute';

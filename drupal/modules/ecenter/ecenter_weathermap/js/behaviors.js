@@ -10,9 +10,11 @@ Drupal.behaviors.EcenterEvents = function(context) {
   $('#query input[type=hidden]').change(function() {
     $('#results-wrapper').text('');
   });
-  /*$('#ip-select-wrapper input#edit-ip-select-src-ip-wrapper-src-ip').change(function() {
-    $('#ip-select-wrapper input#edit-ip-select-dst-ip-wrapper-dst-ip_quickselect').val('').attr('disabled', true);
-  });*/
+  $('#edit-weathermap-wrapper-query-src-wrapper-src-wrapper input').change(function() {
+    var input = $('#edit-weathermap-wrapper-query-dst-wrapper-dst-wrapper input');
+    input.val('');
+    input.data('autocomplete')._trigger('change');
+  });
 }
 
 // 
@@ -59,7 +61,6 @@ EcenterWeathermap.selectFeature = function(select) {
    }
 }
 
-
 /**
  * Disable form elements during AHAH request
  *
@@ -76,6 +77,8 @@ $(document).ready(function() {
 
   // Bind to ahah_start event
   $('#ecenter-weathermap-select-form').bind('ahah_start', function() {
+    self = this;
+
     // Add overlay...
     $(this).addClass('data-loading').css('position', 'relative');
 
@@ -85,7 +88,7 @@ $(document).ready(function() {
       $(this).attr('disabled', true);
     });*/
 
-    overlay = $('<div class="loading-overlay"><p>' + Drupal.t('Loading') + '</p></div>');
+    overlay = $('<div class="loading-overlay"><p class="loading">' + Drupal.t('Loading') + '</p><button class="cancel">' + Drupal.t('Cancel') + '</button></div>');
     //map = $('#weathermap-wrapper').css('position', 'relative');
     overlay.css({
       'position' : 'absolute',
@@ -99,17 +102,23 @@ $(document).ready(function() {
     $(this).prepend(overlay);
     overlay.fadeIn('slow');
 
+    // @TODO eee this doesn't work!
+    $('button.cancel', overlay).click(function(e) {
+      e.stopPropagation();
+      var input = $('#edit-weathermap-wrapper-query-dst-wrapper-dst-wrapper input');
+      input.val('');
+      input.data('autocomplete')._trigger('change');
+      $(self).removeClass('data-loading');
+      $('.loading-overlay', this).fadeOut('fast', function() {
+        $(self).remove();
+      });
+    });
   });
 
   // Behind to ahah_end event
   $('#ecenter-weathermap-select-form').bind('ahah_end', function() {
     // Add overlay...
     $(this).removeClass('data-loading');
-    /*$('input', this).each(function() {
-      var disabled = $(this).data('ecenter_disabled');
-      $(this).attr('disabled', disabled);
-    });*/
-
     $('.loading-overlay', this).fadeOut('fast', function() {
       $(this).remove();
     });

@@ -24,7 +24,7 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
 
     $vars['issuelink'] = l('Create issue from this query', 'node/add/issue',
       array(
-        'query' => array('query' => array($issue_query)),
+        'query' => array('query' => $issue_query),
         'attributes' => array('class' => 'button'),
       )
     );
@@ -67,12 +67,11 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
   );
 
   // Generate date range -- internal date is stored as UTC
-  $utc = timezone_open('UTC');
-  $tz = timezone_open(date_default_timezone_name(TRUE));
+  //$utc = timezone_open('UTC');
+  //$tz = timezone_open(date_default_timezone_name(TRUE));
   $dates = array();
   foreach (array('start', 'end') as $val) {
-   $date = date_create($vars['params'][$val], $utc);
-    date_timezone_set($date, $tz);
+    $date = date_create($vars['params'][$val]);
     $dates[$val] = date_format($date, 'M j, Y H:i');
   }
   $vars['date_range'] = t('@start - @end', array('@start' => $dates['start'], '@end' => $dates['end']));
@@ -132,8 +131,8 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
           'min' => 0,
           'max' => 100,
           'numberTicks' => 6,
-          'label' => t('Percent utilization'),
-          'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
+          //'label' => t('Percent utilization'),
+          //'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
           'tickOptions' => array(
             'formatString' => '%01.0f%',
             'color' => '#cccccc',

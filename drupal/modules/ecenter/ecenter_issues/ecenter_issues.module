@@ -3,140 +3,193 @@
 
 /**
  * @file ecenter_issues.module
+ *
+ * The Ecenter Issues module defines two content types with CCK field
+ * definitions:
+ *
+ *  - Network query: A representation of a network query sent to the E-Center
+ *    data retrieval service.
+ *  - Issue: An issue with one or more network queries associated via a node
+ *    reference field.
+ *
+ * Beyond defining the data types, this module is resposible for handling form
+ * manipulation and other logic required to make the user experience of adding
+ * and saving network data seamless.
+ *
+ * Much of what is possible with the data structure is hidden from normal users
+ * for now -- all queries and issues must be created through the issue node
+ * editing form.
  */
 
-function _ecenter_issues_perm() {
-  return array('administer ecenter issue', 'edit ecenter issue query');
+/** 
+ * Implementation of hook_nodeapi().
+ */
+function ecenter_issues_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
+  if ($node->type == 'issue' && $op == 'view') {
+    dpm($node);
+  }
 }
 
-function _ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
-  if ($form['#token'] == 'issue_node_form') {
+/**
+ * Implementation of hook_form_alter().
+ */
+function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
 
-    //array_unshift($form['#validate'], 'ecenter_issues_issue_form_validate');
-    //$form['#after_build'][] = 'ecenter_issues_after_build';
-    //dpm($form, 'form alter');
-
+  if ($form_id == 'issue_node_form') {
     // If new, populate values and do additional checking
-    if (!$form['nid']['#value']) {
-
-      $form['title']['#value'] = 'TEST';
-
-      // Define a simple error form
-      $error_form = array();
-      $error_form['error'] = array(
-        '#value' => t('The provided query was incomplete, malformed, or returned no data. <em><strong>@TODO</strong> Add more descriptive debugging output after consulting group.</em>'),
-      );
-
+    if (!$form['#node']->nid) {
+      // No query string provided
       if (empty($_REQUEST['query'])) {
-        $form = $error_form;
+        $form = array(
+          'error' => array(
+            '#value' => t('At this time, issues may only be created after
+              running a traceroute. Please visit the
+              <a href="@weathermap">weathermap</a> and try again.', array(
+                '@weathermap' => url('weathermap'))
+              )
+            ),
+        );
         return;
       }
 
-      $i = 0;
-      foreach ($_REQUEST['query'] as $query) {
-        $data_params = array();
-        $query = urldecode($query);
-        $params = explode('&', $query);
+      $params = ecenter_issues_parse_params($_REQUEST['query']);
+      $data = ecenter_weathermap_get_data($params['src'], $params['dst'],
+        $params['start'], $params['end']);
 
-        foreach ($params as $param) {
-          list($k, $v) = explode('=', $param, 2);
-
-          // We'll need to grab data later
-          $data_params[$k] = $v;
-
-          // Pre-process src and dst
-          if ($k == 'src' || $k == 'dst') {
-            list($query_type, $identifier) = explode(':', $v, 2);
-            $k .= '_'. $query_type;
-            $v = $identifier;
-          }
-
-          // Populate form -- fields are named to match keys
-          $form['group_issue_query_group'][$i]['field_issue_'. $k]['#value']['value'] = $v;
-
-          if (array_key_exists('src', $data_params) && 
-            array_key_exists('dst', $data_params) && 
-            array_key_exists('start', $data_params) && 
-            array_key_exists('end', $data_params)) {
-            $well_formed = TRUE;
-          }
-
-          if ($well_formed) {
-            $data = ecenter_weathermap_get_data($data_params['src'], 
-              $data_params['dst'], $data_params['start'], $data_params['end']);
-            $form['group_issue_query_group'][$i]['field_issue_querystring']
-              ['#value']['value'] = $query;
-            $form['group_issue_query_group'][$i]['field_issue_query_results']
-              ['#value']['value'] = serialize($data);
-          }
-
-          // @TODO This MUST be uncommented before serious use...
-          /*if (!$well_formed || empty($data)) {
-            $form = $error_form;
-          }*/
-        }
-        $i++;
+      // Query provided, but malformed or no data
+      if (empty($data)) {
+        $form = array(
+          'error' => array(
+            '#value' => t('The query provided did not return any data. Please
+              visit the <a href="@weathermap">weathermap</a> and try again.', array(
+                '@weathermap' => url('weathermap'),
+              )),
+          ),
+        );
+        return;
       }
+
+      array_unshift($form['#submit'], 'ecenter_issues_issue_add_data');
+      $form['field_issue_query']['#access'] = FALSE;
+
+      // Create title from parameters
+      list($src_type, $src_value) = explode(':', $params['src'], 2);
+      list($dst_type, $dst_value) = explode(':', $params['dst'], 2);
+      $form['title']['#default_value'] = t('@src to @dst, @start - @end (@tz)',
+        array('@src' => $src_value, '@dst' => $dst_value,
+          '@start' => $params['start'], '@end' => $params['end'],
+          '@tz' => str_replace('_', ' ', date_default_timezone_name(TRUE)),
+        )
+      );
     }
+  }
 
-
-    /*foreach (element_children($form['group_issue_query_group']) as $gkey) {
-      foreach (element_children($form['group_issue_query_group'][$gkey]) as $fkey) {
-        dpm($form['group_issue_query_group'][$gkey][$fkey]);
-        $form['group_issue_query_group'][$gkey][$fkey]['#type'] = 'value';
-      }
-    }*/
-
-    // Hide (in memory) form element from normal users
-    //if (!user_access('edit ecenter issue query')) {
-    //  $form['group_issue_query_group']['#access'] = FALSE;
-    //}
-   //$form['group_issue_query_group'][0]['field_issue_src_hub']['#value'] = 'WAAAH';
-   //$form['group_issue_query_group'][0]['field_issue_src_hub']['#type'] = 'hidden';
-
+  if ($form_id == 'network_query_node_form') {
+    $form['field_query_data']['#access'] = FALSE;
   }
 }
 
-// Custom validation...
-function _ecenter_issues_issue_form_validate($form, &$form_state) {
-  $v = $form_state['values'];
+/**
+ * Submit callback for issues
+ */
+function ecenter_issues_issue_add_data($form, &$form_state) {
+  global $user;
+  $params = ecenter_issues_parse_params($_REQUEST['query']);
 
-  // Hairy, but I don't know how it could be otherwise.. 
-  $i = 0;
-  while ($results = array_shift($v['field_issue_query_results'])) {
+  list($src_type, $src_value) = explode(':', $params['src'], 2);
+  list($dst_type, $dst_value) = explode(':', $params['dst'], 2);
+  $src_field_name = 'field_query_src_'. $src_type;
+  $dst_field_name = 'field_query_dst_'. $dst_type;
 
-    if (
-      (!empty($v['field_issue_src_hub'][$i]['value']) && !empty($v['field_issue_dst_hub'][$i]['value']) && !empty($v['field_issue_src_ip'][$i]['value']) && !empty($v['field_issue_dst_ip'][$i]['value'])) ||
-      (!empty($v['field_issue_src_hub'][$i]['value']) && !empty($v['field_issue_dst_hub'][$i]['value']) && (!empty($v['field_issue_src_ip'][$i]['value']) || !empty($v['field_issue_dst_ip'][$i]['value']))) ||
-      (!empty($v['field_issue_src_ip'][$i]['value']) && !empty($v['field_issue_dst_ip'][$i]['value']) && (!empty($v['field_issue_src_hub'][$i]['value']) || !empty($v['field_issue_dst_hub'][$i]['value']))) ||
-      (!empty($v['field_issue_src_ip'][$i]['value']) && !empty($v['field_issue_dst_hub'][$i]['value']) && (!empty($v['field_issue_src_hub'][$i]['value']) || !empty($v['field_issue_dst_ip'][$i]['value']))) ||
-      (!empty($v['field_issue_src_hub'][$i]['value']) && !empty($v['field_issue_dst_ip'][$i]['value']) && (!empty($v['field_issue_src_hub'][$i]['value']) || !empty($v['field_issue_dst_ip'][$i]['value'])))
-    ) {
-      $message = t('You must provide one and only one source and one and only one destination.');
-      form_set_error('field_issue_src_ip', $message);
-      form_set_error('field_issue_dst_ip');
-      form_set_error('field_issue_src_hub');
-      form_set_error('field_issue_dst_hub');
-    }
+  $start = _ecenter_weathermap_date_to_utc($params['start'], 'Y-m-d H:i:s');
+  $end = _ecenter_weathermap_date_to_utc($params['end'], 'Y-m-d H:i:s');
+  $start_query = _ecenter_weathermap_date_to_utc($params['start'], 'Y-m-d\TH:i:s');
+  $end_query = _ecenter_weathermap_date_to_utc($params['end'], 'Y-m-d\TH:i:s');
 
-    if ( (!empty($v['field_issue_src_hub'][$i]['value']) || !empty($v['field_issue_src_ip'][$i]['value'])) && (empty($v['field_issue_dst_hub'][$i]['value']) || empty($v['field_issue_dst_ip'][$i]['value']))) {
-      form_set_error('field_issue_dst_hub', t('You must specify a destination IP or destination hub.'));
-    }
+  // @TODO Parse dates and times into proper format...
 
-    if ( (!empty($v['field_issue_dst_hub'][$i]['value']) || !empty($v['field_issue_dst_ip'][$i]['value'])) && (empty($v['field_issue_src_hub'][$i]['value']) || empty($v['field_issue_src_ip'][$i]['value']))) {
-      form_set_error('field_issue_dst_hub', t('You must specify a source IP or source hub.'));
-    }
+  // Get all field definitions
+  $start_field = content_fields('field_query_start');
+  $start_db_info = content_database_info($start_field);
+  $end_field = content_fields('field_query_end');
+  $end_db_info = content_database_info($end_field);
+  $src_field = content_fields('field_query_src_'. $src_type);
+  $src_db_info = content_database_info($src_field);
+  $dst_field = content_fields('field_query_dst_'. $dst_type);
+  $dst_db_info = content_database_info($dst_field);
 
-    $i++;
+  $sql = "SELECT n.nid FROM {node} n
+    INNER JOIN {" . $start_db_info['table'] ."} start ON n.vid = start.vid
+    INNER JOIN {" . $end_db_info['table'] ."} end ON n.vid = end.vid
+    INNER JOIN {" . $src_db_info['table'] ."} src ON n.vid = src.vid
+    INNER JOIN {" . $dst_db_info['table'] ."} dst ON n.vid = dst.vid
+    WHERE
+    start.". $start_db_info['columns']['value']['column'] ." = '%s' AND
+    end.". $end_db_info['columns']['value']['column'] ." = '%s' AND
+    src.". $src_db_info['columns']['value']['column'] ." = '%s' AND
+    dst.". $dst_db_info['columns']['value']['column'] ." = '%s'";
+
+  $nid = db_result(db_query($sql,
+    $start_query, $end_query, $src_value, $dst_value));
+
+  // If query doesn't exist, create new query node
+  if (!$nid) {
+    $queryNode = new stdClass();
+    $queryNode->type = 'network_query';
+    $queryNode->title = t('@src to @dst, @start - @end',
+      array('@src' => $src_value, '@dst' => $dst_value,
+        '@start' => $start, '@end' => $end,
+      )
+    );
+    $queryNode->uid = $user->uid;
+    $queryNode->created = strtotime("now");
+    $queryNode->changed = strtotime("now");
+    $queryNode->status = 1;
+    $queryNode->comment = 0;
+    $queryNode->promote = 0;
+    $queryNode->moderate = 0;
+    $queryNode->sticky = 0;
+
+    $queryNode->$src_field_name = array(array('value' => $src_value));
+    $queryNode->$dst_field_name = array(array('value' => $dst_value));
+
+    // @TODO this should go in the network_query save routine somehow...
+    $data = ecenter_weathermap_get_data($params['src'], $params['dst'], $params['start'], $params['end']);
+    $queryNode->field_query_data = array(array('value' => serialize($data)));
+
+    // Dates need to be converted to UTC
+    $queryNode->field_query_start = array(array(
+      'value' => $start,
+    ));
+    $queryNode->field_query_end = array(array(
+      'value' => $end,
+    ));
+
+    node_save($queryNode);
   }
+  else {
+    $queryNode = node_load($nid);
+  }
+
+  // Add nid of query node to nodereference field
+  $form_state['values']['field_issue_query'][0] = array('nid' => $queryNode->nid);
 }
 
-function _ecenter_issues_after_build($form, &$form_state) {
-  //dpm($form, 'afterbuild');
-  //$form['group_issue_query_group']['#access'] = FALSE;
-  //$form['group_issue_query_group'][0]['field_issue_src_hub']['#type'] = 'value';
-  //$form['group_issue_query_group'][0]['field_issue_src_hub']['#value'] = 'WAAAH';
-  //$form['group_issue_query_group'][0]['field_issue_src_hub']['value']['#value'] = 'WAAAH';
-  //$form['group_issue_query_group'][0]['field_issue_src_hub']['value']['#access'] = FALSE;
-  return $form;
+/**
+ * Helper function to parse parameters for use in creating issues
+ *
+ * @param $param_string
+ *   A querystring formatted string of parameters
+ * @return
+ *   An array representation of querystring parameters
+ */
+function ecenter_issues_parse_params($param_string) {
+  // Parse querystring
+  $raw_params = explode('&', urldecode($param_string));
+  $params = array();
+  foreach ($raw_params as $param) {
+    list($key, $value) = explode('=', $param);
+    $params[$key] = $value;
+  }
+  return $params;
 }

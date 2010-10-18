@@ -25,8 +25,32 @@
  * Implementation of hook_nodeapi().
  */
 function ecenter_issues_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
-  if ($node->type == 'issue' && $op == 'view') {
-    dpm($node);
+  if ($node->type == 'issue' && $op == 'load') {
+    // Construct link to query
+    $query = node_load($node->field_issue_query[0]['nid']);
+
+    $tz = timezone_open(date_default_timezone_name(TRUE));
+    $start = date_create($query->field_query_start[0]['value'], 
+      timezone_open($query->field_query_start[0]['timezone']));
+    $end = date_create($query->field_query_end[0]['value'],
+      timezone_open($query->field_query_end[0]['timezone']));
+    date_timezone_set($start, $tz);
+    date_timezone_set($end, $tz);
+
+    $params = array(
+      'src' => (!empty($query->field_query_src_hub[0]['value'])) ? 
+        'hub:'. $query->field_query_src_hub[0]['value'] :
+        'ip:'. $query->field_query_src_ip[0]['value'],
+      'dst' => (!empty($query->field_query_dst_hub[0]['value'])) ? 
+        'hub:'. $query->field_query_dst_hub[0]['value'] :
+        'ip:'. $query->field_query_dst_ip[0]['value'],
+      'start' => date_format($start, 'Y-m-d H:i'),
+      'end' => date_format($end, 'Y-m-d H:i'),
+    );
+    $node->ecenter_weathermap_link = array(
+      'link' => l('View query data', 'weathermap', array('query' => $params)),
+      'params' => $params,
+    );
   }
 }
 

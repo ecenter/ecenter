@@ -41,7 +41,7 @@ function TableChart(el, options) {
   if (options.width) { this.chartContainer.width(options.width); }
 
   // Attach chart
-  $(el).append(this.chartContainer);
+  $(el).prepend(this.chartContainer);
 
   this.draw();
 
@@ -54,6 +54,7 @@ function TableChart(el, options) {
 TableChart.prototype.draw = function() {
   var tables;
   var series = [];
+  var series_opts = [];
   var tablechart = this;
 
   // If element is not a table, look for them
@@ -66,7 +67,18 @@ TableChart.prototype.draw = function() {
   // Get each table, add the series
   tables.each(function(i) {
     series.push(tablechart.scrapeTable($(this)));
+    // Extract 
+    if ($.metadata) {
+      metadata = $(this).metadata();
+      if (metadata) {
+        series_opts[i] = metadata;
+      }
+    }
   });
+
+  // Extend series options with metadata from table
+  additional_opts = {series: series_opts}
+  $.extend(true, this.options.plotOptions, additional_opts);
 
   // Hide tables
   if (this.options.hideTables) {

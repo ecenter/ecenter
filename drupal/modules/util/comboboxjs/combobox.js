@@ -130,7 +130,6 @@ $.widget( "ui.combobox", {
             }) );
           },
           select: function( event, ui ) {
-            console.log('select called!!!!');
             ui.item.option.selected = true;
             select.change();
             self._trigger( "selected", event, {

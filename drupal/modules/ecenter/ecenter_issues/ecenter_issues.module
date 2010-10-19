@@ -60,6 +60,11 @@ function ecenter_issues_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
 function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
 
   if ($form_id == 'issue_node_form') {
+
+    // Apply always
+    $form['body_field']['body']['#required'] = TRUE;
+    $form['field_issue_query']['#access'] = FALSE;
+
     // If new, populate values and do additional checking
     if (!$form['#node']->nid) {
       // No query string provided
@@ -94,7 +99,6 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
       }
 
       array_unshift($form['#submit'], 'ecenter_issues_issue_add_data');
-      $form['field_issue_query']['#access'] = FALSE;
 
       // Create title from parameters
       list($src_type, $src_value) = explode(':', $params['src'], 2);

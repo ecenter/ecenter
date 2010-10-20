@@ -2,7 +2,7 @@
 
 use Dancer;
 use Dancer::Plugin::REST;
-  
+our $VERSION = '';  
 use English;
 use Data::Dumper;
 use lib "/home/netadmin/ecenter/trunk/frontend_components/ecenter_data/lib";
@@ -28,6 +28,7 @@ use aliased 'perfSONAR_PS::PINGER_DATATYPES::v2_0::pinger::Message::Metadata::Su
  
 my $REG_IP = qr/^[\d\.]+|[a-f\d\:]+$/i;
 my $REG_DATE = qr/^\d{4}\-\d{2}\-\d{2}\s+\d{2}\:\d{2}\:\d{2}$/;
+my @HEALTH_NAMES = qw/anl.gov lbl.gov bnl.gov dmz.net ornl.gov slac.stanford.edu es.net/;
 
 #set serializer => 'JSON';
 #set content_type =>  'application/json';
@@ -53,6 +54,7 @@ any ['get'] =>  "/status.:format" =>
        sub {
  	       return  { status => 'ok'}
        };
+# health service
 any ['get'] =>  "/health.:format" => 
        sub {
  	      return get_health(params('query'));
@@ -62,6 +64,7 @@ any ['get'] =>  "/source.:format" =>
        sub {
  	       return process_source();
        };
+### get destination IPs for the source IP ( based on avail traceroutes)
 any ['get'] =>  "/destination/:ip.:format" => 
        sub {
  	       return process_source(src_ip => params->{ip});
@@ -123,6 +126,9 @@ any ['get', 'post'] =>  '/data.:format' =>
 	}
 	return $data;
     };
+#
+#   deal with dates
+#
 sub _params_to_date {
      my %params = validate(@_, { start  => {type => SCALAR, regex => $REG_DATE, optional => 1},
 		                 end    => {type => SCALAR, regex => $REG_DATE, optional => 1},
@@ -144,19 +150,15 @@ sub _params_to_date {
     }
     return \%params;
 }
-# 
 #
 # return hash with error string for each non-healthy part of the data service
 #
-# 
 #
-#
-
 sub get_health {
     my $params = _params_to_date(@_);
     my @services = ();
     my %health = ();
-    foreach my $site (qw/anl.gov lbl.gov bnl.gov dmz.net ornl.gov slac.stanford.edu es.net/) {
+    foreach my $site ( @HEALTH_NAMES ) {
         foreach my $type (qw/bwctl pinger owamp traceroute/) {
     	    my $e2e_sql = qq|select  distinct m.metaid  from metadata m
 					        		join node n_src on(m.src_ip = n_src.ip_addr) 
@@ -186,13 +188,12 @@ sub get_health {
 	    
         }
     }
-    
     # debug Dumper(\@services);
     return \%health;
 }
 
 #
-# return list of destinations for the source ip or just listof source ips
+# return list of destinations for the source ip or just list of source ips, or even detailes of some IP
 #
 sub process_source {
     my %params = validate(@_, {node_ip => {type => SCALAR, regex => $REG_IP, optional => 1},
@@ -235,7 +236,6 @@ sub process_source {
     #debug Dumper(\@hubs);
     return \@hubs;
 }
-# 
 #
 # return list of services 
 #
@@ -266,14 +266,14 @@ sub process_service {
 sub process_data {
    my $data = {};
   eval {
-    my %params = validate(@_, { data => {type => SCALAR, regex => qr/^(snmp|bwctl|owamp|pinger)$/, optional => 1}, 
-                                id     => {type => SCALAR, regex => qr/^\d+$/, optional => 1}, 
-                                src_ip => {type => SCALAR, regex => $REG_IP,   optional => 1}, 
-				src_hub => {type => SCALAR, regex => qr/^bnl|anl|ornl|lbl|fnal|slac$/i,   optional => 1}, 
-                                dst_hub => {type => SCALAR, regex => qr/^bnl|anl|ornl|lbl|fnal|slac$/i,    optional => 1}, 
-                                dst_ip => {type => SCALAR, regex => $REG_IP,   optional => 1}, 
-		                start  => {type => SCALAR, regex => $REG_DATE, optional => 1},
-		                end    => {type => SCALAR, regex => $REG_DATE, optional => 1},
+    my %params = validate(@_, { data       => {type => SCALAR, regex => qr/^(snmp|bwctl|owamp|pinger)$/, optional => 1}, 
+                                id         => {type => SCALAR, regex => qr/^\d+$/, optional => 1}, 
+                                src_ip     => {type => SCALAR, regex => $REG_IP,   optional => 1}, 
+				src_hub    => {type => SCALAR, regex => qr/^bnl|anl|ornl|lbl|fnal|slac$/i,   optional => 1}, 
+                                dst_hub    => {type => SCALAR, regex => qr/^bnl|anl|ornl|lbl|fnal|slac$/i,    optional => 1}, 
+                                dst_ip     => {type => SCALAR, regex => $REG_IP,   optional => 1}, 
+		                start      => {type => SCALAR, regex => $REG_DATE, optional => 1},
+		                end        => {type => SCALAR, regex => $REG_DATE, optional => 1},
 				resolution => {type => SCALAR, regex => qr/^\d+$/, optional => 1},
 			      }
 		 );
@@ -284,16 +284,11 @@ sub process_data {
     ##  i.e. utilization data for the IP(interface)
     # 
     #  when id is provided then it superseeds src_ip and dst_ip, id means metadata id
-    #
-    #  if start/end is missed then default values will be used - NOW - 1 hour and NOW
-    #  data service first will consult local archive and then send request to remote MA if no data or too old data found
-    ###
     if($params{resolution}) {
         $params{resolution} =  $params{resolution} > 0 && $params{resolution} <= 100?$params{resolution}:100;
     } else {
         $params{resolution} = 50;
     }
-    
     #   get epoch or set end default to NOW and start to end-12 hours
    
     my $date_params  =  _params_to_date({start => $params{start},end => $params{end}});
@@ -673,10 +668,10 @@ sub get_snmp {
     
     #debug "+++SNMP:: hops::" .  Dumper($hops_ref);
     my $forker = new Parallel::ForkControl( 
-    			   MaxKids		   => 10,
-    			   MinKids		   => 3,
-			   ProcessTimeOut          => 60,
-    			   Debug => 2,
+    			   MaxKids		   => 15,
+    			   MinKids		   => 5,
+			   ProcessTimeOut          => 90,
+    			   Debug                   => 2,
     			   Name 		   => 'SNMP Forker',
     			   Code 		   => \&get_remote_snmp);
     foreach my $hop_ip (keys %{$hops_ref}) {

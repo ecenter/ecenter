@@ -13,10 +13,6 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
   // Generate permalink
   $vars['permalink'] = l('Permalink', 'weathermap', array('query' => $vars['params']));
 
-  /*dpm(debug_backtrace());
-  dpm($vars);
-  dpm($vars['data']);*/
-
   // Generate issue link -- encode params for use with custom ecenter_issues
   // module
   if (user_access('create issue content')) {
@@ -28,18 +24,17 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
 
     $vars['issuelink'] = l('Create issue from this query', 'node/add/issue',
       array(
-        'query' => array(
-          'query' => array($issue_query),
-        ),
-        'attributes' => array(
-          'class' => 'button',
-        ),
+        'query' => array('query' => $issue_query),
+        'attributes' => array('class' => 'button'),
       )
     );
   }
 
   // Source / dst table
   $hops = ecenter_weathermap_get_hops();
+
+  $src_hop = $hops['combined'][$vars['params']['src']];
+  $dst_hop = $hops['combined'][$vars['params']['dst']];
 
   $query_table = array(
     array(
@@ -48,7 +43,7 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
         'header' => TRUE,
       ),
       array(
-        'data' => $hops[$vars['params']['src_hub']]['hub_name'],
+        'data' => $src_hop['hub_name'] .' ('. $src_hop['hub'] .')',
       ),
     ),
     array(
@@ -57,19 +52,26 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
         'header' => TRUE,
       ),
       array(
-        'data' => $hops[$vars['params']['dst_hub']]['hub_name'],
+        'data' => $dst_hop['hub_name'] .' ('. $dst_hop['hub'] .')',
       ),
     ),
   );
-  $vars['query_table'] = theme('ecenter_weathermap_table', array(), $query_table, array('class' => 'path-table'));
+
+  $vars['src_dst'] = t('From @src_hub_name (@src_hub) to @dst_hub_name (@dst_hub)', 
+    array(
+      '@src_hub_name' => $src_hop['hub_name'],
+      '@src_hub' => $src_hop['hub'],
+      '@dst_hub_name' => $dst_hop['hub_name'],
+      '@dst_hub' => $dst_hop['hub'],
+    )
+  );
 
   // Generate date range -- internal date is stored as UTC
-  $utc = timezone_open('UTC');
-  $tz = timezone_open(date_default_timezone_name(TRUE));
+  //$utc = timezone_open('UTC');
+  //$tz = timezone_open(date_default_timezone_name(TRUE));
   $dates = array();
   foreach (array('start', 'end') as $val) {
-   $date = date_create($vars['params'][$val], $utc);
-    date_timezone_set($date, $tz);
+    $date = date_create($vars['params'][$val]);
     $dates[$val] = date_format($date, 'M j, Y H:i');
   }
   $vars['date_range'] = t('@start - @end', array('@start' => $dates['start'], '@end' => $dates['end']));
@@ -129,8 +131,8 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
           'min' => 0,
           'max' => 100,
           'numberTicks' => 6,
-          'label' => t('Percent utilization'),
-          'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
+          //'label' => t('Percent utilization'),
+          //'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
           'tickOptions' => array(
             'formatString' => '%01.0f%',
             'color' => '#cccccc',
@@ -203,6 +205,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
     }
   }
   jqplot_register_tablechart('#results', $plot_options);
+  //jqplot_register_tablechart('#results .reverse', $plot_options);
   return implode("\n", $tables);
 }
 
@@ -363,7 +366,7 @@ function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
 
 
     if (!empty($data['owamp'][$direction])) {
-      dpm($data['owamp'][$direction]);
+      //dpm($data['owamp'][$direction]);
     }
 
   }
@@ -381,6 +384,7 @@ function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
 function theme_ecenter_weathermap_utilization_table($hop, $direction, $table) {
   $attributes = array();
   //$attributes['class'] = ($direction == 'forward') ? "{lineWidth : 2}" : "{lineWidth : .5, sizeAdjust: .5}";
+  $attributes['class'] = $direction;
 
   $headers = array(t('Time'), t('Percent utilization'));
   $output = '<div class="snmp-data-table">';

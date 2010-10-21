@@ -16,7 +16,7 @@
   <title><?php print $head_title; ?></title>
   <?php print $styles; ?>
   <?php if (!empty($inline_css)): ?>
-    <style>
+    <style type="text/css">
       <?php print $inline_css; ?>
     </style>
   <?php endif; ?>

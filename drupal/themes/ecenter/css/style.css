@@ -40,7 +40,7 @@ html {
   font-size:100.01%;
 }
 body {
-  font-size: 87.5%; /* 14px */
+  font-size: 100%;
   color: #222;
   background: #fff;
   font-family: "Helvetica Neue", Helvetica, Verdana, sans-serif;
@@ -95,32 +95,27 @@ h1,h2,h3,h4,h5,h6 {
   font-family: "Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif;
 }
 
-h1 { 
-  font-size: 2.5em;
-  line-height: 1.2;
-  margin-bottom: .6em;
-}
-h2 {
+h1 {
   font-size: 1.8em;
   line-height: 1.6;
   margin-bottom: 0.83em;
 }
-h3 {
+h2 {
   font-size: 1.5em;
   line-height: 1;
   margin-bottom: 1em;
 }
-h4 {
+h3 {
   font-size: 1.2em;
   line-height: 1.25;
   margin-bottom: 1.25em;
 }
-h5 {
+h4 {
   font-size: 1em; 
   font-weight: bold; 
   margin-bottom: 1.5em;
 }
-h6 {
+h5, h6 {
   font-size: 1em; font-weight: bold;
 }
 /* }}} */
@@ -169,6 +164,10 @@ h6 {
 /* Text-like entities {{{ */
 .messages {
   margin-bottom: 1.5em;
+  font-size: 0.875em;
+}
+#content-body .messages p {
+  margin: .75em 0;
 }
 /* }}} */
 /* Link button style {{{ */
@@ -195,7 +194,6 @@ a.button {
     rgb(238,238,238) 57%
   );
 }
-
 /* }}} */
 
 /* --- Sidebar markup --- */
@@ -402,6 +400,7 @@ h1#site-name a:hover {
   padding: 0 20px;
   border-bottom: 1px solid #999;
   margin-bottom: 8px;
+  font-size: 0.875em; /* 14px */
 }
 #navigation ul li {
   list-style-type: none;
@@ -465,9 +464,14 @@ h1#site-name a:hover {
 }
 #tasks a:hover {
   background-color: #aaa;
+  color: #fff;
 }
 #tasks .active a {
   background-color: #ccc;
+}
+#tasks .active a:hover {
+  color: #b00;
+  cursor: default;
 }
 #tasks ul.tabs {
   padding-left: 12px;
@@ -494,6 +498,109 @@ h1#site-name a:hover {
   display: inline;
   margin-right: 10px;
   list-style-type: none;
+}
+/* }}} */
+
+/* -- Common Drupal objects -- */
+/* Nodes {{{ */
+#page-title {
+  margin-bottom: .25em;
+}
+.node .picture {
+  float: left;
+  margin-right: 6px;
+  margin-top: 5px;
+}
+.node .submitted,
+.comment .submitted {
+  line-height: 1;
+  margin-bottom: .5em;
+  font-size: .8em;
+  font-weight: bold;
+  color: #555;
+}
+.node-type-issue .node .content {
+  margin-left: 48px;
+}
+/* }}} */
+/* Comments {{{ */
+.comment-wrapper-title {
+  border-bottom: 1px solid #999;
+}
+#comments .comment {
+  margin-bottom: 3em;
+}
+#comments .picture {
+  float: left;
+  margin-right: 8px;
+  margin-top: 2px;
+}
+#comments .picture img {
+  width: 32px;
+  height: 32px;
+}
+#comments .comment-title {
+  display: none;
+}
+#comments .comment .content {
+  font-size: .875em;
+  margin-left: 38px;
+  margin-bottom: .75em;
+}
+#comments .links {
+  margin-left: 38px;
+}
+#comments .links li {
+  list-style-type: none;
+  float: left;
+  margin: 0;
+}
+#comments .links li a {
+  display: block;
+  margin-right: 10px;
+  -moz-border-radius: 6px;
+  -webkit-border-radius: 6px;
+  background-color: #ddd;
+  border: 1px solid #aaa;
+  padding: 3px 8px;
+  line-height: 1;
+  font-size: .7em;
+  color: #555;
+  font-weight: bold;
+  text-transform: uppercase;
+  background-image: -webkit-gradient(
+    linear,
+    left bottom,
+    left top,
+    color-stop(0.22, rgb(204,204,204)),
+    color-stop(0.57, rgb(238,238,238))
+  );
+  background-image: -moz-linear-gradient(
+    center bottom,
+    rgb(204,204,204) 22%,
+    rgb(238,238,238) 57%
+  );
+}
+#comment-form .form-item {
+  margin-bottom: .5em;
+}
+#comment-form label {
+  float: left;
+  width: 110px;
+  font-size: .875em;
+  line-height: 1.9;
+}
+#comment-form #edit-comment-wrapper .resizable-textarea {
+  width: 500px;
+}
+#comment-form #edit-comment-wrapper .grippie {
+  margin-left: 110px;
+}
+#comments .box h2 {
+  font-size: 1.2em;
+  line-height: 1.25;
+  margin-bottom: .5em;
+  border-bottom: 1px solid #999;
 }
 /* }}} */
 
@@ -532,7 +639,7 @@ h1#site-name a:hover {
 /* }}} */
 /* WYSIWYG {{{ */
 #content-body table.mceLayout {
-  border: 1px solid #ccc;
+  border: 1px solid #aaa;
 }
 #content-body table.mceLayout td,
 #content-body table.mceLayout th {
@@ -540,12 +647,16 @@ h1#site-name a:hover {
   padding: 0;
 }
 #content-body table.mceLayout td.mceToolbar {
-  border-bottom: 1px solid #ccc;
+  border-bottom: 1px solid #aaa;
   padding-top: 2px;
 }
 #content-body table.mceLayout td.mceStatusbar {
-  border-top: 1px solid #ccc;
+  border-top: 1px solid #aaa;
   padding-left: 3px;
   padding-top: 1px;
+  font-size: 10px;
+}
+#content-body #edit-body_tbl {
+  -moz-box-shadow: 1px 1px .1em 0 #aaa;
 }
 /* }}} */

@@ -454,7 +454,7 @@ function ecenter_weathermap_get_data($src, $dst, $start, $end, $debug_url = FALS
       if ($result['code'] == 200) {
         $data = ecenter_weathermap_parse_response($result, $src, $dst);
         if ($caching) {
-          $expires = time() + variable_get('ecenter_weathermap_data_cache_ttl', 300);
+          $expires = time() + variable_get('ecenter_weathermap_data_cache_ttl', 3600);
           cache_set($query, $data, 'cache_ecenter_data', $expires);
         }
         $results[$query] = $data;
@@ -482,7 +482,7 @@ function ecenter_weathermap_get_hops($src = NULL) {
 
   if (empty($hops[$src_key])) {
 
-    //$caching = variable_get('ecenter_weathermap_hop_cache_enabled', 0);
+    //$caching = variable_get('ecenterweathermap?src=hub%3AANL&dst=hub%3ALBL&start=2010-10-18 12%3A45&end=2010-10-18 14%3A45_weathermap_hop_cache_enabled', 0);
     if ($caching && $result = cache_get($src_key, 'cache_ecenter_hops')) {
       $hops[$src_key] = $result->data;
     }
@@ -494,7 +494,7 @@ function ecenter_weathermap_get_hops($src = NULL) {
         $data = ecenter_weathermap_parse_hops($result['response']);
         $hops[$src_key] = $data;
         if ($caching) {
-          $expires = time() + variable_get('ecenter_weathermap_hop_cache_ttl', 600);
+          $expires = time() + variable_get('ecenter_weathermap_hop_cache_ttl', 300);
           cache_set($src_key, $data, 'cache_ecenter_hops', $expires);
         }
       }
@@ -569,7 +569,7 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
   $data = $response['response'];
   $hops = ecenter_weathermap_get_hops();
 
-  //dpm($data, 'data');
+  dpm($data, 'data');
 
   // @TODO extract from params instead?
   list($src_type, $src_val) = explode(':', $src, 2);
@@ -1306,7 +1306,7 @@ function ecenter_weathermap_openlayers_map_preprocess_alter(&$map) {
     extract(_ecenter_weathermap_extract_query());
 
     if ($src && $dst && $start && $end) {
-      $data = ecenter_weathermap_get_data($src, $dst, $start, $end_date);
+      $data = ecenter_weathermap_get_data($src, $dst, $start, $end);
 
       if ($data && !empty($data['forward'])) {
         $map['layers']['ecenter_traceroute'] = 'ecenter_traceroute';

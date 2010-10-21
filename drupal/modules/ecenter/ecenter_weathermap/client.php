@@ -118,6 +118,7 @@ class Ecenter_Data_Service_Client {
 
     if ($path == 'data') {
       dpm(urldecode($url));
+      //dpm(debug_backtrace());
     }
 
     return $result;

@@ -51,7 +51,7 @@ function ecenter_weathermap_admin_form() {
     '#title' => t('Time window'),
     '#type' => 'textfield',
     '#description' => t('Specify default window of time to query over, in seconds (i.e. 1 hour is 3600 seconds).'),
-    '#default_value' => variable_get('ecenter_weathermap_time_window', 3600),
+    '#default_value' => variable_get('ecenter_weathermap_time_window', 7200),
   );
 
   $form['performance'] = array(
@@ -68,7 +68,7 @@ function ecenter_weathermap_admin_form() {
     '#title' => t('Data cache time to live'),
     '#type' => 'textfield',
     '#description' => t('How long should results be cached, in seconds?'),
-    '#default_value' => variable_get('ecenter_weathermap_data_cache_ttl', 300),
+    '#default_value' => variable_get('ecenter_weathermap_data_cache_ttl', 3600),
   );
   $form['performance']['ecenter_weathermap_hop_cache_enabled'] = array(
     '#title' => t('Enable hop result caching'),
@@ -80,7 +80,7 @@ function ecenter_weathermap_admin_form() {
     '#title' => t('Hop cache time to live'),
     '#type' => 'textfield',
     '#description' => t('How long should results be cached, in seconds?'),
-    '#default_value' => variable_get('ecenter_weathermap_hop_cache_ttl', 600),
+    '#default_value' => variable_get('ecenter_weathermap_hop_cache_ttl', 300),
   );
 
 

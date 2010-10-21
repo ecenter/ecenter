@@ -207,4 +207,16 @@ class Ecenter_Data_Service_Client {
     return $this->query('data', $params);
   }
 
+  /**
+   * Get node
+   * 
+   * @param $ip
+   *   IP address to query for
+   * @return 
+   *   Result for this query
+   */
+  public function getNode($ip) {
+    return $this->query('node/'. $ip);
+  }
+
 }

@@ -526,33 +526,6 @@ function ecenter_weathermap_get_hubs() {
 }
 
 /**
- * @TODO Delete, unneeded
- * Traverse an object, turning all members into arrays or preserving their
- * values.
- */
-function _ecenter_weathermap_object_to_array($obj) {
-  if (is_object($obj)) {
-    $obj = get_object_vars($obj);
-  }
-  foreach ($obj as $k => $v) {
-    if (is_object($v) || is_array($v)) {
-      $obj[$k] = _ecenter_weathermap_object_to_array($v);
-    }
-    else {
-      $obj[$k] = $v;
-    }
-  }
-  return $obj;
-}
-
-/**
- * Return allowed data types
- */
-function _ecenter_weathermap_get_data_types() {
-  return array('snmp', 'pinger', 'owamp', 'bwctl');
-}
-
-/**
  * Parse data
  *
  * Parse and prep response from E-Center network data webservice:

@@ -564,6 +564,8 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
   $data = $response['response'];
   $hops = ecenter_weathermap_get_hops();
 
+  dpm($data);
+
   // @TODO extract from params instead?
   list($src_type, $src_val) = explode(':', $src, 2);
   list($dst_type, $dst_val) = explode(':', $dst, 2);
@@ -607,11 +609,6 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
         'hop' => $hop,
         'data' => $hop_data,
       );
-
-      /*$parsed[] = array(
-        'hop' => $hop,
-        'data' => $hop_data,
-      );*/
     }
 
     // @TODO hack for demo: get 
@@ -800,7 +797,9 @@ function _ecenter_weathermap_sort_traceroute($a, $b) {
   return ((int) $a['hop_num'] > (int) $b['hop_num']);
 }
 
-/**
+/*
+
+dpm($data);*
  * Sort groups hops -- @TODO HACK
  */
 function _ecenter_weathermap_sort_grouped_hops($a, $b) {
@@ -1100,8 +1099,8 @@ function ecenter_weathermap_layers_traceroute() {
               'wkt' => "LINESTRING($line)",
               'projection' => "4326",
               'style' => array(
-                'strokeWidth' => 2,
-                'strokeColor' => '#555555',
+                'strokeWidth' => 4,
+                'strokeColor' => '#222222',
               ),
             );
           }
@@ -1109,14 +1108,14 @@ function ecenter_weathermap_layers_traceroute() {
             'wkt' => "POINT({$hop['longitude']} {$hop['latitude']})",
             'projection' => "4326",
             'style' => array(
-              'pointRadius' => 5,
+              'pointRadius' => 6,
               'fillColor' => '#ffffff',
               'strokeColor' => '#0000aa',
-              'strokeWidth' => 2,
+              'strokeWidth' => 3,
               'fillOpacity' => 1,
               'label' => $hop['hub'],
               'labelYOffset' => -14,
-              'fontSize' => '11px',
+              'fontSize' => '13px',
               'fontWeight' => 'bold',
               'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',
               'fontColor' => '#000000',

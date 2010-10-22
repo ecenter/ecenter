@@ -32,11 +32,21 @@ Drupal.behaviors.ecenter_weathermap_behavior_dynamicload = function(context) {
             openlayers.addLayer(layer);
           }
 
-          var center = OpenLayers.LonLat.fromString(map.center.initial.centerpoint).transform(
-            new OpenLayers.Projection('EPSG:4326'), 
-            new OpenLayers.Projection('EPSG:' + map.projection));
-          var zoom = parseInt(map.center.initial.zoom, 10);
-          openlayers.setCenter(center, zoom, false, false);
+
+          // Zoom to extent
+          layerextent = layer.getDataExtent();
+
+          // Check for valid layer extent
+          if (layerextent != null) {
+            openlayers.zoomToExtent(layerextent);
+            
+            // If unable to find width due to single point,
+            // zoom in with point_zoom_level option.
+            if (layerextent.getWidth() == 0.0) {
+              openlayers.zoomTo(data.map.behaviors['openlayers_behavior_zoomtolayer'].point_zoom_level);
+            }
+          }
+
         }
       }
     }

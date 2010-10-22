@@ -235,7 +235,7 @@ function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
 
 
   foreach (array('forward', 'reverse') as $direction) {
-    $dir_label = ($direction == 'forward') ? 'fwd' : 'rev';
+    $dir_label = ($direction == 'forward') ? t('Forward') : t('Reverse');
 
     if (!empty($data['bwctl'][$direction])) {
 

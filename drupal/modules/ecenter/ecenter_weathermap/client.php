@@ -116,10 +116,10 @@ class Ecenter_Data_Service_Client {
       'response' => $response,
     );
 
-    if ($path == 'data') {
-      dpm(urldecode($url));
+    //if ($path == 'data') {
+      //dpm(urldecode($url));
       //dpm(debug_backtrace());
-    }
+    //}
 
     return $result;
   }
@@ -205,6 +205,18 @@ class Ecenter_Data_Service_Client {
     );
 
     return $this->query('data', $params);
+  }
+
+  /**
+   * Get node
+   * 
+   * @param $ip
+   *   IP address to query for
+   * @return 
+   *   Result for this query
+   */
+  public function getNode($ip) {
+    return $this->query('node/'. $ip);
   }
 
 }

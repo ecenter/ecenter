@@ -481,8 +481,7 @@ function ecenter_weathermap_get_hops($src = NULL) {
   $src_key = (!empty($src)) ? $src : 'sources';
 
   if (empty($hops[$src_key])) {
-
-    //$caching = variable_get('ecenterweathermap?src=hub%3AANL&dst=hub%3ALBL&start=2010-10-18 12%3A45&end=2010-10-18 14%3A45_weathermap_hop_cache_enabled', 0);
+    $caching = variable_get('ecenterweathermap_weathermap_hop_cache_enabled', 0);
     if ($caching && $result = cache_get($src_key, 'cache_ecenter_hops')) {
       $hops[$src_key] = $result->data;
     }
@@ -525,6 +524,29 @@ function ecenter_weathermap_get_hubs() {
   }
 }
 
+/** 
+ * Get node
+ */
+function ecenter_weathermap_get_node($ip) {
+  static $nodes = array();
+  if (empty($nodes[$ip])) {
+    $client = ecenter_weathermap_get_client('message');
+    $result = $client->getNode($ip);
+    if ($result['code'] == 200) {
+      $data = $result['response'];
+      // Calculate netblock -- @TODO may not be necessary
+      $data['netblock'] = long2ip(ip2long($data['ip_noted']) & 
+        ~((1 << (32 - $data['netmask'])) - 1));
+      $nodes[$ip] = $data;
+    }
+    else {
+      drupal_set_message(t('Request failed with code @code.', array('@code' => $result['code'])));
+      return FALSE;
+    }
+  }
+  return $nodes[$ip];
+}
+
 /**
  * Parse data
  *
@@ -542,8 +564,6 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
   $data = $response['response'];
   $hops = ecenter_weathermap_get_hops();
 
-  dpm($data, 'data');
-
   // @TODO extract from params instead?
   list($src_type, $src_val) = explode(':', $src, 2);
   list($dst_type, $dst_val) = explode(':', $dst, 2);
@@ -560,67 +580,7 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
     // Sort, grab latest traceroute, and sort the traceroute
     krsort($data[$direction]);
     $traceroute = array_shift(array_values($data[$direction]));
-    usort($traceroute, '_ecenter_weathermap_sort_traceroute');
-
-    //dpm($traceroute, $direction);
-
-    // Synthesize forward and reverse hops
-    /*if ($direction == 'direct_traceroute') {
-      if ($src_type == 'hub') {
-        $hop_identifier = strtoupper(array_shift(explode('-', $traceroute[0]['hub'])));
-      }
-      else {
-        $hop_identifier = $traceroute[0]['hop_ip'];
-      }
-      if ($hop_identifier != $src_val) {
-        $new_hop = $hops['combined'][$src] + array(
-          'hop_id' => uniqid('start-'),
-        );
-        array_unshift($traceroute, $new_hop);
-      }
-
-      $last = count($traceroute) -1;
-      if ($dst_type == 'hub') {
-        $hop_identifier = strtoupper(array_shift(explode('-', $traceroute[$last]['hub'])));
-      }
-      else {
-        $hop_identifier = $traceroute[$last]['hop_ip'];
-      }
-      if ($hop_identifier != $dst_val) {
-        $new_hop = $hops['combined'][$dst] + array(
-          'hop_id' => uniqid('end-'),
-        );
-        array_push($traceroute, $new_hop);
-      }
-    }
-    elseif ($direction == 'reverse_traceroute') {
-      if ($dst_type == 'hub') {
-        $hop_identifier = strtoupper(array_shift(explode('-', $traceroute[0]['hub'])));
-      }
-      else {
-        $hop_identifier = $traceroute[0]['hop_ip'];
-      }
-      if ($hop_identifier != $dst_val) {
-        $new_hop = $hops['combined'][$dst] + array(
-          'hop_id' => uniqid('end-'),
-        );
-        array_unshift($traceroute, $new_hop);
-      }
-
-      $last = count($traceroute) -1;
-      if ($src_type == 'hub') {
-        $hop_identifier = strtoupper(array_shift(explode('-', $traceroute[$last]['hub'])));
-      }
-      else {
-        $hop_identifier = $traceroute[$last]['hop_ip'];
-      }
-      if ($hop_identifier != $src_val) {
-        $new_hop = $hops['combined'][$src] + array(
-          'hop_id' => uniqid('start-'),
-        );
-        array_push($traceroute, $new_hop);
-      }
-    }*/
+    //usort($traceroute, '_ecenter_weathermap_sort_traceroute');
 
     // Main loop
     foreach ($traceroute as $hop) {
@@ -643,43 +603,78 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
         $hop['netblock'] = long2ip(ip2long($hop['hop_ip']) & ~((1 << (32 - $mask)) - 1));
       }
 
-      $parsed[] = array(
+      $parsed[$hop['hop_num'] - 1][] = array(
         'hop' => $hop,
         'data' => $hop_data,
       );
+
+      /*$parsed[] = array(
+        'hop' => $hop,
+        'data' => $hop_data,
+      );*/
+    }
+
+    // @TODO hack for demo: get 
+    ksort($parsed);
+    $filtered = array();
+    foreach ($parsed as $parsed_hops) {
+      usort($parsed_hops, '_ecenter_weathermap_sort_grouped_hops');
+      $filtered[] = array_pop($parsed_hops);
     }
 
     $direction_label = ($direction == 'reverse_traceroute') ? 'reverse' : 'forward';
-    $parsed_data[$direction_label] = $parsed;
+    $parsed_data[$direction_label] = $filtered;
   }
 
   // End to end
   $end_to_end = array();
-  $src_netblock = long2ip(ip2long($src) & ~((1 << 8) - 1));
-  $dst_netblock = long2ip(ip2long($dst) & ~((1 << 8) - 1));
+ 
+  // If IP based query, get src and dst netblocks 
+  if ($src_type == 'ip') {
+    $src_netblock = long2ip(ip2long($src) & ~((1 << 8) - 1));
+  }
+  if ($dst_type == 'ip') {
+    $dst_netblock = long2ip(ip2long($dst) & ~((1 << 8) - 1));
+  }
 
   foreach (array('bwctl', 'owamp', 'pinger') as $type) {
     if (!is_array($data[$type])) {
       continue;
     }
 
-    // @TODO investigate potential problems with this approach...
     $end_to_end[$type] = array('forward' => array(), 'reverse' => array());
 
+    // @TODO VERY ugly code here
     foreach ($data[$type] as $test_src => $destinations) {
-      $test_src_netblock = long2ip(ip2long($test_src) & ~((1 << 8) - 1));
-      if ($test_src_netblock == $src_netblock) {
+      if ($src_type == 'hub') {
+        $node = ecenter_weathermap_get_node($test_src);
+        $test = $node['hub_name'];
+        $val = $src_val;
+      }
+      else {
+        $test = long2ip(ip2long($test_src) & ~((1 << 8) - 1));
+        $val = $src_netblock;       
+      }
+      if ($test == $val) {
         foreach ($destinations as $test_dst => $test_data) {
           $end_to_end[$type]['forward'] += $test_data;
         }
       }
-      if ($test_src_netblock == $dst_netblock) {
-        foreach ($destinations as $test_src => $test_data) {
+      if ($dst_type == 'hub') {
+        $node = ecenter_weathermap_get_node($test_src);
+        $test = $node['hub_name'];
+        $val = $dst_val;
+      }
+      else {
+        $test = long2ip(ip2long($test_src) & ~((1 << 8) - 1));
+        $val = $dst_netblock;       
+      }
+      if ($test == $val) {
+        foreach ($destinations as $test_dst => $test_data) {
           $end_to_end[$type]['reverse'] += $test_data;
         }
       }
     }
-
   }
 
   if (!empty($end_to_end)) {  
@@ -804,6 +799,14 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
 function _ecenter_weathermap_sort_traceroute($a, $b) {
   return ((int) $a['hop_num'] > (int) $b['hop_num']);
 }
+
+/**
+ * Sort groups hops -- @TODO HACK
+ */
+function _ecenter_weathermap_sort_grouped_hops($a, $b) {
+  return ((float) $b['hop']['hop_delay'] > (float) $a['hop']['hop_delay']);
+}
+
 
 /**
  * Parse hops

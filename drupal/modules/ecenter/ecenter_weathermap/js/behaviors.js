@@ -30,6 +30,20 @@ Drupal.behaviors.EcenterSelectSetForm = function(context) {
   }
 }
 
+Drupal.behaviors.EcenterShowTables = function(context) {
+  var show_label = Drupal.t('Show data tables');
+  var hide_label = Drupal.t('Hide data tables');
+  $('.tablechart', context).after('<div class="toggle-data button">' + show_label + '</div>');
+  $('.toggle-data', context).toggle(function() {
+    $(this).text(hide_label);
+    $('.snmp-data-table').show();
+  }, function() {
+    $(this).text(show_label);
+    $('.snmp-data-table').hide();
+  });
+}
+
+
 EcenterWeathermap = {};
 
 /**

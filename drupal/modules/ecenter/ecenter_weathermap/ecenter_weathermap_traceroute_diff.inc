@@ -69,10 +69,13 @@ function ecenter_weathermap_traceroute_diff($forward, $reverse) {
 function ecenter_weathermap_traceroute_array_keys($hops, $match) {
   $return = array();
   foreach ($hops as $k => $hop) {
-    if ($hop['hop']['hub'] == $match['hop']['hub']) {
+    if ($hop['hop']['hop_ip'] == $match['hop']['hop_ip']) {
       $return[] = $k;
     }
-    elseif ($hop['hop']['hop_ip'] == $match['hop']['hop_ip']) {
+    elseif ($hop['hop']['hub'] == $match['hop']['hub']) {
+      $return[] = $k;
+    }
+    elseif ($hop['hop']['hub_name'] == $match['hop']['hub_name']) {
       $return[] = $k;
     }
     elseif ($hop['hop']['netblock'] == $match['hop']['netblock']) {

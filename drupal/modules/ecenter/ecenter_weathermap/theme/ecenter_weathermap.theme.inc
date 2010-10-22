@@ -106,7 +106,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
         'lineWidth' => 1,
         'shadow' => FALSE,
         'fill' => FALSE,
-        'color' => '#cccccc',
+        'color' => '#aaaaaa',
         'markerOptions' => array(
           'show' => FALSE,
           'size' => 3,
@@ -171,7 +171,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
   $critical = variable_get('ecenter_weathermap_threshold_critical_snmp_utilization', 60);
   $marginal = variable_get('ecenter_weathermap_threshold_marginal_snmp_utilization', 40);
 
-  $tables = array();
+  $tables = array('forward', 'reverse');
 
   // Create tables for scrapin'
   foreach ($data as $row) {
@@ -198,15 +198,25 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
                 ),
               );
             }
-            $tables[] = theme('ecenter_weathermap_utilization_table', $hop['hop'], $direction, $table);
+            $tables[$direction][] = theme('ecenter_weathermap_utilization_table', $hop['hop'], $direction, $table);
           }
         }
       }
     }
   }
-  jqplot_register_tablechart('#results', $plot_options);
-  //jqplot_register_tablechart('#results .reverse', $plot_options);
-  return implode("\n", $tables);
+  //jqplot_register_tablechart('#results', $plot_options);
+
+  $forward = '<h3>'. t('Forward') .'</h3>'
+    .'<div id="forward-tables" class="utilization-table">'
+    . implode("\n", $tables['forward']) .'</div>';
+  $reverse = '<h3>'. t('Reverse') .'</h3>'
+    .'<div id="reverse-tables" class="utilization-table">'
+    . implode("\n", $tables['reverse']) .'</div>';
+
+  jqplot_register_tablechart('#forward-tables', $plot_options);
+  jqplot_register_tablechart('#reverse-tables', $plot_options);
+
+  return $forward . $reverse;
 }
 
 /**
@@ -247,27 +257,33 @@ function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
         list($timestamp, $values) = $item;
 
         $mean_throughput[] = $values['throughput'];
-        $max_throughput = ($values['throughput'] > $max_throughput) ? $values['throughput'] : $max_throughput;
-        $min_throughput = (!$min_throughput || ($values['throughput'] < $min_throughput)) ? $values['throughput'] : $min_throughput;
+        $max_throughput = ($values['throughput'] > $max_throughput) 
+          ? $values['throughput'] : $max_throughput;
+        $min_throughput = (!$min_throughput || ($values['throughput'] < $min_throughput)) 
+          ? $values['throughput'] : $min_throughput;
       }
 
       $mean_throughput = array_sum($mean_throughput) / count($mean_throughput);
 
       $table['0_' . $direction] = array(
         array(
-          'data' => t('@direction Throughput', array('@direction' => ucfirst($dir_label))),
+          'data' => t('@direction Throughput', 
+            array('@direction' => ucfirst($dir_label))),
           'header' => TRUE,
         ),
         array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $mean_throughput / 1e+6) .'</span><span class="unit">'. t('mbps') .'</span>',
+          'data' => '<span class="value">'. sprintf('%01.1f', $mean_throughput / 1e+6) 
+            .'</span><span class="unit">'. t('mbps') .'</span>',
           'class' => 'avg',
         ),
         array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $max_throughput / 1e+6) .'</span><span class="unit">'. t('mbps') .'</span>',
+          'data' => '<span class="value">'. sprintf('%01.1f', $max_throughput / 1e+6) 
+            .'</span><span class="unit">'. t('mbps') .'</span>',
           'class' => 'max',
         ),
         array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $min_throughput / 1e+6) .'</span><span class="unit">'. t('mbps') .'</span>',
+          'data' => '<span class="value">'. sprintf('%01.1f', $min_throughput / 1e+6) 
+            .'</span><span class="unit">'. t('mbps') .'</span>',
           'class' => 'min',
         ),
       );
@@ -291,14 +307,18 @@ function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
         list($timestamp, $values) = $item;
 
         $mean_rtt[] = $values['meanRtt'];
-        $max_rtt = ($values['maxRtt'] > $max_rtt) ? $values['maxRtt'] : $max_rtt;
-        $min_rtt = (!$min_rtt || ($values['minRtt'] < $min_rtt)) ? $values['minRtt'] : $min_rtt;
+        $max_rtt = ($values['maxRtt'] > $max_rtt) 
+          ? $values['maxRtt'] : $max_rtt;
+        $min_rtt = (!$min_rtt || ($values['minRtt'] < $min_rtt)) 
+          ? $values['minRtt'] : $min_rtt;
 
         $mean_iqripd[] = $values['iqrIpd'];
 
         $mean_loss[] = $values['lossPercent'];
-        $max_loss = ($values['lossPercent'] > $max_loss) ? $values['lossPercent'] : $max_loss;
-        $min_loss = (!$min_loss || ($values['lossPercent'] < $min_loss)) ? $values['lossPercent'] : $min_loss;
+        $max_loss = ($values['lossPercent'] > $max_loss) 
+          ? $values['lossPercent'] : $max_loss;
+        $min_loss = (!$min_loss || ($values['lossPercent'] < $min_loss)) 
+          ? $values['lossPercent'] : $min_loss;
       }
 
       $mean_rtt = array_sum($mean_rtt) / count($mean_rtt);
@@ -311,15 +331,18 @@ function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
           'header' => TRUE,
         ),
         array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $mean_rtt) .'</span><span class="unit">'. t('ms') .'</span>',
+          'data' => '<span class="value">'. sprintf('%01.1f', $mean_rtt) 
+            .'</span><span class="unit">'. t('ms') .'</span>',
           'class' => 'avg',
         ),
         array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $max_rtt) .'</span><span class="unit">'. t('ms') .'</span>',
+          'data' => '<span class="value">'. sprintf('%01.1f', $max_rtt) 
+            .'</span><span class="unit">'. t('ms') .'</span>',
           'class' => 'max',
         ),
         array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $min_rtt) .'</span><span class="unit">'. t('ms') .'</span>',
+          'data' => '<span class="value">'. sprintf('%01.1f', $min_rtt) 
+            .'</span><span class="unit">'. t('ms') .'</span>',
           'class' => 'min',
         ),
       );
@@ -330,34 +353,41 @@ function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
           'header' => TRUE,
         ),
         array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $mean_loss) .'</span><span class="unit">'. t('%') .'</span>',
+          'data' => '<span class="value">'. sprintf('%01.1f', $mean_loss) 
+            .'</span><span class="unit">'. t('%') .'</span>',
           'class' => 'avg',
         ),
         array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $max_loss) .'</span><span class="unit">'. t('%') .'</span>',
+          'data' => '<span class="value">'. sprintf('%01.1f', $max_loss) 
+            .'</span><span class="unit">'. t('%') .'</span>',
           'class' => 'max',
         ),
         array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $min_loss) .'</span><span class="unit">'. t('%') .'</span>',
+          'data' => '<span class="value">'. sprintf('%01.1f', $min_loss) 
+            .'</span><span class="unit">'. t('%') .'</span>',
           'class' => 'min',
         ),
       );
 
       $table['4_' . $direction] = array(
         array(
-          'data' => t('@direction Jitter', array('@direction' => ucfirst($dir_label))),
+          'data' => t('@direction Jitter', 
+            array('@direction' => ucfirst($dir_label))),
           'header' => TRUE,
         ),
         array(
-          'data' => '<span class="value">'. sprintf('%01.2f', $mean_iqripd) .'</span><span class="unit">'. t('ms') .'</span>',
+          'data' => '<span class="value">'. sprintf('%01.2f', $mean_iqripd) 
+            .'</span><span class="unit">'. t('ms') .'</span>',
           'class' => 'avg',
         ),
         array(
-          'data' => '<span class="value">'. sprintf('%01.2f', $max_iqripd) .'</span><span class="unit">'. t('ms') .'</span>',
+          'data' => '<span class="value">'. sprintf('%01.2f', $max_iqripd) 
+            .'</span><span class="unit">'. t('ms') .'</span>',
           'class' => 'max',
         ),
         array(
-          'data' => '<span class="value">'. sprintf('%01.2f', $min_iqripd) .'</span><span class="unit">'. t('ms') .'</span>',
+          'data' => '<span class="value">'. sprintf('%01.2f', $min_iqripd) 
+            .'</span><span class="unit">'. t('ms') .'</span>',
           'class' => 'min',
         ),
       );
@@ -366,11 +396,44 @@ function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
 
 
     if (!empty($data['owamp'][$direction])) {
-      //dpm($data['owamp'][$direction]);
+      $mean_delay = array();
+      $max_delay = NULL;
+      $min_delay = NULL;
+
+      foreach ($data['owamp'][$direction] as $item) {
+        list($timestamp, $values) = $item;
+        $mean_delay[] = ($values['max_delay'] + $values['min_delay']) / 2;
+        $max_delay = ($values['max_delay'] > $max_delay) 
+          ? $values['max_delay'] : $max_delay;
+        $min_delay = (!$min_delay || ($values['min_delay'] < $min_delay)) 
+          ? $values['min_delay'] : $min_delay;
+      }
+
+      $mean_delay = array_sum($mean_delay) / count($mean_delay);
+
+      $table['2_' . $direction] = array(
+        array(
+          'data' => t('@direction Delay', array('@direction' => ucfirst($dir_label))),
+          'header' => TRUE,
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.1f', $mean_delay * 1000) 
+            .'</span><span class="unit">'. t('ms') .'</span>',
+          'class' => 'avg',
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.1f', $max_delay * 1000) 
+            .'</span><span class="unit">'. t('ms') .'</span>',
+          'class' => 'max',
+        ),
+        array(
+          'data' => '<span class="value">'. sprintf('%01.1f', $min_delay * 1000) 
+            .'</span><span class="unit">'. t('ms') .'</span>',
+          'class' => 'min',
+        ),
+      );
     }
-
   }
-
 
   ksort($table);
   if (!empty($table)) {

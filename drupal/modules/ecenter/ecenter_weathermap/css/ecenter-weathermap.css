@@ -12,11 +12,13 @@
 #weathermap-map {
   width: 660px;
   float: left;
-  margin-right: 20px;
+  margin-right: 18px;
+  border: 1px solid #bbb;
 }
 .no-js #weathermap-map {
   height: 0;
 }
+
 /* }}} */
 /* Query interface {{{ */
 #query-wrapper {
@@ -123,75 +125,60 @@
   margin-bottom: 1.5em;
 }
 .results-header h2 {
-  margin-bottom: .1em;
+  margin-bottom: .5em;
 }
 .end-to-end-results {
   margin-bottom: 3em;
 }
-/*#results-wrapper {
-  margin-top: 1.5em;
-}
-html.js .end-to-end-results {
-  display: none;
-}
-#weathermap-end-to-end-results {
-  float: left;
-  width: 270px;
-  font-family: "Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif;
-}
-#weathermap-end-to-end-results .issue-link a {
-  display: block;
-  width: 100%;
-  text-align: center;
-}
-#weathermap-end-to-end-results .issue-link,
-#weathermap-end-to-end-results .date-range {
+.end-to-end-results table {
+  font-size: 0.875em;
   margin-bottom: 1em;
 }
-#weathermap-end-to-end-results table {
-  font-size: 11px;
-  margin-bottom: 1em;
-  width: 100%;
+.end-to-end-results table thead th.empty {
+  border: none;
+  background-color: transparent;
 }
-#weathermap-end-to-end-results .date-range {
-  font-weight: bold;
-  font-size: 12px;
-}
-#weathermap-end-to-end-results table th {
-  padding: 0;
-}
-#weathermap-end-to-end-results table tr {
-  background-color: transparent !important;
-}
-#weathermap-end-to-end-results table thead th,
-#weathermap-end-to-end-results table tbody th {
+.end-to-end-results table thead th,
+.end-to-end-results table tbody th {
   color: #222;
-  background: none;
   border: none;
   text-transform: uppercase;
 }
-#weathermap-end-to-end-results table thead th {
+.end-to-end-results table thead th {
+  background-color: transparent;
+  font-weight: bold;
+  border-bottom: 1px solid #999;
+  border-left: 6px solid #fff;
+  border-right: 6px solid #fff;
+}
+.end-to-end-results table td {
+  border: none;
+  padding: .3em .7em;
+  text-align: center;
+}
+.end-to-end-results table td .value {
+  font-size: 1.25em;
+  letter-spacing: 0.05em;
+  margin-right: .1em;
+}
+.end-to-end-results table td.avg .value {
+  font-weight: bold;
+}
+
+
+/*.end-to-end-results table th {
+  padding: 0;
+}
+.end-to-end-results table tr {
+  background-color: transparent !important;
+}
+.end-to-end-results table thead th {
   border-left: 5px solid #fff;
   border-bottom: 1px solid #999;
   text-align: center;
 }
-#weathermap-end-to-end-results table thead th.empty {
-  border: none;
-}
-#weathermap-end-to-end-results table td {
-  border: none;
-}
-#weathermap-end-to-end-results table.end-to-end-table td {
-  text-align: center;
-}
-#weathermap-end-to-end-results table td .value {
-  font-size: 12px;
-}
-#weathermap-end-to-end-results table td.avg .value {
-  font-size: 14px; 
-  font-weight: bold;
-}
-#weathermap-end-to-end-results table.path-table th {
+
+.end-to-end-results table.path-table th {
   width: 80px;
   font-weight: bold;
 }*/
@@ -232,5 +219,11 @@ html.js .end-to-end-results {
 /* Charts {{{ */
 html.js #results .snmp-data-table {
   display: none;
+}
+.tablechart, .toggle-data, .snmp-data-table {
+  margin-bottom: 1.5em;
+}
+.snmp-data-table h3 {
+  margin-bottom: .75em;
 }
 /* }}} */

@@ -460,7 +460,8 @@ function ecenter_weathermap_get_data($src, $dst, $start, $end, $debug_url = FALS
         $results[$query] = $data;
       }
       else { // Note that the static variable is NOT set in this case
-        drupal_set_message(t('Request failed with code @code.', array('@code' => $result['code'])));
+        drupal_set_message(t('Request failed with code @code.', 
+          array('@code' => $result['code'])));
       }
     }
   }
@@ -498,7 +499,8 @@ function ecenter_weathermap_get_hops($src = NULL) {
         }
       }
       else {
-        drupal_set_message(t('Request failed with code @code.', array('@code' => $result['code'])));
+        drupal_set_message(t('Request failed with code @code.', 
+          array('@code' => $result['code'])));
       }
     }
   }
@@ -520,7 +522,8 @@ function ecenter_weathermap_get_hubs() {
     return $result['response'];
   }
   else {
-    drupal_set_message(t('Request failed with code @code.', array('@code' => $result['code'])));
+    drupal_set_message(t('Request failed with code @code.',
+      array('@code' => $result['code'])));
   }
 }
 
@@ -540,7 +543,8 @@ function ecenter_weathermap_get_node($ip) {
       $nodes[$ip] = $data;
     }
     else {
-      drupal_set_message(t('Request failed with code @code.', array('@code' => $result['code'])));
+      drupal_set_message(t('Request failed with code @code.', 
+        array('@code' => $result['code'])));
       return FALSE;
     }
   }
@@ -564,7 +568,7 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
   $data = $response['response'];
   $hops = ecenter_weathermap_get_hops();
 
-  dpm($data);
+  //dpm($data);
 
   // @TODO extract from params instead?
   list($src_type, $src_val) = explode(':', $src, 2);
@@ -611,7 +615,7 @@ function ecenter_weathermap_parse_response($response, $src, $dst) {
       );
     }
 
-    // @TODO hack for demo: get 
+    // @TODO hack for demo: get lowest delay
     ksort($parsed);
     $filtered = array();
     foreach ($parsed as $parsed_hops) {
@@ -912,7 +916,8 @@ function ecenter_weathermap_openlayers_presets() {
     ),
     'default_layer' => 'osm_mapnik',
     'layers' => array(
-      'osm_mapnik' => 'osm_mapnik',
+      //'osm_mapnik' => 'osm_mapnik',
+      'world_light_usa' => 'world_light_usa',
       'ecenter_weathermap_sites' => 'ecenter_weathermap_sites',
       'ecenter_weathermap_traceroute' => 'ecenter_weathermap_traceroute',
     ),
@@ -1036,7 +1041,7 @@ function ecenter_weathermap_layers_sites() {
           'pointRadius' => 6,
           'fillColor' => '#ffffff',
           'fillOpacity' => 1,
-          'strokeColor' => '#666666',
+          'strokeColor' => '#4682b4',
           'strokeWidth' => 3,
           'strokeOpacity' => 1,
           'label' => $hub['hub_name'],
@@ -1044,7 +1049,7 @@ function ecenter_weathermap_layers_sites() {
           'fontWeight' => 'bold',
           'fontSize' => '15px',
           'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',
-          'fontColor' => '#444444',
+          'fontColor' => '#4682B4',
         ),
         'extra' => array('ecenterID' => $hub['hub_name']),
       );
@@ -1100,7 +1105,7 @@ function ecenter_weathermap_layers_traceroute() {
               'projection' => "4326",
               'style' => array(
                 'strokeWidth' => 4,
-                'strokeColor' => '#222222',
+                'strokeColor' => '#555555',
               ),
             );
           }

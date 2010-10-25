@@ -1,0 +1,101 @@
+/* $Id$ */
+/* vim:set fdm=marker: */
+
+/* Issue creation form {{{ */
+.form-id-issue_node_form .form-required {
+  display: none;
+}
+.form-id-issue_node_form .title-field-wrapper {
+  margin-bottom: 1.5em;
+  float: left;
+  width: 100%;
+}
+.form-id-issue_node_form #edit-title-wrapper label,
+.form-id-issue_node_form #edit-body-wrapper label,
+.form-id-issue_node_form #edit-taxonomy-tags-1-wrapper label {
+  display: block;
+  float: left;
+  width: 60px;
+  margin-right: 10px;
+}
+.form-id-issue_node_form #edit-title-wrapper input,
+.form-id-issue_node_form #edit-body-wrapper textarea,
+.form-id-issue_node_form #edit-body-wrapper,
+.form-id-issue_node_form #edit-body-wrapper #edit-body_parent,
+.form-id-issue_node_form #edit-taxonomy-tags-1-wrapper input {
+  display: block;
+  float: left;
+  width: 590px;
+}
+.form-id-issue_node_form #edit-body-wrapper {
+  width: 700px;
+}
+.form-id-issue_node_form #edit-body-wrapper #edit-body_parent {
+  width: 598px;
+  margin-bottom: .5em;
+}
+.form-id-issue_node_form .wysiwyg-toggle-wrapper,
+.form-id-issue_node_form fieldset,
+.form-id-issue_node_form #edit-taxonomy-tags-1-wrapper .description {
+  margin-left: 70px;
+  width: 566px;
+}
+.form-id-issue_node_form .data-link {
+  margin-top: -1em;
+  margin-bottom: 1.25em;
+}
+/* }}} */
+/* Views {{{ */
+.view-ecenter-issues .row {
+  margin-bottom: 3em;
+}
+.view-ecenter-issues h3 {
+  margin-bottom: .25em;
+  line-height: 1.25;
+  border-bottom: 1px solid #999;
+}
+.view-ecenter-issues .issue-author-picture {
+  float: left;
+  margin-right: 8px;
+  margin-top: .35em;
+}
+.view-ecenter-issues .issue-author,
+.view-ecenter-issues .issue-date, 
+.view-ecenter-issues .last-comment-author,
+.view-ecenter-issues .last-comment-date,
+.view-ecenter-issues .issue-tags,
+.view-ecenter-issues .new-comments {
+  font-size: 0.8em;
+  color: #555;
+}
+.view-ecenter-issues .issue-tags,
+.view-ecenter-issues .new-comments {
+  margin-left: 6px;
+  padding-left: 10px;
+  border-left: 1px solid #999;
+}
+.view-ecenter-issues .issue-author-username,
+.view-ecenter-issues .last-comment-author-username,
+.view-ecenter-issues .new-comments {
+  font-weight: bold;
+}
+.view-ecenter-issues .node-body {
+  margin-left: 50px;
+}
+#content-body .view-ecenter-issues .node-body p {
+  margin-bottom: .75em;
+}
+.view-ecenter-issues .last-comment-picture {
+  float: left;
+  margin-left: 6px;
+  margin-right: 8px;
+  margin-top: .5em;
+}
+.view-ecenter-issues .last-comment-picture img {
+  width: 32px;
+  height: 32px;
+}
+.view-ecenter-issues .comment-body {
+  font-size: 0.8em;
+}
+/* }}} */

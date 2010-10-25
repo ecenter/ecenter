@@ -801,10 +801,8 @@ function _ecenter_weathermap_sort_traceroute($a, $b) {
   return ((int) $a['hop_num'] > (int) $b['hop_num']);
 }
 
-/*
-
-dpm($data);*
- * Sort groups hops -- @TODO HACK
+/**
+ * Sort grouped hops -- @TODO HACK
  */
 function _ecenter_weathermap_sort_grouped_hops($a, $b) {
   return ((float) $b['hop']['hop_delay'] > (float) $a['hop']['hop_delay']);

@@ -35,11 +35,11 @@ Drupal.behaviors.EcenterShowTables = function(context) {
   var hide_label = Drupal.t('Hide data tables');
   $('.tablechart', context).after('<div class="toggle-data button">' + show_label + '</div>');
   $('.toggle-data', context).toggle(function() {
-    $(this).text(hide_label);
-    $('.snmp-data-table').show();
+    var p = $(this).text(hide_label).parent();
+    $('.snmp-data-table', p).show();
   }, function() {
-    $(this).text(show_label);
-    $('.snmp-data-table').hide();
+    var p = $(this).text(show_label).parent();
+    $('.snmp-data-table', p).hide();
   });
 }
 
@@ -145,6 +145,11 @@ $(document).ready(function() {
       var tc = $('#results').data('TableChart');
       var lh = tc.chart.plugins.linehighlighter;
 
+      $('#trace-hop-label-' + hop.id).addClass('highlight');
+      if (hop.corresponding_id) {
+        $('#trace-hop-label-' + hop.corresponding_id).addClass('highlight');
+      }
+
       // Highlight corresponding line
       /*if (hop.corresponding_idx) {
         sidx = hop.corresponding_idx;
@@ -164,10 +169,6 @@ $(document).ready(function() {
         }
       }*/
 
-      $('#trace-hop-label-' + hop.id).addClass('highlight');
-      if (hop.corresponding_id) {
-        $('#trace-hop-label-' + hop.corresponding_id).addClass('highlight');
-      }
     }
   });
 

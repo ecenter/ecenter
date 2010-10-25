@@ -39,7 +39,7 @@ Drupal.behaviors.ecenter_weathermap_behavior_dynamicload = function(context) {
           // Check for valid layer extent
           if (layerextent != null) {
             openlayers.zoomToExtent(layerextent);
-            
+
             // If unable to find width due to single point,
             // zoom in with point_zoom_level option.
             if (layerextent.getWidth() == 0.0) {

@@ -99,11 +99,11 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
 function theme_ecenter_weathermap_render_data_snmp($data) {
   $plot_options = array(
     'width' => 570,
-    'height' => 280,
+    'height' => 250,
     //'hideTables' => TRUE,
     'plotOptions' => array(
       'seriesDefaults' => array(
-        'lineWidth' => 1,
+        'lineWidth' => 1.5,
         'shadow' => FALSE,
         'fill' => FALSE,
         'color' => '#aaaaaa',
@@ -124,15 +124,15 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
           'tickOptions' => array(
             'formatString' => "%H:%M",
           ),
-          'label' => t('Time (@date)', array('@date' => $date_label)),
+          'label' => t('Time'),
           'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
         ),
         'yaxis' => array(
           'min' => 0,
           'max' => 100,
           'numberTicks' => 6,
-          //'label' => t('Percent utilization'),
-          //'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
+          'label' => t('Percent utilization'),
+          'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
           'tickOptions' => array(
             'formatString' => '%01.0f%',
             'color' => '#cccccc',
@@ -155,7 +155,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
       ),
       'linehighlighter' => array(
         'threshold' => 4,
-        'sizeAdjust' => 1.5,
+        'sizeAdjust' => 2,
       ),
       'cursor' => array(
         'show' => TRUE,
@@ -171,7 +171,8 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
   $critical = variable_get('ecenter_weathermap_threshold_critical_snmp_utilization', 60);
   $marginal = variable_get('ecenter_weathermap_threshold_marginal_snmp_utilization', 40);
 
-  $tables = array('forward', 'reverse');
+  //$tables = array('forward', 'reverse');
+  $tables = array();
 
   // Create tables for scrapin'
   foreach ($data as $row) {
@@ -198,15 +199,16 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
                 ),
               );
             }
-            $tables[$direction][] = theme('ecenter_weathermap_utilization_table', $hop['hop'], $direction, $table);
+            $tables[] = theme('ecenter_weathermap_utilization_table', $hop['hop'], $direction, $table);
+            //$tables[$direction][] = theme('ecenter_weathermap_utilization_table', $hop['hop'], $direction, $table);
           }
         }
       }
     }
   }
-  //jqplot_register_tablechart('#results', $plot_options);
+  jqplot_register_tablechart('#results', $plot_options);
 
-  $forward = '<h3>'. t('Forward') .'</h3>'
+  /*$forward = '<h3>'. t('Forward') .'</h3>'
     .'<div id="forward-tables" class="utilization-table">'
     . implode("\n", $tables['forward']) .'</div>';
   $reverse = '<h3>'. t('Reverse') .'</h3>'
@@ -214,9 +216,10 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
     . implode("\n", $tables['reverse']) .'</div>';
 
   jqplot_register_tablechart('#forward-tables', $plot_options);
-  jqplot_register_tablechart('#reverse-tables', $plot_options);
+  jqplot_register_tablechart('#reverse-tables', $plot_options);*/
 
-  return $forward . $reverse;
+  return '<div class="utilization-table">'. implode("\n", $tables) .'</div>';
+  //return $forward . $reverse;
 }
 
 /**
@@ -446,8 +449,8 @@ function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
  */
 function theme_ecenter_weathermap_utilization_table($hop, $direction, $table) {
   $attributes = array();
-  //$attributes['class'] = ($direction == 'forward') ? "{lineWidth : 2}" : "{lineWidth : .5, sizeAdjust: .5}";
   $attributes['class'] = $direction;
+  $attributes['class'] .= ($direction == 'forward') ? "{lineWidth : 1}" : "{lineWidth : 0, sizeAdjust: 0}";
 
   $headers = array(t('Time'), t('Percent utilization'));
   $output = '<div class="snmp-data-table">';

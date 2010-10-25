@@ -48,7 +48,7 @@ function combobox_elements() {
  */
 function theme_combobox($element) {
 
-  jquery_ui_add(array('ui.position', 'ui.widget', 'ui.autocomplete', 'ui.button'));
+  jquery_ui_add(array('ui.widget', 'ui.mouse', 'ui.draggable', 'ui.button', 'ui.position', 'ui.autocomplete'));
 
   // Combobox
   drupal_add_js(drupal_get_path('module', 'combobox') .'/js/combobox.js');
@@ -61,9 +61,7 @@ function theme_combobox($element) {
 
   // A dummy settings array is required, otherwise Drupal's array_merge behavior
   // while adding settings will mess up the data structure.
-  //$options = (is_array($element['#combobox_options'])) ? $element['#combobox_options'] : array('delay' => 400);
   drupal_add_js(array('Combobox' => array($element['#id'] => array())), 'setting');
-
 
   // "Borrowed" from the theme_select function
   $select = '';

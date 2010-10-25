@@ -21,36 +21,42 @@
  * editing form.
  */
 
+/**
+ * Implementation of hook_theme().
+ */
+function ecenter_issues_theme() {
+  $registry = array(
+    'ecenter_issues_data_link' => array(
+      'arguments' => array(
+        'path' => NULL,
+        'params' => NULL,
+        'title' => NULL,
+      )
+    ),
+  );
+  return $registry;
+}
+
+/**
+ * Implementation of hook_init().
+ */
+function ecenter_issues_init() {
+  if (arg(0) == 'node' && is_numeric(arg(1)) && !arg(2)) {
+    $node = node_load(arg(1));
+  }
+  if (arg(0) == 'issues' || $node->type == 'issue') {
+    drupal_add_css(drupal_get_path('module', 'ecenter_issues') .'/css/ecenter-issues.css');
+  }
+}
+
 /** 
  * Implementation of hook_nodeapi().
  */
 function ecenter_issues_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
   if ($node->type == 'issue' && $op == 'load') {
-    // Construct link to query
-    $query = node_load($node->field_issue_query[0]['nid']);
-
-    $tz = timezone_open(date_default_timezone_name(TRUE));
-    $start = date_create($query->field_query_start[0]['value'], 
-      timezone_open($query->field_query_start[0]['timezone']));
-    $end = date_create($query->field_query_end[0]['value'],
-      timezone_open($query->field_query_end[0]['timezone']));
-    date_timezone_set($start, $tz);
-    date_timezone_set($end, $tz);
-
-    $params = array(
-      'src' => (!empty($query->field_query_src_hub[0]['value'])) ? 
-        'hub:'. $query->field_query_src_hub[0]['value'] :
-        'ip:'. $query->field_query_src_ip[0]['value'],
-      'dst' => (!empty($query->field_query_dst_hub[0]['value'])) ? 
-        'hub:'. $query->field_query_dst_hub[0]['value'] :
-        'ip:'. $query->field_query_dst_ip[0]['value'],
-      'start' => date_format($start, 'Y-m-d H:i'),
-      'end' => date_format($end, 'Y-m-d H:i'),
-    );
-    $node->ecenter_weathermap_link = array(
-      'link' => l('View query data', 'weathermap', array('query' => $params)),
-      'params' => $params,
-    );
+    $query = ecenter_issues_get_node_query($node);
+    $node->ecenter_weathermap_link = theme('ecenter_issues_data_link', 'weathermap', 
+      array('query' => $query, 'attributes' => array('class' => 'button')));
   }
 }
 
@@ -61,9 +67,19 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
 
   if ($form_id == 'issue_node_form') {
 
+    drupal_add_css(drupal_get_path('module', 'ecenter_issues') .'/css/ecenter-issues.css');
+
     // Apply always
     $form['body_field']['body']['#required'] = TRUE;
+    $form['body_field']['body']['#prefix'] = '<div class="clearfix">';
+    $form['body_field']['body']['#suffix'] = '</div>';
+
     $form['field_issue_query']['#access'] = FALSE;
+
+
+    $form['title']['#prefix'] = '<div class="title-field-wrapper clearfix">';
+    $form['title']['#suffix'] = '</div>';
+
 
     // If new, populate values and do additional checking
     if (!$form['#node']->nid) {
@@ -98,6 +114,8 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
         return;
       }
 
+      // Add submit handler that creates new node reference (or gets the 
+      // old one)
       array_unshift($form['#submit'], 'ecenter_issues_issue_add_data');
 
       // Create title from parameters
@@ -109,7 +127,27 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
           '@tz' => str_replace('_', ' ', date_default_timezone_name(TRUE)),
         )
       );
+
+      $data_link = theme('ecenter_issues_data_link', 'weathermap',
+        array('query' => $params, 'attributes' => array('class' => 'button')), 
+        t('View query details'));
     }
+    // Editing
+    else {
+      $query = ecenter_issues_get_node_query($form['#node']);
+      $data_link = theme('ecenter_issues_data_link', 'weathermap', 
+        array('query' => $query, 'attributes' => array('class' => 'button')),
+        t('View query details'));
+    }
+
+    // Make 
+    $form['data_link'] = array(
+      '#prefix' => '<div class="data-link">',
+      '#suffix' => '</div>',
+      '#value' => $data_link,
+      '#weight' => -100,
+    );
+
   }
 
   if ($form_id == 'network_query_node_form') {
@@ -119,6 +157,7 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
 
 /**
  * Submit callback for issues
+ *
  */
 function ecenter_issues_issue_add_data($form, &$form_state) {
   global $user;
@@ -220,4 +259,53 @@ function ecenter_issues_parse_params($param_string) {
     $params[$key] = $value;
   }
   return $params;
+}
+
+/**
+ * Given an issue node, get link params
+ *
+ * @param $node
+ *   Issue node object
+ * @return 
+ *   An array representation of querystring needed to reconstruct permalink
+ */
+function ecenter_issues_get_node_query($node) {
+  $query = node_load($node->field_issue_query[0]['nid']);
+
+  $tz = timezone_open(date_default_timezone_name(TRUE));
+  $start = date_create($query->field_query_start[0]['value'], 
+    timezone_open($query->field_query_start[0]['timezone']));
+  $end = date_create($query->field_query_end[0]['value'],
+    timezone_open($query->field_query_end[0]['timezone']));
+  date_timezone_set($start, $tz);
+  date_timezone_set($end, $tz);
+
+  $query = array(
+    'src' => (!empty($query->field_query_src_hub[0]['value'])) ? 
+      'hub:'. $query->field_query_src_hub[0]['value'] :
+      'ip:'. $query->field_query_src_ip[0]['value'],
+    'dst' => (!empty($query->field_query_dst_hub[0]['value'])) ? 
+      'hub:'. $query->field_query_dst_hub[0]['value'] :
+      'ip:'. $query->field_query_dst_ip[0]['value'],
+    'start' => date_format($start, 'Y-m-d H:i'),
+    'end' => date_format($end, 'Y-m-d H:i'),
+  );
+  return $query;
+}
+
+function theme_ecenter_issues_data_link($path, $params, $title = NULL) {
+  list($src_type, $src_value) = explode(':', $params['query']['src'], 2);
+  list($dst_type, $dst_value) = explode(':', $params['query']['dst'], 2);
+
+  // Default title
+  $title = (!$title) ? t('@src to @dst, @start - @end (@tz)',
+    array(
+      '@src' => $src_value, 
+      '@dst' => $dst_value,
+      '@start' => $params['query']['start'], '@end' => $params['query']['end'],
+      '@tz' => str_replace('_', ' ', date_default_timezone_name(TRUE)),  // @TODO this is KNOWN BUGGY, always shows current user's TZ
+    )
+  ) : $title;
+
+  return l($title, $path, $params);
 }

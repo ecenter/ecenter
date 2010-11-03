@@ -8,6 +8,7 @@ create_ecenter_db.pl - create current db structure with timestamped data dirs
 =head1 DESCRIPTION
 
 create current db structure with timestamped data dir, preserve existing database tables.
+Must be <root> to run.
 
 =head1 OPTIONS
 
@@ -19,7 +20,7 @@ create current db structure with timestamped data dir, preserve existing databas
 =head2 root_pass
 
  root password to connect to the ecenter data db
- Default: undef - required paramter
+ Default:read from /root/ecenter/etc/my_db 
 
 =head2 trunk
 
@@ -59,7 +60,7 @@ unless($OPTIONS{pass}) {
     chomp $OPTIONS{pass};
 }
 unless($OPTIONS{root_pass}) {
-    $OPTIONS{root_pass} = `cat /etc/my_root`;
+    $OPTIONS{root_pass} = `cat /root/ecenter/etc/my_db`;
     chomp $OPTIONS{root_pass};
 }
 croak(" no root password provided !!!" ) unless $OPTIONS{root_pass};

@@ -3,26 +3,51 @@ use strict;
 use warnings;
 =head1 NAME 
 
-create_ecenter_db.pl - create current db structure with timestamped data dir
+create_ecenter_db.pl - create current db structure with timestamped data dirs
 
 =head1 DESCRIPTION
 
 create current db structure with timestamped data dir, preserve existing database tables.
+
+=head1 OPTIONS
+
+=head2 user
+
+  username to connect to the ecenter data db 
+  Default: ecenter
+
+=head2 root_pass
+
+ root password to connect to the ecenter data db
+ Default: undef - required paramter
+
+=head2 trunk
+
+ absolute path to the trunk dir ( root for the ecenter data API)
+ Default: /home/netadmin/ecenter/trunk
+ 
+=head2 db
+
+database name of the ecenter data db
+Default: ecenter_data
+
+=head2 pass
+
+  password to connect to the ecenter data db  as ecenter user
+  Default: read from /etc/my_ecenter
 
 =cut
 
 use POSIX qw(strftime);
 use Template;
 use Carp;
-use English;
+use English qw( -no_match_vars );
 use Getopt::Long;
 use Pod::Usage;
-use File::Slurp qw(slurp);
-use DBI;
 use DBIx::Class::Schema::Loader qw/ make_schema_at /;
 
 my %OPTIONS; 
-my @string_option_keys = qw/user  root_pass db trunk pass/;
+my @string_option_keys = qw/user root_pass db trunk pass/;
 
 GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
@@ -52,14 +77,14 @@ $template->process(  $templfile,
 		      user => $OPTIONS{user}, pass =>  $OPTIONS{pass} }, 
 		    "$OPTIONS{trunk}/collector/sql/ecenter_db.sql") or croak("processing failed: " . $template->error);
 
-my $dbh = DBI->connect("dbi:mysql:database=$OPTIONS{db}", 'root', $OPTIONS{root_pass}) or croak(" Couldnt connect to db $DBI::errstr");
-my $sql= slurp("$OPTIONS{trunk}/collector/sql/ecenter_db.sql");
-$dbh->do($sql);
-croak("Failed to create in the db: $DBI::errstr") if $DBI::err;
+####my $dbh = DBI->connect("dbi:mysql:database=$OPTIONS{db}", 'root', $OPTIONS{root_pass}) or croak(" Couldnt connect to db $DBI::errstr");
+if(system("/usr/local/mysql/bin/mysql -u root -p'$OPTIONS{root_pass}' < $OPTIONS{trunk}/collector/sql/ecenter_db.sql")) {
+   croak("Failed to create in the db: $OS_ERROR $ERRNO");
+}
 make_schema_at(
       'Ecenter::DB',
       {  dump_directory => "$OPTIONS{trunk}/frontend_components/ecenter_data/lib" },
-      [ "dbi:mysql:database=$OPTIONS{db}", $OPTIONS{user} ,  $OPTIONS{pass} ],
+       [ "dbi:mysql:database=$OPTIONS{db}", $OPTIONS{user} ,  $OPTIONS{pass} ],
 );
  
 =head1 VERSION

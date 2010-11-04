@@ -12,30 +12,35 @@ Must be <root> to run.
 
 =head1 OPTIONS
 
-=head2 user
+=head2 --user=<string>
 
-  username to connect to the ecenter data db 
-  Default: ecenter
+username to connect to the ecenter data db 
+Default: ecenter
 
-=head2 root_pass
+=head2 --root_pass=<string>
 
- root password to connect to the ecenter data db
- Default:read from /root/ecenter/etc/my_db 
+root password to connect to the ecenter data db
+Default:read from /root/ecenter/etc/my_db 
 
-=head2 trunk
+=head2 --trunk=<string>
 
- absolute path to the trunk dir ( root for the ecenter data API)
- Default: /home/netadmin/ecenter/trunk
+absolute path to the trunk dir ( root for the ecenter data API)
+Default: /home/netadmin/ecenter/trunk
  
-=head2 db
+=head2 --db=<string>
 
 database name of the ecenter data db
 Default: ecenter_data
 
-=head2 pass
+=head2 --pass=<string>
 
-  password to connect to the ecenter data db  as ecenter user
-  Default: read from /etc/my_ecenter
+password to connect to the ecenter data db  as ecenter user
+Default: read from /etc/my_ecenter
+
+=head2 --fresh
+
+drop old db and create a new one
+Default: not set
 
 =cut
 
@@ -52,7 +57,7 @@ my @string_option_keys = qw/user root_pass db trunk pass/;
 
 GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
-            qw/debug help/,
+            qw/debug help fresh/,
 ) or pod2usage(1);
  
 unless($OPTIONS{pass}) {
@@ -70,11 +75,14 @@ $OPTIONS{user} ||= 'ecenter';
 my $today = strftime("%Y%m", localtime());
 $OPTIONS{trunk} ||= '/home/netadmin/ecenter/trunk';
 my $templfile = "$OPTIONS{trunk}/collector/ecenter_db_sql.tmpl";
+
+$OPTIONS{preserve} = $OPTIONS{fresh}?'':' if not exists ';
+
 my $template = Template->new({ABSOLUTE => 1});
 croak(" Template $template is missing !!!" ) unless -e  $templfile;
 `mv $OPTIONS{trunk}/collector/sql/ecenter_db.sql  $OPTIONS{trunk}/collector/sql/ecenter_db.$today` if -e "$OPTIONS{trunk}/collector/sql/ecenter_db.sql";
 $template->process(  $templfile, 
-                    { datestamp => $today, dbname => $OPTIONS{db}, 
+                    { datestamp => $today, dbname => $OPTIONS{db}, preserve => $OPTIONS{preserve},
 		      user => $OPTIONS{user}, pass =>  $OPTIONS{pass} }, 
 		    "$OPTIONS{trunk}/collector/sql/ecenter_db.sql") or croak("processing failed: " . $template->error);
 
@@ -84,7 +92,8 @@ if(system("/usr/local/mysql/bin/mysql -u root -p'$OPTIONS{root_pass}' < $OPTIONS
 }
 make_schema_at(
       'Ecenter::DB',
-      {  dump_directory => "$OPTIONS{trunk}/frontend_components/ecenter_data/lib" },
+      {  really_erase_my_files =>  ($OPTIONS{fresh}?1:0), 
+         dump_directory => "$OPTIONS{trunk}/frontend_components/ecenter_data/lib" },
        [ "dbi:mysql:database=$OPTIONS{db}", $OPTIONS{user} ,  $OPTIONS{pass} ],
 );
  

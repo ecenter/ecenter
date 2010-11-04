@@ -1,4 +1,7 @@
-create database  if not exists [% dbname %];
+[% IF !preserve %]
+drop database [% dbname %];
+[% END  %]
+create database  [% preserve %]  [% dbname %];
 grant all privileges on  [% dbname %].* to  [% user %]@localhost identified by  '[% pass %]';
 grant select on  [% dbname %].* to www@localhost identified by 'www_user';
 flush privileges;
@@ -7,7 +10,7 @@ use  [% dbname %];
 --  topology hub ( something with coordinates, name )
 --
 -- 
-CREATE TABLE if not exists  hub (
+CREATE TABLE [% preserve %]  hub (
 hub  varchar(32) NOT NULL,
 hub_name  varchar(32) NOT NULL,
 description varchar(100)   NOT NULL,
@@ -19,7 +22,7 @@ PRIMARY KEY  (hub)
 --  topology layer2 info
 --
 -- 
-CREATE TABLE  if not exists  l2_port (
+CREATE TABLE  [% preserve %]  l2_port (
 l2_urn varchar(512)   NOT NULL,
 description varchar(100)   NOT NULL,
 capacity   bigint  unsigned   NOT NULL,
@@ -31,7 +34,7 @@ FOREIGN KEY ( hub ) REFERENCES hub ( hub ) on DELETE CASCADE ON UPDATE CASCADE
 --  topology layer2 linkage
 --
 -- 
-CREATE TABLE  if not exists  l2_link (
+CREATE TABLE  [% preserve %]  l2_link (
 l2_link  bigint  unsigned AUTO_INCREMENT  NOT NULL,   
 l2_src_urn varchar(512)   NOT NULL,   
 l2_dst_urn varchar(512)   NOT NULL,   
@@ -50,7 +53,7 @@ FOREIGN KEY ( l2_dst_urn ) REFERENCES l2_port ( l2_urn )  on DELETE CASCADE ON U
 --    to see dotted form of ipv4 or ipv6 - select ip_noted
 --    
 -- 
-CREATE TABLE  if not exists  node (
+CREATE TABLE  [% preserve %]  node (
  ip_addr  varbinary(16)  NOT NULL,
  nodename  varchar(255)  NULL,
  ip_noted  varchar(40)  NOT NULL,
@@ -65,7 +68,7 @@ CREATE TABLE  if not exists  node (
 --  use netmask from the node table to get all addresses from the block
 -- created and updated are here to provide versioning - the same ip_addr maps to l2_urn in some period of time
 -- 
-CREATE TABLE  if not exists  l2_l3_map (
+CREATE TABLE  [% preserve %]  l2_l3_map (
 l2_l3_map  bigint  unsigned AUTO_INCREMENT  NOT NULL,
 ip_addr   varbinary(16)  NOT NULL,
 l2_urn    varchar(512)    NOT NULL,
@@ -79,7 +82,7 @@ FOREIGN KEY ( ip_addr ) REFERENCES node ( ip_addr )  on DELETE CASCADE ON UPDATE
 --
 --    list of keywords, stores most recent regexp used to obtain that keyword as well
 -- 
-CREATE TABLE  if not exists   keyword (
+CREATE TABLE  [% preserve %]   keyword (
  keyword  varchar(255) NOT NULL,
  pattern  varchar(255)  NULL,
  PRIMARY KEY  (keyword)
@@ -88,7 +91,7 @@ CREATE TABLE  if not exists   keyword (
 --  operational table for the most recent status of the service
 --  all services are here
 -- 
-CREATE TABLE   if not exists   service (
+CREATE TABLE   [% preserve %]   service (
  service  bigint  unsigned AUTO_INCREMENT NOT NULL, 
  name varchar(255) NOT NULL,
  ip_addr varbinary(16) NOT NULL,
@@ -105,7 +108,7 @@ CREATE TABLE   if not exists   service (
 --
 --    list of eventtypes, metadata will refere to the ref_id here, not the SERVICE !
 -- 
-CREATE TABLE  if not exists   eventtype  (
+CREATE TABLE  [% preserve %]   eventtype  (
  ref_id   bigint  unsigned AUTO_INCREMENT NOT NULL, 
  eventtype  varchar(255)  NULL, 
  service bigint unsigned  NOT NULL,
@@ -118,7 +121,7 @@ CREATE TABLE  if not exists   eventtype  (
 --  keywords_service for  many - many rel
 --  
 -- 
-CREATE TABLE  if not exists  keywords_service (
+CREATE TABLE  [% preserve %]  keywords_service (
 ref_id bigint  unsigned AUTO_INCREMENT NOT NULL, 
 keyword varchar(255) NOT NULL,
 service bigint  unsigned NOT NULL, 
@@ -137,7 +140,7 @@ FOREIGN KEY (service) REFERENCES  service (service)  on DELETE CASCADE ON UPDATE
 --   created - updated - to signify active metadata
 --    
 -- 
-CREATE TABLE   if not exists  metadata (
+CREATE TABLE   [% preserve %]  metadata (
 metaid  bigint  unsigned AUTO_INCREMENT NOT NULL,
 src_ip  varbinary(16)  NOT NULL,
 dst_ip  varbinary(16)  NOT  NULL DEFAULT '0',
@@ -161,7 +164,7 @@ FOREIGN KEY (eventtype_id) REFERENCES  eventtype(ref_id)  on DELETE CASCADE ON U
 --    pinger data storage, base for shard - each month of data will have own table - pinger_data_201011 for example 
 --
 -- 
-CREATE TABLE   if not exists  pinger_data_[% datestamp %]  (
+CREATE TABLE   [% preserve %]  pinger_data_[% datestamp %]  (
  pinger_data bigint  unsigned AUTO_INCREMENT NOT NULL, 
  metaid   BIGINT  unsigned   NOT NULL,
  minRtt float  NOT NULL DEFAULT  '0.0',
@@ -186,7 +189,7 @@ CREATE TABLE   if not exists  pinger_data_[% datestamp %]  (
 --
 --
 -- 
-CREATE TABLE   if not exists bwctl_data_[% datestamp %] (
+CREATE TABLE   [% preserve %] bwctl_data_[% datestamp %] (
    bwctl_data  bigint  unsigned AUTO_INCREMENT NOT NULL, 
    metaid    BIGINT  unsigned NOT NULL,
    timestamp   bigint(12) unsigned NOT NULL,
@@ -199,7 +202,7 @@ CREATE TABLE   if not exists bwctl_data_[% datestamp %] (
 --            OWAMP data  storage  - base for shard - each month of data will have own table - owamp_data_201011 for example 
 --
 -- 
-CREATE TABLE   if not exists owamp_data_[% datestamp %] (
+CREATE TABLE   [% preserve %] owamp_data_[% datestamp %] (
    owamp_data  bigint unsigned AUTO_INCREMENT NOT NULL, 
    metaid   BIGINT  unsigned  NOT NULL,
    timestamp  bigint(12) unsigned NOT NULL,
@@ -216,7 +219,7 @@ CREATE TABLE   if not exists owamp_data_[% datestamp %] (
 --            SNMP data  storage - base for shard - each month of data will have own table - snmp_data_201011 for example 
 --          
 -- 
-CREATE TABLE   if not exists  snmp_data_[% datestamp %] (
+CREATE TABLE   [% preserve %]  snmp_data_[% datestamp %] (
    snmp_data  bigint unsigned AUTO_INCREMENT NOT NULL, 
    metaid   BIGINT  unsigned  NOT NULL,
    timestamp  bigint(12) unsigned NOT NULL,
@@ -232,7 +235,7 @@ CREATE TABLE   if not exists  snmp_data_[% datestamp %] (
 --
 --
 -- 
-CREATE TABLE   if not exists hop_data_[% datestamp %] (
+CREATE TABLE   [% preserve %] hop_data_[% datestamp %] (
 hop_id  bigint  unsigned AUTO_INCREMENT  NOT NULL,
 metaid bigint unsigned NOT NULL,
 hop_ip  varbinary(16) NOT NULL,

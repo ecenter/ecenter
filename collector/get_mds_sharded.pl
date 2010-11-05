@@ -63,7 +63,10 @@ Default: read from /etc/my_ecenter
 
 
 =cut
- 
+
+use FindBin;
+use lib  ("$FindBin::Bin/topo_lib", "$FindBin::Bin");
+
 use English;
 use Time::HiRes qw(usleep);
 use XML::LibXML;
@@ -71,7 +74,7 @@ use Getopt::Long;
 use Data::Dumper;
 use POSIX qw(strftime);
 use Pod::Usage;
-use FindBin;
+
 use Log::Log4perl qw(:easy);
 use Ecenter::Utils;
 use Net::Netmask;
@@ -80,7 +83,7 @@ use File::Slurp;
 #use Parallel::ForkControl;
 use Parallel::ForkManager;
 
-use lib  ("$FindBin::Bin/topo_lib", "$FindBin::Bin");
+
 use Ecenter::DB;
 use aliased 'perfSONAR_PS::PINGER_DATATYPES::v2_0::nmwgt::Message::Metadata::Subject::EndPointPair';
 use aliased 'perfSONAR_PS::PINGERTOPO_DATATYPES::v2_0::nmtl3::Topology::Domain::Node::Port';
@@ -101,7 +104,7 @@ my $MAX_THREADS = 10;
 our $HOST_MATCH = qr/((es|deemz)\.net|(anl|lbl|nersc|ornl|lbl|lbnl|jlab|bnl)\.gov|slac\.stanford\.edu)/i;
 our $SERVICE_MATCH = qr/pinger|bwctl|owamp|traceroute/;
 
-our %SERVICE_PARAM = ( url => [qw/accessPoint address/], 
+our %SERVICE_PARAM = ( service => [qw/accessPoint address/], 
 		       name => [qw/serviceName name/],
         	       comments => [qw/serviceDescription description/],
 );
@@ -143,7 +146,7 @@ my  $logger = Log::Log4perl->get_logger(__PACKAGE__);
 
 pod2usage(-verbose => 2) if ( $OPTIONS{help} || ($OPTIONS{procs} && $OPTIONS{procs} !~ /^\d\d?$/));
 
-$MAX_THREADS = $OPTIONS{procs} if $OPTIONS{procs} > 0 && $OPTIONS{procs}  < 40;
+$MAX_THREADS = $OPTIONS{procs} if $OPTIONS{procs} && $OPTIONS{procs} > 0   && $OPTIONS{procs}  < 40;
 my @hlses = ();
 if($OPTIONS{hls_file} && -e $OPTIONS{hls_file}) {
   @hlses = read_file($OPTIONS{hls_file});
@@ -251,16 +254,15 @@ sub remote_ls {
     	    #$logger->info(" ip_addr " , sub {Dumper($ip_addr$ip_addr_obj )});
     	    my $ip_addr_obj =  $dbh->resultset('Node')->find({ip_noted => $ip_addr});
     	    my $hls = $dbh->resultset('Service')->update_or_create({ name => $serviceName,
-    								     url   =>	$accessPoint,
+    								     service   => $accessPoint,
     								     ip_addr =>  $ip_addr_obj->ip_addr,
     								     comments => 'hLS service',
     								     is_alive => (!$status?'1':'0'), 
     								     updated =>  \"NOW()",
-    								    },
-    							      { key => 'service_url'}
+    								    }
     							     );
     	    $dbh->resultset('Eventtype')->update_or_create( { eventtype =>    $eventtype,
-    							      service =>  $hls->service,
+    							      service   =>    $accessPoint,
     							      service_type => 'hLS',
     							    },
     							    { key => 'eventtype_service_type' }
@@ -370,8 +372,8 @@ sub get_fromHLS {
 	        $param_exist{$param} ||=   extract( find( $m1, "./*[local-name()='subject']//*[local-name()='$try']", 1 ), 0 );
 	    }
         }
-	 unless($param_exist{url} && $param_exist{url} =~ /^http/) {
-	    $logger->error("TID= $$  !!!! URL is missing in MD or its not http --- url=$param_exist{url} ");
+	 unless($param_exist{service} && $param_exist{service} =~ /^http/) {
+	    $logger->error("TID= $$  !!!! URL is missing in MD or its not http --- url=$param_exist{service} ");
 	    next;
 	 }
 	$param_exist{is_alive} = 1;
@@ -384,7 +386,7 @@ sub get_fromHLS {
 	#}
 	#$param_exist{type} ||= 'N/A';
 	$param_exist{name} ||= 'N/A';
-	my ( $ip_noted , $nodename) = get_ip_name(  $param_exist{url} );
+	my ( $ip_noted , $nodename) = get_ip_name(  $param_exist{service} );
 	unless($ip_noted) {
 	    $logger->error("TID= $$  !!!! Unable to extract IP from $param_exist{url}   ");
 	    next;
@@ -397,10 +399,10 @@ sub get_fromHLS {
 						      }); 
 						      
 	my   $ip_addr = $dbh->resultset('Node')->find({ip_noted => $ip_noted  });
-	$param_exist{ip_addr}	 =  $ip_addr->ip_addr;						   
-	my $service_obj =$dbh->resultset('Service')->find_or_create( \%param_exist,{ key => 'service_url' } ); 
+	$param_exist{ip_addr} = $ip_addr->ip_addr;						   
+	my $service_obj =$dbh->resultset('Service')->find_or_create( \%param_exist ); 
         ## my $service_obj =  $dbh->resultset('Service')->find({url => $param_exist{url}});
-	$logger->debug("TID= $$  Found for url $param_exist{url} service=" .$service_obj->service);
+	$logger->debug("TID= $$  Found for url $param_exist{service} service=" .$service_obj->service);
 	
 	next unless $service_obj;
 	##############  data part processing
@@ -417,7 +419,7 @@ sub get_fromHLS {
    	    my $keywords = find( $d1_el, "./nmwg:metadata/nmwg:parameters/nmwg:parameter", 0 );
    	    my %keyword_hash = map { $_ => 1 } 
 			       grep {defined $_}  
-	        	       map {extract($_, 0)}  
+		               map {extract($_, 0)}  
 	        	       grep {$_->getAttribute("name") eq 'keyword'}
 	        	       $keywords->get_nodelist;
             my $param_md =  find( $d1_el, "./nmwg:metadata/nmwg:parameters", 1);
@@ -431,7 +433,7 @@ sub get_fromHLS {
 									{ key => 'key_service' }
 								      );
  		 $dbh->resultset('KeywordsService')->update_or_create( { keyword => $keyword_str,
-									 service =>  $service_obj->service
+									 service => $param_exist{service},
 									},
 									{ key => 'key_service' } 
 								      );
@@ -475,9 +477,9 @@ sub get_fromHLS {
 		    
 		    my $ips =  find($subj_md, $try_src, 1);
 		    if($ips) {
-		      $ip_addr_h{src} = extract(  $ips, 0);
-		      $logger->debug("TID=proc=$$ ======  $try_src  ------" . $ips->toString);
-		      last if  $ip_addr_h{src}; 
+		        $ip_addr_h{src} = extract(  $ips, 0);
+		        $logger->debug("TID=proc=$$ ======  $try_src  ------" . $ips->toString);
+		        last if  $ip_addr_h{src}; 
 		    }
 		    
 		}
@@ -512,7 +514,7 @@ sub get_fromHLS {
 		}
 		# sanity checks
 	        unless ( $ip_addr_rs{src} &&
-		         ( $eventtype_obj->service_type !~ $SERVICE_CHECK || $ip_addr_rs{dst})) {
+		         ( $eventtype_obj->service_type !~ $SERVICE_MATCH || $ip_addr_rs{dst})) {
 		    $logger->error("TID=$$ !! End ======  MISSING SRC or e2e service with missing dst, skipping...:$ip_addr_h{src}");
 		    next;
 		}

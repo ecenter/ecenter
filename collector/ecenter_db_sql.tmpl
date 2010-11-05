@@ -75,7 +75,7 @@ l2_urn    varchar(512)    NOT NULL,
 created  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 updated  TIMESTAMP NOT NULL DEFAULT 0,
 PRIMARY KEY  (l2_l3_map),
-UNIQUE KEY ip_l2 (ip_addr, l2_urn),
+UNIQUE KEY ip_l2_time (ip_addr, l2_urn, created),
 FOREIGN KEY (l2_urn) REFERENCES l2_port ( l2_urn )  on DELETE CASCADE ON UPDATE CASCADE,
 FOREIGN KEY ( ip_addr ) REFERENCES node ( ip_addr )  on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps topology layer2-layer3 mapping';
@@ -92,7 +92,7 @@ CREATE TABLE  [% preserve %]   keyword (
 --  all services are here
 -- 
 CREATE TABLE   [% preserve %]   service (
- service  bigint  unsigned AUTO_INCREMENT NOT NULL, 
+ service varchar(255)NOT NULL,
  name varchar(255) NOT NULL,
  ip_addr varbinary(16) NOT NULL,
  url varchar(255) NOT NULL,
@@ -101,7 +101,6 @@ CREATE TABLE   [% preserve %]   service (
  created  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
  updated  TIMESTAMP NOT NULL DEFAULT 0,
  PRIMARY KEY  (service),
- UNIQUE KEY url (url), 
  KEY is_alive (is_alive),
  FOREIGN KEY (ip_addr) REFERENCES  node (ip_addr)
  ) ENGINE=InnoDB CHARSET=latin1 COMMENT='ps-ps services operational table';
@@ -111,7 +110,7 @@ CREATE TABLE   [% preserve %]   service (
 CREATE TABLE  [% preserve %]   eventtype  (
  ref_id   bigint  unsigned AUTO_INCREMENT NOT NULL, 
  eventtype  varchar(255)  NULL, 
- service bigint unsigned  NOT NULL,
+ service varchar(255)  NOT NULL,
  service_type  varchar(32) NOT NULL DEFAULT 'hLS',
  PRIMARY KEY  (ref_id),
  UNIQUE KEY eventtype_service_type (eventtype, service, service_type), 
@@ -124,7 +123,7 @@ CREATE TABLE  [% preserve %]   eventtype  (
 CREATE TABLE  [% preserve %]  keywords_service (
 ref_id bigint  unsigned AUTO_INCREMENT NOT NULL, 
 keyword varchar(255) NOT NULL,
-service bigint  unsigned NOT NULL, 
+service varchar(255)  NOT NULL, 
 PRIMARY KEY  (ref_id),
 UNIQUE KEY key_service (keyword, service), 
 FOREIGN KEY (keyword) REFERENCES keyword  (keyword) on DELETE CASCADE ON UPDATE CASCADE,
@@ -182,7 +181,8 @@ CREATE TABLE   [% preserve %]  pinger_data_[% datestamp %]  (
  lossPercent  float NOT NULL DEFAULT '0.0',
  PRIMARY KEY (pinger_data), 
  KEY (timestamp),
- UNIQUE KEY meta_time (metaid, timestamp)
+ UNIQUE KEY meta_time (metaid, timestamp),
+ FOREIGN KEY (metaid) REFERENCES metadata(metaid)  on DELETE CASCADE ON UPDATE CASCADE
  ) ENGINE=InnoDB CHARSET=latin1 COMMENT='ps-ps  pinger data  cache';
 --
 --    BWCTL data  storage - base for shard - each month of data will have own table - bwctl_data_201011 for example 
@@ -196,7 +196,8 @@ CREATE TABLE   [% preserve %] bwctl_data_[% datestamp %] (
    throughput  float default NULL,
    PRIMARY KEY  (bwctl_data),
    KEY (timestamp), 
-   UNIQUE KEY meta_time (metaid, timestamp)
+   UNIQUE KEY meta_time (metaid, timestamp),
+   FOREIGN KEY (metaid) REFERENCES metadata(metaid)  on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps  bwctl data  cache';
 --
 --            OWAMP data  storage  - base for shard - each month of data will have own table - owamp_data_201011 for example 
@@ -213,7 +214,8 @@ CREATE TABLE   [% preserve %] owamp_data_[% datestamp %] (
    duplicates   int unsigned NOT NULL DEFAULT  '0',
    PRIMARY KEY  (owamp_data),
    KEY  (timestamp),
-   UNIQUE KEY meta_time (metaid, timestamp)
+   UNIQUE KEY meta_time (metaid, timestamp),
+   FOREIGN KEY (metaid) REFERENCES metadata(metaid)  on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps  owamp  data  cache';
 --
 --            SNMP data  storage - base for shard - each month of data will have own table - snmp_data_201011 for example 
@@ -228,7 +230,8 @@ CREATE TABLE   [% preserve %]  snmp_data_[% datestamp %] (
    drops int unsigned  NOT NULL DEFAULT  '0',
    PRIMARY KEY  (snmp_data),
    KEY  (timestamp),
-   UNIQUE KEY meta_time (metaid, timestamp)
+   UNIQUE KEY meta_time (metaid, timestamp),
+   FOREIGN KEY (metaid) REFERENCES metadata(metaid)  on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps snmp data  cache';
 --
 --  per hop info - base for shard - each month of data will have own table - hop_data_201011 for example 

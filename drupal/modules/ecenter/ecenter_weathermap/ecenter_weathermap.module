@@ -902,15 +902,20 @@ function ecenter_weathermap_openlayers_presets() {
         'zoomWheelEnabled' => 0,
       ),
       'openlayers_behavior_panzoombar' => array(),
+      'openlayers_behavior_fullscreen' => array(
+        'activated' => 0,
+      ),
       'ecenter_weathermap_behavior_weathermap_select' => array(
         'layers' => array(
           'ecenter_weathermap_sites' => 'ecenter_weathermap_sites',
         ),
       ),
-      'openlayers_behavior_fullscreen' => array(
-        'activated' => 0,
-      ),
       'ecenter_weathermap_behavior_dynamicload' => array(),
+      'ecenter_weathermap_behavior_curves' => array(
+        'layers' => array(
+          'ecenter_weathermap_traceroute' => 'ecenter_weathermap_traceroute',
+        ),
+      ),
     ),
     'default_layer' => 'osm_mapnik',
     'layers' => array(
@@ -998,6 +1003,16 @@ function ecenter_weathermap_openlayers_behaviors() {
         'parent' => 'openlayers_behavior',
       ),
     ),
+    'ecenter_weathermap_behavior_curves' => array(
+      'title' => t('E-Center Weathermap: Curved lines'),
+      'behavior' => array(
+        'path' => drupal_get_path('module', 'ecenter_weathermap') .'/openlayers',
+        'file' => 'ecenter_weathermap_behavior_curves.inc',
+        'class' => 'ecenter_weathermap_behavior_curves',
+        'parent' => 'openlayers_behavior',
+      ),
+    ),
+
   );
   return $behaviors;
 }
@@ -1052,10 +1067,30 @@ function ecenter_weathermap_layers_sites() {
         'extra' => array('ecenterID' => $hub['hub_name']),
       );
     }
+    // @TODO remove when unclustering works
+    _ecenter_weathermap_layers_sites_rejigger($features);
     $layer->data['features'] = $features;
   }
 
   return $layer;
+}
+
+/**
+ * @TODO HARDCODED BADNESS -- create "unclustering" behavior as replacement
+ */
+function _ecenter_weathermap_layers_sites_rejigger(&$features) {
+  foreach ($features as $k => $feature) {
+    switch ($feature['extra']['ecenterID']) {
+      case 'ANL':
+        $features[$k]['style']['labelYOffset'] = -18;
+        break;
+      case 'SLAC':
+        $features[$k]['style']['labelYOffset'] = -18;
+        break;
+      default:
+        break;
+    }
+  }
 }
 
 /**
@@ -1072,6 +1107,10 @@ function ecenter_weathermap_layers_traceroute() {
   $layer->data = array(
     'layer_type' => 'openlayers_layer_type_raw',
     'projection' => array('900913'),
+    'options' => array(
+      'rendererOptions' => array('zIndexing' => TRUE),
+      'foo' => array('bar' => 1),
+    ),
   );
 
   if ($src && $dst && $start && $end) {
@@ -1089,7 +1128,7 @@ function ecenter_weathermap_layers_traceroute() {
       foreach ($traceroute as $hop_data) {
         $hop = $hop_data['hop'];
         if ($hop['longitude'] && $hop['latitude']) {
-          if ($old_hop && $i < $count) {
+          /*if ($old_hop && $i < $count) {
             $curve = _ecenter_weathermap_curve($old_hop, $hop, $index, $flip);
             $segments = array();
             foreach ($curve as $segment) {
@@ -1106,7 +1145,7 @@ function ecenter_weathermap_layers_traceroute() {
                 'strokeColor' => '#555555',
               ),
             );
-          }
+          }*/
           $features[] = array(
             'wkt' => "POINT({$hop['longitude']} {$hop['latitude']})",
             'projection' => "4326",

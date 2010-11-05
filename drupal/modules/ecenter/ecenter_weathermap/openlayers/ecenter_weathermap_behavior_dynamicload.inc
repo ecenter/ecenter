@@ -15,7 +15,8 @@ class ecenter_weathermap_behavior_dynamicload extends openlayers_behavior {
   }
 
   function render(&$map) {
-    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/openlayers/ecenter_weathermap_behavior_dynamicload.js');
+    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .
+      '/openlayers/ecenter_weathermap_behavior_dynamicload.js');
     return $this->options;
   }
 

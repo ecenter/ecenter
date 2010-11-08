@@ -497,7 +497,7 @@ sub get_fromHLS {
 		foreach my $ip_key (qw/src dst/) {
 		    next unless $ip_addr_h{$ip_key};
 		    my ($ip_cidr, $ip_name) = get_ip_name($ip_addr_h{$ip_key});
-		    next  unless( $ip_name  =~ $HOST_MATCH);
+		    next  unless( $ip_name && $ip_name  =~ $HOST_MATCH);
     	            
 		    if($ip_addr_h{$ip_key} && $ip_cidr) {
 	                update_create_fixed(  $dbh->resultset('Node'),

@@ -62,7 +62,7 @@ Default: from /etc/my_ecenter
 =cut
  
 use FindBin qw($Bin);
-use lib "$Bin/../lib";
+use lib qw|$Bin   $Bin/ps_trunk/perfSONAR_PS-PingER/lib|;
  
 use Pod::Usage;
 use Log::Log4perl qw(:easy);
@@ -137,7 +137,7 @@ pod2usage(-verbose => 2)
 	 ($OPTIONS{past}  && ($OPTIONS{past}<0 || $OPTIONS{past}>1000)));
 
 $MAX_THREADS = $OPTIONS{procs} if $OPTIONS{procs}  && $OPTIONS{procs}  < 40;
-# num
+# number days back from now for the snmp data
 my $PAST_START =  $OPTIONS{past}?$OPTIONS{past}:7;
 # snmp data cache request time limit - one week back - epoch
 $PAST_START = (time() - $PAST_START *24*3600);
@@ -330,9 +330,13 @@ sub set_end_sites {
 
 sub get_snmp { 
     my ($dbh, $pm ) = @_; 
-    my $service = $dbh->resultset('Service')->find({'eventtypes.service_type' => 'snmp', url => {like => '%es.net%'}}, 
-                                                     {join => 'eventtypes', '+select' => ['eventtypes.ref_id'] }
-						    );
+    my $service = $dbh->resultset('Service')->search({'eventtypes.service_type' => 'snmp', 
+                                                      'me.service' => {like => '%es.net%'}}, 
+                                                     { 'join' => 'eventtypes',
+						       '+select' => ['eventtypes.ref_id'],
+						     
+						      }
+						    )->single;
     my $now_table = strftime('%Y%m', localtime());
     # harcoded fix for miserable  ESnet services 
     my $eventtype_obj; 
@@ -343,7 +347,7 @@ sub get_snmp {
 									 comments => 'ESnet SNMP MA',
 									 is_alive => 1,
 									 updated  => \"NOW()",
-									 url      => 'http://ps3.es.net:8080/perfSONAR_PS/services/snmpMA'});
+									 service  => 'http://ps3.es.net:8080/perfSONAR_PS/services/snmpMA'});
 	$eventtype_obj = $dbh->resultset('Eventtype')->update_or_create( { eventtype =>  'http://ggf.org/ns/nmwg/characteristic/utilization/2.0',
 								           service =>  $service_obj->service,
 								           service_type =>  'snmp',
@@ -351,7 +355,7 @@ sub get_snmp {
 								         { key => 'eventtype_service_type' }
 							      );				    
 	$service = $dbh->resultset('Service')->search({ 'eventtypes.service_type' => 'snmp', 
-	                                                url => {like => '%es.net%'}}, 
+	                                                'me.service' => {like => '%es.net%'}}, 
                                                        {join => 'eventtypes', '+select' => ['eventtypes.ref_id'] } )->single();
     }
     my $eventtype_id =  $service->eventtypes->first->ref_id;
@@ -359,7 +363,7 @@ sub get_snmp {
     my %threads;
     my $thread_counter = 0;
     # get SNMP MA handler
-    my $snmp_ma =  Ecenter::Data::Snmp->new({ url => $service->url});
+    my $snmp_ma =  Ecenter::Data::Snmp->new({ url => $service->service});
     
     #$logger->info("=====---- SERVICE eventtype ---------", sub{Dumper($service->eventtypes)});
     unless($ports->count) {
@@ -379,8 +383,8 @@ sub get_snmp {
 	
     	    my $pid = $pm->start and next;
 	    # get last timestamp
-	    my $last_time = $dbh->resultset("SnmpData_$now_table")->find( {  'metaid.eventtype_id' => $eventtype_id ,
-    	    						     'metaid.src_ip'	  => $l3->ip_addr,
+	    my $last_time = $dbh->resultset("SnmpData$now_table")->find( {  'metaid.eventtype_id' => $eventtype_id ,
+    	    						     'metaid.src_ip'	  => $l3->ip_addr->ip_addr,
     	    						     'metaid.dst_ip'	  => '0'
 	    						  },
 	    						  { 'join' => 'metaid', limit => 1,  order_by => { -desc => 'timestamp'} }
@@ -395,14 +399,14 @@ sub get_snmp {
     	    $logger->debug("Data :: ", sub{Dumper( $snmp_ma->data)});
     	    my $meta = $dbh->resultset('Metadata')->update_or_create({ 
     	    					     eventtype_id => $eventtype_id ,
-    	    					     src_ip	  => $l3->ip_addr,
+    	    					     src_ip	  => $l3->ip_addr->ip_addr,
     	    					     dst_ip => '0',
     	    					  },
 	    					  {key => 'md_ips_type'}
     	    					  );
     	    $pm->finish unless $snmp_ma->data && @{$snmp_ma->data};
     	    foreach my $data (@{ $snmp_ma->data}) { 
-    	    	$dbh->resultset("SnmpData_$now_table")->update_or_create({ metaid =>  $meta->metaid,
+    	    	$dbh->resultset("SnmpData$now_table")->update_or_create({ metaid =>  $meta->metaid,
     	    								   timestamp => $data->[0],
     	    								   utilization => $data->[1],
     	    								 },

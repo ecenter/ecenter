@@ -1,4 +1,12 @@
-// A very light wrapper around jqplot that scrapes tables for data to plot
+/**
+ * @file jquery.tablechart.js
+ *
+ * A light jqPlot wrapper that scrapes HTML tables to create charts
+ * 
+ * Requires the jQuery UUID plugin (http://plugins.jquery.com/project/uuid)
+ * Optionally uses the jQuery metadata plugin  (http://plugins.jquery.com/project/metadata)
+ *
+ */
 
 (function($) {
 $.fn.tablechart = function(options) {
@@ -20,10 +28,9 @@ $.fn.tablechart = function(options) {
 // Defaults
 $.fn.tablechart.defaults = {
   hideTables: false,
-  hideChart: false,
-  append: false,
   height: false,
   width: false,
+  chartContainer: $('<div class="tablechart">'),
   appendElement: null,
   plotOptions: {
     series: []
@@ -35,7 +42,7 @@ function TableChart(el, options) {
   this.el = el;
 
   this.chartId = $.uuid('chart-');
-  this.chartContainer = $('<div class="tablechart">').attr('id', this.chartId);
+  this.chartContainer = options.chartContainer.attr('id', this.chartId);
 
   if (options.height) { this.chartContainer.height(options.height); }
   if (options.width) { this.chartContainer.width(options.width); }
@@ -44,10 +51,6 @@ function TableChart(el, options) {
   $(el).prepend(this.chartContainer);
 
   this.draw();
-
-  if (this.options.hideChart) {
-    $('.tablechart').hide();
-  }
 
 }
 

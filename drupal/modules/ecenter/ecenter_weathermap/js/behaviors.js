@@ -90,19 +90,13 @@ $(document).ready(function() {
   });
 
   // Bind to ahah_start event
-  $('#ecenter-weathermap-select-form').bind('ahah_start', function() {
+  $('#ecenter-weathermap-select-form').bind('ajaxSend', function(ajax, xhr) {
     self = this;
 
     // Add overlay...
     $(this).addClass('data-loading').css('position', 'relative');
 
-    /*$('input', this).each(function() {
-      var disabled = $(this).attr('disabled');
-      $(this).data('ecenter_disabled', disabled);
-      $(this).attr('disabled', true);
-    });*/
-
-    overlay = $('<div class="loading-overlay"><p class="loading">' + Drupal.t('Loading') + '</p><button class="cancel">' + Drupal.t('Cancel') + '</button></div>');
+    var overlay = $('<div class="loading-overlay"><p class="loading">' + Drupal.t('Loading') + '</p><button class="cancel">' + Drupal.t('Cancel') + '</button></div>');
     //map = $('#weathermap-wrapper').css('position', 'relative');
     overlay.css({
       'position' : 'absolute',
@@ -116,21 +110,25 @@ $(document).ready(function() {
     $(this).prepend(overlay);
     overlay.fadeIn('slow');
 
-    // @TODO eee this doesn't work!
     $('button.cancel', overlay).click(function(e) {
-      e.stopPropagation();
+      xhr.abort();
+
       var input = $('#edit-weathermap-wrapper-query-dst-wrapper-dst-wrapper input');
       input.val('');
       input.data('autocomplete')._trigger('change');
       $(self).removeClass('data-loading');
-      $('.loading-overlay', this).fadeOut('fast', function() {
-        $(self).remove();
+
+      $('.loading-overlay', self).fadeOut('fast', function() {
+        $(this).remove();
       });
+
+      e.stopPropagation();
+      return false;
     });
   });
 
   // Behind to ahah_end event
-  $('#ecenter-weathermap-select-form').bind('ahah_end', function() {
+  $('#ecenter-weathermap-select-form').bind('ajaxSuccess', function() {
     // Add overlay...
     $(this).removeClass('data-loading');
     $('.loading-overlay', this).fadeOut('fast', function() {

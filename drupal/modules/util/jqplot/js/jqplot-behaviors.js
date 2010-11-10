@@ -1,25 +1,29 @@
 Drupal.behaviors.jqPlot = function(context) {
-  for (var selector in Drupal.settings.jqPlot) {
-    var settings = Drupal.settings.jqPlot[selector];
+  var replace = ['renderer', 'markerRenderer', 'labelRenderer', 'parseX',
+    'parseY', 'scrapeSingle', 'scrapeMultiple', 'processSeries'];
 
-    // @TODO Use something other than eval
-    if (settings.plotOptions != undefined) {
-      if (settings.plotOptions.axes != undefined) {
-        if (settings.plotOptions.axes.xaxis != undefined && settings.plotOptions.axes.xaxis.renderer) {
-          settings.plotOptions.axes.xaxis.renderer = eval(settings.plotOptions.axes.xaxis.renderer);
-        }
-        if (settings.plotOptions.axes.yaxis != undefined && settings.plotOptions.axes.yaxis.renderer) {
-          settings.plotOptions.axes.yaxis.renderer = eval(settings.plotOptions.axes.yaxis.renderer);
-        }
-        if (settings.plotOptions.axes.xaxis != undefined && settings.plotOptions.axes.xaxis.labelRenderer) {
-          settings.plotOptions.axes.xaxis.labelRenderer = eval(settings.plotOptions.axes.xaxis.labelRenderer);
-        }
-        if (settings.plotOptions.axes.yaxis != undefined && settings.plotOptions.axes.yaxis.labelRenderer) {
-          settings.plotOptions.axes.yaxis.labelRenderer = eval(settings.plotOptions.axes.yaxis.labelRenderer);
-        }
-      }
-    }
-
+  $.each(Drupal.settings.jqPlot, function(selector, settings) {
+    settings = Drupal.jqPlot.replaceFunctions(settings, replace);
     $(selector).tablechart(settings);
-  }
+  });
+}
+
+Drupal.jqPlot = {};
+
+Drupal.jqPlot.replaceFunctions = function(obj, replace) {
+  $.each(obj, function(key, val) {
+    if (typeof val == 'object') {
+      obj[key] = Drupal.jqPlot.replaceFunctions(val, replace);
+    }
+    else if (typeof val == 'string' && $.inArray(key, replace) > -1) {
+      namespaces = val.split(".");
+      func = namespaces.pop();
+      context = window;
+      for (var i = 0; i < namespaces.length; i++) {
+        context = context[namespaces[i]];
+      }
+      obj[key] = context[func];
+    }
+  });
+  return obj;
 }

@@ -206,7 +206,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
       }
     }
   }
-  jqplot_register_tablechart('#results', $plot_options);
+  jqplot_register_tablechart('#utilization-tables', $plot_options);
 
   /*$forward = '<h3>'. t('Forward') .'</h3>'
     .'<div id="forward-tables" class="utilization-table">'
@@ -218,7 +218,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
   jqplot_register_tablechart('#forward-tables', $plot_options);
   jqplot_register_tablechart('#reverse-tables', $plot_options);*/
 
-  return '<div class="utilization-table">'. implode("\n", $tables) .'</div>';
+  return '<div id="utilization-tables">'. implode("\n", $tables) .'</div>';
   //return $forward . $reverse;
 }
 

@@ -48,11 +48,11 @@ Drupal.behaviors.ecenter_weathermap_behavior_curves = function(context) {
   }
 }
 
-Curve = function(from, to, index, steps, flip) {
+/*Curve = function(from, to, index, steps, flip) {
   this.index = index || 0;
   this.flip = flip || false;
   this.steps = steps || 20;
-  this.c1 = {x: 0, y: 0}; 
+  this.c1 = {x: 0, y: 0};
   this.c2 = {x: 0, y: 0};
   this.points = [];
   this.from = {x: from.geometry.x, y: from.geometry.y};
@@ -75,7 +75,7 @@ Curve.prototype.getControlPoints = function() {
 
   var mag = Math.sqrt((dirX * dirX) + (dirY * dirY));
   var length = mag * this.scale;
- 
+
   dirX = dirX / mag;
   dirY = dirY / mag;
 
@@ -117,14 +117,17 @@ Curve.prototype.getBezier = function() {
     var B3 = Math.pow((1 - t), 3);
 
     var x = (this.from.x * B0) + (this.c1.x * B1) + (this.c2.x * B2) + (this.to.x * B3);
+    var y = (this.from.y * B0) + (this.c1.y * B1) + (this.c2.y * B2) + (this.to.y * B3);
 
-    this.points.push({
-      x: (this.from.x * B0) + (this.c1.x * B1) + (this.c2.x * B2) + (this.to.x * B3),
-      y: (this.from.y * B0) + (this.c1.y * B1) + (this.c2.y * B2) + (this.to.y * B3)
-    });
+    if (x == NaN || y == NaN) {
+      console.log('NAN');
+      console.log({x: x, y: y});
+    }
+
+    this.points.push({x: x, y: y});
   }
   this.points.push(this.from); // I don't really understand why I need this
-}
+}*/
 
 
 

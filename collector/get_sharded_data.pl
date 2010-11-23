@@ -312,7 +312,7 @@ sub set_end_sites {
    foreach my $hub_name (qw/FNAL   LBL   ORNL   SLAC    BNL  ANL/) {
       my $hub = Ecenter::Data::Hub->new({hub_name => $hub_name});
       my %subnets =  %{$hub->get_ips()};
-      my $l2_port =   $dbh->resultset('L2Port')->search({'hub.hub_name' => $hub_name}, {join => 'hub'})->single;
+      my $l2_port =   $dbh->resultset('L2Port')->find({'hub.hub_name' => $hub_name}, {join => 'hub', limit => 1});
       unless($l2_port && $l2_port->l2_urn) {
           $logger->error("NO ports available - check topology info or hub_name:$hub_name");
           next;
@@ -362,17 +362,17 @@ sub get_e2e {
 	 my $last_time = $dbh->resultset("${table_name}Data$now_table")->find( { metaid => $md->metaid },
 	    						  {  limit => 1,  order_by => { -desc => 'timestamp'} }
 	    						);
-	    
+	 ###$logger->debug("MD::", sub{Dumper($md->eventtype->service)});  
          my $secs_past = $last_time && ($last_time->timestamp >  $PAST_START)?$last_time->timestamp:$PAST_START;
     	 my $e2e_data = [];
 	 eval {
-	    $e2e_data =   Ecenter::Data::Client->new({ type    => $e2e,  
-	                                              url     => $md->service->service,
-	                                              start   =>   $secs_past,
-    	    			                      end     => time(),
-						      resolution => 0,
-						      args => {
-						               src_ip =>  $md->src_ip, dst_ip =>  $md->dst_ip
+	    $e2e_data =   Ecenter::Client->new({ type    => $e2e,  
+	                                               url     => $md->eventtype->service->service,
+	                                               start   =>   $secs_past,
+    	    			                       end     => time(),
+						       resolution => 1000000,
+						       args => {
+						            subject => $md->subject
 						      }
 	    		      })->get_data;
 	 };
@@ -452,7 +452,8 @@ sub get_snmp {
 	
     	    my $pid = $pm->start and next;
 	    # get last timestamp
-	    my $last_time = $dbh->resultset("SnmpData$now_table")->find( {  'metaid.eventtype_id' => $eventtype_id ,
+	    my $last_time = $dbh->resultset("SnmpData$now_table")->find( {  
+	                                                     'metaid.eventtype_id' => $eventtype_id,
     	    						     'metaid.src_ip'	  => $l3->ip_addr->ip_addr,
     	    						     'metaid.dst_ip'	  => '0'
 	    						  },

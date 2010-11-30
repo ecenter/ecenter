@@ -6,9 +6,6 @@
  * E-Center network query interface.
  */
 
-// Load vector class
-require_once(dirname(__FILE__) . '/Vector2d.class.php');
-
 // Load traceroute diff (to keep licensing issues clear)
 require_once(dirname(__FILE__) . '/ecenter_weathermap_traceroute_diff.inc');
 
@@ -1142,24 +1139,6 @@ function ecenter_weathermap_layers_traceroute() {
       foreach ($traceroute as $hop_data) {
         $hop = $hop_data['hop'];
         if ($hop['longitude'] && $hop['latitude']) {
-          /*if ($old_hop && $i < $count) {
-            $curve = _ecenter_weathermap_curve($old_hop, $hop, $index, $flip);
-            $segments = array();
-            foreach ($curve as $segment) {
-              $segments[] = "{$segment->x} {$segment->y}";
-            }
-
-            $line = implode(',', $segments);
-
-            $features[] = array(
-              'wkt' => "LINESTRING($line)",
-              'projection' => "4326",
-              'style' => array(
-                'strokeWidth' => 4,
-                'strokeColor' => '#555555',
-              ),
-            );
-          }*/
           $features[] = array(
             'wkt' => "POINT({$hop['longitude']} {$hop['latitude']})",
             'projection' => "4326",
@@ -1186,130 +1165,6 @@ function ecenter_weathermap_layers_traceroute() {
     }
   }
   return $layer;
-}
-
-/**
- * Create a curve the E-center weathermap
- *
- * @param $from
- *   Array consisting with keys for latitude and longitude
- * @param $to
- *   Array consisting with keys for latitude and longitude
- * @param $index
- *   An integer scaling factor for the control points used
- * @param $flip
- *   Boolean: If true, flip curve upside down
- * @return
- *   An array of points on the curve
- */
-function _ecenter_weathermap_curve($from, $to, $index = 0, $flip = FALSE) {
-  $p0 = new Vector2d($from['longitude'], $from['latitude']);
-  $p3 = new Vector2d($to['longitude'], $to['latitude']);
-
-  // Base control point angle and magnitude on index
-  $angle = pi() * (1 + (0.25 * $index)) / 8;
-  $magnitude = (1.5 + 0.5 * $index) / 8;
-
-  list($c1, $c2) = _ecenter_weathermap_get_control_points($p0, $p3, $magnitude, $angle, $flip);
-
-  $steps = variable_get('ecenter_weathermap_curve_divisions', 20);
-  return _ecenter_weathermap_get_bezier($p0, $c1, $c2, $p3, $steps);
-}
-
-/**
- * Create a bezier curve
- *
- * Calculate a bezier curve using the standard bezier algorithm.
- *
- * @param $p0
- *   Endpoint 1
- * @param $c1
- *   Control point 1
- * @param $c2
- *   Control point 2
- * @param $p3
- *   Endpoint 2
- * @param $steps
- *   Number of steps (i.e. segments) to take
- * @return
- *  An array of points on the curve
- */
-function _ecenter_weathermap_get_bezier($p0, $c1, $c2, $p3, $steps) {
-  $div = 1 / $steps;
-
-  for ($t = 0; $t <= 1; $t += $div) {
-    // Coefficients
-    $B0 = pow($t, 3);
-    $B1 = 3 * pow($t, 2) * (1 - $t);
-    $B2 = 3 * $t * pow((1 - $t), 2);
-    $B3 = pow((1 - $t), 3);
-
-    // Coordinates
-    $x = ($p0->x * $B0) + ($c1->x * $B1) + ($c2->x * $B2) + ($p3->x * $B3);
-    $y = ($p0->y * $B0) + ($c1->y * $B1) + ($c2->y * $B2) + ($p3->y * $B3);
-
-    $point = new Vector2d($x, $y);
-    $points[] = $point;
-  }
-  $points[] = $p0; // I don't really understand why I need this
-  return $points;
-}
-
-/**
- * Get control points
- *
- * Calculate control points for drawing Bezier curve between points
- *
- * @param $from
- *   Source coordinates
- * @param $to
- *   Destination coordinates
- * @param $mag_scale
- *   A scaling factor for the control point vector
- * @param $angle
- *   The angle of control point vector relative to the line
- *   between source and destination.
- * @return
- *   Array of control points
- */
-function _ecenter_weathermap_get_control_points($to, $from, $mag_scale, $angle, $flip = FALSE) {
-  $dirX = $to->x - $from->x;
-  $dirY = $to->y - $from->y;
-
-  $mag = sqrt(($dirX * $dirX) + ($dirY * $dirY));
-  if (!$mag) {
-    return array($to, $from);
-  }
-
-  $length = $mag * $mag_scale;
-
-  $dirX = $dirX / $mag;
-  $dirY = $dirY / $mag;
-
-  $sin = sin($angle);
-  $cos = cos($angle);
-
-  $rotX = $cos * $dirX - $sin * $dirY;
-  $rotY = $sin * $dirX + $cos * $dirY;
-  $rotNegX = $cos * -$dirX - $sin * $dirY;
-  $rotNegY = $sin * $dirX - $cos * $dirY;
-
-  // Flip control points for "backwards" curves
-  if (!$flip && ($dirX < 0 || (!$dirX && $dirY < 0))) {
-    $x1 = -$rotNegX * $length + $from->x;
-    $y1 = -$rotNegY * $length + $from->y;
-    $x2 = -$rotX * $length + $to->x;
-    $y2 = -$rotY * $length + $to->y;
-  }
-  // Or generate "normal" control points
-  else {
-    $x1 = $rotX * $length + $from->x;
-    $y1 = $rotY * $length + $from->y;
-    $x2 = $rotNegX * $length + $to->x;
-    $y2 = $rotNegY * $length + $to->y;
-  }
-
-  return array(new Vector2d($x2, $y2), new Vector2d($x1, $y1));
 }
 
 /**

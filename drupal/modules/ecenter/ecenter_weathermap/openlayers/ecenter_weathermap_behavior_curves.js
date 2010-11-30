@@ -25,36 +25,33 @@ Drupal.behaviors.ecenter_weathermap_behavior_curves = function(context) {
       }
     }
 
-    var style_green = {
-      //strokeColor: "#00FF00",
-      strokeWidth: 0,
-      pointRadius: 2
-    };
-
     for (var i in layers) {
-      //console.log(layers[i]);
       var old_feature;
       var features = [];
       for (var j in layers[i].features) {
         if (old_feature) {
           var feature = layers[i].features[j];
-          var curve = new Curve(old_feature, feature, 1);
+          var curve = new Curve(old_feature, feature, 1.5, options.divisions, options.arrows);
+          var line = new OpenLayers.Geometry.LineString(curve.points)
+          features.push(new OpenLayers.Feature.Vector(line, null, options.style));
         }
         old_feature = layers[i].features[j];
       }
       layers[i].addFeatures(features);
       layers[i].redraw();
+      //console.log(layers[i]);
     }
   }
 }
 
-/*Curve = function(from, to, index, steps, flip) {
-  this.index = index || 0;
-  this.flip = flip || false;
-  this.steps = steps || 20;
-  this.c1 = {x: 0, y: 0};
-  this.c2 = {x: 0, y: 0};
+/**
+ * A convenience class to construct the points in a bezier curve
+ */
+Curve = function(from, to, index, steps, arrows) {
   this.points = [];
+  this.index = index;
+  this.steps = steps;
+  this.arrows = arrows;
   this.from = {x: from.geometry.x, y: from.geometry.y};
   this.to = {x: to.geometry.x, y: to.geometry.y};
   this.angle = Math.PI * (1 + (0.25 * index)) / 8;
@@ -62,52 +59,16 @@ Drupal.behaviors.ecenter_weathermap_behavior_curves = function(context) {
 
   this.getControlPoints();
   this.getBezier();
-
-  console.log(this);
-  //this.generateLineSegments();
 }
 
-Curve.prototype.getControlPoints = function() {
-  var x1, y1, x2, y2;
-
-  var dirX = this.to.x - this.from.x;
-  var dirY = this.to.y - this.from.y;
-
-  var mag = Math.sqrt((dirX * dirX) + (dirY * dirY));
-  var length = mag * this.scale;
-
-  dirX = dirX / mag;
-  dirY = dirY / mag;
-
-  sin = Math.sin(this.angle);
-  cos = Math.cos(this.angle);
-
-  var rotX = cos * dirX - sin * dirY;
-  var rotY = sin * dirX + cos * dirY;
-  var rotNegX = cos * -dirX - sin * dirY;
-  var rotNegY = sin * dirX - cos * dirY;
-
-  // Flip control points for "backwards" curves
-  if (!this.flip && (dirX < 0 || (!dirX && dirY < 0))) {
-    x1 = -rotX * length + this.to.x;
-    y1 = -rotY * length + this.to.y;
-    x2 = -rotNegX * length + this.from.x;
-    y1 = -rotNegY * length + this.from.y;
-  }
-  else {
-    x1 = rotNegX * length + this.to.x;
-    y1 = rotNegY * length + this.to.y;
-    x2 = rotX * length + this.from.x;
-    y2 = rotY * length + this.from.y;
-  }
-
-  this.c1 = { x: x1, y: y1 };
-  this.c2 = { x: x2, y: y2 };
-}
-
+/**
+ * Generate points for bezier curve
+ */
 Curve.prototype.getBezier = function() {
   var div = 1 / this.steps;
+  var points = [];
 
+  var i = 0;
   for (var t = 0; t <= 1; t += div) {
 
     // Coefficients
@@ -116,18 +77,65 @@ Curve.prototype.getBezier = function() {
     var B2 = 3 * t * Math.pow((1 - t), 2);
     var B3 = Math.pow((1 - t), 3);
 
-    var x = (this.from.x * B0) + (this.c1.x * B1) + (this.c2.x * B2) + (this.to.x * B3);
-    var y = (this.from.y * B0) + (this.c1.y * B1) + (this.c2.y * B2) + (this.to.y * B3);
+    var x = (this.to.x * B0) + (this.c1.x * B1) + (this.c2.x * B2) + (this.from.x * B3);
+    var y = (this.to.y * B0) + (this.c1.y * B1) + (this.c2.y * B2) + (this.from.y * B3);
 
-    if (x == NaN || y == NaN) {
-      console.log('NAN');
-      console.log({x: x, y: y});
-    }
-
-    this.points.push({x: x, y: y});
+    this.points.push(new OpenLayers.Geometry.Point(x, y));
   }
-  this.points.push(this.from); // I don't really understand why I need this
-}*/
+  this.points.push(new OpenLayers.Geometry.Point(this.to.x, this.to.y));
+}
 
+/**
+ * Generate control points
+ */
+Curve.prototype.getControlPoints = function() {
+  var dirX = this.to.x - this.from.x;
+  var dirY = this.to.y - this.from.y;
 
+  var mag = Math.sqrt(dirX*dirX + dirY*dirY);
 
+  // Line has no length
+  if (mag === 0) {
+    this.c1 = to;
+    this.c2 = from;
+    return;
+  }
+
+  // Determine how far away the control points should be from end points.
+  var length = mag * this.scale;
+
+  // Normalize vector
+  dirX /= mag;
+  dirY /= mag;
+
+  // 2d rotation by 30 degrees
+  var sin =  Math.sin(this.angle);
+  var cos = Math.cos(this.angle);
+
+  var rotX = cos * dirX - sin * dirY; //x' = cos(t)*x - sin(t)*y
+  var rotY = sin * dirX + cos * dirY; //y' = sin(t)*x + cos(t)*y
+  var rotNegX = cos * -dirX - sin * dirY; //x' = cos(-t)*-x - sin(-t)*-y
+  var rotNegY = sin * dirX - cos * dirY; //y' = sin(-t)*-x + cos(-t)*-y
+
+  // Get one leg of the arrow
+  var x1 = rotX*length + this.from.x;
+  var y1 = rotY*length + this.from.y;
+
+  // Get parallel leg of arrow
+  var x2 = rotNegX*length + this.to.x;
+  var y2 = rotNegY*length + this.to.y;
+
+  /* Weird code: this is used for flipping the bezier curve making the order
+   * of to and from irrelevant.*/
+  if (dirX < 0 || (dirX === 0 && dirY < 0)) {
+    x2 = -rotX*length + this.to.x;
+    y2 = -rotY*length + this.to.y;
+
+    // Get parallel leg of arrow
+    x1 = -rotNegX*length + this.from.x;
+    y1 = -rotNegY*length + this.from.y;
+  }
+
+  this.c1 = {x: x2, y: y2};
+  this.c2 = {x: x1, y: y1};
+}

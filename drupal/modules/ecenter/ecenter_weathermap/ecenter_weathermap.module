@@ -977,6 +977,19 @@ function ecenter_weathermap_openlayers_styles() {
   );
   $styles[$style->name] = $style;
 
+  // Curve
+  $style = new stdClass();
+  $style->api_version = 1;
+  $style->name = 'ecenter_curve';
+  $style->title = t('E-center curve style');
+  $style->description = t('Basic e-center curve style.');
+  $style->data = array(
+    'pointRadius' => 0,
+    'strokeColor' => '#777777',
+    'strokeWidth' => 4,
+  );
+  $styles[$style->name] = $style;
+
   return $styles;
 }
 
@@ -1022,8 +1035,9 @@ function ecenter_weathermap_openlayers_behaviors() {
  */
 function ecenter_weathermap_openlayers_layers() {
   $layers = array();
-  $layers['ecenter_weathermap_traceroute'] = ecenter_weathermap_layers_traceroute();
-  $layers['ecenter_weathermap_sites'] = ecenter_weathermap_layers_sites();
+  // @TODO RESTORE/sanely fail over
+  //$layers['ecenter_weathermap_traceroute'] = ecenter_weathermap_layers_traceroute();
+  //$layers['ecenter_weathermap_sites'] = ecenter_weathermap_layers_sites();
   return $layers;
 }
 

@@ -1186,6 +1186,20 @@ function ecenter_weathermap_openlayers_map_alter(&$map) {
       }
     }
   }
+
+  // @TODO test, please delete
+  if ($map['layers']['openlayers_test_openlayers_1']) {
+    foreach ($map['layers']['openlayers_test_openlayers_1']['features'] as $key => $feature) {
+      $feature['style'] = array(
+        'label' => $feature['attributes']['name'],
+        'labelYOffset' => -14,
+        'fontSize' => '13px',
+        'fontWeight' => 'bold',
+        'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',
+      );
+      $map['layers']['openlayers_test_openlayers_1']['features'][$key] = $feature;
+    }
+  }
 }
 
 /**

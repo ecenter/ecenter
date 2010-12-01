@@ -1022,6 +1022,15 @@ function ecenter_weathermap_openlayers_behaviors() {
         'parent' => 'openlayers_behavior',
       ),
     ),
+    'ecenter_weathermap_behavior_uncluster' => array(
+      'title' => t('E-Center Weathermap: Uncluster'),
+      'behavior' => array(
+        'path' => drupal_get_path('module', 'ecenter_weathermap') .'/openlayers',
+        'file' => 'ecenter_weathermap_behavior_uncluster.inc',
+        'class' => 'ecenter_weathermap_behavior_uncluster',
+        'parent' => 'openlayers_behavior',
+      ),
+    ),
 
   );
   return $behaviors;
@@ -1120,7 +1129,6 @@ function ecenter_weathermap_layers_traceroute() {
     'projection' => array('900913'),
     'options' => array(
       'rendererOptions' => array('zIndexing' => TRUE),
-      'foo' => array('bar' => 1),
     ),
   );
 

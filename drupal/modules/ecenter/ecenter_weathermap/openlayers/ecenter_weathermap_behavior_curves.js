@@ -31,18 +31,18 @@ Drupal.behaviors.ecenter_weathermap_behavior_curves = function(context) {
       for (var j in layers[i].features) {
         if (old_feature) {
           var feature = layers[i].features[j];
-          var curve = new Curve(old_feature, feature, 1.5, options.divisions, options.arrows);
-          line = new OpenLayers.Feature.Vector(
-            new OpenLayers.Geometry.LineString(curve.points), null, options.style
-          );
+          var curve = new Curve(old_feature, feature, 1.5, options.divisions,
+            options.arrows);
+          var line = new OpenLayers.Geometry.LineString(curve.points);
+
           if (!options.arrows) {
-            features.push(line);
+            features.push(new OpenLayers.Feature.Vector(line, null, options.style));
           }
           else {
             // @TODO create proper arrow...
-            console.log('---');
-            console.log(curve.points.length);
-            var midpoint = Math.floor(curve.points.length / 2);
+            //console.log('---');
+            //console.log(curve.points.length);
+            /*var midpoint = Math.floor(curve.points.length / 2);
             console.log(midpoint);
             console.log(curve.points[midpoint]);
             p1 = curve.points[midpoint].clone();
@@ -54,8 +54,8 @@ Drupal.behaviors.ecenter_weathermap_behavior_curves = function(context) {
             p3.x += 200000;
             p3.y -= 100000;
             var arrow = new OpenLayers.Feature.Vector(new OpenLayers.Geometry.LinearRing([p1, p2, p3]), null, options.style);
+            features.push(arrow);*/
             features.push(line);
-            features.push(arrow);
           }
         }
         old_feature = layers[i].features[j];

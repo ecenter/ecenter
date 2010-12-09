@@ -1,3 +1,9 @@
-This is a root dir for the Content Management System (CMS) and
-corresponded plugins/add-ons.
--------------------------------------------------------------
+This is the root directory of the custom Drupal modules, themes, and other 
+supporting files (patches, makefile, other assets) for E-center.
+
+A full build system and install profile are planned for year 2.
+
+Currently, to install the Drupal component of E-Center, copy these files to
+sites/default or sites/mysite
+
+-------------------------------------------------------------------------------

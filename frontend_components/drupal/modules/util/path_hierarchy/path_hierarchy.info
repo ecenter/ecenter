@@ -1,7 +1,0 @@
-;$Id$
-name = Path Hierarchy
-package = "Node Hierarchy"
-description = Provide a site relative link filter, so that links of the form 'node/XX' in user created content will always work.
-core = 6.x
-
-dependencies[] = nodehierarchy

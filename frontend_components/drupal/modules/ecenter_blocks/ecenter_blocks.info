@@ -1,5 +1,0 @@
-;$Id$
-name = E-Center Blocks
-package = E-Center Project
-description = Custom blocks for E-Center site
-core = 6.x

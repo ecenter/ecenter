@@ -1,7 +1,0 @@
-;$Id$
-name = Date Widgets
-package = Utilities
-description = Date selection widget(s). Currently provides a Google-analytics style popout.
-core = 6.x
-
-dependencies[] = jquery_ui

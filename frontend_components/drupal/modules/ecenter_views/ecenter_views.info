@@ -1,8 +1,0 @@
-;$Id$
-name = E-Center Views
-package = E-Center Project
-description = Views for E-center project
-core = 6.x
-
-dependencies[] = views
-dependencies[] = semanticviews

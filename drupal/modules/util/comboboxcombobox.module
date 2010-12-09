@@ -1,0 +1,72 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Integrates the QuickSelect query library with Drupal
+ *
+ * To install, download the QuickSelect jQuery library from
+ * http://github.com/dcparker/jquery_plugins/ and copy
+ * jquery.combobox.js, jquery.combobox.css, and fuzzy-string.js to your
+ * jQuery plugins directory (sites/example.com/plugins).
+ *
+ * To use, set the FAPI #type for a form element to 'combobox' anywhere you
+ * would normally use the 'select' type.
+ *
+ */
+
+/**
+ * Implementation of hook_theme().
+ */
+function combobox_theme() {
+  return array(
+    'combobox' => array('arguments' => array('element' => NULL)),
+  );
+}
+
+/**
+ * Implementation of hook_elements().
+ */
+function combobox_elements() {
+  return array(
+    'combobox' => array(
+      '#input' => TRUE,
+      '#size' => 0,
+      '#multiple' => FALSE,
+      '#attributes' => array('class' => 'form-combobox'),
+      '#process' => array('form_expand_ahah'),
+    ),
+  );
+}
+
+/**
+ * Theme combobox element
+ *
+ * This acts as a wrapper to theme_select.  If you override the select theme to
+ * render as, say, checkboxes, you will probably break combobox unless you
+ * provide alternative rendering here.
+ */
+function theme_combobox($element) {
+
+  jquery_ui_add(array('ui.widget', 'ui.mouse', 'ui.draggable', 'ui.button', 'ui.position', 'ui.autocomplete'));
+
+  // Combobox
+  drupal_add_js(drupal_get_path('module', 'combobox') .'/js/combobox.js');
+
+  // Drupal behaviors
+  drupal_add_js(drupal_get_path('module', 'combobox') .'/js/combobox-behaviors.js');
+
+  // jQuery UI css (@TODO be more selective?)
+  drupal_add_css(drupal_get_path('module', 'jquery_ui') .'/jquery.ui/themes/base/jquery.ui.all.css');
+
+  // A dummy settings array is required, otherwise Drupal's array_merge behavior
+  // while adding settings will mess up the data structure.
+  drupal_add_js(array('Combobox' => array($element['#id'] => array())), 'setting');
+
+  // "Borrowed" from the theme_select function
+  $select = '';
+  $size = $element['#size'] ? ' size="'. $element['#size'] .'"' : '';
+  _form_set_class($element, array('form-combobox'));
+  $multiple = $element['#multiple'];
+  return theme('form_element', $element, '<select name="'. $element['#name'] .''. ($multiple ? '[]' : '') .'"'. ($multiple ? ' multiple="multiple" ' : '') . drupal_attributes($element['#attributes']) .' id="'. $element['#id'] .'" '. $size .'>'. form_select_options($element) .'</select>');
+}

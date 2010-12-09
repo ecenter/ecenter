@@ -1,0 +1,311 @@
+<?php
+// $Id$
+
+/**
+ * @file ecenter_issues.module
+ *
+ * The Ecenter Issues module defines two content types with CCK field
+ * definitions:
+ *
+ *  - Network query: A representation of a network query sent to the E-Center
+ *    data retrieval service.
+ *  - Issue: An issue with one or more network queries associated via a node
+ *    reference field.
+ *
+ * Beyond defining the data types, this module is resposible for handling form
+ * manipulation and other logic required to make the user experience of adding
+ * and saving network data seamless.
+ *
+ * Much of what is possible with the data structure is hidden from normal users
+ * for now -- all queries and issues must be created through the issue node
+ * editing form.
+ */
+
+/**
+ * Implementation of hook_theme().
+ */
+function ecenter_issues_theme() {
+  $registry = array(
+    'ecenter_issues_data_link' => array(
+      'arguments' => array(
+        'path' => NULL,
+        'params' => NULL,
+        'title' => NULL,
+      )
+    ),
+  );
+  return $registry;
+}
+
+/**
+ * Implementation of hook_init().
+ */
+function ecenter_issues_init() {
+  if (arg(0) == 'node' && is_numeric(arg(1)) && !arg(2)) {
+    $node = node_load(arg(1));
+  }
+  if (arg(0) == 'issues' || $node->type == 'issue') {
+    drupal_add_css(drupal_get_path('module', 'ecenter_issues') .'/css/ecenter-issues.css');
+  }
+}
+
+/** 
+ * Implementation of hook_nodeapi().
+ */
+function ecenter_issues_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
+  if ($node->type == 'issue' && $op == 'load') {
+    $query = ecenter_issues_get_node_query($node);
+    $node->ecenter_weathermap_link = theme('ecenter_issues_data_link', 'weathermap', 
+      array('query' => $query, 'attributes' => array('class' => 'button')),
+      'View query results');
+  }
+}
+
+/**
+ * Implementation of hook_form_alter().
+ */
+function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
+
+  if ($form_id == 'issue_node_form') {
+
+    drupal_add_css(drupal_get_path('module', 'ecenter_issues') .'/css/ecenter-issues.css');
+
+    // Apply always
+    $form['body_field']['body']['#required'] = TRUE;
+    $form['body_field']['body']['#prefix'] = '<div class="clearfix">';
+    $form['body_field']['body']['#suffix'] = '</div>';
+
+    $form['field_issue_query']['#access'] = FALSE;
+
+
+    $form['title']['#prefix'] = '<div class="title-field-wrapper clearfix">';
+    $form['title']['#suffix'] = '</div>';
+
+
+    // If new, populate values and do additional checking
+    if (!$form['#node']->nid) {
+      // No query string provided
+      if (empty($_REQUEST['query'])) {
+        $form = array(
+          'error' => array(
+            '#value' => t('At this time, issues may only be created after
+              running a traceroute. Please visit the
+              <a href="@weathermap">weathermap</a> and try again.', array(
+                '@weathermap' => url('weathermap'))
+              )
+            ),
+        );
+        return;
+      }
+
+      $params = ecenter_issues_parse_params($_REQUEST['query']);
+      $data = ecenter_weathermap_get_data($params['src'], $params['dst'],
+        $params['start'], $params['end']);
+
+      // Query provided, but malformed or no data
+      if (empty($data)) {
+        $form = array(
+          'error' => array(
+            '#value' => t('The query provided did not return any data. Please
+              visit the <a href="@weathermap">weathermap</a> and try again.', array(
+                '@weathermap' => url('weathermap'),
+              )),
+          ),
+        );
+        return;
+      }
+
+      // Add submit handler that creates new node reference (or gets the 
+      // old one)
+      array_unshift($form['#submit'], 'ecenter_issues_issue_add_data');
+
+      // Create title from parameters
+      list($src_type, $src_value) = explode(':', $params['src'], 2);
+      list($dst_type, $dst_value) = explode(':', $params['dst'], 2);
+      $form['title']['#default_value'] = t('@src to @dst, @start - @end (@tz)',
+        array('@src' => $src_value, '@dst' => $dst_value,
+          '@start' => $params['start'], '@end' => $params['end'],
+          '@tz' => str_replace('_', ' ', date_default_timezone_name(TRUE)),
+        )
+      );
+
+      $data_link = theme('ecenter_issues_data_link', 'weathermap',
+        array('query' => $params, 'attributes' => array('class' => 'button')), 
+        t('View query details'));
+    }
+    // Editing
+    else {
+      $query = ecenter_issues_get_node_query($form['#node']);
+      $data_link = theme('ecenter_issues_data_link', 'weathermap', 
+        array('query' => $query, 'attributes' => array('class' => 'button')),
+        t('View query details'));
+    }
+
+    // Make 
+    $form['data_link'] = array(
+      '#prefix' => '<div class="data-link">',
+      '#suffix' => '</div>',
+      '#value' => $data_link,
+      '#weight' => -100,
+    );
+
+  }
+
+  if ($form_id == 'network_query_node_form') {
+    $form['field_query_data']['#access'] = FALSE;
+  }
+}
+
+/**
+ * Submit callback for issues
+ */
+function ecenter_issues_issue_add_data($form, &$form_state) {
+  global $user;
+  $params = ecenter_issues_parse_params($_REQUEST['query']);
+
+  list($src_type, $src_value) = explode(':', $params['src'], 2);
+  list($dst_type, $dst_value) = explode(':', $params['dst'], 2);
+  $src_field_name = 'field_query_src_'. $src_type;
+  $dst_field_name = 'field_query_dst_'. $dst_type;
+
+  $start = _ecenter_weathermap_date_to_utc($params['start'], 'Y-m-d H:i:s');
+  $end = _ecenter_weathermap_date_to_utc($params['end'], 'Y-m-d H:i:s');
+  $start_query = _ecenter_weathermap_date_to_utc($params['start'], 'Y-m-d\TH:i:s');
+  $end_query = _ecenter_weathermap_date_to_utc($params['end'], 'Y-m-d\TH:i:s');
+
+  // @TODO Parse dates and times into proper format...
+
+  // Get all field definitions
+  $start_field = content_fields('field_query_start');
+  $start_db_info = content_database_info($start_field);
+  $end_field = content_fields('field_query_end');
+  $end_db_info = content_database_info($end_field);
+  $src_field = content_fields('field_query_src_'. $src_type);
+  $src_db_info = content_database_info($src_field);
+  $dst_field = content_fields('field_query_dst_'. $dst_type);
+  $dst_db_info = content_database_info($dst_field);
+
+  $sql = "SELECT n.nid FROM {node} n
+    INNER JOIN {" . $start_db_info['table'] ."} start ON n.vid = start.vid
+    INNER JOIN {" . $end_db_info['table'] ."} end ON n.vid = end.vid
+    INNER JOIN {" . $src_db_info['table'] ."} src ON n.vid = src.vid
+    INNER JOIN {" . $dst_db_info['table'] ."} dst ON n.vid = dst.vid
+    WHERE
+    start.". $start_db_info['columns']['value']['column'] ." = '%s' AND
+    end.". $end_db_info['columns']['value']['column'] ." = '%s' AND
+    src.". $src_db_info['columns']['value']['column'] ." = '%s' AND
+    dst.". $dst_db_info['columns']['value']['column'] ." = '%s'";
+
+  $nid = db_result(db_query($sql,
+    $start_query, $end_query, $src_value, $dst_value));
+
+  // If query doesn't exist, create new query node
+  if (!$nid) {
+    $queryNode = new stdClass();
+    $queryNode->type = 'network_query';
+    $queryNode->title = t('@src to @dst, @start - @end',
+      array('@src' => $src_value, '@dst' => $dst_value,
+        '@start' => $start, '@end' => $end,
+      )
+    );
+    $queryNode->uid = $user->uid;
+    $queryNode->created = strtotime("now");
+    $queryNode->changed = strtotime("now");
+    $queryNode->status = 1;
+    $queryNode->comment = 0;
+    $queryNode->promote = 0;
+    $queryNode->moderate = 0;
+    $queryNode->sticky = 0;
+
+    $queryNode->$src_field_name = array(array('value' => $src_value));
+    $queryNode->$dst_field_name = array(array('value' => $dst_value));
+
+    // @TODO this should go in the network_query save routine somehow...
+    $data = ecenter_weathermap_get_data($params['src'], $params['dst'], $params['start'], $params['end']);
+    $queryNode->field_query_data = array(array('value' => serialize($data)));
+
+    // Dates need to be converted to UTC
+    $queryNode->field_query_start = array(array(
+      'value' => $start,
+    ));
+    $queryNode->field_query_end = array(array(
+      'value' => $end,
+    ));
+
+    node_save($queryNode);
+  }
+  else {
+    $queryNode = node_load($nid);
+  }
+
+  // Add nid of query node to nodereference field
+  $form_state['values']['field_issue_query'][0] = array('nid' => $queryNode->nid);
+}
+
+/**
+ * Helper function to parse parameters for use in creating issues
+ *
+ * @param $param_string
+ *   A querystring formatted string of parameters
+ * @return
+ *   An array representation of querystring parameters
+ */
+function ecenter_issues_parse_params($param_string) {
+  // Parse querystring
+  $raw_params = explode('&', urldecode($param_string));
+  $params = array();
+  foreach ($raw_params as $param) {
+    list($key, $value) = explode('=', $param);
+    $params[$key] = $value;
+  }
+  return $params;
+}
+
+/**
+ * Given an issue node, get link params
+ *
+ * @param $node
+ *   Issue node object
+ * @return 
+ *   An array representation of querystring needed to reconstruct permalink
+ */
+function ecenter_issues_get_node_query($node) {
+  $query = node_load($node->field_issue_query[0]['nid']);
+
+  $tz = timezone_open(date_default_timezone_name(TRUE));
+  $start = date_create($query->field_query_start[0]['value'], 
+    timezone_open($query->field_query_start[0]['timezone']));
+  $end = date_create($query->field_query_end[0]['value'],
+    timezone_open($query->field_query_end[0]['timezone']));
+  date_timezone_set($start, $tz);
+  date_timezone_set($end, $tz);
+
+  $query = array(
+    'src' => (!empty($query->field_query_src_hub[0]['value'])) ? 
+      'hub:'. $query->field_query_src_hub[0]['value'] :
+      'ip:'. $query->field_query_src_ip[0]['value'],
+    'dst' => (!empty($query->field_query_dst_hub[0]['value'])) ? 
+      'hub:'. $query->field_query_dst_hub[0]['value'] :
+      'ip:'. $query->field_query_dst_ip[0]['value'],
+    'start' => date_format($start, 'Y-m-d H:i'),
+    'end' => date_format($end, 'Y-m-d H:i'),
+  );
+  return $query;
+}
+
+function theme_ecenter_issues_data_link($path, $params, $title = NULL) {
+  list($src_type, $src_value) = explode(':', $params['query']['src'], 2);
+  list($dst_type, $dst_value) = explode(':', $params['query']['dst'], 2);
+
+  // Default title
+  $title = (!$title) ? t('@src to @dst, @start - @end (@tz)',
+    array(
+      '@src' => $src_value, 
+      '@dst' => $dst_value,
+      '@start' => $params['query']['start'], '@end' => $params['query']['end'],
+      '@tz' => str_replace('_', ' ', date_default_timezone_name(TRUE)),  // @TODO this is KNOWN BUGGY, always shows current user's TZ
+    )
+  ) : $title;
+
+  return l($title, $path, $params);
+}

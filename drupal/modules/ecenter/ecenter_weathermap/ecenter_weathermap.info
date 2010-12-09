@@ -1,7 +1,7 @@
 ;$Id$
 name = E-Center Weather Map
 package = E-Center Project
-description = Provides primary user interface for E-center network diagnostic tools and integration with the Ecenter web service.
+description = Provides user interface for E-center network diagnostic tools and integration with the Ecenter web service.
 core = 6.x
 
 dependencies[] = date

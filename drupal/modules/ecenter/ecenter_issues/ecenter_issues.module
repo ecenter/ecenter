@@ -56,7 +56,8 @@ function ecenter_issues_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
   if ($node->type == 'issue' && $op == 'load') {
     $query = ecenter_issues_get_node_query($node);
     $node->ecenter_weathermap_link = theme('ecenter_issues_data_link', 'weathermap', 
-      array('query' => $query, 'attributes' => array('class' => 'button')));
+      array('query' => $query, 'attributes' => array('class' => 'button')),
+      'View query results');
   }
 }
 
@@ -157,7 +158,6 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
 
 /**
  * Submit callback for issues
- *
  */
 function ecenter_issues_issue_add_data($form, &$form_state) {
   global $user;

@@ -1,0 +1,5 @@
+.clearfix {
+  zoom: 1;     /* triggers hasLayout */
+  display: block;  /* resets display for IE/Win */
+}
+

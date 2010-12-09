@@ -1,0 +1,155 @@
+/* Smoothness Theme for jQuery UI Datepicker */
+#ui-datepicker-div table,
+#ui-datepicker-div td,
+#ui-datepicker-div th {
+  margin: 0;
+  padding: 0;
+}
+#ui-datepicker-div,
+#ui-datepicker-div table,
+.ui-datepicker-div,
+.ui-datepicker-div table,
+.ui-datepicker-inline,
+.ui-datepicker-inline table {
+  font-size: 12px !important;
+}
+.ui-datepicker-div, .ui-datepicker-inline, #ui-datepicker-div {
+  /*resets*/margin: 0; padding: 0; border: 0; outline: 0; line-height: 1.3; text-decoration: none; font-size: 100%; list-style: none;
+  background: #ffffff;
+  border: 2px solid #d3d3d3;
+  font-family: Verdana, Arial, sans-serif;
+  font-size: 1.1em;
+  margin: 0;
+  padding: 2.5em .5em .5em .5em;
+  position: relative;
+  width: 15.5em;
+}
+#ui-datepicker-div {
+  background: #ffffff;
+  display: none;
+  z-index: 9999; /*must have*/
+}
+.ui-datepicker-inline {
+  display: block;
+  float: left; /* LTR */
+}
+.ui-datepicker-control {
+  display: none;
+}
+.ui-datepicker-current {
+  display: none;
+}
+.ui-datepicker-next, .ui-datepicker-prev {
+  background: #e6e6e6 url(../img/datepicker/dadada_40x100_textures_02_glass_75.png) 0 50% repeat-x; /* LTR */
+  right: .5em; /* LTR */
+  position: absolute;
+  top: .25em;
+}
+.ui-datepicker-prev {
+  right: 2.25em;
+}
+a.ui-datepicker-next span, a.ui-datepicker-prev span {
+  background: url(../img/datepicker/888888_7x7_arrow_left.gif) 50% 50% no-repeat; /* LTR */
+  border: 1px solid #d3d3d3;
+  cursor: pointer;
+  display: block;
+  font-size: 1em;
+  height: 1.2em;
+  text-indent: -999999px;
+  width: 1.3em;
+}
+a.ui-datepicker-next span {
+  background: url(../img/datepicker/888888_7x7_arrow_right.gif) 50% 50% no-repeat; /* LTR */
+}
+a.ui-datepicker-prev:hover span {
+  background: url(../img/datepicker/454545_7x7_arrow_left.gif) 50% 50% no-repeat; /* LTR */
+}
+a.ui-datepicker-next:hover span {
+  background: url(../img/datepicker/454545_7x7_arrow_right.gif) 50% 50% no-repeat; /* LTR */
+}
+a.ui-datepicker-prev:active span {
+  background: url(../img/datepicker/222222_7x7_arrow_left.gif) 50% 50% no-repeat; /* LTR */
+}
+a.ui-datepicker-next:active span {
+  background: url(../img/datepicker/222222_7x7_arrow_right.gif) 50% 50% no-repeat; /* LTR */
+}
+.ui-datepicker-header select {
+  background: #fff;
+  border: 1px solid #d3d3d3;
+  color: #555555;
+  font-size: 11px;
+  line-height: 1.4em;
+  margin: 0 .5em 0 0;
+  padding: 0 !important;
+}
+.ui-datepicker-header select.ui-datepicker-new-month {
+  /*left: 2.2em; */ /* LTR */
+  width: 7em;
+}
+.ui-datepicker-header select.ui-datepicker-new-year {
+  /* left: 9.4em; */ /* LTR */
+  width: 5em;
+}
+table.ui-datepicker {
+  text-align: right; /* LTR */
+  width: 15.5em;
+}
+table.ui-datepicker td a {
+  color: #555555;
+  display: block;
+  padding: .1em .3em .1em 0; /* LTR */
+  text-decoration: none;
+}
+table.ui-datepicker tbody {
+  border-top: none;
+}
+table.ui-datepicker tbody td a {
+  background: #e6e6e6 url(../img/datepicker/e6e6e6_40x100_textures_02_glass_75.png) 0 50% repeat-x; /* LTR */
+  border: 1px solid #ffffff;
+  cursor: pointer;
+}
+table.ui-datepicker tbody td a:hover {
+  background: #dadada url(../img/datepicker/dadada_40x100_textures_02_glass_75.png) 0 50% repeat-x; /* LTR */
+  border: 1px solid #999999;
+  color: #212121;
+}
+table.ui-datepicker tbody td a:active {
+  background: #ffffff url(../img/datepicker/ffffff_40x100_textures_02_glass_65.png) 0 50% repeat-x; /* LTR */
+  border: 1px solid #dddddd;
+  color: #222222;
+}
+table.ui-datepicker .ui-datepicker-title-row td {
+  /*border-bottom: 1px solid #d3d3d3;*/
+  color: #222222;
+  font-size: .9em;
+  padding: .3em 0;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+table.ui-datepicker .ui-datepicker-title-row td a {
+  color: #222222;
+}
+.ui-datepicker-div, .ui-datepicker-inline, #ui-datepicker-div {
+  padding-top: .25em;
+  margin-bottom: .25em;
+}
+#ui-datepicker-div table {
+  width: 100%;
+}
+#ui-datepicker-div table td,
+#ui-datepicker-div table th {
+  text-align: center;
+  width: 14.2%;
+  border: 1px solid #fff;
+}
+#ui-datepicker-div table td {
+  background-color: #ddd;
+  font-weight: bold;
+}
+#ui-datepicker-div table td.ui-datepicker-unselectable {
+  background-color: transparent;
+}
+.ui-datepicker-title {
+  margin-bottom: .25em;
+}

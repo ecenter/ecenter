@@ -1,6 +1,6 @@
 ; Meta
-name = Ecenter
-description = The Ecenter theme
+name = E-center
+description = The E-center theme
 version = 0.1
 core = 6.x
 engine = phptemplate

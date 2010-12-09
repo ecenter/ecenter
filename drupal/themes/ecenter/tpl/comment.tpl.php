@@ -29,15 +29,14 @@
 <div class="comment<?php print ($comment->new) ? ' comment-new' : ''; print ' '. $status ?> clear-block">
   <?php print $picture ?>
 
-  <?php if ($comment->new): ?>
-    <span class="new"><?php print $new ?></span>
-  <?php endif; ?>
-
   <?php if ($title): ?>
   <h3 class="comment-title"><?php print $title ?></h3>
   <?php endif; ?>
 
   <div class="submitted">
+    <?php if ($comment->new): ?>
+      <span class="new"><?php print $new ?></span>
+    <?php endif; ?>
     <?php print $submitted ?>
   </div>
 

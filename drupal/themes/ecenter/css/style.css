@@ -122,26 +122,26 @@ h5, h6 {
 
 /* --- Content markup --- */
 /* Tables {{{ */
-#content-body table {
+table {
   border-collapse: collapse;
 }
-#content-body table tr.odd {
+table tr.odd {
   background-color: #fafafa;
 }
-#content-body table tr.even {
-  background-color: #eee;
+table tr.even {
+  background-color: #ddd;
 }
-#content-body table thead th {
+table thead th {
   text-align: center;
   background-color: #555;
   color: #fff;
   font-weight: normal;
   font-size: 0.875em;
 }
-#content-body table thead th a {
+table thead th a {
   color: #fff;
 }
-#content-body table td, #content-body table th {
+table td, table th {
   border: 1px solid #999;
   padding: .2em .5em;
 }
@@ -152,6 +152,12 @@ h5, h6 {
 }
 #content-body li {
   margin: .5em 0 .5em 1.5em;
+}
+#content-body ul.inline, #content-body ul.inline li {
+  display: inline;
+}
+#content-body ul.inline li {
+  margin: 0 0 0 .75em;
 }
 /* }}} */
 /* Paragraph and text {{{ */
@@ -171,7 +177,9 @@ h5, h6 {
 }
 /* }}} */
 /* Link button style {{{ */
-a.button {
+.button, a.button {
+  text-align: center;
+  cursor: pointer;
   -moz-border-radius: 6px;
   -webkit-border-radius: 6px;
   background-color: #ddd;
@@ -523,6 +531,11 @@ h1#site-name a:hover {
   margin-left: 48px;
 }
 /* }}} */
+/* Node terms {{{ */
+.terms {
+  margin-bottom: 1.5em;
+}
+/* }}} */
 /* Comments {{{ */
 .comment-wrapper-title {
   border-bottom: 1px solid #999;
@@ -635,6 +648,11 @@ h1#site-name a:hover {
 #node-form .body-wrapper .image-attachments-edit {
   float: left;
   width: 260px;
+}
+/* }}} */
+/* Date picker {{{ */
+.ui-datepicker {
+  font-size: .8em;
 }
 /* }}} */
 /* WYSIWYG {{{ */

@@ -34,6 +34,9 @@
 em {
   font-style: italic;
 }
+ul, ol {
+  margin-bottom: 0;
+}
 /* }}} */
 /* Document level elements {{{ */
 html {

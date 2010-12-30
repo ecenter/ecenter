@@ -25,6 +25,9 @@ stylesheets[print][] = "reset.css"
 stylesheets[print][] = "base.css"
 stylesheets[print][] = "print.css"
 
+stylesheets[screen][] = css/system.css
+stylesheets[screen][] = css/system-menus.css
+
 stylesheets[screen][] = css/blueprint/screen.css
 stylesheets[screen][] = css/style.css
 stylesheets[print][] = css/blueprint/print.css

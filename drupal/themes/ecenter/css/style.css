@@ -50,11 +50,7 @@ body {
 }
 /* }}} */
 /* Clearing {{{ */
-/**
- * Based on How To Clear Floats Without Structural Markup
- * http://www.positioniseverything.net/easyclearing.html
- */
-.clearfix:after {
+.clear-block:after {
   content: "\0020";
   display: block;
   height: 0;
@@ -62,7 +58,7 @@ body {
   visibility: hidden;
   overflow: hidden;
 }
-.clearfix {
+.clearblock {
   display: block;
 }
 /* }}} */

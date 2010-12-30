@@ -26,7 +26,6 @@ stylesheets[print][] = "base.css"
 stylesheets[print][] = "print.css"
 
 ; Custom modules
-stylesheets[all][] = "themes/jquery.timeentry.css"
 stylesheets[all][] = "themes/datepicker.css"
 stylesheets[screen][] = "css/datepicker.css"
 

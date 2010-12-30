@@ -6,6 +6,7 @@ projects[drupal][version] = "6.20"
 
 ; Modules
 projects[ahah_helper][version] = "2.1"
+projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/changes/drupal/patches/ahah_helper.patch"
 
 projects[conditional_styles][version] = "1.1"
 

@@ -1,5 +1,5 @@
 ;$Id$
-name = Utilities: Theming Hacks
-package = E-Center Project
+name = Theming Hacks
+package = Utilities
 description = Provide intuiive CSS override behavior.
 core = 6.x

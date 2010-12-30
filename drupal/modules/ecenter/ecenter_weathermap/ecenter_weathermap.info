@@ -10,3 +10,4 @@ dependencies[] = combobox
 dependencies[] = jqplot
 dependencies[] = geoip
 dependencies[] = openlayers
+dependencies[] = ahah_helper

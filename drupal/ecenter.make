@@ -3,6 +3,7 @@ core = 6.x
 
 api = 2
 projects[drupal][version] = "6.20"
+projects[drupal][patch][] = "http://drupal.org/files/issues/do479368-drupal_json_encode_0.patch"
 
 ; Modules
 projects[ahah_helper][version] = "2.1"
@@ -24,6 +25,7 @@ projects[geoip][version] = "1.2"
 projects[jquery_ui][version] = "1.4"
 
 projects[jquery_update][version] = "1.1"
+projects[jquery_update][patch][] = "http://drupal.org/files/issues/jquery_update_775924.patch"
 
 projects[openlayers][version] = "2.0-alpha10"
 

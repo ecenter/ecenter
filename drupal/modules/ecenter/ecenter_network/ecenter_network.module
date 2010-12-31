@@ -479,7 +479,7 @@ function ecenter_network_get_hops($src = NULL) {
   $src_key = (!empty($src)) ? $src : 'sources';
 
   if (empty($hops[$src_key])) {
-    $caching = variable_get('ecenterweathermap_weathermap_hop_cache_enabled', 0);
+    $caching = variable_get('ecenter_network_hop_cache_enabled', 0);
     if ($caching && $result = cache_get($src_key, 'cache_ecenter_hops')) {
       $hops[$src_key] = $result->data;
     }
@@ -902,7 +902,7 @@ function ecenter_network_openlayers_presets() {
       'openlayers_behavior_fullscreen' => array(
         'activated' => 0,
       ),
-      'ecenter_network_behavior_weathermap_select' => array(
+      'ecenter_network_behavior_select' => array(
         'layers' => array(
           'ecenter_network_sites' => 'ecenter_network_sites',
         ),
@@ -1004,12 +1004,12 @@ function ecenter_network_openlayers_behaviors() {
         'parent' => 'openlayers_behavior',
       ),
     ),
-    'ecenter_network_behavior_weathermap_select' => array(
+    'ecenter_network_behavior_select' => array(
       'title' => t('E-Center Weathermap: Select behavior'),
       'behavior' => array(
         'path' => drupal_get_path('module', 'ecenter_network') .'/openlayers',
-        'file' => 'ecenter_network_behavior_weathermap_select.inc',
-        'class' => 'ecenter_network_behavior_weathermap_select',
+        'file' => 'ecenter_network_behavior_select.inc',
+        'class' => 'ecenter_network_behavior_select',
         'parent' => 'openlayers_behavior',
       ),
     ),

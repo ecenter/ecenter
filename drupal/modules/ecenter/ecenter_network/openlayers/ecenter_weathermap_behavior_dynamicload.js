@@ -1,4 +1,4 @@
-Drupal.behaviors.ecenter_weathermap_behavior_dynamicload = function(context) {
+Drupal.behaviors.ecenter_network_behavior_dynamicload = function(context) {
   // Ignore context -- refresh all maps on the page
   for (var key in Drupal.settings.openlayers.maps) {
     var map = Drupal.settings.openlayers.maps[key];
@@ -53,7 +53,7 @@ Drupal.behaviors.ecenter_weathermap_behavior_dynamicload = function(context) {
 
     // Because we are context-less, excute map behaviors the hard way
     for (var name in map.behaviors) {
-      if (name != 'ecenter_weathermap_behavior_dynamicload') {
+      if (name != 'ecenter_network_behavior_dynamicload') {
         executeFunctionByName(name, Drupal.behaviors, $('#' + key).get(0));
       }
     }

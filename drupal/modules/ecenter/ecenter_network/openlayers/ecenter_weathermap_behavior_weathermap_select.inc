@@ -6,7 +6,7 @@
  * Dynamically load map layers
  */
 
-class ecenter_weathermap_behavior_weathermap_select extends openlayers_behavior {
+class ecenter_network_behavior_weathermap_select extends openlayers_behavior {
 
   function options_init() {
     return array(
@@ -43,7 +43,7 @@ class ecenter_weathermap_behavior_weathermap_select extends openlayers_behavior 
    * Render.
    */
   function render(&$map) {
-    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .'/openlayers/ecenter_weathermap_behavior_weathermap_select.js');
+    drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/openlayers/ecenter_network_behavior_weathermap_select.js');
     return $this->options;
   }
 

@@ -9,7 +9,7 @@
 /**
  * Cluster behavior
  */
-class ecenter_weathermap_behavior_uncluster extends openlayers_behavior {
+class ecenter_network_behavior_uncluster extends openlayers_behavior {
   /**
    * Provide initial values for options.
    */
@@ -68,12 +68,12 @@ class ecenter_weathermap_behavior_uncluster extends openlayers_behavior {
    * Render.
    */
   function render(&$map) {
-    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .
+    drupal_add_js(drupal_get_path('module', 'ecenter_network') .
       '/openlayers/springy.js');
-    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .
+    drupal_add_js(drupal_get_path('module', 'ecenter_network') .
       '/openlayers/Uncluster.js');
-    drupal_add_js(drupal_get_path('module', 'ecenter_weathermap') .
-      '/openlayers/ecenter_weathermap_behavior_uncluster.js');
+    drupal_add_js(drupal_get_path('module', 'ecenter_network') .
+      '/openlayers/ecenter_network_behavior_uncluster.js');
     return $this->options;
   }
 }

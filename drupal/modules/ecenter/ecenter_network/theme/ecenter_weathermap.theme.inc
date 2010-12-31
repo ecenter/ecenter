@@ -9,7 +9,7 @@
 /**
  * Theme main data display
  */
-function template_preprocess_ecenter_weathermap_data(&$vars) {
+function template_preprocess_ecenter_network_data(&$vars) {
   // Generate permalink
   $vars['permalink'] = l('Permalink', 'weathermap', array('query' => $vars['params']));
 
@@ -31,7 +31,7 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
   }
 
   // Source / dst table
-  $hops = ecenter_weathermap_get_hops();
+  $hops = ecenter_network_get_hops();
 
   $src_hop = $hops['combined'][$vars['params']['src']];
   $dst_hop = $hops['combined'][$vars['params']['dst']];
@@ -78,7 +78,7 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
 
   // Generate SNMP charts
   if (!empty($vars['data']['diff'])) {
-    $vars['snmp'] = theme('ecenter_weathermap_render_data_snmp', $vars['data']['diff']);
+    $vars['snmp'] = theme('ecenter_network_render_data_snmp', $vars['data']['diff']);
   }
   else {
     $vars['snmp'] = '<p class="missing">'. t('No path or utilization data available.') .'</p>';
@@ -86,7 +86,7 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
 
   // Generate end to end statistics
   if (!empty($vars['data']['end_to_end'])) {
-    $vars['end_to_end_table'] = theme('ecenter_weathermap_render_data_end_to_end_table', $vars['data']['end_to_end']);
+    $vars['end_to_end_table'] = theme('ecenter_network_render_data_end_to_end_table', $vars['data']['end_to_end']);
   }
   else {
     $vars['end_to_end_table'] = '<p class="missing">'. t('No end to end data available') .'</p>';
@@ -96,7 +96,7 @@ function template_preprocess_ecenter_weathermap_data(&$vars) {
 /**
  * Theme SNMP data
  */
-function theme_ecenter_weathermap_render_data_snmp($data) {
+function theme_ecenter_network_render_data_snmp($data) {
   $plot_options = array(
     'width' => 570,
     'height' => 250,
@@ -168,8 +168,8 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
 
 
   // @TODO Determine how to set colors...  MESSY!
-  $critical = variable_get('ecenter_weathermap_threshold_critical_snmp_utilization', 60);
-  $marginal = variable_get('ecenter_weathermap_threshold_marginal_snmp_utilization', 40);
+  $critical = variable_get('ecenter_network_threshold_critical_snmp_utilization', 60);
+  $marginal = variable_get('ecenter_network_threshold_marginal_snmp_utilization', 40);
 
   //$tables = array('forward', 'reverse');
   $tables = array();
@@ -199,8 +199,8 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
                 ),
               );
             }
-            $tables[] = theme('ecenter_weathermap_utilization_table', $hop['hop'], $direction, $table);
-            //$tables[$direction][] = theme('ecenter_weathermap_utilization_table', $hop['hop'], $direction, $table);
+            $tables[] = theme('ecenter_network_utilization_table', $hop['hop'], $direction, $table);
+            //$tables[$direction][] = theme('ecenter_network_utilization_table', $hop['hop'], $direction, $table);
           }
         }
       }
@@ -225,7 +225,7 @@ function theme_ecenter_weathermap_render_data_snmp($data) {
 /**
  * Theme end to end data table
  */
-function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
+function theme_ecenter_network_render_data_end_to_end_table($data) {
   // BWCTL
   /*if (!empty($data['bwctl']['forward'])) {
     foreach ($data['bwctl']['forward'] as $item) {
@@ -440,14 +440,14 @@ function theme_ecenter_weathermap_render_data_end_to_end_table($data) {
 
   ksort($table);
   if (!empty($table)) {
-    return theme('ecenter_weathermap_table', $headers, $table, array('class' => 'end-to-end-table'));
+    return theme('ecenter_network_table', $headers, $table, array('class' => 'end-to-end-table'));
   }
 }
 
 /**
  * Theme utilization table
  */
-function theme_ecenter_weathermap_utilization_table($hop, $direction, $table) {
+function theme_ecenter_network_utilization_table($hop, $direction, $table) {
   $attributes = array();
   $attributes['class'] = $direction;
   $attributes['class'] .= ($direction == 'forward') ? "{lineWidth : 1}" : "{lineWidth : 0, sizeAdjust: 0}";
@@ -455,7 +455,7 @@ function theme_ecenter_weathermap_utilization_table($hop, $direction, $table) {
   $headers = array(t('Time'), t('Percent utilization'));
   $output = '<div class="snmp-data-table">';
   $output .= '<h3>'. $hop['nodename'] .' ('. t(ucfirst($direction)) .')</h3>';
-  $output .= theme('ecenter_weathermap_table', $headers, $table, $attributes);
+  $output .= theme('ecenter_network_table', $headers, $table, $attributes);
   $output .= '</div>';
   return $output;
 }
@@ -463,7 +463,7 @@ function theme_ecenter_weathermap_utilization_table($hop, $direction, $table) {
 /**
  * Theme services for use in options list.  Should always return plaintext!
  */
-function theme_ecenter_weathermap_hop_option($hop) {
+function theme_ecenter_network_hop_option($hop) {
   switch ($hop['type']) {
     case 'hub':
       return check_plain($hop['hub_name']);
@@ -477,7 +477,7 @@ function theme_ecenter_weathermap_hop_option($hop) {
  *
  * Similar to regular theme_table, minus the stupid sticky headers.
  */
-function theme_ecenter_weathermap_table($header, $rows, $attributes = array(), $caption = NULL) {
+function theme_ecenter_network_table($header, $rows, $attributes = array(), $caption = NULL) {
   $output = '<table'. drupal_attributes($attributes) .">\n";
 
   if (isset($caption)) {

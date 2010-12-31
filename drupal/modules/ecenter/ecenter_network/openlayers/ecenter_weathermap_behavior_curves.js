@@ -1,14 +1,14 @@
 // $Id$
 
 /**
- * @file ecenter_weathermap_behavior_curves.js
+ * @file ecenter_network_behavior_curves.js
  */
 
-Drupal.behaviors.ecenter_weathermap_behavior_curves = function(context) {
+Drupal.behaviors.ecenter_network_behavior_curves = function(context) {
   var layers, data = $(context).data('openlayers');
-  if (data && data.map.behaviors['ecenter_weathermap_behavior_curves']) {
+  if (data && data.map.behaviors['ecenter_network_behavior_curves']) {
     var map = data.openlayers;
-    var options = data.map.behaviors['ecenter_weathermap_behavior_curves'];
+    var options = data.map.behaviors['ecenter_network_behavior_curves'];
     var layers = [];
 
     // For backwards compatiability, if layers is not

@@ -14,10 +14,10 @@
  * (http://www.opensource.org/licenses/zlib-license.php).
  */
 
-function ecenter_weathermap_traceroute_diff($forward, $reverse) {
+function ecenter_network_traceroute_diff($forward, $reverse) {
   foreach ($forward as $findex => $ovalue) {
     // Find matching sequences
-    $rkeys = ecenter_weathermap_traceroute_array_keys($reverse, $ovalue);
+    $rkeys = ecenter_network_traceroute_array_keys($reverse, $ovalue);
 
     foreach ($rkeys as $rindex) {
       $matrix[$findex][$rindex] = isset($matrix[$findex - 1][$rindex - 1]) ? $matrix[$findex - 1][$rindex - 1] + 1 : 1;
@@ -60,13 +60,13 @@ function ecenter_weathermap_traceroute_diff($forward, $reverse) {
   // Recurse into non-matching sequences while mashing together with matching
   // sequences
   return array_merge(
-    ecenter_weathermap_traceroute_diff(array_slice($forward, 0, $fmax), array_slice($reverse, 0, $rmax)),
+    ecenter_network_traceroute_diff(array_slice($forward, 0, $fmax), array_slice($reverse, 0, $rmax)),
     $slices,
-    ecenter_weathermap_traceroute_diff(array_slice($forward, $fmax + $maxlen), array_slice($reverse, $rmax + $maxlen))
+    ecenter_network_traceroute_diff(array_slice($forward, $fmax + $maxlen), array_slice($reverse, $rmax + $maxlen))
   );
 }
 
-function ecenter_weathermap_traceroute_array_keys($hops, $match) {
+function ecenter_network_traceroute_array_keys($hops, $match) {
   $return = array();
   foreach ($hops as $k => $hop) {
     if ($hop['hop']['hop_ip'] == $match['hop']['hop_ip']) {

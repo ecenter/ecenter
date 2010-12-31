@@ -59,8 +59,8 @@ EcenterWeathermap.selectFeature = function(select) {
    if (query_type == 'hub') {
      for (key in maps) {
        var ol = $('#' + maps[key].id).data('openlayers');
-       var layer = ol.openlayers.getLayersBy('drupalID', 'ecenter_weathermap_sites').pop();
-       var control = ol.openlayers.getControlsBy('ecenterID', 'ecenter_weathermap_select').pop();
+       var layer = ol.openlayers.getLayersBy('drupalID', 'ecenter_network_sites').pop();
+       var control = ol.openlayers.getControlsBy('ecenterID', 'ecenter_network_select').pop();
        var feature = layer.getFeatureBy('ecenterID', query_value);
 
 
@@ -84,13 +84,13 @@ EcenterWeathermap.selectFeature = function(select) {
  */
 $(document).ready(function() {
 
-  $('#ecenter-weathermap-select-form #src-wrapper select, #ecenter-weathermap-select-form #dst-wrapper select')
+  $('#ecenter-network-select-form #src-wrapper select, #ecenter-network-select-form #dst-wrapper select')
   .change(function(e) { 
     EcenterWeathermap.selectFeature.call(this, true);
   });
 
   // Bind to ahah_start event
-  $('#ecenter-weathermap-select-form').bind('ajaxSend', function(ajax, xhr) {
+  $('#ecenter-network-select-form').bind('ajaxSend', function(ajax, xhr) {
     self = this;
 
     // Add overlay...
@@ -128,7 +128,7 @@ $(document).ready(function() {
   });
 
   // Behind to ahah_end event
-  $('#ecenter-weathermap-select-form').bind('ajaxSuccess', function() {
+  $('#ecenter-network-select-form').bind('ajaxSuccess', function() {
     // Add overlay...
     $(this).removeClass('data-loading');
     $('.loading-overlay', this).fadeOut('fast', function() {

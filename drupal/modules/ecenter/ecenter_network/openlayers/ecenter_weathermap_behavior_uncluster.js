@@ -8,10 +8,10 @@
 /**
  * OpenLayers Cluster Behavior
  */
-Drupal.behaviors.ecenter_weathermap_uncluster = function(context) {
+Drupal.behaviors.ecenter_network_uncluster = function(context) {
   var data = $(context).data('openlayers');
-  if (data && data.map.behaviors.ecenter_weathermap_behavior_uncluster) {
-    var options = data.map.behaviors.ecenter_weathermap_behavior_uncluster;
+  if (data && data.map.behaviors.ecenter_network_behavior_uncluster) {
+    var options = data.map.behaviors.ecenter_network_behavior_uncluster;
     var map = data.openlayers;
 
     //options.distance = 20;

@@ -1,18 +1,18 @@
 // $Id$
 
 /**
- * @file ecenter_weathermap_behavior_select.js
+ * @file ecenter_network_behavior_select.js
  * Selection behavior for E-Center weathermap. 
  *
  * Because of the funky way that the OpenLayers library handles multiple
  * controls, we need a single control that handles ALL the behavior for
  * hover and click events associated with map features on a given layer.
  */
-Drupal.behaviors.ecenter_weathermap_behavior_weathermap_select = function(context) {
+Drupal.behaviors.ecenter_network_behavior_weathermap_select = function(context) {
   var layers, data = $(context).data('openlayers');
-  if (data && data.map.behaviors['ecenter_weathermap_behavior_weathermap_select']) {
+  if (data && data.map.behaviors['ecenter_network_behavior_weathermap_select']) {
     var map = data.openlayers;
-    var options = data.map.behaviors['ecenter_weathermap_behavior_weathermap_select'];
+    var options = data.map.behaviors['ecenter_network_behavior_weathermap_select'];
     var layers = [];
 
     // For backwards compatiability, if layers is not
@@ -34,7 +34,7 @@ Drupal.behaviors.ecenter_weathermap_behavior_weathermap_select = function(contex
     // SelectFeature at all...
     weathermapSelect = new OpenLayers.Control.SelectFeature(layers,
       {
-        ecenterID: 'ecenter_weathermap_select',
+        ecenterID: 'ecenter_network_select',
         callbacks: {
           over: Drupal.ecenterWeathermapSelect.over,
           out: Drupal.ecenterWeathermapSelect.out,

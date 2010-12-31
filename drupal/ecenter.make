@@ -18,6 +18,12 @@ projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecente
 projects[conditional_styles][subdir] = "contrib"
 projects[conditional_styles][version] = "1.1"
 
+projects[cck][subdir] = "contrib"
+projects[cck][version] = "2.8"
+
+projects[context][subdir] = "contrib"
+projects[context][version] = "3.0"
+
 projects[ctools][subdir] = "contrib"
 projects[ctools][version] = "1.8"
 
@@ -30,8 +36,17 @@ projects[devel][version] = "1.23"
 projects[features][subdir] = "contrib"
 projects[features][version] = "1.0"
 
+projects[filefield][subdir] = "contrib"
+projects[filefield][version] = "3.9"
+
 projects[geoip][subdir] = "contrib"
 projects[geoip][version] = "1.2"
+
+projects[imageapi][subdir] = "contrib"
+projects[imageapi][version] = "1.9"
+
+projects[imagecache][subdir] = "contrib"
+projects[imagecache][version] = "2.0-beta10"
 
 projects[jquery_ui][subdir] = "contrib"
 projects[jquery_ui][version] = "1.4"
@@ -44,11 +59,17 @@ projects[jquery_update][patch][] = "http://drupal.org/files/issues/jquery_update
 projects[openlayers][subdir] = "contrib"
 projects[openlayers][version] = "2.0-alpha10"
 
+projects[pathauto][subdir] = "contrib"
+projects[pathauto][version] = "1.5"
+
 projects[simplemenu][subdir] = "contrib"
 projects[simplemenu][version] = "1.13"
 
 projects[strongarm][subdir] = "contrib"
 projects[strongarm][version] = "2.0"
+
+projects[token][subdir] = "contrib"
+projects[token][version] = "1.15"
 
 projects[vertical_tabs][subdir] = "contrib"
 projects[vertical_tabs][version] = "1.0-rc1"
@@ -64,7 +85,8 @@ projects[tao][version] = "3.2"
 
 ; Libraries
 libraries[jquery_ui][download][type] = "get"
-libraries[jquery_ui][download][url] = "http://jquery-ui.googlecode.com/files/jquery-ui-1.7.3.zip" ; @TODO use jquery ui 1.8
+;libraries[jquery_ui][download][url] = "http://jquery-ui.googlecode.com/files/jquery-ui-1.7.3.zip" ; @TODO use jquery ui 1.8
+libraries[jquery_ui][download][url] = "http://jquery-ui.googlecode.com/files/jquery.ui-1.6.zip"
 libraries[jquery_ui][directory_name] = "jquery.ui"
 libraries[jquery_ui][destination] = "modules/contrib/jquery_ui"
 

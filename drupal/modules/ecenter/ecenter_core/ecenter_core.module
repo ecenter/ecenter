@@ -1,9 +1,14 @@
 <?php
+// $Id$
 
+/**
+ * @file
+ * E-Center core module and features
+ */
 include_once('ecenter_core.features.inc');
 
 /**
- * Implements hook_theme().
+ * Implementation of hook_theme().
  */
 function ecenter_core_theme() {
   $path = array('path' => drupal_get_path('module', 'ecenter_core') .'/tpl');
@@ -13,7 +18,7 @@ function ecenter_core_theme() {
 }
 
 /**
- * Implements hook_block().
+ * Implementation of hook_block().
  */
 function ecenter_core_block($op = 'list', $delta = 0, $edit = array()) {
   switch ($op) {
@@ -26,6 +31,19 @@ function ecenter_core_block($op = 'list', $delta = 0, $edit = array()) {
       return array(
         'content' => theme('ecenter_core_'. $delta .'_block'),
       );
+  }
+}
+
+/**
+ * Implementation of hook_form_alter().
+ */
+function ecenter_core_form_alter(&$form, &$form_state, $form_id) {
+  $form['#attributes']['class'] .= $form['#attributes']['class'] ? ' ' : NULL;
+  $form['#attributes']['class'] .= 'form-id-'. $form_id;
+
+  switch ($form_id) {
+    case 'search_block_form':
+      unset($form['search_block_form']['#title']);
   }
 }
 

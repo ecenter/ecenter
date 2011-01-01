@@ -1,0 +1,74 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * E-Center testing
+ *
+ * Uses a silly testing method (and we may add simpletests later). For all
+ * defined functions returned by ecenter_test_theme() of the form
+ * ecenter_test_TESTNAME create a menu callback at ecenter-tests/TESTNAME
+ * that calls said theme function. Then it is up to the test module
+ * developer to provide said theme functions.
+ */
+
+/**
+ * Implementation of hook_perm().
+ */
+function ecenter_test_perm() {
+  return array('view ecenter tests',);
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function ecenter_test_theme() {
+  return array(
+    'ecenter_test_hello_world' => array(
+      'arguments' => array(),
+    ),
+    'ecenter_test_combobox' => array(
+      'arguments' => array(),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function ecenter_test_menu() {
+  $items = array();
+  $items['ecenter-tests'] = array(
+    'title' => 'E-Center Tests',
+    'page callback' => 'menu_tree',
+    'page arguments' => array('navigation'),
+    'access arguments' => array('view ecenter tests'),
+    'weight' => 10,
+  );
+  foreach (ecenter_test_theme() as $key=>$item) {
+    $arg = str_replace('ecenter_test_', '', $key);  
+    $items['ecenter-tests/'. str_replace('_', '-', $arg)] = array(
+      'title' => ucfirst(str_replace('_', ' ', $arg)),
+      'page callback' => 'theme',
+      'page arguments' => array($key),
+      'access arguments' => array('view ecenter tests'),
+    );
+  }
+  return $items;
+}
+
+function theme_ecenter_test_hello_world() {
+  return t('Hello world');
+}
+
+function theme_ecenter_test_combobox() {
+  $form = array(
+    'options' => array(
+      '#type' => 'combobox',
+      '#options' => array(0 => '---', t('First option'), t('Second option'), t('Third option')),
+      '#default_value' => 0,
+    ),
+  );
+  return drupal_render($form);
+}
+

@@ -64,6 +64,7 @@ function theme_ecenter_test_hello_world() {
 function theme_ecenter_test_combobox() {
   $form = array(
     'options' => array(
+      '#id' => 'options',
       '#type' => 'combobox',
       '#options' => array(0 => '---', t('First option'), t('Second option'), t('Third option')),
       '#default_value' => 0,

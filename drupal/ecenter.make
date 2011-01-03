@@ -12,8 +12,10 @@ api = 2
 ; Modules
 projects[ahah_helper][subdir] = "contrib"
 projects[ahah_helper][version] = "2.1"
-; ahah_helper 
-projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/changes/drupal/patches/ahah_helper.patch"
+
+; Allow ahah_helper to manipulate all Drupal javascript settings
+; (may cause instability for untested modules)
+projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/changes/drupal/patches/ahah_helper_js_settings.patch"
 
 projects[conditional_styles][subdir] = "contrib"
 projects[conditional_styles][version] = "1.1"
@@ -53,8 +55,8 @@ projects[jquery_ui][version] = "1.4"
 
 projects[jquery_update][subdir] = "contrib"
 projects[jquery_update][version] = "1.1"
-; Patch for jQuery 1.4
-projects[jquery_update][patch][] = "http://drupal.org/files/issues/jquery_update_775924.patch"
+; Patch for jQuery 1.4.4, required by jqPlot and jQuery UI 1.8.x
+projects[jquery_update][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/changes/drupal/patches/jquery_update-jquery-1.4.4.patch"
 
 projects[openlayers][subdir] = "contrib"
 projects[openlayers][version] = "2.0-alpha10"
@@ -84,10 +86,21 @@ projects[wysiwyg][version] = "2.2"
 projects[tao][version] = "3.2"
 
 ; Libraries
+; Our convoluted jQuery UI situation -- we need 1.8.x (for combobox) and 1.6.x
+; (for Homebox) so we'll just throw in 1.7.x for good measure
 libraries[jquery_ui][download][type] = "get"
-;libraries[jquery_ui][download][url] = "http://jquery-ui.googlecode.com/files/jquery-ui-1.7.3.zip" ; @TODO use jquery ui 1.8
 libraries[jquery_ui][download][url] = "http://jquery-ui.googlecode.com/files/jquery.ui-1.6.zip"
 libraries[jquery_ui][directory_name] = "jquery.ui"
+libraries[jquery_ui][destination] = "modules/contrib/jquery_ui"
+
+libraries[jquery_ui][download][type] = "get"
+libraries[jquery_ui][download][url] = "http://jquery-ui.googlecode.com/files/jquery.ui-1.7.3.zip"
+libraries[jquery_ui][directory_name] = "jquery.ui-1.7"
+libraries[jquery_ui][destination] = "modules/contrib/jquery_ui"
+
+libraries[jquery_ui][download][type] = "get"
+libraries[jquery_ui][download][url] = "http://jquery-ui.googlecode.com/files/jquery.ui-1.8.7.zip"
+libraries[jquery_ui][directory_name] = "jquery.ui-1.8"
 libraries[jquery_ui][destination] = "modules/contrib/jquery_ui"
 
 libraries[openlayers][download][type] = "get"

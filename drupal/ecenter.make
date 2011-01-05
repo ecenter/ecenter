@@ -1,11 +1,11 @@
 ; $Id$
-; 
+;
 ; E-Center Project makefile
 ;
 ; E-Center uses a monolithic git repository to store its codebase.  This
-; makefile is currently designed to build a Drupal install profile in the 
+; makefile is currently designed to build a Drupal install profile in the
 ; current directory to be later integrated with the provided build.sh script.
-; 
+;
 core = 6.x
 api = 2
 
@@ -15,7 +15,7 @@ projects[ahah_helper][version] = "2.1"
 
 ; Allow ahah_helper to manipulate all Drupal javascript settings
 ; (may cause instability for untested modules)
-projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/changes/drupal/patches/ahah_helper_js_settings.patch"
+projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/buildsystem/raw/drupal/patches/ahah_helper_js_settings.patch"
 
 projects[conditional_styles][subdir] = "contrib"
 projects[conditional_styles][version] = "1.1"
@@ -52,11 +52,13 @@ projects[imagecache][version] = "2.0-beta10"
 
 projects[jquery_ui][subdir] = "contrib"
 projects[jquery_ui][version] = "1.4"
+; Handle multiple jQuery UI versions
+projects[jquery_ui][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/buildsystem/raw/drupal/patches/jquery_ui_multiple_versions.patch"
 
 projects[jquery_update][subdir] = "contrib"
 projects[jquery_update][version] = "1.1"
 ; Patch for jQuery 1.4.4, required by jqPlot and jQuery UI 1.8.x
-projects[jquery_update][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/changes/drupal/patches/jquery_update-jquery-1.4.4.patch"
+projects[jquery_update][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/buildsystem/raw/drupal/patches/jquery_update_jquery-1.4.4.patch"
 
 projects[openlayers][subdir] = "contrib"
 projects[openlayers][version] = "2.0-alpha10"
@@ -77,7 +79,8 @@ projects[vertical_tabs][subdir] = "contrib"
 projects[vertical_tabs][version] = "1.0-rc1"
 
 projects[views][subdir] = "contrib"
-projects[views][version] = "2.12"
+projects[views][version] = "3.x-dev"
+projects[views][patch][] = "http://drupal.org/files/issues/844910-views.dont-add-field-in-orderby_0.patch"
 
 projects[wysiwyg][subdir] = "contrib"
 projects[wysiwyg][version] = "2.2"
@@ -86,6 +89,7 @@ projects[wysiwyg][version] = "2.2"
 projects[tao][version] = "3.2"
 
 ; Libraries
+
 ; Our convoluted jQuery UI situation -- we need 1.8.x (for combobox) and 1.6.x
 ; (for Homebox) so we'll just throw in 1.7.x for good measure
 libraries[jquery_ui][download][type] = "get"
@@ -94,12 +98,12 @@ libraries[jquery_ui][directory_name] = "jquery.ui"
 libraries[jquery_ui][destination] = "modules/contrib/jquery_ui"
 
 libraries[jquery_ui][download][type] = "get"
-libraries[jquery_ui][download][url] = "http://jquery-ui.googlecode.com/files/jquery.ui-1.7.3.zip"
+libraries[jquery_ui][download][url] = "http://jquery-ui.googlecode.com/files/jquery-ui-1.7.3.zip"
 libraries[jquery_ui][directory_name] = "jquery.ui-1.7"
 libraries[jquery_ui][destination] = "modules/contrib/jquery_ui"
 
 libraries[jquery_ui][download][type] = "get"
-libraries[jquery_ui][download][url] = "http://jquery-ui.googlecode.com/files/jquery.ui-1.8.7.zip"
+libraries[jquery_ui][download][url] = "http://jquery-ui.googlecode.com/files/jquery-ui-1.8.7.zip"
 libraries[jquery_ui][directory_name] = "jquery.ui-1.8"
 libraries[jquery_ui][destination] = "modules/contrib/jquery_ui"
 
@@ -108,5 +112,14 @@ libraries[openlayers][download][url] = "http://nodeload.github.com/developmentse
 libraries[openlayers][directory_name] = "openlayers"
 
 ; Markdownify
+; @TODO Markdownify library...
+
 ; TinyMCE
+libraries[tinymce][download][type] = "get"
+libraries[tinymce][download][url] = "http://github.com/downloads/tinymce/tinymce/tinymce_3_3_9_3.zip"
+libraries[tinymce][directory_name] = "tinymce"
+
 ; GeoIP
+libraries[geoip][download][type] = "get"
+libraries[geoip][download][url] = "http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz"
+lirbaries[geoip][directory_name] = "geoip"

@@ -72,6 +72,10 @@ function ecenter_profile_modules() {
  */
 function _ecenter_core_modules() {
   return array(
+    'openlayers',
+    'openlayers_ui',
+    'openlayers_cck',
+    'openlayers_views',
     'wysiwyyg',
     'views_rss',
     'libraries',

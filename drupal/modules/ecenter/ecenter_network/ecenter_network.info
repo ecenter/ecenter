@@ -1,17 +1,18 @@
-;$Id$
-name = E-Center Network
-package = E-Center Project
-description = Provides user interface for E-center network diagnostic tools and integration with the Ecenter web service.
-core = 6.x
-version = "6.x-1.0-alpha1" 
-
-dependencies[] = date
-dependencies[] = date_popup
-dependencies[] = combobox
-dependencies[] = jqplot
-dependencies[] = geoip
-dependencies[] = openlayers
-dependencies[] = ahah_helper
+core = "6.x"
+dependencies[] = "ahah_helper"
+dependencies[] = "combobox"
+dependencies[] = "date"
+dependencies[] = "date_popup"
 dependencies[] = "features"
+dependencies[] = "geoip"
+dependencies[] = "jqplot"
 dependencies[] = "menu"
-features[menu_links][] = "primary-links:weathermap"
+dependencies[] = "openlayers"
+dependencies[] = "strongarm"
+description = "Provides user interface for E-center network diagnostic tools and integration with the Ecenter web service."
+features[ctools][] = "strongarm:strongarm:1"
+features[variable][] = "openlayers_source"
+name = "E-Center Network"
+package = "E-Center Project"
+project = "ecenter_network"
+version = "6.x-1.0-alpha1"

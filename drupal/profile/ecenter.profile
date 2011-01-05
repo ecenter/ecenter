@@ -175,6 +175,8 @@ function ecenter_form_alter(&$form, $form_state, $form_id) {
     $form['site_information']['site_mail']['#default_value'] = 'admin@'. $_SERVER['HTTP_HOST'];
     $form['admin_account']['account']['name']['#default_value'] = 'admin';
     $form['admin_account']['account']['mail']['#default_value'] = 'admin@'. $_SERVER['HTTP_HOST'];
+
+    // @TODO add more configuration...
   }
 }
 

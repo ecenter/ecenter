@@ -10,6 +10,9 @@ core = 6.x
 api = 2
 
 ; Modules
+projects[adminrole][subdir] = "contrib"
+projects[adminrole][version] = "1.3"
+
 projects[ahah_helper][subdir] = "contrib"
 projects[ahah_helper][version] = "2.1"
 

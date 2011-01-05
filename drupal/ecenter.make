@@ -81,6 +81,7 @@ projects[vertical_tabs][version] = "1.0-rc1"
 projects[views][subdir] = "contrib"
 projects[views][version] = "3.x-dev"
 projects[views][patch][] = "http://drupal.org/files/issues/844910-views.dont-add-field-in-orderby_0.patch"
+projects[views][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/buildsystem/raw/drupal/patches/views_groupwise_max.patch"
 
 projects[wysiwyg][subdir] = "contrib"
 projects[wysiwyg][version] = "2.2"

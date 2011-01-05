@@ -96,20 +96,20 @@ projects[tao][version] = "3.2"
 
 ; Our convoluted jQuery UI situation -- we need 1.8.x (for combobox) and 1.6.x
 ; (for Homebox) so we'll just throw in 1.7.x for good measure
-libraries[jquery_ui][download][type] = "get"
-libraries[jquery_ui][download][url] = "http://jquery-ui.googlecode.com/files/jquery.ui-1.6.zip"
-libraries[jquery_ui][directory_name] = "jquery.ui"
-libraries[jquery_ui][destination] = "modules/contrib/jquery_ui"
+libraries[jquery_ui_1_6][download][type] = "get"
+libraries[jquery_ui_1_6][download][url] = "http://jquery-ui.googlecode.com/files/jquery.ui-1.6.zip"
+libraries[jquery_ui_1_6][directory_name] = "jquery.ui"
+libraries[jquery_ui_1_6][destination] = "modules/contrib/jquery_ui"
 
-libraries[jquery_ui][download][type] = "get"
-libraries[jquery_ui][download][url] = "http://jquery-ui.googlecode.com/files/jquery-ui-1.7.3.zip"
-libraries[jquery_ui][directory_name] = "jquery.ui-1.7"
-libraries[jquery_ui][destination] = "modules/contrib/jquery_ui"
+libraries[jquery_ui_1_7][download][type] = "get"
+libraries[jquery_ui_1_7][download][url] = "http://jquery-ui.googlecode.com/files/jquery-ui-1.7.3.zip"
+libraries[jquery_ui_1_7][directory_name] = "jquery.ui-1.7"
+libraries[jquery_ui_1_7][destination] = "modules/contrib/jquery_ui"
 
-libraries[jquery_ui][download][type] = "get"
-libraries[jquery_ui][download][url] = "http://jquery-ui.googlecode.com/files/jquery-ui-1.8.7.zip"
-libraries[jquery_ui][directory_name] = "jquery.ui-1.8"
-libraries[jquery_ui][destination] = "modules/contrib/jquery_ui"
+libraries[jquery_ui_1_8][download][type] = "get"
+libraries[jquery_ui_1_8][download][url] = "http://jquery-ui.googlecode.com/files/jquery-ui-1.8.7.zip"
+libraries[jquery_ui_1_8][directory_name] = "jquery.ui-1.8"
+libraries[jquery_ui_1_8][destination] = "modules/contrib/jquery_ui"
 
 libraries[openlayers][download][type] = "get"
 libraries[openlayers][download][url] = "http://nodeload.github.com/developmentseed/openlayers_slim/tarball/v1.8"

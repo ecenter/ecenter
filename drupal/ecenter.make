@@ -112,7 +112,7 @@ libraries[jquery_ui_1_8][directory_name] = "jquery.ui-1.8"
 libraries[jquery_ui_1_8][destination] = "modules/contrib/jquery_ui"
 
 libraries[openlayers][download][type] = "get"
-libraries[openlayers][download][url] = "http://nodeload.github.com/developmentseed/openlayers_slim/tarball/v1.8"
+libraries[openlayers][download][url] = "http://openlayers.org/download/OpenLayers-2.10.tar.gz"
 libraries[openlayers][directory_name] = "openlayers"
 
 ; Markdownify

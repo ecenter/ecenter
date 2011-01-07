@@ -8,11 +8,11 @@
  * controls, we need a single control that handles ALL the behavior for
  * hover and click events associated with map features on a given layer.
  */
-Drupal.behaviors.ecenter_network_behavior_weathermap_select = function(context) {
+Drupal.behaviors.ecenter_network_behavior_select = function(context) {
   var layers, data = $(context).data('openlayers');
-  if (data && data.map.behaviors['ecenter_network_behavior_weathermap_select']) {
+  if (data && data.map.behaviors['ecenter_network_behavior_select']) {
     var map = data.openlayers;
-    var options = data.map.behaviors['ecenter_network_behavior_weathermap_select'];
+    var options = data.map.behaviors['ecenter_network_behavior_select'];
     var layers = [];
 
     // For backwards compatiability, if layers is not
@@ -32,14 +32,14 @@ Drupal.behaviors.ecenter_network_behavior_weathermap_select = function(context) 
     // Define feature select events for selected layers.
     // Our system is so different, it almost makes sense to not subclass
     // SelectFeature at all...
-    weathermapSelect = new OpenLayers.Control.SelectFeature(layers,
+    ecenterSelect = new OpenLayers.Control.SelectFeature(layers,
       {
         ecenterID: 'ecenter_network_select',
         callbacks: {
-          over: Drupal.ecenterWeathermapSelect.over,
-          out: Drupal.ecenterWeathermapSelect.out,
-          click: Drupal.ecenterWeathermapSelect.click,
-          clickout: Drupal.ecenterWeathermapSelect.clickout
+          over: Drupal.ecenterSelect.over,
+          out: Drupal.ecenterSelect.out,
+          click: Drupal.ecenterSelect.click,
+          clickout: Drupal.ecenterSelect.clickout
         },
         selectStyle: {
           strokeColor: '#0000aa',
@@ -54,20 +54,20 @@ Drupal.behaviors.ecenter_network_behavior_weathermap_select = function(context) 
     );
 
     // Actiate the popups
-    map.addControl(weathermapSelect);
-    weathermapSelect.activate();
+    map.addControl(ecenterSelect);
+    ecenterSelect.activate();
   }
 }
 
-Drupal.ecenterWeathermapSelect = {};
+Drupal.ecenterSelect = {};
 
-Drupal.ecenterWeathermapSelect.click = function(feature) {
+Drupal.ecenterSelect.click = function(feature) {
   var layer = feature.layer;
   var selected = (OpenLayers.Util.indexOf(
     feature.layer.selectedFeatures, feature) > -1);
   if (selected) {
     this.unselect(feature);
-    Drupal.ecenterWeathermapSelect.out(feature); // Unhighlight
+    Drupal.ecenterSelect.out(feature); // Unhighlight
     $('#weathermap-map').trigger('ecenterfeatureunselect', [feature, feature.layer]);
   } else {
     this.select(feature);
@@ -75,7 +75,7 @@ Drupal.ecenterWeathermapSelect.click = function(feature) {
   }
 }
 
-Drupal.ecenterWeathermapSelect.over = function(feature) {
+Drupal.ecenterSelect.over = function(feature) {
   var layer = feature.layer;
   feature._prevHighlighter = feature._lastHighlighter;
   feature._lastHighlighter = this.id;
@@ -84,7 +84,7 @@ Drupal.ecenterWeathermapSelect.over = function(feature) {
   this.events.triggerEvent("ecenterfeatureover", {feature : feature});
 }
 
-Drupal.ecenterWeathermapSelect.out = function(feature) {
+Drupal.ecenterSelect.out = function(feature) {
   var layer = feature.layer;
   var selected = (OpenLayers.Util.indexOf(
     feature.layer.selectedFeatures, feature) > -1);

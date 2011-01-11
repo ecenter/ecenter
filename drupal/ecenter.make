@@ -24,7 +24,7 @@ projects[conditional_styles][subdir] = "contrib"
 projects[conditional_styles][version] = "1.1"
 
 projects[cck][subdir] = "contrib"
-projects[cck][version] = "2.8"
+projects[cck][version] = "2.9"
 
 projects[context][subdir] = "contrib"
 projects[context][version] = "3.0"
@@ -33,7 +33,7 @@ projects[ctools][subdir] = "contrib"
 projects[ctools][version] = "1.8"
 
 projects[date][subdir] = "contrib/date"
-projects[date][version] = "2.6"
+projects[date][version] = "2.7"
 
 projects[devel][subdir] = "contrib"
 projects[devel][version] = "1.23"

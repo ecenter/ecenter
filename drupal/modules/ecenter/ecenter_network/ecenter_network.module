@@ -907,17 +907,17 @@ function ecenter_network_openlayers_presets() {
           'ecenter_network_sites' => 'ecenter_network_sites',
         ),
       ),
-      'ecenter_network_behavior_dynamicload' => array(),
-      'ecenter_network_behavior_curves' => array(
+      //'ecenter_network_behavior_dynamicload' => array(),
+      /*'ecenter_network_behavior_curves' => array(
         'layers' => array(
           'ecenter_network_traceroute' => 'ecenter_network_traceroute',
         ),
-      ),
+      ),*/
     ),
     'default_layer' => 'osm_mapnik',
     'layers' => array(
-      //'osm_mapnik' => 'osm_mapnik',
-      'world_light_usa' => 'world_light_usa',
+      'osm_mapnik' => 'osm_mapnik',
+      //'world_light_usa' => 'world_light_usa',
       'ecenter_network_sites' => 'ecenter_network_sites',
       'ecenter_network_traceroute' => 'ecenter_network_traceroute',
     ),

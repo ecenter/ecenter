@@ -4,7 +4,6 @@ Drupal.behaviors.ecenter_network_behavior_dynamicload = function(context) {
     var map = Drupal.settings.openlayers.maps[key];
     var data = $('#' + key).data('openlayers');
     var openlayers = data.openlayers;
-
     if (data) {
       // Remove all layers (that aren't a base layer)
       for (var i = openlayers.layers.length - 1; i >= 0; i--) {
@@ -49,20 +48,21 @@ Drupal.behaviors.ecenter_network_behavior_dynamicload = function(context) {
 
         }
       }
-    }
-
-    // Because we are context-less, excute map behaviors the hard way
-    for (var name in map.behaviors) {
-      if (name != 'ecenter_network_behavior_dynamicload') {
-        executeFunctionByName(name, Drupal.behaviors, $('#' + key).get(0));
+      
+      // Because we are context-less, excute map behaviors the hard way
+      for (var name in map.behaviors) {
+        if (name != 'ecenter_network_behavior_dynamicload') {
+          executeFunctionByName(name, Drupal.behaviors, $('#' + key).get(0));
+        }
       }
     }
+
   }
 }
 
 
 // See http://stackoverflow.com/questions/359788/javascript-function-name-as-a-string
-function executeFunctionByName(functionName, context /*, args */) {
+function executeFunctionByName(functionName, context, args) {
   var args = Array.prototype.slice.call(arguments).splice(2);
   var namespaces = functionName.split(".");
   var func = namespaces.pop();

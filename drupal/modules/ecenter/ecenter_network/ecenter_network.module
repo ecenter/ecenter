@@ -95,13 +95,14 @@ function ecenter_network_theme() {
  * Implementation of hook_init().
  */
 function ecenter_network_init() {
-
   if (arg(0) == 'network' && !arg(1)) {
     // Force load OL
     openlayers_include();
     drupal_add_js(drupal_get_path('module', 'openlayers') .
       '/includes/layer_types/js/raw.js');
 
+    // Force version 1.8, load libraries for datepicker and combobox
+    jquery_ui_add(array('ui.widget', 'ui.mouse', 'ui.button', 'ui.position', 'ui.autocomplete', 'ui.datepicker'), '1.8');
     // Also need the jquery form library
     /*drupal_add_js('misc/jquery.form.js');*/
 
@@ -124,9 +125,9 @@ function ecenter_network_init() {
     //drupal_add_js($jq_path .'/js/jqplot-behaviors.js');
 
     // Query UI behaviors and libraries
-    //drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.metadata.js');
-    //drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.traceroute.js');
-    //drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/openlayers.js');
+    drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.metadata.js');
+    drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.traceroute.js');
+    drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/openlayers.js');
 
     // Load order matters -- select must be after dynamic load in behaviors
     //drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/openlayers/ecenter_network_behavior_dynamicload.js');
@@ -902,11 +903,11 @@ function ecenter_network_openlayers_presets() {
       'openlayers_behavior_fullscreen' => array(
         'activated' => 0,
       ),
-      /*'ecenter_network_behavior_select' => array(
+      'ecenter_network_behavior_select' => array(
         'layers' => array(
           'ecenter_network_sites' => 'ecenter_network_sites',
         ),
-      ),*/
+      ),
       'ecenter_network_behavior_dynamicload' => array(),
       'ecenter_network_behavior_curves' => array(
         'layers' => array(

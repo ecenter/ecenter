@@ -11,7 +11,7 @@
  */
 function template_preprocess_ecenter_network_data(&$vars) {
   // Generate permalink
-  $vars['permalink'] = l('Permalink', 'weathermap', array('query' => $vars['params']));
+  $vars['permalink'] = l('Permalink', 'network', array('query' => $vars['params']));
 
   // Generate issue link -- encode params for use with custom ecenter_issues
   // module

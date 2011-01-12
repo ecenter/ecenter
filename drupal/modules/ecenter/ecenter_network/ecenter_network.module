@@ -96,41 +96,41 @@ function ecenter_network_theme() {
  */
 function ecenter_network_init() {
 
-  if (arg(0) == 'weathermap' && !arg(1)) {
+  if (arg(0) == 'network' && !arg(1)) {
     // Force load OL
     openlayers_include();
     drupal_add_js(drupal_get_path('module', 'openlayers') .
       '/includes/layer_types/js/raw.js');
 
     // Also need the jquery form library
-    drupal_add_js('misc/jquery.form.js');
+    /*drupal_add_js('misc/jquery.form.js');*/
 
     // Add jqPlot
-    $jq_path = drupal_get_path('module', 'jqplot');
-    drupal_add_js($jq_path .'/jqplot/excanvas.min.js');
-    drupal_add_js($jq_path .'/jqplot/jquery.jqplot.js');
+    //$jq_path = drupal_get_path('module', 'jqplot');
+    //drupal_add_js($jq_path .'/jqplot/excanvas.min.js');
+    //drupal_add_js($jq_path .'/jqplot/jquery.jqplot.js');
 
     // jqPlot plugins
-    drupal_add_js($jq_path .'/jqplot/plugins/jqplot.dateAxisRenderer.js');
-    drupal_add_js($jq_path .'/jqplot/plugins/jqplot.highlighter.js');
-    drupal_add_js($jq_path .'/jqplot/plugins/jqplot.cursor.js');
-    drupal_add_js($jq_path .'/jqplot/plugins/jqplot.canvasTextRenderer.js');
-    drupal_add_js($jq_path .'/jqplot/plugins/jqplot.canvasAxisLabelRenderer.js');
-    drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jqplot/jqplot.linehighlighter.js');
+    //drupal_add_js($jq_path .'/jqplot/plugins/jqplot.dateAxisRenderer.js');
+    //drupal_add_js($jq_path .'/jqplot/plugins/jqplot.highlighter.js');
+    //drupal_add_js($jq_path .'/jqplot/plugins/jqplot.cursor.js');
+    //drupal_add_js($jq_path .'/jqplot/plugins/jqplot.canvasTextRenderer.js');
+    //drupal_add_js($jq_path .'/jqplot/plugins/jqplot.canvasAxisLabelRenderer.js');
+    //drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jqplot/jqplot.linehighlighter.js');
 
     // Our libraries and behaviors
-    drupal_add_js($jq_path .'/js/jquery.uuid.js');
-    drupal_add_js($jq_path .'/js/jquery.tablechart.js');
-    drupal_add_js($jq_path .'/js/jqplot-behaviors.js');
+    //drupal_add_js($jq_path .'/js/jquery.uuid.js');
+    //drupal_add_js($jq_path .'/js/jquery.tablechart.js');
+    //drupal_add_js($jq_path .'/js/jqplot-behaviors.js');
 
     // Query UI behaviors and libraries
-    drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.metadata.js');
-    drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.traceroute.js');
-    drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/openlayers.js');
+    //drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.metadata.js');
+    //drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.traceroute.js');
+    //drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/openlayers.js');
 
     // Load order matters -- select must be after dynamic load in behaviors
-    drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/openlayers/ecenter_network_behavior_dynamicload.js');
-    drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/openlayers/ecenter_network_behavior_select.js');
+    //drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/openlayers/ecenter_network_behavior_dynamicload.js');
+    //drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/openlayers/ecenter_network_behavior_select.js');
     drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/behaviors.js');
 
     // Additional CSS overrides
@@ -162,7 +162,7 @@ function _ecenter_network_select_form() {
 
   if (user_access('debug ecenter network')) {
     $form['debug'] = array(
-      '#value' => '<div id="weathermap-debug"></div>',
+      '#value' => '<div id="network-debug"></div>',
     );
   }
 
@@ -171,29 +171,29 @@ function _ecenter_network_select_form() {
   $map = openlayers_render_map($preset->data, $preset->name);
 
   // Network map
-  $form['weathermap_wrapper'] = array(
-    '#prefix' => '<div id="weathermap-wrapper" class="clearfix">',
+  $form['network_wrapper'] = array(
+    '#prefix' => '<div id="network-wrapper" class="clear-block">',
     '#suffix' => '</div>',
   );
-  $form['weathermap_wrapper']['weathermap'] = array(
-    '#prefix' => '<div id="weathermap-map">',
+  $form['network_wrapper']['network'] = array(
+    '#prefix' => '<div id="network-map">',
     '#value' => $map,
     '#suffix' => '</div>',
   );
 
   // Select source and destination IP -- convoluted structure because of AHAH
-  $form['weathermap_wrapper']['query'] = array(
+  $form['network_wrapper']['query'] = array(
     '#prefix' => '<div id="query-wrapper">',
     '#suffix' => '</div>',
     '#value' => '<p id="instructions">'. t('Select source and destination by clicking sites on the map, or specify below.') .'</p>',
   );
 
   // Source IP
-  $form['weathermap_wrapper']['query']['src_wrapper'] = array(
+  $form['network_wrapper']['query']['src_wrapper'] = array(
     '#prefix' => '<div id="src-wrapper">',
     '#suffix' => '</div>',
   );
-  $form['weathermap_wrapper']['query']['src_wrapper']['src'] = array(
+  $form['network_wrapper']['query']['src_wrapper']['src'] = array(
     '#title' => t('Source'),
     '#type' => 'combobox',
     '#cols' => 50,
@@ -201,17 +201,17 @@ function _ecenter_network_select_form() {
     '#options' => array('' => t('Select a source')),
     '#ahah' => array(
       'event' => 'change',
-      'path' => ahah_helper_path(array('weathermap_wrapper', 'query', 'dst_wrapper', 'dst')),
+      'path' => ahah_helper_path(array('network_wrapper', 'query', 'dst_wrapper', 'dst')),
       'wrapper' => 'dst-wrapper',
     ),
   );
 
   // Destination IP
-  $form['weathermap_wrapper']['query']['dst_wrapper'] = array(
+  $form['network_wrapper']['query']['dst_wrapper'] = array(
     '#prefix' => '<div id="dst-wrapper">',
     '#suffix' => '</div>',
   );
-  $form['weathermap_wrapper']['query']['dst_wrapper']['dst'] = array(
+  $form['network_wrapper']['query']['dst_wrapper']['dst'] = array(
     '#title' => t('Destination'),
     '#type' => 'combobox',
     '#cols' => 50,
@@ -228,36 +228,36 @@ function _ecenter_network_select_form() {
   );
 
   // Date select
-  $form['weathermap_wrapper']['query']['start'] = array(
+  $form['network_wrapper']['query']['start'] = array(
     '#type' => 'date_popup',
     '#title' => t('Start date'),
     '#date_increment' => $inc,
     '#default_value' => date_format($start, 'Y-m-d H:i'),
   );
-  $form['weathermap_wrapper']['query']['end'] = array(
+  $form['network_wrapper']['query']['end'] = array(
     '#type' => 'date_popup',
     '#title' => t('End date'),
     '#date_increment' => $inc,
     '#default_value' => date_format($end, 'Y-m-d H:i'),
   );
-  $form['weathermap_wrapper']['query']['date_description'] = array(
-    '#prefix' => '<div id="date-description-wrapper">',
-    '#suffix' => '</div>',
-    '#value' => '<p>'. t('Input time in 24 hour format (e.g. <em>15:30</em>).') .'</p>',
+  $form['network_wrapper']['query']['date_description'] = array(
+    '#prefix' => '<div id="date-description-wrapper"><p>',
+    '#suffix' => '</p></div>',
+    '#value' => t('Input time in 24 hour format (e.g. <em>15:30</em>). '),
   );
 
   if ($user->uid) {
-    $form['weathermap_wrapper']['query']['date_description']['#value'] .= '<p>'. 
+    $form['network_wrapper']['query']['date_description']['#value'] .=  
       t('The query date and time is expressed in your local timezone (@tz). You may 
         change your timezone on your !link.', 
         array(
           '@tz' => str_replace('_', ' ', date_default_timezone_name(TRUE)), 
           '!link' => l('user profile', 'user/'. $user->uid .'/edit')
         )
-      ) .'</p>';
+      );
   }
   else {
-    $form['weathermap_wrapper']['query']['date_description']['#value'] .= '<p>'. 
+    $form['network_wrapper']['query']['date_description']['#value'] .= '<p>'. 
       t('The query date and time is expressed in site\'s default timezone (@tz).',
         array(
           '@tz' => str_replace('_', ' ', date_default_timezone_name(TRUE)), 
@@ -274,7 +274,7 @@ function _ecenter_network_select_form() {
 
   // Data results display
   $form['results_wrapper'] = array(
-    '#prefix' => '<div id="results-wrapper">',
+    '#prefix' => '<div id="results-wrapper" class="clear-block">',
     '#suffix' => '</div>',
   );
   $form['results_wrapper']['results'] = array(
@@ -310,30 +310,30 @@ function ecenter_network_select_form(&$form_state) {
 
   // Set dates
   if (!empty($start)) {
-    $form['weathermap_wrapper']['query']['start']['#default_value'] = $start;
+    $form['network_wrapper']['query']['start']['#default_value'] = $start;
   }
   if (!empty($end)) {
-    $form['weathermap_wrapper']['query']['end']['#default_value'] = $end;
+    $form['network_wrapper']['query']['end']['#default_value'] = $end;
   }
 
   $hops = ecenter_network_get_hops();
   foreach ($hops['combined'] as $key => $hop) {
     $src_options[$key] = theme('ecenter_network_hop_option', $hop);
   }
-  $form['weathermap_wrapper']['query']['src_wrapper']['src']['#options'] += $src_options;
+  $form['network_wrapper']['query']['src_wrapper']['src']['#options'] += $src_options;
 
   if ($src) {
-    $form['weathermap_wrapper']['query']['src_wrapper']['src']['#default_value'] = $src;
+    $form['network_wrapper']['query']['src_wrapper']['src']['#default_value'] = $src;
 
     foreach ($hops['combined'] as $key => $hop) {
       $dst_options[$key] = theme('ecenter_network_hop_option', $hop);
     }
-    $form['weathermap_wrapper']['query']['dst_wrapper']['dst']['#options'] += $dst_options;
-    $form['weathermap_wrapper']['query']['dst_wrapper']['dst']['#disabled'] = FALSE;
+    $form['network_wrapper']['query']['dst_wrapper']['dst']['#options'] += $dst_options;
+    $form['network_wrapper']['query']['dst_wrapper']['dst']['#disabled'] = FALSE;
   }
 
   if ($dst) {
-    $form['weathermap_wrapper']['query']['dst_wrapper']['dst']['#default_value'] = $dst;
+    $form['network_wrapper']['query']['dst_wrapper']['dst']['#default_value'] = $dst;
   }
 
   if ($src && $dst && $start && $end) {
@@ -358,14 +358,14 @@ function ecenter_network_select_form(&$form_state) {
       watchdog('ecenter', 'Query returned no results: <code>@query</code>', array('@query' => $query), WATCHDOG_INFO);
       $form['results_wrapper']['results']['#value'] = '<p>'. t('Whoops! No data was available for this query. If you believe there should be data for this query, send the site administrator feedback along with executed query, provided below:') .'</p>';
       $form['results_wrapper']['results']['#value'] .= '<pre>'. $query .'</pre>';
-      $form['results_wrapper']['results']['#value'] .= '<p>'. l(t('Permalink'), 'weathermap', array('query' => $query_params)) .'</p>';
+      $form['results_wrapper']['results']['#value'] .= '<p>'. l(t('Permalink'), 'network', array('query' => $query_params)) .'</p>';
     }
   }
   return $form;
 }
 
 /**
- * Default submit handler for weathermap form
+ * Default submit handler for network form
  */
 function ecenter_network_select_form_submit($form, &$form_state) {
   // Do what AHAH helper does on an AJAX call, to make form constructor a 
@@ -902,11 +902,11 @@ function ecenter_network_openlayers_presets() {
       'openlayers_behavior_fullscreen' => array(
         'activated' => 0,
       ),
-      'ecenter_network_behavior_select' => array(
+      /*'ecenter_network_behavior_select' => array(
         'layers' => array(
           'ecenter_network_sites' => 'ecenter_network_sites',
         ),
-      ),
+      ),*/
       'ecenter_network_behavior_dynamicload' => array(),
       'ecenter_network_behavior_curves' => array(
         'layers' => array(
@@ -1114,7 +1114,7 @@ function _ecenter_network_layers_sites_rejigger(&$features) {
 }
 
 /**
- * Generate dynamic raw layer data for E-center weathermap
+ * Generate dynamic raw layer data for E-center network
  */
 function ecenter_network_layers_traceroute() {
   extract(_ecenter_network_extract_query());
@@ -1285,12 +1285,12 @@ function _ecenter_network_date_to_utc($date, $format = 'Y-m-d H:i:s') {
 function _ecenter_network_extract_query() {
   if ($_REQUEST['form_id'] == 'ecenter_network_select_form') {
     $vars = array(
-      'src' => $_REQUEST['weathermap_wrapper']['query']['src_wrapper']['src'],
-      'dst' => $_REQUEST['weathermap_wrapper']['query']['dst_wrapper']['dst'],
-      'start' => $_REQUEST['weathermap_wrapper']['query']['start']['date'] 
-        .' '. $_REQUEST['weathermap_wrapper']['query']['start']['time'],
-      'end' => $_REQUEST['weathermap_wrapper']['query']['end']['date']
-        .' '. $_REQUEST['weathermap_wrapper']['query']['end']['time'],
+      'src' => $_REQUEST['network_wrapper']['query']['src_wrapper']['src'],
+      'dst' => $_REQUEST['network_wrapper']['query']['dst_wrapper']['dst'],
+      'start' => $_REQUEST['network_wrapper']['query']['start']['date'] 
+        .' '. $_REQUEST['network_wrapper']['query']['start']['time'],
+      'end' => $_REQUEST['network_wrapper']['query']['end']['date']
+        .' '. $_REQUEST['network_wrapper']['query']['end']['time'],
     );
   }
   else {

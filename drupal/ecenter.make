@@ -24,7 +24,7 @@ projects[conditional_styles][subdir] = "contrib"
 projects[conditional_styles][version] = "1.1"
 
 projects[cck][subdir] = "contrib"
-projects[cck][version] = "2.8"
+projects[cck][version] = "2.9"
 
 projects[context][subdir] = "contrib"
 projects[context][version] = "3.0"
@@ -33,7 +33,7 @@ projects[ctools][subdir] = "contrib"
 projects[ctools][version] = "1.8"
 
 projects[date][subdir] = "contrib/date"
-projects[date][version] = "2.6"
+projects[date][version] = "2.7"
 
 projects[devel][subdir] = "contrib"
 projects[devel][version] = "1.23"
@@ -65,6 +65,9 @@ projects[jquery_update][subdir] = "contrib"
 projects[jquery_update][version] = "1.1"
 ; Patch for jQuery 1.4.4, required by jqPlot and jQuery UI 1.8.x
 projects[jquery_update][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/buildsystem/raw/drupal/patches/jquery_update_jquery-1.4.4.patch"
+
+projects[less][subdir] = "contrib"
+projects[less][version] = "2.4"
 
 projects[openlayers][subdir] = "contrib"
 projects[openlayers][version] = "2.0-alpha10"
@@ -101,7 +104,7 @@ projects[tao][version] = "3.2"
 ; (for Homebox) so we'll just throw in 1.7.x for good measure
 libraries[jquery_ui_1_6][download][type] = "get"
 libraries[jquery_ui_1_6][download][url] = "http://jquery-ui.googlecode.com/files/jquery.ui-1.6.zip"
-libraries[jquery_ui_1_6][directory_name] = "jquery.ui"
+libraries[jquery_ui_1_6][directory_name] = "jquery.ui-1.6"
 libraries[jquery_ui_1_6][destination] = "modules/contrib/jquery_ui"
 
 libraries[jquery_ui_1_7][download][type] = "get"

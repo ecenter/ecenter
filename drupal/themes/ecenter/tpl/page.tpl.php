@@ -24,7 +24,7 @@
   <script type="text/javascript"><?php /* Needed to avoid Flash of Unstyled Content in IE */ ?> </script>
 </head>
 <body class="<?php print $body_classes; ?>">
-<div id="header-wrapper" class="clearfix">
+<div id="header-wrapper" class="clear-block">
   <div class="logo">
     <h1 id="site-name">
       <a href="<?php print $front_page; ?>" title="<?php print t('Home'); ?>" rel="home"><?php print $site_name; ?></a>
@@ -45,18 +45,18 @@
 </div>
 
 <?php if (!empty($navigation)): ?>
-<div id="navigation" class="clearfix">
+<div id="navigation" class="clear-block">
   <?php print $navigation; ?>
 </div>
 <?php endif; ?>
 
 <?php if (!empty($tabs)): ?>
-  <div id="tasks" class="clearfix">
+  <div id="tasks" class="clear-block">
     <?php print $tabs; ?>
   </div>
 <?php endif; ?>
 
-<div id="content-wrapper" class="clearfix">
+<div id="content-wrapper" class="clear-block">
 
   <?php if (!empty($left)): ?>
   <div id="sidebar-left" class="column sidebar">

@@ -3,9 +3,11 @@ Drupal.behaviors.ecenter_network_behavior_dynamicload = function(context) {
   for (var key in Drupal.settings.openlayers.maps) {
     var map = Drupal.settings.openlayers.maps[key];
     var data = $('#' + key).data('openlayers');
-    var openlayers = data.openlayers;
 
     if (data) {
+
+      var openlayers = data.openlayers;
+
       // Remove all layers (that aren't a base layer)
       for (var i = openlayers.layers.length - 1; i >= 0; i--) {
         var layer = openlayers.layers[i];

@@ -47,6 +47,9 @@ projects[filefield][version] = "3.9"
 projects[geoip][subdir] = "contrib"
 projects[geoip][version] = "1.2"
 
+projects[homebox][subdir] = "contrib"
+projects[homebox][version] = "2.1"
+
 projects[imageapi][subdir] = "contrib"
 projects[imageapi][version] = "1.9"
 

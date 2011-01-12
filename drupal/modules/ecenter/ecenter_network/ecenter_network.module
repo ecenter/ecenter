@@ -915,9 +915,10 @@ function ecenter_network_openlayers_presets() {
       ),
     ),
     'default_layer' => 'osm_mapnik',
+    //'default_layer' => 'world_light_usa',
     'layers' => array(
-      //'osm_mapnik' => 'osm_mapnik',
-      'world_light_usa' => 'world_light_usa',
+      'osm_mapnik' => 'osm_mapnik',
+      //'world_light_usa' => 'world_light_usa',
       'ecenter_network_sites' => 'ecenter_network_sites',
       'ecenter_network_traceroute' => 'ecenter_network_traceroute',
     ),
@@ -1041,9 +1042,8 @@ function ecenter_network_openlayers_behaviors() {
  */
 function ecenter_network_openlayers_layers() {
   $layers = array();
-  // @TODO RESTORE/sanely fail over
-  //$layers['ecenter_network_traceroute'] = ecenter_network_layers_traceroute();
-  //$layers['ecenter_network_sites'] = ecenter_network_layers_sites();
+  $layers['ecenter_network_traceroute'] = ecenter_network_layers_traceroute();
+  $layers['ecenter_network_sites'] = ecenter_network_layers_sites();
   return $layers;
 }
 

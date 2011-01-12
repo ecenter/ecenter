@@ -28,6 +28,7 @@ Drupal.behaviors.ecenter_network_behavior_curves = function(context) {
     for (var i in layers) {
       var old_feature;
       var features = [];
+
       for (var j in layers[i].features) {
         if (old_feature) {
           var feature = layers[i].features[j];
@@ -62,7 +63,6 @@ Drupal.behaviors.ecenter_network_behavior_curves = function(context) {
       }
       layers[i].addFeatures(features);
       layers[i].redraw();
-      //console.log(layers[i]);
     }
   }
 }
@@ -119,8 +119,8 @@ Curve.prototype.getControlPoints = function() {
 
   // Line has no length
   if (mag === 0) {
-    this.c1 = to;
-    this.c2 = from;
+    this.c1 = this.to;
+    this.c2 = this.from;
     return;
   }
 

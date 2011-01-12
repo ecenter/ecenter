@@ -48,7 +48,7 @@ function combobox_elements() {
  */
 function theme_combobox($element) {
 
-  jquery_ui_add(array('ui.widget', 'ui.mouse', 'ui.draggable', 'ui.button', 'ui.position', 'ui.autocomplete'), '1.8');
+  jquery_ui_add(array('ui.widget', 'ui.mouse', 'ui.sortable', 'ui.button', 'ui.position', 'ui.autocomplete'), '1.8');
 
   // Combobox
   drupal_add_js(drupal_get_path('module', 'combobox') .'/js/combobox.js');
@@ -57,7 +57,7 @@ function theme_combobox($element) {
   drupal_add_js(drupal_get_path('module', 'combobox') .'/js/combobox-behaviors.js');
 
   // jQuery UI css (@TODO be more selective?)
-  drupal_add_css(drupal_get_path('module', 'jquery_ui') .'/jquery.ui/themes/base/jquery.ui.all.css');
+  drupal_add_css(drupal_get_path('module', 'jquery_ui') .'/jquery.ui-1.8/themes/base/jquery.ui.all.css');
 
   // A dummy settings array is required, otherwise Drupal's array_merge behavior
   // while adding settings will mess up the data structure.

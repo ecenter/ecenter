@@ -33,6 +33,12 @@ function ecenter_core_context_default_contexts() {
           'region' => 'navigation',
           'weight' => 0,
         ),
+        'search-0' => array(
+          'module' => 'search',
+          'delta' => 0,
+          'region' => 'navigation',
+          'weight' => 1,
+        ),
       ),
     ),
   );

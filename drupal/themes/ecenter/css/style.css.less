@@ -12,12 +12,15 @@
  */
 @font-face {
   font-family: "Droid Sans";
+  font-style: normal;
+  font-weight: normal;
   src: local("Droid Sans"),
        local("DroidSans"),
        url(../font/DroidSans.ttf) format("truetype");
 }
 @font-face {
   font-family: "Droid Sans";
+  font-style: normal;
   font-weight: bold;
   src: local("Droid Sans Bold"),
        local("DroidSans-Bold"),
@@ -249,6 +252,60 @@ table td, table th {
 }
 /* }}} */
 
+/* --- Forms and administration --- */
+/* Form items {{{ */
+input, button, textarea {
+  box-sizing: content-box;
+  -webkit-box-sizing: content-box;
+  -moz-box-sizing: content-box;
+  margin: 0;
+  padding: 1px 3px;
+}
+input.form-submit {
+  .button;
+}
+.form-required {
+  color: #c00;
+  font-weight: bold;
+}
+.form-item {
+  margin-bottom: 1.5em;
+}
+#content-body .form-item .description,
+#content-body fieldset .description {
+  font-size: .875em;
+  color: #555;
+}
+#content-body .form-item label {
+  font-weight: bold;
+}
+#content-body .form-radios {
+  margin-bottom: 1.5em;
+}
+#content-body .form-radios .form-item {
+  margin-bottom: 0;
+}
+/* }}} */
+/* Fieldsets {{{ */
+fieldset legend {
+  font-size: 1.14em;
+  font-weight: bold;
+  padding: 0 8px 0 5px;
+}
+fieldset {
+  margin-bottom: .5em;
+  border: 1px solid #ccc;
+  padding: .75em 1.5em .75em .75em;
+}
+fieldset .description {
+  margin-bottom: .5em;
+}
+.fieldset-wrapper {
+  padding-top: .75em;
+  padding-left: 1em;
+}
+/* }}} */
+
 /* --- Page elements --- */
 /* Containers {{{ */
 #content-wrapper {
@@ -322,7 +379,7 @@ table td, table th {
     text-shadow: 0 1px 1px #fff;
     padding: 3px 6px;
     cursor: pointer;
-    font-family: @font_droid; 
+    font-family: @font_droid;
     font-weight: bold;
     font-size: 1em;
     background-color: transparent;
@@ -339,9 +396,8 @@ table td, table th {
     -webkit-box-shadow:inset 0 3px 3px @color_black_warm;
     box-shadow:inset 0 3px 3px @color_black_warm;
     background-color: @color_white;
-    border: 1px solid @color_dark_grey; 
+    border: 1px solid @color_dark_grey;
   }
-  
 
   .block-title {
     .hide;
@@ -349,9 +405,9 @@ table td, table th {
 
   .block-search {
     float: right;
-    width: 270px;
-    margin-top: 5px;
-    .form-item { 
+    width: 248px;
+    margin-top: 6px;
+    .form-item {
       float: left;
       margin: 0;
     }
@@ -364,11 +420,16 @@ table td, table th {
     :hover input.form-submit {
       border-left: 1px solid @color_dark_grey;
     }
+    input {
+      height: 1.8em;
+      font-size: .925em;
+    }
     .form-text {
       .no_shadow;
       width: 180px;
       margin: 0;
-      padding: 5px 5px 4px 5px;
+      padding: 0 5px;
+      border: 1px solid @color_dark_grey;
       border-right: none;
       -webkit-border-top-left-radius: 7px;
       border-top-left-radius: 7px;
@@ -378,8 +439,9 @@ table td, table th {
       -moz-border-radius-bottomleft: 7px;
       background-color: @color_extra_light_grey;
     }
-    input.form-submit {
-      width: 70px;
+    .form-submit {
+      width: 60px;
+      padding: 0;
       text-align: center;
       -moz-border-radius: 0;
       -webkit-border-radius: 0;
@@ -391,49 +453,60 @@ table td, table th {
       border-bottom-right-radius: 7px;
       -moz-border-radius-bottomright: 7px;
       margin-right: -5px;
-    } 
+    }
   }
 }
 /* }}} */
-/* Navigation search {{{ */
-/* }}} */
 /* Page tasks {{{ */
-#tasks .tabs {
-  width: 100%;
-  float: left;
-}
 #tasks {
-  margin-bottom: 1.5em;
-  padding: .25em 0;
-}
-#tasks a {
-  display: block;
-  padding: .1em .5em;
-  -moz-border-radius: 8px;
-}
-#tasks a:hover {
-  background-color: #aaa;
-  color: #fff;
-}
-#tasks .active a {
-  background-color: #ccc;
-}
-#tasks .active a:hover {
-  color: #b00;
-  cursor: default;
-}
-#tasks ul.tabs {
-  padding-left: 12px;
-}
-#tasks ul.tabs li {
-  list-style-type: none;
-  float: left;
-  margin-right: 10px;
+  margin-top: .75em;
+  margin-bottom: .75em;
+  font-size: .925em;
+
+  a {
+    border: 1px solid @color_white;
+    display: block;
+    padding: 1px 8px;
+    -moz-border-radius: 7px;
+    -webkit-border-radius: 7px;
+    border-radius: 7px;
+    :hover {
+      .gradient_dark;
+      border-color: @color_dark_grey;
+      color: #fff;
+    }
+  }
+  .active a, .active a:hover {
+    .gradient_light;
+    border-color: @color_medium_grey;
+    cursor: default;
+    color: @color_black_warm;
+  }
+
+  ul {
+    .page_side_padding;
+  }
+  ul li {
+    list-style-type: none;
+    float: left;
+    margin-right: 5px;
+  }
+
 }
 /* }}} */
 /* Breadcrumbs {{{ */
 #breadcrumb {
   margin-left: 20px;
+}
+/* }}} */
+/* Messages {{{ */
+div.messages {
+  border: none;
+  margin-bottom: 0;
+  padding: 5px 15px;
+  pre {
+    margin: .75em 0;
+  }
 }
 /* }}} */
 
@@ -457,50 +530,95 @@ table td, table th {
 }
 /* }}} */
 
-/* --- Forms and administration --- */
-/* Form items {{{ */
-input.form-submit {
-  .button;
-}
-.form-required {
-  color: #c00;
-  font-weight: bold;
-}
-.form-item {
-  margin-bottom: 1.5em;
-}
-#content-body .form-item .description,
-#content-body fieldset .description {
-  font-size: .875em;
-  color: #555;
-}
-#content-body .form-item label {
-  font-weight: bold;
-}
-#content-body .form-radios {
-  margin-bottom: 1.5em;
-}
-#content-body .form-radios .form-item {
-  margin-bottom: 0;
+/* -- Extended styles --- */
+/* E-Center Custom Login Block {{{ */
+#block-ecenter_core-login {
+  float: right;
+  font-size: .825em;
+  margin-top: 5px;
+  ul {
+    margin: 0;
+    text-shadow: 0 1px 2px #000;
+  }
+  ul li {
+    display: inline;
+    margin-left: 5px;
+    list-style-type: none;
+  }
 }
 /* }}} */
-/* Fieldsets {{{ */
-fieldset legend {
-  font-size: 1.14em;
-  font-weight: bold;
-  padding: 0 8px 0 5px;
-}
-fieldset {
-  margin-bottom: .5em;
-  border: 1px solid #ccc;
-  padding: .75em 1.5em .75em .75em;
-}
-fieldset .description {
-  margin-bottom: .5em;
-}
-.fieldset-wrapper {
-  padding-top: .75em;
-  padding-left: 1em;
+/* E-Center network (@todo move...) {{{ */
+body.page-network #content-wrapper {
+  background-color: @color_light_grey;
+  width: auto;
+  #network-wrapper {
+    border-bottom: 1px solid @color_dark_grey;
+  }
+  #network-map {
+    float: left;
+    width: 660px;
+    -moz-box-shadow: 2px 5px 10px @color_black_medium;
+    -webkit-box-shadow: 2px 5px 10px @color_black_warm;
+    box-shadow: 2px 5px 10px @color_black_warm;
+  }
+  #query-wrapper {
+    float: left;
+    width: 300px;
+    font-size: .825em;
+    margin-top: 10px;
+    margin-left: 15px;
+
+    .form-item {
+      float: left;
+      margin-bottom: 1em;
+      .form-item { margin: 0 9px 0 0; };
+      label { 
+        float: left; 
+        width: 85px;
+      }
+    }
+
+
+    #edit-network-wrapper-query-start-wrapper,
+    #edit-network-wrapper-query-end-wrapper {
+      input { font-size: .875em; }
+    }
+
+    #edit-network-wrapper-query-start-datepicker-popup-0-wrapper,
+    #edit-network-wrapper-query-end-datepicker-popup-0-wrapper {
+      width: 100px;
+      margin-right: 10px;
+    }
+    #edit-network-wrapper-query-start-datepicker-popup-0,
+    #edit-network-wrapper-query-end-datepicker-popup-0 {
+      width: 90px;
+    }
+    #edit-network-wrapper-query-start-timeEntry-popup-1-wrapper,
+    #edit-network-wrapper-query-end-timeEntry-popup-1-wrapper {
+      width: 75px;
+    }
+    #edit-network-wrapper-query-start-timeEntry-popup-1,
+    #edit-network-wrapper-query-end-timeEntry-popup-1 {
+      width: 50px;
+    }
+
+    #src-wrapper input, #dst-wrapper input {
+      width: 160px;
+    }
+
+    #date-description-wrapper {
+      width: 285px;
+      float: left;
+      font-style: italic;
+      font-size: .875em;
+    }
+  }
+  #results-wrapper {
+    .page_side_padding;
+    .page_top_padding;
+    background-color: @color_white;
+    padding-top: 40px;
+  }
 }
 /* }}} */
 /* Autocomplete styles {{{ */
@@ -540,72 +658,44 @@ html.js input.throbbing {
   background-position: 100% -16px; /* LTR */
 }
 /* }}} */
-
-/* -- Extended styles --- */
-/* E-Center Custom Login Block {{{ */
-#block-ecenter_core-login {
-  float: right;
-  font-size: .825em;
-  margin-top: 7px;
-  ul {
-    margin-top: 0;
-    text-shadow: 0 1px 2px #000;
+/* Combobox {{{ */
+.form-combobox {
+  input, button {
+    border: 1px solid @color_dark_grey;
   }
-  ul li {
-    display: inline;
-    margin-right: 5px;
-    list-style-type: none;
+  input {
+    -webkit-border-top-left-radius: 5px;
+    border-top-left-radius: 5px;
+    -moz-border-radius-topleft: 5px;
+    -webkit-border-bottom-left-radius: 5px;
+    border-bottom-left-radius: 5px;
+    -moz-border-radius-bottomleft: 5px;
   }
-}
-/* }}} */
-/* E-Center network (@todo move...) {{{ */
-body.page-network #content-wrapper {
-  background-color: @color_light_grey;
-  width: auto;
-  #network-wrapper {
-    border-bottom: 1px solid @color_dark_grey;
-  }
-  #network-map {
-    float: left;
-    width: 660px;
-    -moz-box-shadow: 2px 5px 10px @color_black_medium;
-    -webkit-box-shadow: 2px 5px 10px @color_black_warm;
-    box-shadow: 2px 5px 10px @color_black_warm;
-  }
-  #query-wrapper {
-    float: left;
-    width: 285px;
-    font-size: .825em;
-    margin-left: 25px;
-
-    #edit-network-wrapper-query-start-wrapper input,
-    #edit-network-wrapper-query-end-wrapper input {
-      width: 65px;
-    }
-    .form-item {
-      float: left;
-      margin-bottom: 1em;
-      .form-item { margin: 0 9px 0 0; };
-      label { 
-        float: left; 
-        width: 75px;
-      }
-    }
-    #date-description-wrapper {
-      width: 285px;
-      float: left;
-      font-style: italic;
-      font-size: .875em;
-    }
-  }
-  #results-wrapper {
-    .page_side_padding;
-    .page_top_padding;
-    background-color: @color_white;
-    padding-top: 40px;
+  button {
+    .gradient_light;
+    border-left: none;
+    -webkit-border-top-right-radius: 5px;
+    border-top-right-radius: 5px;
+    -moz-border-radius-topright: 5px;
+    -webkit-border-bottom-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+    -moz-border-radius-bottomright: 5px;
   }
 }
+ul.ui-autocomplete {
+  padding: 0;
+  background-color: @color_extra_light_grey;
+  -moz-box-shadow: 2px 5px 10px @color_black_medium;
+  -webkit-box-shadow: 2px 5px 10px @color_black_warm;
+  box-shadow: 2px 5px 10px @color_black_warm;
+  li { 
+    list-style-type: none; 
+    padding: 1px 3px;
+  }
+}
+
 /* }}} */
+
 
 /* -- Common Drupal objects -- */
 /* Nodes {{{ */

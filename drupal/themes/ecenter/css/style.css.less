@@ -80,10 +80,11 @@ body.sidebar-right #sidebar-right {
 /* Variables {{{ */
 @color_blue: #0e3dc4;
 @color_black: #000000;
-@color_extra_light_grey: #f3f3f3;
+@color_extra_light_grey: #eeeeee;
 @color_light_grey: #dddddd;
 @color_medium_light_grey: #ccc;
 @color_medium_grey: #bbbbbb;
+@color_medium_dark_grey: #aaaaaa;
 @color_dark_grey: #999999;
 @color_black_warm: #555555;
 @color_black_medium: #777777;
@@ -91,10 +92,10 @@ body.sidebar-right #sidebar-right {
 @color_yellow: #ffffaa;
 @color_body: #333333;
 @font_droid: "Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif;
-@padding_page: 15px;
+@padding_page: 20px;
 /* }}} */
 /* Mixins {{{ */
-// Hide
+// Padding
 .page_side_padding {
   padding-left: @padding_page;
   padding-right: @padding_page;
@@ -109,19 +110,54 @@ body.sidebar-right #sidebar-right {
   margin-left: -@padding_page;
   margin-right: -@padding_page;
 }
+// Hide
 .hide {
   display: none;
 }
-// Light gradient
-.gradient_light {
-  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='@color_white', endColorstr='@color_medium_grey'); /* for IE */
-  background: -webkit-gradient(linear, left top, left bottom, from(@color_white), to(@color_medium_grey)); /* for webkit browsers */
-  background: -moz-linear-gradient(top,  @color_white,  @color_medium_grey); /* for firefox 3.6+ */
+// Shadows
+.inset_shadow (@left: -2px; @top: -2px; @blur: 5px; @color: @color_medium_grey) {
+  -moz-box-shadow: @left @top @blur @color inset;
+  -webkit-box-shadow: @left @top @blur @color inset;
+  box-shadow: @left @top @blur @color inset;
 }
-.gradient_dark {
-  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='@color_light_grey', endColorstr='@color_dark_grey'); /* for IE */
-  background: -webkit-gradient(linear, left top, left bottom, from(@color_light_grey), to(@color_dark_grey)); /* for webkit browsers */
-  background: -moz-linear-gradient(top,  @color_light_grey,  @color_dark_grey); /* for firefox 3.6+ */
+// Rounded corners
+.round-bottom-left (@radius: 7px) {
+  -webkit-border-bottom-left-radius: @radius;
+  border-bottom-left-radius: @radius;
+  -moz-border-radius-bottomleft: @radius;
+}
+.round-bottom-right (@radius: 7px) {
+  -webkit-border-bottom-right-radius: @radius;
+  border-bottom-right-radius: @radius;
+  -moz-border-radius-bottomright: @radius;
+}
+.round-top-left (@radius: 7px) {
+  -webkit-border-top-left-radius: @radius;
+  border-top-left-radius: @radius;
+  -moz-border-radius-topleft: @radius;
+}
+.round-top-right (@radius: 7px) {
+  -webkit-border-top-right-radius: @radius;
+  border-top-right-radius: @radius;
+  -moz-border-radius-topright: @radius;
+}
+.round-corners (@radius: 7px) {
+  .round-top-left(@radius);
+  .round-top-right(@radius);
+  .round-bottom-left(@radius);
+  .round-bottom-right(@radius);
+}
+
+// Basic gradients
+.vertical_gradient (@start: @color_white; @end: @color_medium_dark_grey;) {
+  filter: progid:DXImageTransform.Microsoft.vertical_gradient(startColorstr='@start', endColorstr='@end'); /* for IE */
+  background: -webkit-gradient(linear, left top, left bottom, from(@start), to(@end)); /* for webkit browsers */
+  background: -moz-linear-gradient(top, @start, @end); /* for firefox 3.6+ */
+}
+.vertical_glass_gradient(@start: @color_white; @middle: @color_medium_dark_grey; @end: @color_medium_light_gray;) {
+  filter: progid:DXImageTransform.Microsoft.vertical_gradient(startColorstr='@start', endColorstr='@end'); /* for IE */
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0, @start), color-stop(0.5, @middle), color-stop(1.0, @end)); /* for webkit browsers */
+  background: -moz-linear-gradient(top, @start, @middle, @end); /* for firefox 3.6+ */
 }
 // No shadow
 .no_shadow {
@@ -131,11 +167,9 @@ body.sidebar-right #sidebar-right {
 }
 // Button
 .button {
-  .gradient_light;
+  .vertical_gradient;
+  .round-corners(5px);
   text-shadow: 0 1px 1px #fff;
-  border-radius: 5px;
-  -webkit-border-radius: 5px;
-  -moz-border-radius: 5px;
   border: 1px solid @color_dark_grey;
   color: @color_black_warm;
   text-align: center;
@@ -158,10 +192,10 @@ body.sidebar-right #sidebar-right {
 a {
   color: @color_blue;
   text-decoration: none;
-}
-a:hover {
-  color: @color_black;
-  background-color: @color_yellow;
+  :hover {
+    color: @color_black;
+    background-color: @color_yellow;
+  }
 }
 /* }}} */
 /* Headers {{{ */
@@ -259,9 +293,8 @@ input, button, textarea {
   -webkit-box-sizing: content-box;
   -moz-box-sizing: content-box;
   margin: 0;
-  padding: 1px 3px;
 }
-input.form-submit {
+input.form-submit, button {
   .button;
 }
 .form-required {
@@ -270,20 +303,20 @@ input.form-submit {
 }
 .form-item {
   margin-bottom: 1.5em;
+  label {
+    font-weight: bold;
+  }
 }
 #content-body .form-item .description,
 #content-body fieldset .description {
   font-size: .875em;
   color: #555;
 }
-#content-body .form-item label {
-  font-weight: bold;
-}
 #content-body .form-radios {
   margin-bottom: 1.5em;
-}
-#content-body .form-radios .form-item {
-  margin-bottom: 0;
+  .form-item {
+    margin-bottom: 0;
+  }
 }
 /* }}} */
 /* Fieldsets {{{ */
@@ -320,15 +353,13 @@ fieldset .description {
 /* }}} */
 /* Page header {{{ */
 #header-wrapper {
-  font-family: @font_droid;
-  color: @color_medium_grey;
-  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='@color_black_warm', endColorstr='@color_black'); /* for IE */
-  background: -webkit-gradient(linear, left top, left bottom, from(@color_black_warm), to(@color_black)); /* for webkit browsers */
-  background: -moz-linear-gradient(top,  @color_black_warm,  @color_black); /* for firefox 3.6+ */
+  .page_side_padding;
+  .vertical_glass_gradient(@color_dark_grey; @color_black_warm; @color_body);
 
-    .page_side_padding;
-    padding-top: 8px;
-    padding-bottom: 8px;
+  font-family: @font_droid;
+  color: @color_light_grey;
+  padding-top: 8px;
+  padding-bottom: 8px;
 
   #site-name {
     float: left;
@@ -357,10 +388,10 @@ fieldset .description {
 /* }}} */
 /* Navigation tabs (primary links) {{{ */
 #navigation {
-  .gradient_dark;
+  .vertical_glass_gradient(@color_extra_light_grey; @color_medium_dark_grey; @color_medium_grey);
   .page_side_padding;
   border-bottom: 1px solid #999;
-  font-size: 0.875em; /* 15px */
+  font-size: 0.875em;
 
   ul {
     margin: 0;
@@ -388,13 +419,16 @@ fieldset .description {
     border-radius: 7px;
     border: 1px solid rgba(255,255,255,0);
     color: @color_black;
-    :hover { color: @color_black; background-color: @color_white; cursor: default; border: 1px solid @color_dark_grey; }
+    :hover { 
+      color: @color_black;
+      background-color: @color_white; 
+      cursor: default; 
+      border: 1px solid @color_dark_grey;
+    }
   }
 
   .block-menu .active-trail a {
-    -moz-box-shadow:inset -2px -2px 5px @color_medium_light_grey;
-    -webkit-box-shadow:inset 0 3px 3px @color_black_warm;
-    box-shadow:inset 0 3px 3px @color_black_warm;
+    .inset_shadow;
     background-color: @color_white;
     border: 1px solid @color_dark_grey;
   }
@@ -405,7 +439,7 @@ fieldset .description {
 
   .block-search {
     float: right;
-    width: 248px;
+    width: 228px;
     margin-top: 6px;
     .form-item {
       float: left;
@@ -414,7 +448,8 @@ fieldset .description {
     :hover .form-text, :hover input.form-submit {
       border-color: @color_black_warm;
     }
-    :hover .form-text {
+    :hover .form-text,
+    :focus .form-text {
       background-color: @color_white;
     }
     :hover input.form-submit {
@@ -426,32 +461,23 @@ fieldset .description {
     }
     .form-text {
       .no_shadow;
-      width: 180px;
+      .round-top-left;
+      .round-bottom-left;
+      width: 160px;
       margin: 0;
       padding: 0 5px;
       border: 1px solid @color_dark_grey;
       border-right: none;
-      -webkit-border-top-left-radius: 7px;
-      border-top-left-radius: 7px;
-      -moz-border-radius-topleft: 7px;
-      -webkit-border-bottom-left-radius: 7px;
-      border-bottom-left-radius: 7px;
-      -moz-border-radius-bottomleft: 7px;
       background-color: @color_extra_light_grey;
     }
     .form-submit {
+      .round-corners(0);
+      .round-top-right;
+      .round-bottom-right;
       width: 60px;
       padding: 0;
+      border-left: 1px solid @color_medium_grey;
       text-align: center;
-      -moz-border-radius: 0;
-      -webkit-border-radius: 0;
-      border-radius: 0;
-      -webkit-border-top-right-radius: 7px;
-      border-top-right-radius: 7px;
-      -moz-border-radius-topright: 7px;
-      -webkit-border-bottom-right-radius: 7px;
-      border-bottom-right-radius: 7px;
-      -moz-border-radius-bottomright: 7px;
       margin-right: -5px;
     }
   }
@@ -464,23 +490,25 @@ fieldset .description {
   font-size: .925em;
 
   a {
-    border: 1px solid @color_white;
+    .vertical_glass_gradient(@color_light_grey; @color_dark_grey; @color_medium_dark_grey);
+    color: @color_body;
+    font-weight: bold;
+    border: 1px solid @color_dark_grey;
     display: block;
     padding: 1px 8px;
     -moz-border-radius: 7px;
     -webkit-border-radius: 7px;
     border-radius: 7px;
     :hover {
-      .gradient_dark;
+      .vertical_glass_gradient(@color_extra_light_grey; @color_medium_light_grey; @color_light_grey);
       border-color: @color_dark_grey;
-      color: #fff;
     }
   }
   .active a, .active a:hover {
-    .gradient_light;
+    .vertical_glass_gradient(@color_white; @color_medium_grey; @color_medium_light_grey);
     border-color: @color_medium_grey;
     cursor: default;
-    color: @color_black_warm;
+    color: @color_black;
   }
 
   ul {
@@ -534,7 +562,7 @@ div.messages {
 /* E-Center Custom Login Block {{{ */
 #block-ecenter_core-login {
   float: right;
-  font-size: .825em;
+  font-size: .925em;
   margin-top: 5px;
   ul {
     margin: 0;
@@ -661,9 +689,10 @@ html.js input.throbbing {
 /* Combobox {{{ */
 .form-combobox {
   input, button {
-    border: 1px solid @color_dark_grey;
+    border: 1px solid @color_medium_dark_grey;
   }
   input {
+    padding: 4px;
     -webkit-border-top-left-radius: 5px;
     border-top-left-radius: 5px;
     -moz-border-radius-topleft: 5px;
@@ -672,7 +701,6 @@ html.js input.throbbing {
     -moz-border-radius-bottomleft: 5px;
   }
   button {
-    .gradient_light;
     border-left: none;
     -webkit-border-top-right-radius: 5px;
     border-top-right-radius: 5px;
@@ -695,7 +723,13 @@ ul.ui-autocomplete {
 }
 
 /* }}} */
-
+/* Loading overlay {{{ */
+.loading-overlay {
+  background-color: rgba(255, 255, 255, 0.75);
+  text-align: center;
+  padding-top: 30px;
+}
+/* }}} */
 
 /* -- Common Drupal objects -- */
 /* Nodes {{{ */

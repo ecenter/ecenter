@@ -10,8 +10,8 @@ Drupal.behaviors.EcenterEvents = function(context) {
   $('#query input[type=hidden]').change(function() {
     $('#results-wrapper').text('');
   });
-  $('#edit-weathermap-wrapper-query-src-wrapper-src-wrapper input').change(function() {
-    var input = $('#edit-weathermap-wrapper-query-dst-wrapper-dst-wrapper input');
+  $('#edit-network-wrapper-query-src-wrapper-src-wrapper input').change(function() {
+    var input = $('#edit-network-wrapper-query-dst-wrapper-dst-wrapper input');
     input.val('');
     input.data('autocomplete')._trigger('change');
   });
@@ -19,8 +19,11 @@ Drupal.behaviors.EcenterEvents = function(context) {
 
 // 
 Drupal.behaviors.EcenterSelectSetForm = function(context) {
-  var src = $('#edit-weathermap-wrapper-query-src-wrapper-src');
-  var dst = $('#edit-weathermap-wrapper-query-dst-wrapper-dst');
+  var src = $('#edit-network-wrapper-query-src-wrapper-src');
+  var dst = $('#edit-network-wrapper-query-dst-wrapper-dst');
+
+  console.log(src);
+  console.log(dst);
 
   if (src.val()) {
     EcenterWeathermap.selectFeature.call(src.get(0), true)
@@ -43,7 +46,6 @@ Drupal.behaviors.EcenterShowTables = function(context) {
   });
 }
 
-
 EcenterWeathermap = {};
 
 /**
@@ -62,7 +64,6 @@ EcenterWeathermap.selectFeature = function(select) {
        var layer = ol.openlayers.getLayersBy('drupalID', 'ecenter_network_sites').pop();
        var control = ol.openlayers.getControlsBy('ecenterID', 'ecenter_network_select').pop();
        var feature = layer.getFeatureBy('ecenterID', query_value);
-
 
        // If this is called while loading, we have a problem
        if (control && feature) { 
@@ -97,7 +98,7 @@ $(document).ready(function() {
     $(this).addClass('data-loading').css('position', 'relative');
 
     var overlay = $('<div class="loading-overlay"><p class="loading">' + Drupal.t('Loading') + '</p><button class="cancel">' + Drupal.t('Cancel') + '</button></div>');
-    //map = $('#weathermap-wrapper').css('position', 'relative');
+    //map = $('#network-wrapper').css('position', 'relative');
     overlay.css({
       'position' : 'absolute',
       'top' : 0,
@@ -113,7 +114,7 @@ $(document).ready(function() {
     $('button.cancel', overlay).click(function(e) {
       xhr.abort();
 
-      var input = $('#edit-weathermap-wrapper-query-dst-wrapper-dst-wrapper input');
+      var input = $('#edit-network-wrapper-query-dst-wrapper-dst-wrapper input');
       input.val('');
       input.data('autocomplete')._trigger('change');
       $(self).removeClass('data-loading');
@@ -176,29 +177,30 @@ $(document).ready(function() {
   });
 
   // Bind to feature select: Set value, then call autocomplete's change function
-  $('#weathermap-map').bind('ecenterfeatureselect', function(e, feature, layer) {
+  $('#network-map').bind('ecenterfeatureselect', function(e, feature, layer) {
+    console.log('whooosh');
     if (layer.selectedFeatures.length == 1) {
-      var input = $('#edit-weathermap-wrapper-query-src-wrapper-src-wrapper input');
+      var input = $('#edit-network-wrapper-query-src-wrapper-src-wrapper input');
       input.val(feature.ecenterID);
       input.data('autocomplete')._trigger('change');
     }
     else if (layer.selectedFeatures.length > 1) {
-      var input = $('#edit-weathermap-wrapper-query-dst-wrapper-dst-wrapper input');
+      var input = $('#edit-network-wrapper-query-dst-wrapper-dst-wrapper input');
       input.val(feature.ecenterID);
       input.data('autocomplete')._trigger('change');
     }
   });
 
   // Bind to feature select
-  $('#weathermap-map').bind('ecenterfeatureunselect', function(e, feature, layer) {
+  $('#network-map').bind('ecenterfeatureunselect', function(e, feature, layer) {
     // No selected features
     if (!layer.selectedFeatures.length) {
-      var input = $('#edit-weathermap-wrapper-query-src-wrapper-src-wrapper input');
+      var input = $('#edit-network-wrapper-query-src-wrapper-src-wrapper input');
       input.val('');
       input.data('autocomplete')._trigger('change');
     }
     else if (layer.selectedFeatures.length) {
-      var input = $('#edit-weathermap-wrapper-query-dst-wrapper-dst-wrapper input');
+      var input = $('#edit-network-wrapper-query-dst-wrapper-dst-wrapper input');
       input.val('');
       input.data('autocomplete')._trigger('change');
     }

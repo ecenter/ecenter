@@ -22,9 +22,6 @@ Drupal.behaviors.EcenterSelectSetForm = function(context) {
   var src = $('#edit-network-wrapper-query-src-wrapper-src');
   var dst = $('#edit-network-wrapper-query-dst-wrapper-dst');
 
-  console.log(src);
-  console.log(dst);
-
   if (src.val()) {
     EcenterWeathermap.selectFeature.call(src.get(0), true)
   }
@@ -178,7 +175,6 @@ $(document).ready(function() {
 
   // Bind to feature select: Set value, then call autocomplete's change function
   $('#network-map').bind('ecenterfeatureselect', function(e, feature, layer) {
-    console.log('whooosh');
     if (layer.selectedFeatures.length == 1) {
       var input = $('#edit-network-wrapper-query-src-wrapper-src-wrapper input');
       input.val(feature.ecenterID);

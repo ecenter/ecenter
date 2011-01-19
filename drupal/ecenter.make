@@ -121,6 +121,12 @@ libraries[openlayers][download][type] = "get"
 libraries[openlayers][download][url] = "http://openlayers.org/download/OpenLayers-2.10.tar.gz"
 libraries[openlayers][directory_name] = "openlayers"
 
+; jqPlot
+libraries[jqplot][download][type] = "get"
+libraries[jqplot[download][url] = "https://bitbucket.org/cleonello/jqplot/downloads/jquery.jqplot.0.9.7r635.zip"
+libraries[jqplot][directory_name] = "jqplot"
+libraries[jqplot][destination] = "modules/contrib/jqplot"
+
 ; Markdownify
 ; @TODO Markdownify library...
 

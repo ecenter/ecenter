@@ -1,9 +1,4 @@
-<div class="results-header">
-  <h2>
-    <span class="src-dst"><?php print $src_dst; ?></span>, 
-    <span class="date-range"><?php print $date_range; ?></span>
-  </h2>
-
+<div class="results-toolbar">
   <?php if ($issuelink || $permalink): ?>
   <div class="links">
     <?php if ($issuelink): ?>
@@ -15,16 +10,22 @@
     <?php endif; ?>
   </div>
   <?php endif; ?>
-
 </div>
 
-<div class="end-to-end-results">
-  <?php print $end_to_end_table; ?>
-</div>
+<div class="results">
+  <h2>
+    <span class="src-dst"><?php print $src_dst; ?></span>, 
+    <span class="date-range"><?php print $date_range; ?></span>
+  </h2>
 
-<div class="hop-results clearfix">
-  <div id="traceroute"></div>
-  <div id="results">
-    <?php print $snmp; ?>
+  <div class="end-to-end-results">
+    <?php print $end_to_end_table; ?>
   </div>
-</div>
+
+  <div class="hop-results clearfix">
+    <div id="traceroute"></div>
+    <div id="results">
+      <?php print $snmp; ?>
+    </div>
+  </div>
+<div>

@@ -291,9 +291,6 @@ function ecenter_network_select_form(&$form_state) {
   $form = _ecenter_network_select_form();
   ahah_helper_register($form, $form_state);
 
-  // Add ahah_helper override
-  drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/ahah.js', 'footer');
-
   // Get variables
   extract(_ecenter_network_extract_query());
 

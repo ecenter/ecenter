@@ -17,28 +17,19 @@ regions[footer] = Footer
 
 ; Styles ----------------
 
-; Use Blueprint, not Tao's css
-stylesheets[screen][] = "reset.css"
-stylesheets[screen][] = "drupal.css"
-stylesheets[screen][] = "base.css"
-stylesheets[print][] = "reset.css"
-stylesheets[print][] = "base.css"
-stylesheets[print][] = "print.css"
-
 ; Custom modules
 stylesheets[all][] = "themes/datepicker.css"
 stylesheets[screen][] = "css/datepicker.css"
+stylesheets[all][] = date.css
 
 stylesheets[all][] = "jquery.ui.all.css"
+
 
 ; System styles
 stylesheets[screen][] = css/system.css
 stylesheets[screen][] = css/system-menus.css
 
-stylesheets[screen][] = css/blueprint/screen.css
 stylesheets[screen][] = css/style.css.less
-stylesheets[print][] = css/blueprint/print.css
-conditional-stylesheets[if IE][screen][] = css/blueprint/ie.css
 conditional-stylesheets[if IE][screen][] = css/ie.css
 
 ; Scripts

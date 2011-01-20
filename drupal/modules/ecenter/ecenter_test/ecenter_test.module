@@ -30,6 +30,9 @@ function ecenter_test_theme() {
     'ecenter_test_combobox' => array(
       'arguments' => array(),
     ),
+    'ecenter_test_jqplot' => array(
+      'arguments' => array(),  
+    ),
   );
 }
 
@@ -71,5 +74,20 @@ function theme_ecenter_test_combobox() {
     ),
   );
   return drupal_render($form);
+}
+
+function theme_ecenter_test_jqplot() {
+ $plot_options = array(
+    'width' => 570,
+    'height' => 250,
+    'hideTables' => FALSE,
+  );
+  jqplot_register_tablechart('#chart', $plot_options);
+
+  $header = array(t('X val'), t('Series 1'), t('Series 2'));
+  for ($i = 0; $i < 10; $i++) {
+    $rows[] = array(array('data' => $i, 'header' => TRUE), rand(), rand());
+  }
+  return theme('ecenter_network_table', $header, $rows, array('id' => 'chart'));
 }
 

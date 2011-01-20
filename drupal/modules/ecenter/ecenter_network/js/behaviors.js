@@ -22,9 +22,6 @@ Drupal.behaviors.EcenterSelectSetForm = function(context) {
   var src = $('#edit-network-wrapper-query-src-wrapper-src');
   var dst = $('#edit-network-wrapper-query-dst-wrapper-dst');
 
-  console.log(src);
-  console.log(dst);
-
   if (src.val()) {
     EcenterWeathermap.selectFeature.call(src.get(0), true)
   }
@@ -36,13 +33,11 @@ Drupal.behaviors.EcenterSelectSetForm = function(context) {
 Drupal.behaviors.EcenterShowTables = function(context) {
   var show_label = Drupal.t('Show data tables');
   var hide_label = Drupal.t('Hide data tables');
-  $('.tablechart', context).after('<div class="toggle-data button">' + show_label + '</div>');
+  $('.tablechart', context).after('<button class="toggle-data">' + show_label + '</button>');
   $('.toggle-data', context).toggle(function() {
-    var p = $(this).text(hide_label).parent();
-    $('.snmp-data-table', p).show();
+    $(this).text(hide_label).parent().find('#utilization-tables').slideDown('fast');
   }, function() {
-    var p = $(this).text(show_label).parent();
-    $('.snmp-data-table', p).hide();
+    $(this).text(show_label).parent().find('#utilization-tables').slideUp('fast');
   });
 }
 
@@ -178,7 +173,6 @@ $(document).ready(function() {
 
   // Bind to feature select: Set value, then call autocomplete's change function
   $('#network-map').bind('ecenterfeatureselect', function(e, feature, layer) {
-    console.log('whooosh');
     if (layer.selectedFeatures.length == 1) {
       var input = $('#edit-network-wrapper-query-src-wrapper-src-wrapper input');
       input.val(feature.ecenterID);

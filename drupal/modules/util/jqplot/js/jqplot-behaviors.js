@@ -3,10 +3,10 @@ Drupal.behaviors.jqPlot = function(context) {
     var replace = ['renderer', 'markerRenderer', 'labelRenderer', 'parseX',
       'parseY', 'scrapeSingle', 'scrapeMultiple', 'processSeries'];
 
-    /*$.each(Drupal.settings.jqPlot, function(selector, settings) {
+    $.each(Drupal.settings.jqPlot, function(selector, settings) {
       settings = Drupal.jqPlot.replaceFunctions(settings, replace);
       $(selector).tablechart(settings);
-    });*/
+    });
   }
 }
 

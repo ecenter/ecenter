@@ -97,14 +97,14 @@ class Ecenter_Data_Service_Client {
     curl_setopt_array($handle, $options);
 
     $response = curl_exec($handle);
+    $error = curl_error($handle);
+    $code = curl_getinfo($handle, CURLINFO_HTTP_CODE);
 
-    if (!empty($response)) {
-      $code = curl_getinfo($handle, CURLINFO_HTTP_CODE);
+    if (!$error) {
       $response = json_decode($response, $assoc);
     }
     else {
-      $code = 0;
-      $response = 'Timed out after '. $timeout .' seconds.';
+      $response = $error;
     }
 
     curl_close($handle);

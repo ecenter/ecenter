@@ -25,8 +25,7 @@ function jqplot_register_tablechart($selector, $settings = array()) {
     drupal_add_js($path .'/jqplot/jquery.jqplot.js');
 
     // Our libraries and behaviors
-    drupal_add_js($path .'/js/jquery.uuid.js');
-    drupal_add_js($path .'/js/jquery.tablechart.js');
+    drupal_add_js($path .'/tablechart/jquery.tablechart.js');
     drupal_add_js($path .'/js/jqplot-behaviors.js');
 
     // @TODO:  Support ALL plugins, with more intelligence!
@@ -35,10 +34,11 @@ function jqplot_register_tablechart($selector, $settings = array()) {
     drupal_add_js($path .'/jqplot/plugins/jqplot.canvasAxisLabelRenderer.js');
 
     // Get plugins
-    $chart_plugins = array_intersect_key($plugins, $settings['plotOptions']);
-
-    foreach ($chart_plugins as $plugin_path) {
-      drupal_add_js($plugin_path);
+    if (!empty($settings['plotOptions'])) {
+      $chart_plugins = array_intersect_key($plugins, $settings['plotOptions']);
+      foreach ($chart_plugins as $plugin_path) {
+        drupal_add_js($plugin_path);
+      }
     }
 
     $behavior = array();
@@ -54,7 +54,7 @@ function jqplot_register_tablechart($selector, $settings = array()) {
 function jqplot_jqplot_plugins() {
   $path = drupal_get_path('module', 'jqplot');
   return array(
-      'highlighter' => $path .'/jqplot/plugins/jqplot.highlighter.js',
-      'cursor' => $path .'/jqplot/plugins/jqplot.cursor.js',
+    'highlighter' => $path .'/jqplot/plugins/jqplot.highlighter.js',
+    'cursor' => $path .'/jqplot/plugins/jqplot.cursor.js',
   );
 }

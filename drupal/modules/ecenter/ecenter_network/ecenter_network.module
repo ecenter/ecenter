@@ -446,8 +446,8 @@ function ecenter_network_get_data($src, $dst, $start, $end, $debug_url = FALSE) 
         $results[$query] = $data;
       }
       else { // Note that the static variable is NOT set in this case
-        drupal_set_message(t('Request failed with code @code.', 
-          array('@code' => $result['code'])));
+        drupal_set_message(t('Request (@url) failed with code @code (@response).', 
+          array('@url' => $result['url'], '@code' => $result['code'], '@response' => $result['response'])));
       }
     }
   }
@@ -485,8 +485,8 @@ function ecenter_network_get_hops($src = NULL) {
         }
       }
       else {
-        drupal_set_message(t('Request failed with code @code.', 
-          array('@code' => $result['code'])));
+        drupal_set_message(t('Request (@url) failed with code @code (@response).', 
+          array('@url' => $result['url'], '@code' => $result['code'], '@response' => $result['response'])));
       }
     }
   }
@@ -529,8 +529,8 @@ function ecenter_network_get_node($ip) {
       $nodes[$ip] = $data;
     }
     else {
-      drupal_set_message(t('Request failed with code @code.', 
-        array('@code' => $result['code'])));
+      drupal_set_message(t('Request (@url) failed with code @code (@response).', 
+        array('@url' => $result['url'], '@code' => $result['code'], '@response' => $result['response'])));
       return FALSE;
     }
   }

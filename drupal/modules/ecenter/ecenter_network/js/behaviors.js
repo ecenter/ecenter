@@ -33,13 +33,11 @@ Drupal.behaviors.EcenterSelectSetForm = function(context) {
 Drupal.behaviors.EcenterShowTables = function(context) {
   var show_label = Drupal.t('Show data tables');
   var hide_label = Drupal.t('Hide data tables');
-  $('.tablechart', context).after('<div class="toggle-data button">' + show_label + '</div>');
+  $('.tablechart', context).after('<div class="toggle-data"><button>' + show_label + '</button></div>');
   $('.toggle-data', context).toggle(function() {
-    var p = $(this).text(hide_label).parent();
-    $('.snmp-data-table', p).show();
+    $(this).parent().find('#utilization-tables').slideDown('fast');
   }, function() {
-    var p = $(this).text(show_label).parent();
-    $('.snmp-data-table', p).hide();
+    $(this).parent().find('#utilization-tables').slideUp('fast');
   });
 }
 

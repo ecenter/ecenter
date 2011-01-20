@@ -445,7 +445,7 @@ function theme_ecenter_network_render_data_end_to_end_table($data) {
 
   ksort($table);
   if (!empty($table)) {
-    return theme('ecenter_network_table', $headers, $table, array('class' => 'end-to-end-table'));
+    return theme('jqplot_table', $headers, $table, array('class' => 'end-to-end-table'));
   }
 }
 
@@ -460,7 +460,7 @@ function theme_ecenter_network_utilization_table($hop, $direction, $table) {
   $headers = array(t('Time'), t('Percent utilization'));
   $output = '<div class="snmp-data-table">';
   $output .= '<h3>'. $hop['nodename'] .' ('. t(ucfirst($direction)) .')</h3>';
-  $output .= theme('ecenter_network_table', $headers, $table, $attributes);
+  $output .= theme('jqplot_table', $headers, $table, $attributes);
   $output .= '</div>';
   return $output;
 }
@@ -475,82 +475,4 @@ function theme_ecenter_network_hop_option($hop) {
     case 'ip':
       return check_plain($hop['hub_name']) .' ('. check_plain($hop['hub']) .' - '. check_plain($hop['ip_noted']) .')';
   }
-}
-
-/**
- * Theme a table for Ecenter.
- *
- * Similar to regular theme_table, minus the stupid sticky headers.
- */
-function theme_ecenter_network_table($header, $rows, $attributes = array(), $caption = NULL) {
-  $output = '<table'. drupal_attributes($attributes) .">\n";
-
-  if (isset($caption)) {
-    $output .= '<caption>'. $caption ."</caption>\n";
-  }
-
-  // Format the table header:
-  if (count($header)) {
-    $ts = tablesort_init($header);
-    // HTML requires that the thead tag has tr tags in it followed by tbody
-    // tags. Using ternary operator to check and see if we have any rows.
-    $output .= (count($rows) ? ' <thead><tr>' : ' <tr>');
-    foreach ($header as $cell) {
-      $cell = tablesort_header($cell, $header, $ts);
-      $output .= _theme_table_cell($cell, TRUE);
-    }
-    // Using ternary operator to close the tags based on whether or not there are rows
-    $output .= (count($rows) ? " </tr></thead>\n" : "</tr>\n");
-  }
-  else {
-    $ts = array();
-  }
-
-  // Format the table rows:
-  if (count($rows)) {
-    $output .= "<tbody>\n";
-    $flip = array('even' => 'odd', 'odd' => 'even');
-    $class = 'even';
-    foreach ($rows as $number => $row) {
-      $attributes = array();
-
-      // Check if we're dealing with a simple or complex row
-      if (isset($row['data'])) {
-        foreach ($row as $key => $value) {
-          if ($key == 'data') {
-            $cells = $value;
-          }
-          else {
-            $attributes[$key] = $value;
-          }
-        }
-      }
-      else {
-        $cells = $row;
-      }
-      if (count($cells)) {
-        // Add odd/even class
-        $class = $flip[$class];
-        if (isset($attributes['class'])) {
-          $attributes['class'] .= ' '. $class;
-        }
-        else {
-          $attributes['class'] = $class;
-        }
-
-        // Build row
-        $output .= ' <tr'. drupal_attributes($attributes) .'>';
-        $i = 0;
-        foreach ($cells as $cell) {
-          $cell = tablesort_cell($cell, $header, $ts, $i++);
-          $output .= _theme_table_cell($cell);
-        }
-        $output .= " </tr>\n";
-      }
-    }
-    $output .= "</tbody>\n";
-  }
-
-  $output .= "</table>\n";
-  return $output;
 }

@@ -11,8 +11,14 @@
  */
 function template_preprocess_ecenter_network_data(&$vars) {
   // Generate permalink
-  $vars['permalink'] = l('Permalink', 'network', array('query' => $vars['params']));
-
+  $permalink['permalink'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Permalink'),
+    '#value' => url('network', 
+      array('query' => $vars['params'], 'absolute' => TRUE,)
+    ),
+  );
+  $vars['permalink'] = drupal_render($permalink);
   // Generate issue link -- encode params for use with custom ecenter_issues
   // module
   if (user_access('create issue content')) {

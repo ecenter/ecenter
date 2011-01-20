@@ -5,7 +5,6 @@ Drupal.behaviors.jqPlot = function(context) {
 
     $.each(Drupal.settings.jqPlot, function(selector, settings) {
       settings = Drupal.jqPlot.replaceFunctions(settings, replace);
-      console.log('whee');
       $(selector).tablechart(settings);
     });
   }

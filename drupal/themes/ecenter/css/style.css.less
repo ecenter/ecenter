@@ -65,7 +65,7 @@
 }
 /* }}} */
 /* Mixins: Shadows (.shadow, .no_shadow) {{{ */
-.shadow (@left: 0; @top: 1px; @blur: 6px; @color: @color_grey_60; @inset: '';) {
+.shadow (@left: 0; @top: 1px; @blur: 6px; @color: @color_grey_60; @inset: ;) {
   -moz-box-shadow: @left @top @blur @color @inset;
   -webkit-box-shadow: @left @top @blur @color @inset;
   box-shadow: @left @top @blur @color @inset;
@@ -109,7 +109,6 @@
   cursor: pointer;
   font-family: @font_droid; 
   font-weight: bold;
-  font-size: 1em;
   :hover { 
     color: @color_black;
     border: 1px solid @color_grey_20;
@@ -272,6 +271,9 @@ input, button, textarea {
   background-color: @color_white;
   :hover { border: 1px solid @color_grey_53; }
 }
+button {
+  font-size: .875em;
+}
 input.form-submit, button {
   .button;
 }
@@ -405,7 +407,7 @@ fieldset .description {
   }
 
   .block-menu .active-trail a {
-    .inset_shadow;
+    .shadow(0; 1px; 6px; #aaa; inset);
     background-color: @color_white;
     border: 1px solid @color_grey_60;
   }
@@ -648,14 +650,32 @@ body.page-network #content-wrapper {
     .vertical_gradient(@color_white; @color_grey_87;);
     border-bottom: 1px solid @color_grey_60;
     padding: 12px 8px 8px 8px;
-    a { .button; };
+    a { 
+      .box; 
+      .button; 
+      margin-right: 12px;
+      font-size: 14px;
+    };
+    .form-item {
+      .box;
+      margin: 3px 0 0 0;
+      label { font-size: 14px;}
+      label, input { display: inline; }
+      input { font-size: 12px; padding: 3px 6px; }
+    }
   }
 
-  #end-to-end-results { .box; width: 500px; }
-  #end-to-end-charts { .box; width: 440px; }
-
-  #hop-wrapper { display: inline-block; }
-
+  #end-to-end-wrapper {
+    margin-bottom: 1.5em;
+    #end-to-end-results { .box; width: 500px; }
+    #end-to-end-charts { .box; width: 440px; }
+  }
+  #hop-wrapper { 
+    display: inline-block;
+    #traceroute { .box; width: 400px; }
+    #snmp-results { .box; width: 540px; }
+  }
+  
 }
 /* }}} */
 /* Autocomplete styles {{{ */
@@ -705,6 +725,7 @@ html.js input.throbbing {
     padding: 3px 5px;
   }
   button {
+    font-size: 1em;
     .round_corner(0; 7px; 7px; 0;);
     border-left: none;
   }
@@ -727,6 +748,39 @@ ul.ui-autocomplete {
   background-color: rgba(255, 255, 255, 0.75);
   text-align: center;
   padding-top: 30px;
+}
+/* }}} */
+/* Traceroute "subway map" {{{ */
+.trace-label {
+  line-height: 1.1;
+  font-size: 11px;
+}
+.hostname {
+  font-weight: bold;
+}
+.traceroute-graph-wrapper .labels-left .trace-label {
+  text-align: right;
+}
+.hop-wrapper {
+  background-color: #fff;
+  padding: 14px;
+  border: 3px solid #ccc;
+}
+#traceroute .has-chart {
+  color: #007700;
+}
+
+#traceroute {
+  float: left;
+  width: 368px;
+  margin-right: 12px;
+}
+#results {
+  float: left;
+  width: 560px;
+}
+#traceroute .highlight {
+  background-color: #ffffaa;
 }
 /* }}} */
 

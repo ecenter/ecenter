@@ -112,14 +112,10 @@ class Ecenter_Data_Service_Client {
     $result = array(
       'parameters' => $parameters,
       'query' => $querystring,
+      'url' => $url,
       'code' => $code,
       'response' => $response,
     );
-
-    //if ($path == 'data') {
-      //dpm(urldecode($url));
-      //dpm(debug_backtrace());
-    //}
 
     return $result;
   }

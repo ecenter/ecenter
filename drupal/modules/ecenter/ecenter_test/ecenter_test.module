@@ -78,8 +78,9 @@ function theme_ecenter_test_combobox() {
 
 function theme_ecenter_test_jqplot() {
  $plot_options = array(
-    //'width' => 570,
-    //'height' => 250,
+    'width' => 570,
+    'height' => 250,
+    'hideTables' => FALSE,
   );
   jqplot_register_tablechart('#chart', $plot_options);
 

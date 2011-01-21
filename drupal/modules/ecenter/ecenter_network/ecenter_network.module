@@ -61,14 +61,6 @@ function ecenter_network_theme() {
         'params' => NULL,
       )
     ) + $options,
-    'ecenter_network_table' => array(
-      'arguments' => array(
-        'header' => NULL,
-        'rows' => NULL,
-        'attributes' => NULL,
-        'caption' => NULL,
-      ),
-    ) + $options,
     'ecenter_network_render_data_snmp' => array(
       'arguments' => array(
         'data' => NULL,

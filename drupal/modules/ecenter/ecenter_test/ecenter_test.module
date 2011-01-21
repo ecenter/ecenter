@@ -78,16 +78,16 @@ function theme_ecenter_test_combobox() {
 
 function theme_ecenter_test_jqplot() {
  $plot_options = array(
-    'width' => 570,
-    'height' => 250,
+    'width' => 700,
+    'height' => 200,
     'hideTables' => FALSE,
   );
   jqplot_register_tablechart('#chart', $plot_options);
 
   $header = array(t('X val'), t('Series 1'), t('Series 2'));
   for ($i = 0; $i < 10; $i++) {
-    $rows[] = array(array('data' => $i, 'header' => TRUE), rand(), rand());
+    $rows[] = array(array('data' => $i, 'header' => TRUE), rand(0, 100), rand(20, 100));
   }
-  return theme('ecenter_network_table', $header, $rows, array('id' => 'chart'));
+  return theme('jqplot_table', $header, $rows, array('id' => 'chart'));
 }
 

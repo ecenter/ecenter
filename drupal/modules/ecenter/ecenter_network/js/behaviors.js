@@ -93,7 +93,6 @@ $(document).ready(function() {
     $(this).addClass('data-loading').css('position', 'relative');
 
     var overlay = $('<div class="loading-overlay"><p class="loading">' + Drupal.t('Loading') + '</p><button class="cancel">' + Drupal.t('Cancel') + '</button></div>');
-    //map = $('#network-wrapper').css('position', 'relative');
     overlay.css({
       'position' : 'absolute',
       'top' : 0,
@@ -107,7 +106,10 @@ $(document).ready(function() {
     overlay.fadeIn('slow');
 
     $('button.cancel', overlay).click(function(e) {
+      e.stopPropagation();
+
       xhr.abort();
+      xhr.aborted = true;
 
       var input = $('#edit-network-wrapper-query-dst-wrapper-dst-wrapper input');
       input.val('');
@@ -118,7 +120,6 @@ $(document).ready(function() {
         $(this).remove();
       });
 
-      e.stopPropagation();
       return false;
     });
   });

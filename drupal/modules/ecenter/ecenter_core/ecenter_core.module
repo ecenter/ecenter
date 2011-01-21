@@ -18,6 +18,15 @@ function ecenter_core_theme() {
 }
 
 /**
+ * Implementation of hook_init().
+ */
+function ecenter_core_init() {
+  // Force load AHAH
+  drupal_add_js('misc/ahah.js');
+  drupal_add_js(drupal_get_path('module', 'ecenter_core') .'/js/ahah.js');
+}
+
+/**
  * Implementation of hook_block().
  */
 function ecenter_core_block($op = 'list', $delta = 0, $edit = array()) {

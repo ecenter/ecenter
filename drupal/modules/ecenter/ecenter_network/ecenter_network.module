@@ -298,6 +298,7 @@ function ecenter_network_select_form(&$form_state) {
   }
 
   $hops = ecenter_network_get_hops();
+  $src_options[0] = '';
   foreach ($hops['combined'] as $key => $hop) {
     $src_options[$key] = theme('ecenter_network_hop_option', $hop);
   }
@@ -306,6 +307,7 @@ function ecenter_network_select_form(&$form_state) {
   if ($src) {
     $form['network_wrapper']['query']['src_wrapper']['src']['#default_value'] = $src;
 
+    $dst_options[0] = '';
     foreach ($hops['combined'] as $key => $hop) {
       $dst_options[$key] = theme('ecenter_network_hop_option', $hop);
     }

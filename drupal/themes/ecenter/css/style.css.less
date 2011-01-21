@@ -605,8 +605,13 @@ body.page-network #content-wrapper {
       width: 50px;
     }
 
-    #src-wrapper input, #dst-wrapper input {
-      width: 160px;
+    #src-wrapper,#dst-wrapper {
+      input {
+        width: 160px;
+      }
+      .ahah-progress { 
+        display: none;
+      }
     }
 
     #date-description-wrapper {
@@ -638,7 +643,6 @@ body.page-network #content-wrapper {
     td.avg .value {
       font-size: 1.35em;
       font-weight: bold;
-      letter-spacing: 0.05em;
     }
     td .unit {
       font-size: .825em;

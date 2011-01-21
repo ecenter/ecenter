@@ -79,7 +79,17 @@ EcenterWeathermap.selectFeature = function(select) {
  * and executed once.
  */
 $(document).ready(function() {
+  // Clear out 'remembered' form values
+  var src_input = $('#edit-network-wrapper-query-src-wrapper-src-wrapper input');
+  var dst_input = $('#edit-network-wrapper-query-dst-wrapper-dst-wrapper input');
+  var src_select = $('#edit-network-wrapper-query-src-wrapper-src-wrapper select');
+  if (src_input.val() != '' && dst_input.val() == '') {
+    src_input.val('');
+    src_select.val('');
+    EcenterWeathermap.selectFeature.call(src_select, false);
+  }
 
+  // If a src/dst changes, change the map, too.
   $('#ecenter-network-select-form #src-wrapper select, #ecenter-network-select-form #dst-wrapper select')
   .change(function(e) { 
     EcenterWeathermap.selectFeature.call(this, true);

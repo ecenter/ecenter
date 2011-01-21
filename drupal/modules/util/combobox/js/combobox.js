@@ -64,6 +64,17 @@
           .appendTo( ul );
       };
 
+      $("<button>&nbsp;</button>")
+        .attr( "tabIndex", -1 )
+        .attr( "title", "Clear input" )
+        .insertAfter( input )
+        .addClass('clear-value')
+        .click(function() {
+          input.val('');
+          input.data('autocomplete')._trigger('change');
+          return false;
+        });
+
       $( "<button>&nbsp;</button>" )
         .attr( "tabIndex", -1 )
         .attr( "title", "Show All Items" )

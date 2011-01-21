@@ -95,16 +95,6 @@ $(document).ready(function() {
     EcenterWeathermap.selectFeature.call(this, true);
   });
 
-  // @TODO move to behavior, possibly combobox module
-  /*$('<button class="clear-value">X</button>')
-  .appendTo('#edit-network-wrapper-query-src-wrapper-src-wrapper, #edit-network-wrapper-query-dst-wrapper-dst-wrapper').click(function(e) {
-    e.stopPropagation();
-    var input = $(this).parent().find('input');
-    input.val('');
-    input.data('autocomplete')._trigger('change');
-    return false;
-  });*/
-
   // Bind to ajaxSend event
   $('#ecenter-network-select-form').bind('ajaxSend', function(ajax, xhr) {
     self = this;

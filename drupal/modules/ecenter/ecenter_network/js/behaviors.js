@@ -47,28 +47,28 @@ EcenterWeathermap = {};
  * select param calls select function on feature
  */
 EcenterWeathermap.selectFeature = function(select) {
-   var maps = Drupal.settings.openlayers.maps;
-   var val = $(this).val().split(':', 2);
-   var query_type = val[0];
-   var query_value = val[1];
+  var maps = Drupal.settings.openlayers.maps;
+  var val = $(this).val().split(':', 2);
+  var query_type = val[0];
+  var query_value = val[1];
 
-   // Iterate over "all" maps for ease.  There should be but one.
-   if (query_type == 'hub') {
-     for (key in maps) {
-       var ol = $('#' + maps[key].id).data('openlayers');
-       var layer = ol.openlayers.getLayersBy('drupalID', 'ecenter_network_sites').pop();
-       var control = ol.openlayers.getControlsBy('ecenterID', 'ecenter_network_select').pop();
-       var feature = layer.getFeatureBy('ecenterID', query_value);
+  // Iterate over "all" maps for ease.  There should be but one.
+  if (query_type == 'hub') {
+    for (key in maps) {
+      var ol = $('#' + maps[key].id).data('openlayers');
+      var layer = ol.openlayers.getLayersBy('drupalID', 'ecenter_network_sites').pop();
+      var control = ol.openlayers.getControlsBy('ecenterID', 'ecenter_network_select').pop();
+      var feature = layer.getFeatureBy('ecenterID', query_value);
 
-       // If this is called while loading, we have a problem
-       if (control && feature) { 
-         control.callbacks.over.call(control, feature);
-         if (select) {
-           control.select.call(control, feature);
-         }
-       }
-     }
-   }
+      // If this is called while loading, we have a problem
+      if (control && feature) { 
+        control.callbacks.over.call(control, feature);
+        if (select) {
+          control.select.call(control, feature);
+        }
+      }
+    }
+  }
 }
 
 /**

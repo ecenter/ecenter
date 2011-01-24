@@ -138,11 +138,12 @@ function _ecenter_network_select_form() {
 
   // Initialize time-related variables
   $inc = variable_get('ecenter_network_time_increment', 10);
-  $now = time();
   $default_start = variable_get('ecenter_network_default_end', 7200);
+  $offset = variable_get('ecenter_network_default_offset', 600);
+  $now = time();
   $tz = date_default_timezone_name(TRUE);
-  $end = date_make_date($now, $tz, DATE_UNIX);
-  $start = date_make_date($now - $default_start, $tz, DATE_UNIX);
+  $end = date_make_date($now - $offset, $tz, DATE_UNIX);
+  $start = date_make_date($now - $offset - $default_start, $tz, DATE_UNIX);
 
   if (user_access('debug ecenter network')) {
     $form['debug'] = array(

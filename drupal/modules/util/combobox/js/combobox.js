@@ -64,7 +64,7 @@
           .appendTo( ul );
       };
 
-      $("<button>&nbsp;</button>")
+      $("<button>X</button>")
         .attr( "tabIndex", -1 )
         .attr( "title", "Clear input" )
         .insertAfter( input )

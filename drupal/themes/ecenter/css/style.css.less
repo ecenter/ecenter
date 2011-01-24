@@ -571,19 +571,30 @@ body.page-network #content-wrapper {
 
     .form-item {
       float: left;
-      margin-bottom: 1em;
+      margin: 0;
+      &.form-item-labeled { margin-bottom: 1em; }
       .form-item { margin: 0 9px 0 0; };
       label { 
         float: left; 
         width: 85px;
+        margin-top: 2px;
       }
     }
 
+    #edit-network-wrapper-query-start-wrapper {
+      margin-bottom: .25em;
+      .description { display: none; }
+    }
 
     #edit-network-wrapper-query-start-wrapper,
     #edit-network-wrapper-query-end-wrapper {
-      input {
+      label {
+        margin-top: 1px;
+        font-weight: normal;
         font-size: .925em; 
+      }
+      input {
+        font-size: .875em; 
       }
     }
 
@@ -605,12 +616,37 @@ body.page-network #content-wrapper {
       width: 50px;
     }
 
-    #src-wrapper,#dst-wrapper {
+    #src-wrapper, #dst-wrapper {
+      .box;
+      width: 300px;
       input {
         width: 160px;
       }
       .ahah-progress { 
         display: none;
+      }
+      button.ui-button {
+        padding: 3px 5px;
+      }
+      button.clear-value {
+        display: none;
+        float: right;
+        background: none;
+        background-color: #999;
+        border: none;
+        .round_corner(9px; 9px; 9px; 9px;);
+        text-shadow: none;
+        color: #fff;
+        font-weight: bold;
+        padding: 1px 2px;
+        font-size: 9px;
+        margin: 5px 0 0 5px;
+        :hover {
+          background-color: #900;
+        }
+      }
+      :hover {
+        button.clear-value { display: block; }
       }
     }
 

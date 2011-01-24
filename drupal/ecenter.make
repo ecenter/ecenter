@@ -67,7 +67,7 @@ projects[jquery_update][version] = "1.1"
 projects[jquery_update][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/buildsystem/raw/drupal/patches/jquery_update_jquery-1.4.4.patch"
 
 projects[less][subdir] = "contrib"
-projects[less][version] = "2.4"
+projects[less][version] = "2.5"
 
 projects[openlayers][subdir] = "contrib"
 projects[openlayers][version] = "2.0-alpha10"
@@ -123,7 +123,7 @@ libraries[openlayers][directory_name] = "openlayers"
 
 ; jqPlot
 libraries[jqplot][download][type] = "get"
-libraries[jqplot[download][url] = "https://bitbucket.org/cleonello/jqplot/downloads/jquery.jqplot.0.9.7r635.zip"
+libraries[jqplot][download][url] = "http://bitbucket.org/cleonello/jqplot/downloads/jquery.jqplot.0.9.7r635.zip"
 libraries[jqplot][directory_name] = "jqplot"
 libraries[jqplot][destination] = "modules/contrib/jqplot"
 
@@ -138,4 +138,4 @@ libraries[tinymce][directory_name] = "tinymce"
 ; GeoIP
 libraries[geoip][download][type] = "get"
 libraries[geoip][download][url] = "http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz"
-lirbaries[geoip][directory_name] = "geoip"
+libraries[geoip][directory_name] = "geoip"

@@ -1,8 +1,4 @@
 ? jquery_ui_multiple_versions.patch
-Index: jquery_ui.module
-===================================================================
-RCS file: /cvs/drupal-contrib/contributions/modules/jquery_ui/jquery_ui.module,v
-retrieving revision 1.6.2.2
 diff -u -p -r1.6.2.2 jquery_ui.module
 --- jquery_ui.module	21 Jun 2009 03:43:03 -0000	1.6.2.2
 +++ jquery_ui.module	3 Jan 2011 05:02:25 -0000
@@ -73,3 +69,49 @@ diff -u -p -r1.6.2.2 jquery_ui.module
      }
    }
  }
+diff --git jquery_ui.install jquery_ui.install
+index 11afaec..0a5f1d7 100644
+--- jquery_ui.install
++++ jquery_ui.install
+@@ -7,41 +7,6 @@
+  */
+ 
+ /**
+- * Implementation of hook_requirements().
+- */
+-function jquery_ui_requirements($phase) {
+-  $requirements = array();
+-  $t = get_t();
+-  $jquery_ui_version = 0;
+-
+-  if ($phase == 'install') {
+-    // The jquery_ui_get_version() function is in the .module file, which isn't
+-    // loaded yet.
+-    include_once dirname(__FILE__) . '/jquery_ui.module';
+-  }
+-
+-  $requirements['jquery_ui']['title'] = $t('jQuery UI');
+-  if ($jquery_ui_version = jquery_ui_get_version()) {
+-    // Everything looks good; display the current jQuery UI version.
+-    $requirements['jquery_ui']['value'] = $jquery_ui_version;
+-    $requirements['jquery_ui']['severity'] = REQUIREMENT_OK;
+-  }
+-  else {
+-    // Required library wasn't found. Abort installation.
+-    $requirements['jquery_ui']['value'] = $t('Not found');
+-    // Provide a download link to the jQuery UI development bundle. The provided
+-    // link will list the latest 1.6.x build.
+-    $requirements['jquery_ui']['description'] = $t('The <a href="@jqueryui">jQuery UI</a> plugin is missing. <a href="@download">Download</a> and extract it to your <em>jquery_ui</em> module directory.', array(
+-      '@jqueryui' => 'http://jqueryui.com',
+-      '@download' => 'http://code.google.com/p/jquery-ui/downloads/list?q=1.6',
+-    ));
+-    $requirements['jquery_ui']['severity'] = REQUIREMENT_ERROR;
+-  }
+-
+-  return $requirements;
+-}
+-
+-/**
+  * Implementation of hook_uninstall().
+  */
+ function jquery_ui_uninstall() {

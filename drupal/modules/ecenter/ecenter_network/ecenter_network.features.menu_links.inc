@@ -11,7 +11,7 @@ function ecenter_network_menu_default_menu_links() {
     'menu_name' => 'primary-links',
     'link_path' => 'network',
     'router_path' => 'network',
-    'link_title' => 'Network',
+    'link_title' => 'Explore network data',
     'options' => array(
       'attributes' => array(
         'title' => '',

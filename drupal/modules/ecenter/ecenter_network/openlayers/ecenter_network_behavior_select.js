@@ -68,10 +68,10 @@ Drupal.ecenterSelect.click = function(feature) {
   if (selected) {
     this.unselect(feature);
     Drupal.ecenterSelect.out(feature); // Unhighlight
-    $('#weathermap-map').trigger('ecenterfeatureunselect', [feature, feature.layer]);
+    $('#network-map').trigger('ecenterfeatureunselect', [feature, feature.layer]);
   } else {
     this.select(feature);
-    $('#weathermap-map').trigger('ecenterfeatureselect', [feature, feature.layer]);
+    $('#network-map').trigger('ecenterfeatureselect', [feature, feature.layer]);
   }
 }
 

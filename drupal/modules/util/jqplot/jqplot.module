@@ -8,6 +8,22 @@
  */
 
 /**
+ * Implementation of hook_theme().
+ */
+function jqplot_theme() {
+  return array(
+    'jqplot_table' => array(
+      'arguments' => array(
+        'header' => NULL,
+        'rows' => NULL,
+        'attributes' => NULL,
+        'caption' => NULL,
+      ),
+    ),
+  );
+}
+
+/**
  * Register a "tablechart"
  *
  * ONLY the first call's settings for a given selector will be respected.
@@ -25,8 +41,7 @@ function jqplot_register_tablechart($selector, $settings = array()) {
     drupal_add_js($path .'/jqplot/jquery.jqplot.js');
 
     // Our libraries and behaviors
-    drupal_add_js($path .'/js/jquery.uuid.js');
-    drupal_add_js($path .'/js/jquery.tablechart.js');
+    drupal_add_js($path .'/tablechart/jquery.tablechart.js');
     drupal_add_js($path .'/js/jqplot-behaviors.js');
 
     // @TODO:  Support ALL plugins, with more intelligence!
@@ -35,10 +50,11 @@ function jqplot_register_tablechart($selector, $settings = array()) {
     drupal_add_js($path .'/jqplot/plugins/jqplot.canvasAxisLabelRenderer.js');
 
     // Get plugins
-    $chart_plugins = array_intersect_key($plugins, $settings['plotOptions']);
-
-    foreach ($chart_plugins as $plugin_path) {
-      drupal_add_js($plugin_path);
+    if (!empty($settings['plotOptions'])) {
+      $chart_plugins = array_intersect_key($plugins, $settings['plotOptions']);
+      foreach ($chart_plugins as $plugin_path) {
+        drupal_add_js($plugin_path);
+      }
     }
 
     $behavior = array();
@@ -54,7 +70,85 @@ function jqplot_register_tablechart($selector, $settings = array()) {
 function jqplot_jqplot_plugins() {
   $path = drupal_get_path('module', 'jqplot');
   return array(
-      'highlighter' => $path .'/jqplot/plugins/jqplot.highlighter.js',
-      'cursor' => $path .'/jqplot/plugins/jqplot.cursor.js',
+    'highlighter' => $path .'/jqplot/plugins/jqplot.highlighter.js',
+    'cursor' => $path .'/jqplot/plugins/jqplot.cursor.js',
   );
+}
+
+/**
+ * Theme a table for jqPlot
+ *
+ * Similar to regular theme_table, minus the stupid sticky headers.
+ */
+function theme_jqplot_table($header, $rows, $attributes = array(), $caption = NULL) {
+  $output = '<table'. drupal_attributes($attributes) .">\n";
+
+  if (isset($caption)) {
+    $output .= '<caption>'. $caption ."</caption>\n";
+  }
+
+  // Format the table header:
+  if (count($header)) {
+    $ts = tablesort_init($header);
+    // HTML requires that the thead tag has tr tags in it followed by tbody
+    // tags. Using ternary operator to check and see if we have any rows.
+    $output .= (count($rows) ? ' <thead><tr>' : ' <tr>');
+    foreach ($header as $cell) {
+      $cell = tablesort_header($cell, $header, $ts);
+      $output .= _theme_table_cell($cell, TRUE);
+    }
+    // Using ternary operator to close the tags based on whether or not there are rows
+    $output .= (count($rows) ? " </tr></thead>\n" : "</tr>\n");
+  }
+  else {
+    $ts = array();
+  }
+
+  // Format the table rows:
+  if (count($rows)) {
+    $output .= "<tbody>\n";
+    $flip = array('even' => 'odd', 'odd' => 'even');
+    $class = 'even';
+    foreach ($rows as $number => $row) {
+      $attributes = array();
+
+      // Check if we're dealing with a simple or complex row
+      if (isset($row['data'])) {
+        foreach ($row as $key => $value) {
+          if ($key == 'data') {
+            $cells = $value;
+          }
+          else {
+            $attributes[$key] = $value;
+          }
+        }
+      }
+      else {
+        $cells = $row;
+      }
+      if (count($cells)) {
+        // Add odd/even class
+        $class = $flip[$class];
+        if (isset($attributes['class'])) {
+          $attributes['class'] .= ' '. $class;
+        }
+        else {
+          $attributes['class'] = $class;
+        }
+
+        // Build row
+        $output .= ' <tr'. drupal_attributes($attributes) .'>';
+        $i = 0;
+        foreach ($cells as $cell) {
+          $cell = tablesort_cell($cell, $header, $ts, $i++);
+          $output .= _theme_table_cell($cell);
+        }
+        $output .= " </tr>\n";
+      }
+    }
+    $output .= "</tbody>\n";
+  }
+
+  $output .= "</table>\n";
+  return $output;
 }

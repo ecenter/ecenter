@@ -128,7 +128,7 @@ libraries[jqplot][directory_name] = "jqplot"
 libraries[jqplot][destination] = "modules/contrib/jqplot"
 
 ; Markdownify
-; @TODO Markdownify library...
+; @TODO Add Markdownify library once module work is further along
 
 ; TinyMCE
 libraries[tinymce][download][type] = "get"

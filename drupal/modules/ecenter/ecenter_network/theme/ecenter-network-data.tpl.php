@@ -20,7 +20,7 @@
   
   <div id="end-to-end-wrapper" class="clear-block">
     <div id="end-to-end-results">
-      <?php print $end_to_end_table; ?>
+      <?php print $end_to_end; ?>
     </div>
     <div id="end-to-end-charts">
       Chart container!

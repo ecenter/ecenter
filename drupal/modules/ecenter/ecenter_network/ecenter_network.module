@@ -61,12 +61,12 @@ function ecenter_network_theme() {
         'params' => NULL,
       )
     ) + $options,
-    'ecenter_network_render_data_snmp' => array(
+    'ecenter_network_hops' => array(
       'arguments' => array(
         'data' => NULL,
       ),
     ) + $options,
-    'ecenter_network_render_data_end_to_end_table' => array(
+    'ecenter_network_end_to_end' => array(
       'arguments' => array(
         'data' => NULL,
       ),

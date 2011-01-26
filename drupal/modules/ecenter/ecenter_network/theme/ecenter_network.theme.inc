@@ -91,17 +91,17 @@ function template_preprocess_ecenter_network_data(&$vars) {
 
   // Generate end to end statistics
   if (!empty($vars['data']['end_to_end'])) {
-    $vars['end_to_end_table'] = theme('ecenter_network_render_data_end_to_end_table', $vars['data']['end_to_end']);
+    $vars['end_to_end_table'] = theme('ecenter_network_end_to_end_table', $vars['data']['end_to_end']);
   }
   else {
     $vars['end_to_end_table'] = '<p class="missing">'. t('No end to end data available') .'</p>';
-  }
+  }*/
 }
 
 /**
  * Theme SNMP data
  */
-function theme_ecenter_network_render_data_snmp($data) {
+function theme_ecenter_network_hops($data) {
   $plot_options = array(
     'width' => 570,
     'height' => 250,

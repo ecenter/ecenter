@@ -19,9 +19,11 @@ function template_preprocess_ecenter_network_data(&$vars) {
     ),
   );
   $vars['permalink'] = drupal_render($permalink);
+  
   // Generate issue link -- encode params for use with custom ecenter_issues
   // module
-  if (user_access('create issue content')) {
+  // @TODO Move into menu for features export?
+  if (module_exists('ecenter_issues') && user_access('create ecenter issue content')) {
     $issue_params = array();
     foreach ($vars['params'] as $key=>$param) {
       $issue_params[] = "$key=$param";

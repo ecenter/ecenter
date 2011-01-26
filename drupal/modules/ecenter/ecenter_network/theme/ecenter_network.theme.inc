@@ -43,27 +43,6 @@ function template_preprocess_ecenter_network_data(&$vars) {
   $src_hop = $hops['combined'][$vars['params']['src']];
   $dst_hop = $hops['combined'][$vars['params']['dst']];
 
-  $query_table = array(
-    array(
-      array(
-        'data' => t('Source'),
-        'header' => TRUE,
-      ),
-      array(
-        'data' => $src_hop['hub_name'] .' ('. $src_hop['hub'] .')',
-      ),
-    ),
-    array(
-      array(
-        'data' => t('Destination'),
-        'header' => TRUE,
-      ),
-      array(
-        'data' => $dst_hop['hub_name'] .' ('. $dst_hop['hub'] .')',
-      ),
-    ),
-  );
-
   $vars['src_dst'] = t('From @src_hub_name (@src_hub) to @dst_hub_name (@dst_hub)', 
     array(
       '@src_hub_name' => $src_hop['hub_name'],
@@ -74,18 +53,25 @@ function template_preprocess_ecenter_network_data(&$vars) {
   );
 
   // Generate date range -- internal date is stored as UTC
-  //$utc = timezone_open('UTC');
-  //$tz = timezone_open(date_default_timezone_name(TRUE));
   $dates = array();
   foreach (array('start', 'end') as $val) {
     $date = date_create($vars['params'][$val]);
     $dates[$val] = date_format($date, 'M j, Y H:i');
   }
-  $vars['date_range'] = t('@start - @end', array('@start' => $dates['start'], '@end' => $dates['end']));
+  $vars['date_range'] = t('@start - @end', 
+    array('@start' => $dates['start'], '@end' => $dates['end']));
+
+  // End to end statistics
+  if (!empty($vars['data']['end_to_end'])) {
+    $vars['end_to_end'] = theme('ecenter_network_end_to_end', $vars['data']['end_to_end']);
+  }
+  else {
+    $vars['end_to_end_table'] = '<p class="missing">'. t('No end to end data available') .'</p>';
+  }
 
   // Generate SNMP charts
-  if (!empty($vars['data']['diff'])) {
-    $vars['snmp'] = theme('ecenter_network_render_data_snmp', $vars['data']['diff']);
+  /*if (!empty($vars['data']['diff'])) {
+    $vars['snmp'] = theme('ecenter_network_snmp', $vars['data']['diff']);
   }
   else {
     $vars['snmp'] = '<p class="missing">'. t('No path or utilization data available.') .'</p>';
@@ -232,222 +218,40 @@ function theme_ecenter_network_hops($data) {
 /**
  * Theme end to end data table
  */
-function theme_ecenter_network_render_data_end_to_end_table($data) {
-  // BWCTL
-  /*if (!empty($data['bwctl']['forward'])) {
-    foreach ($data['bwctl']['forward'] as $item) {
-      list($timestamp, $values) = $item;
-      $tz = date_default_timezone_name(TRUE);
-      $date = date_make_date($timestamp, $tz, DATE_UNIX);
-    }
-  }*/
-
+function theme_ecenter_network_end_to_end($data) {
   $table = array();
   $headers = array(
-    array(
-      'data' => '',
-      'class' => 'empty',
-    ),
-    t('Average'),
-    t('Max'),
-    t('Min')
+    array('data' => '', 'class' => 'empty',),
+    t('Average'), t('Max'), t('Min'),
   );
 
-
+  // Iterate through forward and reverse directions
   foreach (array('forward', 'reverse') as $direction) {
     $dir_label = ($direction == 'forward') ? t('Forward') : t('Reverse');
-
-    if (!empty($data['bwctl'][$direction])) {
-
-      $mean_throughput = array();
-      $max_throughput = NULL;
-      $min_throughput = NULL;
-
-      foreach ($data['bwctl'][$direction] as $item) {
-        list($timestamp, $values) = $item;
-
-        $mean_throughput[] = $values['throughput'];
-        $max_throughput = ($values['throughput'] > $max_throughput) 
-          ? $values['throughput'] : $max_throughput;
-        $min_throughput = (!$min_throughput || ($values['throughput'] < $min_throughput)) 
-          ? $values['throughput'] : $min_throughput;
-      }
-
-      $mean_throughput = array_sum($mean_throughput) / count($mean_throughput);
-
-      $table['0_' . $direction] = array(
-        array(
-          'data' => t('@direction Throughput', 
-            array('@direction' => ucfirst($dir_label))),
-          'header' => TRUE,
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $mean_throughput / 1e+6) 
-            .'</span><span class="unit">'. t('mbps') .'</span>',
-          'class' => 'avg',
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $max_throughput / 1e+6) 
-            .'</span><span class="unit">'. t('mbps') .'</span>',
-          'class' => 'max',
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $min_throughput / 1e+6) 
-            .'</span><span class="unit">'. t('mbps') .'</span>',
-          'class' => 'min',
-        ),
-      );
-
-    }
-
-    if (!empty($data['pinger'][$direction])) {
-
-      $mean_rtt = array();
-      $mean_iqripd = array();
-      $mean_loss = array();
-
-      $max_rtt = NULL;
-      $min_rtt = NULL;
-      $max_iqripd = NULL;
-      $min_iqripd = NULL;
-      $max_loss = NULL;
-      $min_loss = NULL;
-
-      foreach ($data['pinger'][$direction] as $item) {
-        list($timestamp, $values) = $item;
-
-        $mean_rtt[] = $values['meanRtt'];
-        $max_rtt = ($values['maxRtt'] > $max_rtt) 
-          ? $values['maxRtt'] : $max_rtt;
-        $min_rtt = (!$min_rtt || ($values['minRtt'] < $min_rtt)) 
-          ? $values['minRtt'] : $min_rtt;
-
-        $mean_iqripd[] = $values['iqrIpd'];
-
-        $mean_loss[] = $values['lossPercent'];
-        $max_loss = ($values['lossPercent'] > $max_loss) 
-          ? $values['lossPercent'] : $max_loss;
-        $min_loss = (!$min_loss || ($values['lossPercent'] < $min_loss)) 
-          ? $values['lossPercent'] : $min_loss;
-      }
-
-      $mean_rtt = array_sum($mean_rtt) / count($mean_rtt);
-      $mean_iqripd = array_sum($mean_iqripd) / count($mean_iqripd);
-      $mean_loss = array_sum($mean_loss) / count($mean_loss);
-
-      $table['1_' . $direction] = array(
-        array(
-          'data' => t('@direction RTT', array('@direction' => ucfirst($dir_label))),
-          'header' => TRUE,
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $mean_rtt) 
-            .'</span><span class="unit">'. t('ms') .'</span>',
-          'class' => 'avg',
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $max_rtt) 
-            .'</span><span class="unit">'. t('ms') .'</span>',
-          'class' => 'max',
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $min_rtt) 
-            .'</span><span class="unit">'. t('ms') .'</span>',
-          'class' => 'min',
-        ),
-      );
-
-      $table['3_' . $direction] = array(
-        array(
-          'data' => t('@direction Packet Loss', array('@direction' => ucfirst($dir_label))),
-          'header' => TRUE,
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $mean_loss) 
-            .'</span><span class="unit">'. t('%') .'</span>',
-          'class' => 'avg',
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $max_loss) 
-            .'</span><span class="unit">'. t('%') .'</span>',
-          'class' => 'max',
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $min_loss) 
-            .'</span><span class="unit">'. t('%') .'</span>',
-          'class' => 'min',
-        ),
-      );
-
-      $table['4_' . $direction] = array(
-        array(
-          'data' => t('@direction Jitter', 
-            array('@direction' => ucfirst($dir_label))),
-          'header' => TRUE,
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.2f', $mean_iqripd) 
-            .'</span><span class="unit">'. t('ms') .'</span>',
-          'class' => 'avg',
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.2f', $max_iqripd) 
-            .'</span><span class="unit">'. t('ms') .'</span>',
-          'class' => 'max',
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.2f', $min_iqripd) 
-            .'</span><span class="unit">'. t('ms') .'</span>',
-          'class' => 'min',
-        ),
-      );
-
-    }
-
-
-    if (!empty($data['owamp'][$direction])) {
-      $mean_delay = array();
-      $max_delay = NULL;
-      $min_delay = NULL;
-
-      foreach ($data['owamp'][$direction] as $item) {
-        list($timestamp, $values) = $item;
-        $mean_delay[] = ($values['max_delay'] + $values['min_delay']) / 2;
-        $max_delay = ($values['max_delay'] > $max_delay) 
-          ? $values['max_delay'] : $max_delay;
-        $min_delay = (!$min_delay || ($values['min_delay'] < $min_delay)) 
-          ? $values['min_delay'] : $min_delay;
-      }
-
-      $mean_delay = array_sum($mean_delay) / count($mean_delay);
-
-      $table['2_' . $direction] = array(
-        array(
-          'data' => t('@direction Delay', array('@direction' => ucfirst($dir_label))),
-          'header' => TRUE,
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $mean_delay * 1000) 
-            .'</span><span class="unit">'. t('ms') .'</span>',
-          'class' => 'avg',
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $max_delay * 1000) 
-            .'</span><span class="unit">'. t('ms') .'</span>',
-          'class' => 'max',
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $min_delay * 1000) 
-            .'</span><span class="unit">'. t('ms') .'</span>',
-          'class' => 'min',
-        ),
-      );
-    }
+  
+    ecenter_network_process_measurement($data['bwctl'][$direction]
+      /*, array('throughput' => 'Throughput')*/);
   }
+
 
   ksort($table);
   if (!empty($table)) {
     return theme('jqplot_table', $headers, $table, array('class' => 'end-to-end-table'));
+  }
+}
+
+function ecenter_network_process_measurement($table, $callback = NULL) {
+  $return = array(); 
+
+  // This is a slightly ugly and possibly premature optimization: instead of 
+  // looping through table multiple times, create 
+  $mean = array();
+  $max = array();
+  $min = array();
+  
+  dpm($table);
+  foreach ($table as $row) {
+    //$mean
   }
 }
 

@@ -70,20 +70,13 @@ function template_preprocess_ecenter_network_data(&$vars) {
   }
 
   // Generate SNMP charts
-  /*if (!empty($vars['data']['diff'])) {
-    $vars['snmp'] = theme('ecenter_network_snmp', $vars['data']['diff']);
+  if (!empty($vars['data']['diff'])) {
+    $vars['hops'] = theme('ecenter_network_hops', $vars['data']['diff']);
   }
   else {
-    $vars['snmp'] = '<p class="missing">'. t('No path or utilization data available.') .'</p>';
+    $vars['hops'] = '<p class="missing">'. t('No path or utilization data available.') .'</p>';
   }
 
-  // Generate end to end statistics
-  if (!empty($vars['data']['end_to_end'])) {
-    $vars['end_to_end_table'] = theme('ecenter_network_end_to_end_table', $vars['data']['end_to_end']);
-  }
-  else {
-    $vars['end_to_end_table'] = '<p class="missing">'. t('No end to end data available') .'</p>';
-  }*/
 }
 
 /**
@@ -193,7 +186,6 @@ function theme_ecenter_network_hops($data) {
               );
             }
             $tables[] = theme('ecenter_network_utilization_table', $hop['hop'], $direction, $table);
-            //$tables[$direction][] = theme('ecenter_network_utilization_table', $hop['hop'], $direction, $table);
           }
         }
       }
@@ -220,39 +212,90 @@ function theme_ecenter_network_hops($data) {
  */
 function theme_ecenter_network_end_to_end($data) {
   $table = array();
+  $data_tables = array();
+
+  foreach ($data as $type => $measurements) {
+
+    foreach (array('forward', 'reverse') as $direction) {
+      if (!empty($measurements[$direction]['statistics'])) {
+        foreach ($measurements[$direction]['statistics'] as $measurement => $statistics) {
+          // Create suggestion array
+          $suggestions = array(
+            'ecenter_network_format_'. $type .'_'. $measurement,
+            'ecenter_network_format_'. $type,
+            'ecenter_network_format_default',
+          );
+          foreach ($statistics as $key => $value) {
+            $statistics[$key] = array('data' => theme($suggestions, $value, $type, $measurement), 'class' => $key);
+          }
+          $table[$type .'_'. $measurement .'_'. $direction] = array(array('data' => ucfirst($direction) .' '. $measurement .' ('. $type .')', 'header' => TRUE)) + $statistics;
+        }
+        foreach ($measurements[$direction]['timeseries'] as $measurement => $timeseries) {
+          $data_table = array();
+          
+          // Create suggestion array
+          $suggestions = array(
+            'ecenter_network_format_'. $type .'_'. $measurement,
+            'ecenter_network_format_'. $type,
+            'ecenter_network_format_default',
+          );
+          foreach ($timeseries as $timestamp => $value) {
+            $data_table[] = array($timestamp, theme($suggestions, $value, $type, $measurement, FALSE));
+          }
+          $data_tables[] = '<div class="hide data-table '. $measurement .'"><h2>'. ucfirst($direction) .' '. $measurement .'</h2>'. theme('jqplot_table', array(t('Time'), t('Value')), $data_table) .'</div>';
+        }
+      }
+    }
+  }
+
+  ksort($table);
+
   $headers = array(
     array('data' => '', 'class' => 'empty',),
     t('Average'), t('Max'), t('Min'),
   );
 
-  // Iterate through forward and reverse directions
-  foreach (array('forward', 'reverse') as $direction) {
-    $dir_label = ($direction == 'forward') ? t('Forward') : t('Reverse');
-  
-    ecenter_network_process_measurement($data['bwctl'][$direction]
-      /*, array('throughput' => 'Throughput')*/);
-  }
-
-
-  ksort($table);
   if (!empty($table)) {
-    return theme('jqplot_table', $headers, $table, array('class' => 'end-to-end-table'));
+    return theme('jqplot_table', $headers, $table, array('class' => 'end-to-end-table')) . implode($data_tables, '');
   }
 }
 
-function ecenter_network_process_measurement($table, $callback = NULL) {
-  $return = array(); 
-
-  // This is a slightly ugly and possibly premature optimization: instead of 
-  // looping through table multiple times, create 
-  $mean = array();
-  $max = array();
-  $min = array();
-  
-  dpm($table);
-  foreach ($table as $row) {
-    //$mean
+/**
+ * Consolidated value formatter
+ */
+function theme_ecenter_network_format_default($value, $type = NULL, $measurement = NULL, $units = TRUE, $format = NULL) {
+  if (!$units) {
+    if ($format) {
+      return sprintf($format, $value);
+    }
+    else {
+      return $value;
+    }
   }
+  switch ($measurement) {
+    case 'throughput':
+      return theme('ecenter_network_format_value', number_format($value / (1000 * 1000), 0, '', ','), t('mbps'));
+    case 'max_delay':
+    case 'min_delay':
+      return theme('ecenter_network_format_value', sprintf('%1.0f', $value * 1000), t('ms'));
+    case 'minRtt':
+    case 'maxRtt':
+    case 'medianRtt':
+    case 'meanRtt':
+    case 'iqrIpd':
+      return theme('ecenter_network_format_value', sprintf('%1.0f', $value), t('ms'));
+    case 'loss': 
+      return theme('ecenter_network_format_value', sprintf('%1.1f', $value), t('%'));
+    default:
+      return '<span class="value">'. $value .'</span>';
+  }
+}
+
+/** 
+ * Format a value
+ */
+function theme_ecenter_network_format_value($value, $units) {
+  return '<span class="value">'. $value .'</span><span class="unit">'. $units .'</span>';
 }
 
 /**

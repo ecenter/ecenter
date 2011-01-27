@@ -78,6 +78,22 @@ function ecenter_network_theme() {
         'table' => NULL,
       ),
     ) + $options,
+    'ecenter_network_format_default' => array(
+      'arguments' => array(
+        'value' => NULL,
+        'type' => NULL,
+        'measurement' => NULL,
+        'units' => TRUE,
+        'format' => NULL,
+      ),
+    ) + $options,
+    'ecenter_network_format_value' => array(
+      'arguments' => array(
+        'value' => NULL,
+        'units' => NULL,
+      ),
+    ) + $options,
+
 
   );
   return $registry;

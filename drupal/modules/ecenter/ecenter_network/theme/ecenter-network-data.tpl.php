@@ -30,7 +30,7 @@
   <div id="hop-wrapper" class="clear-block">
     <div id="traceroute"></div>
     <div id="snmp-results">
-      <?php print $snmp; ?>
+      <?php print $hops; ?>
     </div>
   </div>
 <div>

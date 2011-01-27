@@ -43,23 +43,28 @@ function template_preprocess_ecenter_network_data(&$vars) {
   $src_hop = $hops['combined'][$vars['params']['src']];
   $dst_hop = $hops['combined'][$vars['params']['dst']];
 
-  $vars['src_dst'] = t('From @src_hub_name (@src_hub) to @dst_hub_name (@dst_hub)', 
-    array(
-      '@src_hub_name' => $src_hop['hub_name'],
-      '@src_hub' => $src_hop['hub'],
-      '@dst_hub_name' => $dst_hop['hub_name'],
-      '@dst_hub' => $dst_hop['hub'],
-    )
-  );
-
   // Generate date range -- internal date is stored as UTC
   $dates = array();
   foreach (array('start', 'end') as $val) {
     $date = date_create($vars['params'][$val]);
     $dates[$val] = date_format($date, 'M j, Y H:i');
   }
-  $vars['date_range'] = t('@start - @end', 
-    array('@start' => $dates['start'], '@end' => $dates['end']));
+
+  $vars['title'] = t('<span class="src-dst">@src_hub_name (@src_hub) to 
+    @dst_hub_name (@dst_hub)</span><span class="separator">, </span>
+    <span class="date-range">@start - @end</span>',
+    array( 
+      '@src_hub_name' => $src_hop['hub_name'],
+      '@src_hub' => $src_hop['hub'],
+      '@dst_hub_name' => $dst_hop['hub_name'],
+      '@dst_hub' => $dst_hop['hub'],
+      '@start' => $dates['start'], 
+      '@end' => $dates['end']
+    )
+  );
+
+  // Set title
+  drupal_set_title(t('E-Center Network Query | ') . $vars['title']);
 
   // End to end statistics
   if (!empty($vars['data']['end_to_end'])) {

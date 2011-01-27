@@ -193,18 +193,7 @@ function theme_ecenter_network_hops($data) {
   }
   jqplot_register_tablechart('#utilization-tables', $plot_options);
 
-  /*$forward = '<h3>'. t('Forward') .'</h3>'
-    .'<div id="forward-tables" class="utilization-table">'
-    . implode("\n", $tables['forward']) .'</div>';
-  $reverse = '<h3>'. t('Reverse') .'</h3>'
-    .'<div id="reverse-tables" class="utilization-table">'
-    . implode("\n", $tables['reverse']) .'</div>';
-
-  jqplot_register_tablechart('#forward-tables', $plot_options);
-  jqplot_register_tablechart('#reverse-tables', $plot_options);*/
-
   return '<div id="utilization-tables">'. implode("\n", $tables) .'</div>';
-  //return $forward . $reverse;
 }
 
 /**

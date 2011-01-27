@@ -565,7 +565,6 @@ function ecenter_network_parse_response($response, $src, $dst) {
   $data = $response['response'];
   $hops = ecenter_network_get_hops();
 
-  // @TODO extract from params instead?
   list($src_type, $src_val) = explode(':', $src, 2);
   list($dst_type, $dst_val) = explode(':', $dst, 2);
 

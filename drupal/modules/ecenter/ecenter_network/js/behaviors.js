@@ -7,6 +7,7 @@ Drupal.behaviors.EcenterTraceroute = function(context) {
 
 // Catchall for minor behavior modifications
 Drupal.behaviors.EcenterEvents = function(context) {
+  // Clear out results wrapper
   $('#query input[type=hidden]').change(function() {
     $('#results-wrapper').text('');
   });

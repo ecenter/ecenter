@@ -148,33 +148,13 @@ $(document).ready(function() {
   $('#results').bind('jqplotHighlightSeries', function(e, sidx, plot) {
     if (Drupal.settings.ecenterWeathermap.seriesLookup) {
       var hop = Drupal.settings.ecenterWeathermap.seriesLookup.idx[sidx];
-      var tc = $('#results').data('TableChart');
-      var lh = tc.chart.plugins.linehighlighter;
-
+      var tc = $('#utilization-tables').data('tablechart');
+      var lh = tc['default'].chart.plugins.linehighlighter;
+        
       $('#trace-hop-label-' + hop.id).addClass('highlight');
       if (hop.corresponding_id) {
         $('#trace-hop-label-' + hop.corresponding_id).addClass('highlight');
       }
-
-      // Highlight corresponding line
-      /*if (hop.corresponding_idx) {
-        sidx = hop.corresponding_idx;
-        s = tc.chart.series[sidx];
-        console.log(hop);
-        console.log(s);
-        if (s == undefined) {
-          console.log('no series...');
-          console.log(sidx);
-          console.log(tc.chart.series);
-        }
-        console.log('---');
-        if (s) {
-          series_color = (lh.colors && lh.colors[sidx] != undefined) ? lh.colors[sidx] : s.seriesColors[sidx];
-          var opts = {color: series_color, lineWidth: s.lineWidth + lh.sizeAdjust};
-          lh.highlightSeries(sidx, tc.chart, opts);
-        }
-      }*/
-
     }
   });
 

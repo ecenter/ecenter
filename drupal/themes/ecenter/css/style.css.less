@@ -200,7 +200,6 @@ table {
   border-collapse: collapse;
 }
 table thead th {
-  text-align: left;
   font-weight: bold;
   font-size: 0.875em;
   color: #666;
@@ -214,6 +213,7 @@ table tbody th {
   color: #666;
 }
 table td, table th {
+  text-align: left;
   padding: 2px 11px 2px 11px;
   border: 2px solid #fff;
 }
@@ -669,6 +669,7 @@ body.page-network #content-wrapper {
 
     td {
       font-size: .875em;
+      text-align: center;
     }
 
     td .value {
@@ -676,13 +677,13 @@ body.page-network #content-wrapper {
       margin-right: 1px;
     }
 
-    td.avg .value {
+    td.mean .value {
       font-size: 1.35em;
       font-weight: bold;
     }
     td .unit {
-      font-size: .825em;
-      color: #666;
+      font-size: .875em;
+      color: #888;
     }
 
   }

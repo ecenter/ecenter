@@ -14,6 +14,7 @@ function template_preprocess_ecenter_network_data(&$vars) {
   $permalink['permalink'] = array(
     '#type' => 'textfield',
     '#title' => t('Permalink'),
+    '#size' => 45,
     '#value' => url('network', 
       array('query' => $vars['params'], 'absolute' => TRUE,)
     ),

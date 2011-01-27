@@ -693,21 +693,38 @@ body.page-network #content-wrapper {
 
   }
   #results-toolbar {
+    position: relative;
+    z-index: 10;
     .vertical_gradient(@color_white; @color_grey_87;);
     border-bottom: 1px solid @color_grey_60;
-    padding: 12px 8px 8px 8px;
-    a { 
-      .box; 
-      .button; 
-      margin-right: 12px;
-      font-size: 14px;
-    };
-    .form-item {
+    padding: 8px;
+    h2 {
       .box;
-      margin: 3px 0 0 0;
-      label { font-size: 14px;}
-      label, input { display: inline; }
-      input { font-size: 12px; padding: 3px 6px; }
+      border-right: 1px solid @color_grey_67;
+      padding-right: 15px;
+      margin: 0 15px 0 0;
+      font-size: 1.25em;
+      span {
+        display: block;
+        line-height: 1;
+        &.separator { .hide; }
+        &.date-range { font-size: .75em; font-weight: normal; line-height: 1.6;}
+      }
+    }
+    .links {
+      a { 
+        .box; 
+        .button; 
+        margin-right: 12px;
+        font-size: 14px;
+      };
+      .form-item {
+        .box;
+        margin: 3px 0 0 0;
+        label { font-size: 14px;}
+        label, input { display: inline; }
+        input { font-size: 12px; padding: 3px 6px; }
+      }
     }
   }
 

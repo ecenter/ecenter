@@ -14,14 +14,17 @@ function template_preprocess_ecenter_network_data(&$vars) {
   $permalink['permalink'] = array(
     '#type' => 'textfield',
     '#title' => t('Permalink'),
+    '#size' => 45,
     '#value' => url('network', 
       array('query' => $vars['params'], 'absolute' => TRUE,)
     ),
   );
   $vars['permalink'] = drupal_render($permalink);
+  
   // Generate issue link -- encode params for use with custom ecenter_issues
   // module
-  if (user_access('create issue content')) {
+  // @TODO Move into menu for features export?
+  if (module_exists('ecenter_issues') && user_access('create ecenter issue content')) {
     $issue_params = array();
     foreach ($vars['params'] as $key=>$param) {
       $issue_params[] = "$key=$param";
@@ -41,67 +44,51 @@ function template_preprocess_ecenter_network_data(&$vars) {
   $src_hop = $hops['combined'][$vars['params']['src']];
   $dst_hop = $hops['combined'][$vars['params']['dst']];
 
-  $query_table = array(
-    array(
-      array(
-        'data' => t('Source'),
-        'header' => TRUE,
-      ),
-      array(
-        'data' => $src_hop['hub_name'] .' ('. $src_hop['hub'] .')',
-      ),
-    ),
-    array(
-      array(
-        'data' => t('Destination'),
-        'header' => TRUE,
-      ),
-      array(
-        'data' => $dst_hop['hub_name'] .' ('. $dst_hop['hub'] .')',
-      ),
-    ),
-  );
-
-  $vars['src_dst'] = t('From @src_hub_name (@src_hub) to @dst_hub_name (@dst_hub)', 
-    array(
-      '@src_hub_name' => $src_hop['hub_name'],
-      '@src_hub' => $src_hop['hub'],
-      '@dst_hub_name' => $dst_hop['hub_name'],
-      '@dst_hub' => $dst_hop['hub'],
-    )
-  );
-
   // Generate date range -- internal date is stored as UTC
-  //$utc = timezone_open('UTC');
-  //$tz = timezone_open(date_default_timezone_name(TRUE));
   $dates = array();
   foreach (array('start', 'end') as $val) {
     $date = date_create($vars['params'][$val]);
     $dates[$val] = date_format($date, 'M j, Y H:i');
   }
-  $vars['date_range'] = t('@start - @end', array('@start' => $dates['start'], '@end' => $dates['end']));
 
-  // Generate SNMP charts
-  if (!empty($vars['data']['diff'])) {
-    $vars['snmp'] = theme('ecenter_network_render_data_snmp', $vars['data']['diff']);
-  }
-  else {
-    $vars['snmp'] = '<p class="missing">'. t('No path or utilization data available.') .'</p>';
-  }
+  $vars['title'] = t('<span class="src-dst">@src_hub_name (@src_hub) to 
+    @dst_hub_name (@dst_hub)</span><span class="separator">, </span>
+    <span class="date-range">@start - @end</span>',
+    array( 
+      '@src_hub_name' => $src_hop['hub_name'],
+      '@src_hub' => $src_hop['hub'],
+      '@dst_hub_name' => $dst_hop['hub_name'],
+      '@dst_hub' => $dst_hop['hub'],
+      '@start' => $dates['start'], 
+      '@end' => $dates['end']
+    )
+  );
 
-  // Generate end to end statistics
+  // Set title
+  drupal_set_title(t('E-Center Network Query | ') . $vars['title']);
+
+  // End to end statistics
   if (!empty($vars['data']['end_to_end'])) {
-    $vars['end_to_end_table'] = theme('ecenter_network_render_data_end_to_end_table', $vars['data']['end_to_end']);
+    $vars['end_to_end'] = theme('ecenter_network_end_to_end', $vars['data']['end_to_end']);
   }
   else {
     $vars['end_to_end_table'] = '<p class="missing">'. t('No end to end data available') .'</p>';
   }
+
+  // Generate SNMP charts
+  if (!empty($vars['data']['diff'])) {
+    $vars['hops'] = theme('ecenter_network_hops', $vars['data']['diff']);
+  }
+  else {
+    $vars['hops'] = '<p class="missing">'. t('No path or utilization data available.') .'</p>';
+  }
+
 }
 
 /**
  * Theme SNMP data
  */
-function theme_ecenter_network_render_data_snmp($data) {
+function theme_ecenter_network_hops($data) {
   $plot_options = array(
     'width' => 570,
     'height' => 250,
@@ -205,7 +192,6 @@ function theme_ecenter_network_render_data_snmp($data) {
               );
             }
             $tables[] = theme('ecenter_network_utilization_table', $hop['hop'], $direction, $table);
-            //$tables[$direction][] = theme('ecenter_network_utilization_table', $hop['hop'], $direction, $table);
           }
         }
       }
@@ -213,240 +199,98 @@ function theme_ecenter_network_render_data_snmp($data) {
   }
   jqplot_register_tablechart('#utilization-tables', $plot_options);
 
-  /*$forward = '<h3>'. t('Forward') .'</h3>'
-    .'<div id="forward-tables" class="utilization-table">'
-    . implode("\n", $tables['forward']) .'</div>';
-  $reverse = '<h3>'. t('Reverse') .'</h3>'
-    .'<div id="reverse-tables" class="utilization-table">'
-    . implode("\n", $tables['reverse']) .'</div>';
-
-  jqplot_register_tablechart('#forward-tables', $plot_options);
-  jqplot_register_tablechart('#reverse-tables', $plot_options);*/
-
   return '<div id="utilization-tables">'. implode("\n", $tables) .'</div>';
-  //return $forward . $reverse;
 }
 
 /**
  * Theme end to end data table
  */
-function theme_ecenter_network_render_data_end_to_end_table($data) {
-  // BWCTL
-  /*if (!empty($data['bwctl']['forward'])) {
-    foreach ($data['bwctl']['forward'] as $item) {
-      list($timestamp, $values) = $item;
-      $tz = date_default_timezone_name(TRUE);
-      $date = date_make_date($timestamp, $tz, DATE_UNIX);
-    }
-  }*/
-
+function theme_ecenter_network_end_to_end($data) {
   $table = array();
-  $headers = array(
-    array(
-      'data' => '',
-      'class' => 'empty',
-    ),
-    t('Average'),
-    t('Max'),
-    t('Min')
-  );
+  $data_tables = array();
 
+  foreach ($data as $type => $measurements) {
 
-  foreach (array('forward', 'reverse') as $direction) {
-    $dir_label = ($direction == 'forward') ? t('Forward') : t('Reverse');
-
-    if (!empty($data['bwctl'][$direction])) {
-
-      $mean_throughput = array();
-      $max_throughput = NULL;
-      $min_throughput = NULL;
-
-      foreach ($data['bwctl'][$direction] as $item) {
-        list($timestamp, $values) = $item;
-
-        $mean_throughput[] = $values['throughput'];
-        $max_throughput = ($values['throughput'] > $max_throughput) 
-          ? $values['throughput'] : $max_throughput;
-        $min_throughput = (!$min_throughput || ($values['throughput'] < $min_throughput)) 
-          ? $values['throughput'] : $min_throughput;
+    foreach (array('forward', 'reverse') as $direction) {
+      if (!empty($measurements[$direction]['statistics'])) {
+        foreach ($measurements[$direction]['statistics'] as $measurement => $statistics) {
+          // Create suggestion array
+          $suggestions = array(
+            'ecenter_network_format_'. $type .'_'. $measurement,
+            'ecenter_network_format_'. $type,
+            'ecenter_network_format_default',
+          );
+          foreach ($statistics as $key => $value) {
+            $statistics[$key] = array('data' => theme($suggestions, $value, $type, $measurement), 'class' => $key);
+          }
+          $table[$type .'_'. $measurement .'_'. $direction] = array(array('data' => ucfirst($direction) .' '. $measurement .' ('. $type .')', 'header' => TRUE)) + $statistics;
+        }
+        foreach ($measurements[$direction]['timeseries'] as $measurement => $timeseries) {
+          $data_table = array();
+          
+          // Create suggestion array
+          $suggestions = array(
+            'ecenter_network_format_'. $type .'_'. $measurement,
+            'ecenter_network_format_'. $type,
+            'ecenter_network_format_default',
+          );
+          foreach ($timeseries as $timestamp => $value) {
+            $data_table[] = array($timestamp, theme($suggestions, $value, $type, $measurement, FALSE));
+          }
+          $data_tables[] = '<div class="hide data-table '. $measurement .'"><h2>'. ucfirst($direction) .' '. $measurement .'</h2>'. theme('jqplot_table', array(t('Time'), t('Value')), $data_table) .'</div>';
+        }
       }
-
-      $mean_throughput = array_sum($mean_throughput) / count($mean_throughput);
-
-      $table['0_' . $direction] = array(
-        array(
-          'data' => t('@direction Throughput', 
-            array('@direction' => ucfirst($dir_label))),
-          'header' => TRUE,
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $mean_throughput / 1e+6) 
-            .'</span><span class="unit">'. t('mbps') .'</span>',
-          'class' => 'avg',
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $max_throughput / 1e+6) 
-            .'</span><span class="unit">'. t('mbps') .'</span>',
-          'class' => 'max',
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $min_throughput / 1e+6) 
-            .'</span><span class="unit">'. t('mbps') .'</span>',
-          'class' => 'min',
-        ),
-      );
-
-    }
-
-    if (!empty($data['pinger'][$direction])) {
-
-      $mean_rtt = array();
-      $mean_iqripd = array();
-      $mean_loss = array();
-
-      $max_rtt = NULL;
-      $min_rtt = NULL;
-      $max_iqripd = NULL;
-      $min_iqripd = NULL;
-      $max_loss = NULL;
-      $min_loss = NULL;
-
-      foreach ($data['pinger'][$direction] as $item) {
-        list($timestamp, $values) = $item;
-
-        $mean_rtt[] = $values['meanRtt'];
-        $max_rtt = ($values['maxRtt'] > $max_rtt) 
-          ? $values['maxRtt'] : $max_rtt;
-        $min_rtt = (!$min_rtt || ($values['minRtt'] < $min_rtt)) 
-          ? $values['minRtt'] : $min_rtt;
-
-        $mean_iqripd[] = $values['iqrIpd'];
-
-        $mean_loss[] = $values['lossPercent'];
-        $max_loss = ($values['lossPercent'] > $max_loss) 
-          ? $values['lossPercent'] : $max_loss;
-        $min_loss = (!$min_loss || ($values['lossPercent'] < $min_loss)) 
-          ? $values['lossPercent'] : $min_loss;
-      }
-
-      $mean_rtt = array_sum($mean_rtt) / count($mean_rtt);
-      $mean_iqripd = array_sum($mean_iqripd) / count($mean_iqripd);
-      $mean_loss = array_sum($mean_loss) / count($mean_loss);
-
-      $table['1_' . $direction] = array(
-        array(
-          'data' => t('@direction RTT', array('@direction' => ucfirst($dir_label))),
-          'header' => TRUE,
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $mean_rtt) 
-            .'</span><span class="unit">'. t('ms') .'</span>',
-          'class' => 'avg',
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $max_rtt) 
-            .'</span><span class="unit">'. t('ms') .'</span>',
-          'class' => 'max',
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $min_rtt) 
-            .'</span><span class="unit">'. t('ms') .'</span>',
-          'class' => 'min',
-        ),
-      );
-
-      $table['3_' . $direction] = array(
-        array(
-          'data' => t('@direction Packet Loss', array('@direction' => ucfirst($dir_label))),
-          'header' => TRUE,
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $mean_loss) 
-            .'</span><span class="unit">'. t('%') .'</span>',
-          'class' => 'avg',
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $max_loss) 
-            .'</span><span class="unit">'. t('%') .'</span>',
-          'class' => 'max',
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $min_loss) 
-            .'</span><span class="unit">'. t('%') .'</span>',
-          'class' => 'min',
-        ),
-      );
-
-      $table['4_' . $direction] = array(
-        array(
-          'data' => t('@direction Jitter', 
-            array('@direction' => ucfirst($dir_label))),
-          'header' => TRUE,
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.2f', $mean_iqripd) 
-            .'</span><span class="unit">'. t('ms') .'</span>',
-          'class' => 'avg',
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.2f', $max_iqripd) 
-            .'</span><span class="unit">'. t('ms') .'</span>',
-          'class' => 'max',
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.2f', $min_iqripd) 
-            .'</span><span class="unit">'. t('ms') .'</span>',
-          'class' => 'min',
-        ),
-      );
-
-    }
-
-
-    if (!empty($data['owamp'][$direction])) {
-      $mean_delay = array();
-      $max_delay = NULL;
-      $min_delay = NULL;
-
-      foreach ($data['owamp'][$direction] as $item) {
-        list($timestamp, $values) = $item;
-        $mean_delay[] = ($values['max_delay'] + $values['min_delay']) / 2;
-        $max_delay = ($values['max_delay'] > $max_delay) 
-          ? $values['max_delay'] : $max_delay;
-        $min_delay = (!$min_delay || ($values['min_delay'] < $min_delay)) 
-          ? $values['min_delay'] : $min_delay;
-      }
-
-      $mean_delay = array_sum($mean_delay) / count($mean_delay);
-
-      $table['2_' . $direction] = array(
-        array(
-          'data' => t('@direction Delay', array('@direction' => ucfirst($dir_label))),
-          'header' => TRUE,
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $mean_delay * 1000) 
-            .'</span><span class="unit">'. t('ms') .'</span>',
-          'class' => 'avg',
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $max_delay * 1000) 
-            .'</span><span class="unit">'. t('ms') .'</span>',
-          'class' => 'max',
-        ),
-        array(
-          'data' => '<span class="value">'. sprintf('%01.1f', $min_delay * 1000) 
-            .'</span><span class="unit">'. t('ms') .'</span>',
-          'class' => 'min',
-        ),
-      );
     }
   }
 
   ksort($table);
+
+  $headers = array(
+    array('data' => '', 'class' => 'empty',),
+    t('Average'), t('Max'), t('Min'),
+  );
+
   if (!empty($table)) {
-    return theme('jqplot_table', $headers, $table, array('class' => 'end-to-end-table'));
+    return theme('jqplot_table', $headers, $table, array('class' => 'end-to-end-table')) . implode($data_tables, '');
   }
+}
+
+/**
+ * Consolidated value formatter
+ */
+function theme_ecenter_network_format_default($value, $type = NULL, $measurement = NULL, $units = TRUE, $format = NULL) {
+  if (!$units) {
+    if ($format) {
+      return sprintf($format, $value);
+    }
+    else {
+      return $value;
+    }
+  }
+  switch ($measurement) {
+    case 'throughput':
+      return theme('ecenter_network_format_value', number_format($value / (1000 * 1000), 0, '', ','), t('mbps'));
+    case 'max_delay':
+    case 'min_delay':
+      return theme('ecenter_network_format_value', sprintf('%1.0f', $value * 1000), t('ms'));
+    case 'minRtt':
+    case 'maxRtt':
+    case 'medianRtt':
+    case 'meanRtt':
+    case 'iqrIpd':
+      return theme('ecenter_network_format_value', sprintf('%1.0f', $value), t('ms'));
+    case 'loss': 
+      return theme('ecenter_network_format_value', sprintf('%1.1f', $value), t('%'));
+    default:
+      return '<span class="value">'. $value .'</span>';
+  }
+}
+
+/** 
+ * Format a value
+ */
+function theme_ecenter_network_format_value($value, $units) {
+  return '<span class="value">'. $value .'</span><span class="unit">'. $units .'</span>';
 }
 
 /**

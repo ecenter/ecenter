@@ -61,12 +61,12 @@ function ecenter_network_theme() {
         'params' => NULL,
       )
     ) + $options,
-    'ecenter_network_render_data_snmp' => array(
+    'ecenter_network_hops' => array(
       'arguments' => array(
         'data' => NULL,
       ),
     ) + $options,
-    'ecenter_network_render_data_end_to_end_table' => array(
+    'ecenter_network_end_to_end' => array(
       'arguments' => array(
         'data' => NULL,
       ),
@@ -78,6 +78,22 @@ function ecenter_network_theme() {
         'table' => NULL,
       ),
     ) + $options,
+    'ecenter_network_format_default' => array(
+      'arguments' => array(
+        'value' => NULL,
+        'type' => NULL,
+        'measurement' => NULL,
+        'units' => TRUE,
+        'format' => NULL,
+      ),
+    ) + $options,
+    'ecenter_network_format_value' => array(
+      'arguments' => array(
+        'value' => NULL,
+        'units' => NULL,
+      ),
+    ) + $options,
+
 
   );
   return $registry;
@@ -549,7 +565,6 @@ function ecenter_network_parse_response($response, $src, $dst) {
   $data = $response['response'];
   $hops = ecenter_network_get_hops();
 
-  // @TODO extract from params instead?
   list($src_type, $src_val) = explode(':', $src, 2);
   list($dst_type, $dst_val) = explode(':', $dst, 2);
 
@@ -624,22 +639,66 @@ function ecenter_network_parse_response($response, $src, $dst) {
 
     $end_to_end[$type] = array('forward' => array(), 'reverse' => array());
 
-    // @TODO VERY ugly code here
+    // Ouch, this is tricky. For hub based queries, we basically have a
+    // many-to-many relationship between devices involved. Currently we loop
+    // through all sources, then all destinations.
     foreach ($data[$type] as $test_src => $destinations) {
-      if ($src_type == 'hub') {
+      if ($src_type == 'hub') { // Test against hub name
         $node = ecenter_network_get_node($test_src);
         $test = $node['hub_name'];
         $val = $src_val;
       }
-      else {
+      else { // Test against netblock
         $test = long2ip(ip2long($test_src) & ~((1 << 8) - 1));
         $val = $src_netblock;       
       }
+
+      // If we have a proper match
       if ($test == $val) {
-        foreach ($destinations as $test_dst => $test_data) {
-          $end_to_end[$type]['forward'] += $test_data;
+        // @TODO alter? Simple, stupid callback system
+        // Process and merge timeseries data
+        $combined_data = array();
+        $process_fn = 'ecenter_network_'. $type .'_process';
+        if (function_exists($process_fn)) {
+          $combined_data = $process_fn($destinations, $test_src); 
         }
+        else {
+          foreach ($destinations as $test_dst => $test_data) {
+            // Turn DRS data format into processing/theme-friendly format
+            $timeseries = array();
+            foreach ($test_data as $data_row) {
+              unset($data_row[1]['timestamp']);
+              foreach ($data_row[1] as $measurement => $value) {
+                $timeseries[$measurement][$data_row[0]] = $value;
+              }
+            }
+            // Merge in all results
+            $combined_data = array_merge_recursive($combined_data, $timeseries);
+          }
+        }
+        
+        $end_to_end[$type]['forward']['timeseries'] = $combined_data;
+
+        // @TODO alter? Simple, stupid callback system
+        // Generate statistics
+        $statistics = array();
+        $process_statistics_fn = 'ecenter_network_'. $type .'_process_statistics';
+        if (function_exists($process_statistics_fn)) {
+          $statistics = $process_statistics_fn($destinations, $test_src, $end_to_end[$type]['forward']['timeseries']); 
+        }
+        else {
+          foreach ($combined_data as $data_type => $timeseries) {
+            $statistics[$data_type] = array(
+              'mean' => array_sum($timeseries)/count($timeseries),
+              'max' => max($timeseries),
+              'min' => min($timeseries),
+            ); 
+          }
+        }
+
+        $end_to_end[$type]['forward']['statistics'] = $statistics;
       }
+
       if ($dst_type == 'hub') {
         $node = ecenter_network_get_node($test_src);
         $test = $node['hub_name'];
@@ -650,14 +709,56 @@ function ecenter_network_parse_response($response, $src, $dst) {
         $val = $dst_netblock;       
       }
       if ($test == $val) {
-        foreach ($destinations as $test_dst => $test_data) {
-          $end_to_end[$type]['reverse'] += $test_data;
+        // @TODO alter? Simple, stupid callback system
+        // Process and merge timeseries data
+        $combined_data = array();
+        $process_fn = 'ecenter_network_'. $type .'_process';
+        if (function_exists($process_fn)) {
+          $combined_data = $process_fn($destinations, $test_src); 
         }
+        else {
+          foreach ($destinations as $test_dst => $test_data) {
+            // Turn DRS data format into processing/theme-friendly format
+            $timeseries = array();
+            foreach ($test_data as $data_row) {
+              unset($data_row[1]['timestamp']);
+              foreach ($data_row[1] as $measurement => $value) {
+                $timeseries[$measurement][$data_row[0]] = $value;
+              }
+            }
+            // Merge in all results
+            $combined_data = array_merge_recursive($combined_data, $timeseries);
+          }
+        }
+        
+        $end_to_end[$type]['reverse']['timeseries'] = $combined_data;
+
+        // @TODO alter? Simple, stupid callback system
+        // Generate statistics
+        $statistics = array();
+        $process_statistics_fn = 'ecenter_network_'. $type .'_process_statistics';
+        if (function_exists($process_statistics_fn)) {
+          $statistics = $process_statistics_fn($destinations, $test_src, $end_to_end[$type]['forward']['timeseries']); 
+        }
+        else {
+          foreach ($combined_data as $data_type => $timeseries) {
+            $statistics[$data_type] = array(
+              'mean' => array_sum($timeseries)/count($timeseries),
+              'max' => max($timeseries),
+              'min' => min($timeseries),
+            ); 
+          }
+        }
+
+        $end_to_end[$type]['reverse']['statistics'] = $statistics;
       }
+
+
     }
+      
   }
 
-  if (!empty($end_to_end)) {  
+  if (!empty($end_to_end)) { 
     $parsed_data['end_to_end'] = $end_to_end;
   }
 
@@ -1284,69 +1385,4 @@ function _ecenter_network_extract_query() {
     );
   }
   return $vars;
-}
-
-/**
- * @TODO Remove
- * @TEMPORARY
- */
-function _ecenter_network_sources() {
-  return array(
-    'code' => 200,
-    'response' => json_decode('
-      [{
-      "longitude":"-88.262",
-      "hub":"fnal-cr1",
-      "hub_name":"FNAL",
-      "nodename":"lhc-dmz-latency.deemz.net",
-      "ip_noted":"198.49.208.3",
-      "latitude":"41.8382",
-      "netmask":"24"
-      },
-      {
-      "longitude":"-72.8805",
-      "hub":"bnl-cr1",
-      "hub_name":"BNL",
-      "nodename":"lhcperfmon.bnl.gov",
-      "ip_noted":"192.12.15.26",
-      "latitude":"40.8703",
-      "netmask":"24"
-      },
-      {
-      "longitude":"-122.252",
-      "hub":"lbl-cr1",
-      "hub_name":"LBL",
-      "nodename":"nettest.lbl.gov",
-      "ip_noted":"131.243.24.11",
-      "latitude":"37.8769",
-      "netmask":"24"
-      },
-      {
-      "longitude":"-72.8805",
-      "hub":"bnl-cr2",
-      "hub_name":"BNL",
-      "nodename":"lhcmon.bnl.gov",
-      "ip_noted":"192.12.15.23",
-      "latitude":"40.8703",
-      "netmask":"24"
-      },
-      {
-      "longitude":"-122.252",
-      "hub":"lbl-cr2",
-      "hub_name":"LBL",
-      "nodename":"lblnet-test.lbl.gov",
-      "ip_noted":"128.3.121.114",
-      "latitude":"37.8769",
-      "netmask":"24"
-      },
-      {
-      "longitude":"-88.262",
-      "hub":"fnal-cr2",
-      "hub_name":"FNAL",
-      "nodename":"lhc-dmz-bw.deemz.net",
-      "ip_noted":"198.49.208.6",
-      "latitude":"41.8382",
-      "netmask":"24"
-      }]', TRUE),
-  );
 }

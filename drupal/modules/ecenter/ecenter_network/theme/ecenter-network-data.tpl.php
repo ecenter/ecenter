@@ -1,4 +1,5 @@
 <div id="results-toolbar" class="clear-block">
+  <h2><?php print $title; ?></h2>
   <?php if ($issuelink || $permalink): ?>
   <div class="links">
     <?php if ($issuelink): ?>
@@ -12,25 +13,20 @@
   <?php endif; ?>
 </div>
 
-<div id="results">
-  <h2>
-    <span class="src-dst"><?php print $src_dst; ?></span>, 
-    <span class="date-range"><?php print $date_range; ?></span>
-  </h2>
-  
+<div id="results"> 
   <div id="end-to-end-wrapper" class="clear-block">
     <div id="end-to-end-results">
-      <?php print $end_to_end_table; ?>
+      <h3><?php print t('End to end results'); ?></h3>
+      <?php print $end_to_end; ?>
     </div>
     <div id="end-to-end-charts">
-      Chart container!
     </div>
   </div>
 
   <div id="hop-wrapper" class="clear-block">
     <div id="traceroute"></div>
     <div id="snmp-results">
-      <?php print $snmp; ?>
+      <?php print $hops; ?>
     </div>
   </div>
 <div>

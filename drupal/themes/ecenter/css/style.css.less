@@ -200,7 +200,6 @@ table {
   border-collapse: collapse;
 }
 table thead th {
-  text-align: left;
   font-weight: bold;
   font-size: 0.875em;
   color: #666;
@@ -214,6 +213,7 @@ table tbody th {
   color: #666;
 }
 table td, table th {
+  text-align: left;
   padding: 2px 11px 2px 11px;
   border: 2px solid #fff;
 }
@@ -326,8 +326,13 @@ fieldset .description {
   .page_top_padding;
   width: 940px;
 }
-.page-network #content-wrapper {
-  .reset_padding;
+.page-network {
+  #page-title {
+    display: none;
+  }
+  #content-wrapper {
+    .reset_padding;
+  }
 }
 /* }}} */
 /* Page header {{{ */
@@ -381,13 +386,13 @@ fieldset .description {
     list-style-type: none;
     float: left;
     text-align: center;
-    margin: 4px 3px 4px 0;
+    margin: 5px 3px 4px 0;
   }
 
   .block-menu a {
     display: block;
     text-shadow: 0 1px 1px #fff;
-    padding: 3px 6px;
+    padding: 3px 6px 2px 6px;
     cursor: pointer;
     font-family: @font_droid;
     font-weight: bold;
@@ -669,6 +674,7 @@ body.page-network #content-wrapper {
 
     td {
       font-size: .875em;
+      text-align: center;
     }
 
     td .value {
@@ -676,32 +682,49 @@ body.page-network #content-wrapper {
       margin-right: 1px;
     }
 
-    td.avg .value {
+    td.mean .value {
       font-size: 1.35em;
       font-weight: bold;
     }
     td .unit {
-      font-size: .825em;
-      color: #666;
+      font-size: .875em;
+      color: #888;
     }
 
   }
   #results-toolbar {
+    position: relative;
+    z-index: 10;
     .vertical_gradient(@color_white; @color_grey_87;);
     border-bottom: 1px solid @color_grey_60;
-    padding: 12px 8px 8px 8px;
-    a { 
-      .box; 
-      .button; 
-      margin-right: 12px;
-      font-size: 14px;
-    };
-    .form-item {
+    padding: 8px;
+    h2 {
       .box;
-      margin: 3px 0 0 0;
-      label { font-size: 14px;}
-      label, input { display: inline; }
-      input { font-size: 12px; padding: 3px 6px; }
+      border-right: 1px solid @color_grey_67;
+      padding-right: 15px;
+      margin: 0 15px 0 0;
+      font-size: 1.25em;
+      span {
+        display: block;
+        line-height: 1;
+        &.separator { .hide; }
+        &.date-range { font-size: .75em; font-weight: normal; line-height: 1.6;}
+      }
+    }
+    .links {
+      a { 
+        .box; 
+        .button; 
+        margin-right: 12px;
+        font-size: 14px;
+      };
+      .form-item {
+        .box;
+        margin: 3px 0 0 0;
+        label { font-size: 14px;}
+        label, input { display: inline; }
+        input { font-size: 12px; padding: 3px 6px; }
+      }
     }
   }
 

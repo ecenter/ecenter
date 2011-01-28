@@ -563,9 +563,20 @@ body.page-network #content-wrapper {
   #network-map {
     float: left;
     width: 660px;
-    -moz-box-shadow: 2px 5px 10px @color_grey_47;
-    -webkit-box-shadow: 2px 5px 10px @color_grey_20;
-    box-shadow: 2px 5px 10px @color_grey_20;
+    .shadow(2px; 5px; 10px; @color_grey_20;);
+    position: relative;
+  }
+  #traceroute-wrapper {
+    position: absolute;
+    bottom: 0;
+    width: 660px;
+    padding-top: 20px;
+    background-color: rgba(255, 255, 255, 0.6);
+    font-weight: bold;
+    font-size: 11px;
+    #traceroute {
+      margin: 0 auto;
+    }
   }
   #query-wrapper {
     float: left;
@@ -730,15 +741,18 @@ body.page-network #content-wrapper {
 
   #end-to-end-wrapper {
     margin-bottom: 1.5em;
-    #end-to-end-results { .box; width: 500px; }
+    #end-to-end-results { 
+      .box; width: 500px;
+      th { white-space: nowrap; }
+      td { text-align: right; }
+
+    }
     #end-to-end-charts { .box; width: 440px; }
   }
   #hop-wrapper { 
     display: inline-block;
-    #traceroute { .box; width: 400px; }
     #snmp-results { .box; width: 540px; }
-  }
-  
+  } 
 }
 /* }}} */
 /* Autocomplete styles {{{ */
@@ -811,39 +825,6 @@ ul.ui-autocomplete {
   background-color: rgba(255, 255, 255, 0.75);
   text-align: center;
   padding-top: 30px;
-}
-/* }}} */
-/* Traceroute "subway map" {{{ */
-.trace-label {
-  line-height: 1.1;
-  font-size: 11px;
-}
-.hostname {
-  font-weight: bold;
-}
-.traceroute-graph-wrapper .labels-left .trace-label {
-  text-align: right;
-}
-.hop-wrapper {
-  background-color: #fff;
-  padding: 14px;
-  border: 3px solid #ccc;
-}
-#traceroute .has-chart {
-  color: #007700;
-}
-
-#traceroute {
-  float: left;
-  width: 368px;
-  margin-right: 12px;
-}
-#results {
-  float: left;
-  width: 560px;
-}
-#traceroute .highlight {
-  background-color: #ffffaa;
 }
 /* }}} */
 

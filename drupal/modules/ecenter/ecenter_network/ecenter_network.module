@@ -349,9 +349,9 @@ function ecenter_network_select_form(&$form_state) {
 
     // If we've got the data (at bare minimum, a traceroute), delegate to rendering function
     if ($data) {
-      drupal_add_js(array('ecenterWeathermap' => array('tracerouteData' => $data['js_diff'])), 'setting');
-      drupal_add_js(array('ecenterWeathermap' => array('tracerouteMaxLength' => $data['traceroute_max'])), 'setting');
-      drupal_add_js(array('ecenterWeathermap' => array('seriesLookup' => $data['series_lookup'])), 'setting');
+      drupal_add_js(array('ecenterNetwork' => array('tracerouteData' => $data['js_diff'])), 'setting');
+      drupal_add_js(array('ecenterNetwork' => array('tracerouteMaxLength' => $data['traceroute_max'])), 'setting');
+      drupal_add_js(array('ecenterNetwork' => array('seriesLookup' => $data['series_lookup'])), 'setting');
       $form['results_wrapper']['results']['#value'] = theme('ecenter_network_data', $data, $params);
     }
     else {
@@ -958,7 +958,7 @@ function ecenter_network_openlayers_presets() {
   $openlayers_presets->disabled = FALSE; /* Edit this to true to make a default openlayers_presets disabled initially */
   $openlayers_presets->api_version = 1;
   $openlayers_presets->name = 'ecenter_network';
-  $openlayers_presets->title = 'E-Center Weathermap';
+  $openlayers_presets->title = 'E-Center Network';
   $openlayers_presets->description = 'E-Center network weathermap';
   $openlayers_presets->data = array(
     'width' => '660px',
@@ -1080,7 +1080,7 @@ function ecenter_network_openlayers_styles() {
 function ecenter_network_openlayers_behaviors() {
   $behaviors = array(
     'ecenter_network_behavior_dynamicload' => array(
-      'title' => t('E-Center Weathermap: Dynamic Load'),
+      'title' => t('E-Center Network: Dynamic Load'),
       'behavior' => array(
         'path' => drupal_get_path('module', 'ecenter_network') .'/openlayers',
         'file' => 'ecenter_network_behavior_dynamicload.inc',
@@ -1089,7 +1089,7 @@ function ecenter_network_openlayers_behaviors() {
       ),
     ),
     'ecenter_network_behavior_select' => array(
-      'title' => t('E-Center Weathermap: Select behavior'),
+      'title' => t('E-Center Network: Select behavior'),
       'behavior' => array(
         'path' => drupal_get_path('module', 'ecenter_network') .'/openlayers',
         'file' => 'ecenter_network_behavior_select.inc',
@@ -1098,7 +1098,7 @@ function ecenter_network_openlayers_behaviors() {
       ),
     ),
     'ecenter_network_behavior_curves' => array(
-      'title' => t('E-Center Weathermap: Curved lines'),
+      'title' => t('E-Center Network: Curved lines'),
       'behavior' => array(
         'path' => drupal_get_path('module', 'ecenter_network') .'/openlayers',
         'file' => 'ecenter_network_behavior_curves.inc',
@@ -1107,7 +1107,7 @@ function ecenter_network_openlayers_behaviors() {
       ),
     ),
     'ecenter_network_behavior_uncluster' => array(
-      'title' => t('E-Center Weathermap: Uncluster'),
+      'title' => t('E-Center Network: Uncluster'),
       'behavior' => array(
         'path' => drupal_get_path('module', 'ecenter_network') .'/openlayers',
         'file' => 'ecenter_network_behavior_uncluster.inc',
@@ -1140,7 +1140,7 @@ function ecenter_network_layers_sites() {
   $layer = new stdClass();
   $layer->api_version = 1;
   $layer->name = 'ecenter_network_sites';
-  $layer->title = t('E-center Weathermap Sites');
+  $layer->title = t('E-center Network Sites');
   $layer->description = '';
   $layer->data = array(
     'layer_type' => 'openlayers_layer_type_raw',
@@ -1236,15 +1236,9 @@ function ecenter_network_layers_traceroute() {
             'style' => array(
               'pointRadius' => 6,
               'fillColor' => '#ffffff',
-              'strokeColor' => '#0000aa',
-              'strokeWidth' => 3,
-              'fillOpacity' => 1,
-              'label' => $hop['hub'],
-              'labelYOffset' => -14,
-              'fontSize' => '13px',
-              'fontWeight' => 'bold',
-              'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',
-              'fontColor' => '#000000',
+              'strokeColor' => '#0000ff',
+              'strokeWidth' => 2,
+              'fillOpacity' => 0.75,
             ),
           );
         }

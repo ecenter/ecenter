@@ -1,7 +1,12 @@
 // Add traceroute
 Drupal.behaviors.EcenterTraceroute = function(context) {
-  if (Drupal.settings.ecenterWeathermap && Drupal.settings.ecenterWeathermap.tracerouteData) {
-    $('#traceroute').traceroute(Drupal.settings.ecenterWeathermap.tracerouteData);
+  $('#traceroute-wrapper').remove();
+  if (Drupal.settings.ecenterNetwork && Drupal.settings.ecenterNetwork.tracerouteData) {
+    $('<div id="traceroute-wrapper">')
+    .appendTo($('#network-map'));
+    $('<div id="traceroute"></div>')
+    .appendTo($('#traceroute-wrapper'))
+    .traceroute(Drupal.settings.ecenterNetwork.tracerouteData);
   }
 }
 
@@ -24,10 +29,10 @@ Drupal.behaviors.EcenterSelectSetForm = function(context) {
   var dst = $('#edit-network-wrapper-query-dst-wrapper-dst');
 
   if (src.val()) {
-    EcenterWeathermap.selectFeature.call(src.get(0), true)
+    EcenterNetwork.selectFeature.call(src.get(0), true)
   }
   if (dst.val()) {
-    EcenterWeathermap.selectFeature.call(dst.get(0), true)
+    EcenterNetwork.selectFeature.call(dst.get(0), true)
   }
 }
 
@@ -42,12 +47,12 @@ Drupal.behaviors.EcenterShowTables = function(context) {
   });
 }
 
-EcenterWeathermap = {};
+EcenterNetwork = {};
 
 /**
  * select param calls select function on feature
  */
-EcenterWeathermap.selectFeature = function(select) {
+EcenterNetwork.selectFeature = function(select) {
   var maps = Drupal.settings.openlayers.maps;
   var val = $(this).val().split(':', 2);
   var query_type = val[0];
@@ -87,13 +92,13 @@ $(document).ready(function() {
   if (src_input.val() != '' && dst_input.val() == '') {
     src_input.val('');
     src_select.val('');
-    EcenterWeathermap.selectFeature.call(src_select, false);
+    EcenterNetwork.selectFeature.call(src_select, false);
   }
 
   // If a src/dst changes, change the map, too.
   $('#ecenter-network-select-form #src-wrapper select, #ecenter-network-select-form #dst-wrapper select')
   .change(function(e) { 
-    EcenterWeathermap.selectFeature.call(this, true);
+    EcenterNetwork.selectFeature.call(this, true);
   });
 
   // Bind to ajaxSend event
@@ -146,8 +151,8 @@ $(document).ready(function() {
 
   // Bind to series highlighting
   $('#results').bind('jqplotHighlightSeries', function(e, sidx, plot) {
-    if (Drupal.settings.ecenterWeathermap.seriesLookup) {
-      var hop = Drupal.settings.ecenterWeathermap.seriesLookup.idx[sidx];
+    if (Drupal.settings.ecenterNetwork.seriesLookup) {
+      var hop = Drupal.settings.ecenterNetwork.seriesLookup.idx[sidx];
       var tc = $('#utilization-tables').data('tablechart');
       var lh = tc['default'].chart.plugins.linehighlighter;
         

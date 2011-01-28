@@ -3,7 +3,7 @@
 
 /**
  * @file
- * E-Center Weathermap theming.
+ * E-Center Network theming.
  */
 
 /**
@@ -280,9 +280,10 @@ function theme_ecenter_network_format_default($value, $type = NULL, $measurement
     case 'iqrIpd':
       return theme('ecenter_network_format_value', sprintf('%1.0f', $value), t('ms'));
     case 'loss': 
+    case 'lossPercent': 
       return theme('ecenter_network_format_value', sprintf('%1.1f', $value), t('%'));
     default:
-      return '<span class="value">'. $value .'</span>';
+      return '<span class="value">'. sprintf('%1.0f', $value) .'</span>';
   }
 }
 

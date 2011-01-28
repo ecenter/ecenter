@@ -32,7 +32,7 @@ Drupal.behaviors.ecenter_network_behavior_curves = function(context) {
       for (var j in layers[i].features) {
         if (old_feature) {
           var feature = layers[i].features[j];
-          var curve = new Curve(old_feature, feature, 1.5, options.divisions,
+          var curve = new Curve(old_feature, feature, 2.25, options.divisions,
             options.arrows);
           var line = new OpenLayers.Geometry.LineString(curve.points);
 

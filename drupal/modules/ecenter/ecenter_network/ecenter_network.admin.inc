@@ -61,7 +61,7 @@ function ecenter_network_admin_form() {
   $form['performance']['ecenter_network_data_cache_enabled'] = array(
     '#title' => t('Enable data result caching'),
     '#type' => 'checkbox',
-    '#description' => t('Should the Ecenter Weathermap cache results?'),
+    '#description' => t('Should the Ecenter Network cache results?'),
     '#default_value' => variable_get('ecenter_network_data_cache_enabled', 0),
   );
   $form['performance']['ecenter_network_data_cache_ttl'] = array(
@@ -73,7 +73,7 @@ function ecenter_network_admin_form() {
   $form['performance']['ecenter_network_hop_cache_enabled'] = array(
     '#title' => t('Enable hop result caching'),
     '#type' => 'checkbox',
-    '#description' => t('Should the Ecenter Weathermap cache results?'),
+    '#description' => t('Should the Ecenter Network cache results?'),
     '#default_value' => variable_get('ecenter_network_hop_cache_enabled', 0),
   );
   $form['performance']['ecenter_network_hop_cache_ttl'] = array(

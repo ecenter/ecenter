@@ -1,0 +1,8 @@
+<?php
+
+include_once('markdown_wysiwyg.features.inc');
+
+/**
+ * Load advanced help provided by helpinject.
+ */
+include_once('markdown_wysiwyg.helpinjector.inc');

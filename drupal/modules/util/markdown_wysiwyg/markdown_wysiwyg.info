@@ -1,0 +1,17 @@
+core = "6.x"
+dependencies[] = "better_formats"
+dependencies[] = "features"
+;dependencies[] = "helpinjector"
+dependencies[] = "libraries"
+dependencies[] = "strongarm"
+dependencies[] = "wysiwyg"
+dependencies[] = "markdown"
+;dependencies[] = "wysiwyg_filter"
+description = "Provides a set of What You See Is What You Get (WYSIWYG) editors and accompanying text formats."
+features[ctools][] = "strongarm:strongarm:1"
+features[filter][] = "WYSIWYG contributor"
+name = "Markdown Wysiwyg"
+package = "Editors"
+
+version = "6.x-1.0-dev"
+

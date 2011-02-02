@@ -2,7 +2,7 @@
  * Handler for the form redirection error.
  */
 Drupal.ahah.prototype.error = function (response, uri) {
-  if (!reponse.aborted) {
+  if (!response.aborted) {
     alert(Drupal.ahahError(response, uri));
   }
 

@@ -1,3 +1,7 @@
+$.fn.tablechart.defaults.attachMethod = function(container) {
+  $('h3', this.el).after(container); 
+}
+
 // Add traceroute
 Drupal.behaviors.EcenterTraceroute = function(context) {
   $('#traceroute-wrapper').remove();

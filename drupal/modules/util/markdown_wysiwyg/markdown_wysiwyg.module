@@ -1,8 +1,149 @@
 <?php
+/**
+ * @file
+ * Provides TinyMCE + Markdown integration as a feature.
+ *
+ * Based on ajax_markup module and debut_wysiwyg feature.
+ */
 
 include_once('markdown_wysiwyg.features.inc');
 
 /**
  * Load advanced help provided by helpinject.
  */
-include_once('markdown_wysiwyg.helpinjector.inc');
+//include_once('markdown_wysiwyg.helpinjector.inc');
+
+/**
+ * Implementation of hook_menu().
+ */
+function markdown_wysiwyg_menu() {
+  $items['markdown2html'] = array(
+    'page callback' => 'markdown_wysiwyg_markdown2html',
+    'access callback' => 'markdown_wysiwyg_access',
+    'type' => MENU_CALLBACK,
+  );
+  $items['html2markdown'] = array(
+    'page callback' => 'markdown_wysiwyg_html2markdown',
+    'access callback' => 'markdown_wysiwyg_access',
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
+ * Convert html to markdown
+ */
+function markdown_wysiwyg_html2markdown() {
+  
+  require_once(dirname(__FILE__) . '/markdownify/markdownify.php');
+  require_once(dirname(__FILE__) . '/markdownify/markdownify_extra.php');
+
+  $markdownify = new Markdownify();
+  $output = $markdownify->parseString($_POST['input']);
+  $output = str_replace('&nbsp;', ' ', $output); // This may increase!
+
+  drupal_set_header('Content-Type: text/javascript; charset=utf-8');
+  echo json_encode(array('output' => $output));
+  exit();
+}
+
+/**
+ * Convert markdown to html
+ */
+function markdown_wysiwyg_markdown2html() {
+  $output = _markdown_process($_POST['input'], -1);
+  drupal_set_header('Content-Type: text/javascript; charset=utf-8');
+  echo json_encode(array('output' => $output));
+  exit();
+}
+
+/**
+ * Check access to tinymce markdown converter
+ */
+function markdown_wysiwyg_access() {
+  module_load_include('admin.inc', 'better_formats', 'better_formats_defaults');
+  global $user;
+
+  // Get format information
+  $formats = _markdown_wysiwyg_formats();
+  $formats_per_role = better_formats_get_formats_per_role();
+
+  // Check to see if this role can access the proper input format 
+  $allowed = FALSE;
+  foreach ($user->roles as $rid=>$role) {
+    foreach ($formats as $fid) {
+      if (in_array($fid, array_keys($formats_per_role[$rid]))) {
+        $allowed = TRUE;
+      }
+    }
+  }
+  return $allowed
+    && isset($_POST['token']) 
+    && drupal_valid_token($_POST['token'], 'markdown-wysiwyg');
+}
+
+/**
+ * Implementation of hook_form_alter().
+ */
+function markdown_wysiwyg_form_alter(&$form, $form_state, $form_id) {
+  if ($form_id == 'filter_admin_format_form') {
+    $formats = _markdown_wysiwyg_formats();
+    if (in_array($form['format']['#value'], $formats)) {
+      drupal_set_message(t('This input format is meant to work with the 
+        markdown_wysiwyg module. Changing filter configuration could 
+        break it. It may not be renamed.'));
+      //$form['name']['#disabled'] = TRUE;
+    }
+  }
+}
+
+/**
+ * Implementation of hook_wysiwyg_plugin().
+ */
+function markdown_wysiwyg_wysiwyg_plugin($editor, $version) {
+  if ($editor == 'tinymce' && version_compare($version, '3', '>')) {
+    markdown_wysiwyg_enable();
+    return array(
+      'markdown' => array(
+        'path' => drupal_get_path('module', 'markdown_wysiwyg') 
+          .'/js/markdown_plugin.js',
+        'extensions' => array('markdown' => t('Markdown')),
+        'load' => TRUE,
+      ),
+    );
+  }
+}
+
+/**
+ * Enable markdown_wysiwyg 
+ */
+function markdown_wysiwyg_enable() {
+  static $state;
+
+  if (isset($state)) {
+    return $state;
+  }
+
+  drupal_add_js(drupal_get_path('module', 'markdown_wysiwyg') 
+    .'/js/markdown_wysiwyg.js');
+
+  drupal_add_js(array(
+    'markdownWysiwygToken' => drupal_get_token('markdown-wysiwyg'),
+  ), 'setting');
+
+  return $state = TRUE;
+}
+
+
+/**
+ * Return an array of formats used with WYSIWYG.
+ */
+function _markdown_wysiwyg_formats() {
+  $default_formats = array('Markdown WYSIWYG');
+  $formats = array();
+  $result = db_query('SELECT format, name FROM {filter_formats} WHERE name IN (' . db_placeholders($default_formats, 'varchar') . ')', $default_formats);
+  while ($format = db_fetch_array($result)) {
+    $formats[$format['name']] = $format['format'];
+  }
+  return $formats;
+}

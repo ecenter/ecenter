@@ -1,3 +1,7 @@
+$.fn.tablechart.defaults.attachMethod = function(container) {
+  $('h3', this.el).after(container); 
+}
+
 // Add traceroute
 Drupal.behaviors.EcenterTraceroute = function(context) {
   $('#traceroute-wrapper').remove();
@@ -41,9 +45,9 @@ Drupal.behaviors.EcenterShowTables = function(context) {
   var hide_label = Drupal.t('Hide data tables');
   $('.tablechart', context).after('<button class="toggle-data">' + show_label + '</button>');
   $('.toggle-data', context).toggle(function() {
-    $(this).text(hide_label).parent().find('#utilization-tables').slideDown('fast');
+    $(this).text(hide_label).parent().find('table').slideDown('fast');
   }, function() {
-    $(this).text(show_label).parent().find('#utilization-tables').slideUp('fast');
+    $(this).text(show_label).parent().find('table').slideUp('fast');
   });
 }
 

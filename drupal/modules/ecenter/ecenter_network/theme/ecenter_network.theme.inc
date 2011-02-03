@@ -13,8 +13,10 @@ function template_preprocess_ecenter_network_data(&$vars) {
   // Generate permalink
   $permalink['permalink'] = array(
     '#type' => 'textfield',
-    '#title' => t('Permalink'),
     '#size' => 45,
+    '#title' => l(t('Permalink'), 'network',
+      array('query' => $vars['params'], 'absolute' => TRUE,)
+    ),
     '#value' => url('network', 
       array('query' => $vars['params'], 'absolute' => TRUE,)
     ),
@@ -72,7 +74,7 @@ function template_preprocess_ecenter_network_data(&$vars) {
     $vars['end_to_end'] = theme('ecenter_network_end_to_end', $vars['data']['end_to_end']);
   }
   else {
-    $vars['end_to_end_table'] = '<p class="missing">'. t('No end to end data available') .'</p>';
+    $vars['end_to_end'] = '<p class="missing">'. t('No end to end data available') .'</p>';
   }
 
   // Generate SNMP charts
@@ -205,7 +207,8 @@ function theme_ecenter_network_hops($data) {
 /**
  * Theme end to end data table
  */
-function theme_ecenter_network_end_to_end($data) {
+function template_preprocess_ecenter_network_end_to_end(&$vars) {
+  $data = $vars['data'];
   $table = array();
   $data_tables = array();
 
@@ -223,11 +226,18 @@ function theme_ecenter_network_end_to_end($data) {
           foreach ($statistics as $key => $value) {
             $statistics[$key] = array('data' => theme($suggestions, $value, $type, $measurement), 'class' => $key);
           }
-          $table[$type .'_'. $measurement .'_'. $direction] = array(array('data' => ucfirst($direction) .' '. $measurement .' ('. $type .')', 'header' => TRUE)) + $statistics;
+          if (in_array($measurement, array('loss', 'max_delay', 'maxRTT', 'medianRTT', 'meanRTT')) || ($measurement == 'throughput' && count($timeseries) > 1)) {
+            $extra_class = ' time-series';
+          }
+          $table[$type .'_'. $measurement .'_'. $direction] = array(
+            'class' => $type .'-'. $measurement .'-'. $direction . $extra_class, 
+            'data' => array(
+            'header' => array('data' => ucfirst($direction) .' '. $measurement .' ('. $type .')', $header => TRUE)) + $statistics,
+          );
         }
         foreach ($measurements[$direction]['timeseries'] as $measurement => $timeseries) {
           $data_table = array();
-          
+
           // Create suggestion array
           $suggestions = array(
             'ecenter_network_format_'. $type .'_'. $measurement,
@@ -235,9 +245,60 @@ function theme_ecenter_network_end_to_end($data) {
             'ecenter_network_format_default',
           );
           foreach ($timeseries as $timestamp => $value) {
-            $data_table[] = array($timestamp, theme($suggestions, $value, $type, $measurement, FALSE));
+            // Note we multiple x 1000 because Javascript uses microseconds!
+            $data_table[] = array(array('data' => $timestamp * 1000, 'header' => TRUE), theme($suggestions, $value, $type, $measurement, FALSE));
           }
-          $data_tables[] = '<div class="hide data-table '. $measurement .'"><h2>'. ucfirst($direction) .' '. $measurement .'</h2>'. theme('jqplot_table', array(t('Time'), t('Value')), $data_table) .'</div>';
+          $extra_class = '';
+
+          // @TODO How should this work? See above.
+          if (in_array($measurement, array('loss', 'max_delay', 'maxRTT', 'medianRTT', 'meanRTT')) || ($measurement == 'throughput' && count($timeseries) > 1)) {
+            $extra_class = ' time-series';
+          }
+          $data_tables[] = '<div class="data-table '. $type .'-'. $measurement .'-'. $direction . $extra_class .'"><h3>'. ucfirst($direction) .' '. $measurement .'</h3>'.
+            theme('jqplot_table', array(t('Time'), t('Value')), $data_table) .'</div>';
+
+          $plot_options = array(
+            'width' => 400,
+            'height' => 200,
+            'hideTables' => FALSE,
+            'plotOptions' => array(
+              'seriesDefaults' => array(
+                'lineWidth' => 1,
+                'shadow' => FALSE,
+                'fill' => FALSE,
+                'color' => '#888888',
+                'markerOptions' => array(
+                  'show' => FALSE,
+                  'size' => 3,
+                ),
+              ),
+              'axesDefaults' => array(
+                'showTickMarks' => FALSE,
+              ),
+              'axes' => array(
+                'xaxis' => array(
+                  'pad' => 0,
+                  'autoscale' => TRUE,
+                  'numberTicks' => 10,
+                  'renderer' => '$.jqplot.DateAxisRenderer',
+                  'tickOptions' => array(
+                    'formatString' => "%H:%M",
+                  ),
+                  'label' => t('Time'),
+                  'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
+                ),
+                'yaxis' => array(
+                  'autoscale' => TRUE,
+                  'numberTicks' => 5,
+                  'tickOptions' => array(
+                    'color' => '#cccccc',
+                  ),
+                ),
+              ),
+              'linehighlighter' => FALSE,
+            ),
+          );
+          jqplot_register_tablechart('#end-to-end-charts .time-series.'. $type .'-'. $measurement .'-'. $direction, $plot_options);
         }
       }
     }
@@ -251,7 +312,8 @@ function theme_ecenter_network_end_to_end($data) {
   );
 
   if (!empty($table)) {
-    return theme('jqplot_table', $headers, $table, array('class' => 'end-to-end-table')) . implode($data_tables, '');
+    $vars['table'] = theme('jqplot_table', $headers, $table, array('class' => 'end-to-end-table'));
+    $vars['data_tables'] = implode($data_tables, '');
   }
 }
 
@@ -259,39 +321,42 @@ function theme_ecenter_network_end_to_end($data) {
  * Consolidated value formatter
  */
 function theme_ecenter_network_format_default($value, $type = NULL, $measurement = NULL, $units = TRUE, $format = NULL) {
-  if (!$units) {
-    if ($format) {
-      return sprintf($format, $value);
-    }
-    else {
-      return $value;
-    }
-  }
   switch ($measurement) {
     case 'throughput':
-      return theme('ecenter_network_format_value', number_format($value / (1000 * 1000), 0, '', ','), t('mbps'));
+      $measurement_units = ($units) ? t('mbps') : NULL;
+      $format = ($format) ? $format : '%1.1f';
+      return theme('ecenter_network_format_value', number_format($value / (1000 * 1000), 0, '', ','), $measurement_units);
     case 'max_delay':
     case 'min_delay':
-      return theme('ecenter_network_format_value', sprintf('%1.0f', $value * 1000), t('ms'));
+      $measurement_units = ($units) ? t('ms') : NULL;
+      $format = ($format) ? $format : '%1.0f';
+      return theme('ecenter_network_format_value', sprintf($format, $value * 1000), $measurement_units);
     case 'minRtt':
     case 'maxRtt':
     case 'medianRtt':
     case 'meanRtt':
     case 'iqrIpd':
-      return theme('ecenter_network_format_value', sprintf('%1.0f', $value), t('ms'));
+      $format = ($format) ? $format : '%1.0f';
+      $measurement_units = ($units) ? t('ms') : NULL;
+      return theme('ecenter_network_format_value', sprintf($format, $value), $mesurement_units);
     case 'loss': 
     case 'lossPercent': 
-      return theme('ecenter_network_format_value', sprintf('%1.1f', $value), t('%'));
+      $format = ($format) ? $format : '%1.1f';
+      $measurement_units = ($units) ? t('%') : NULL;
+      return theme('ecenter_network_format_value', sprintf('%1.1f', $value), $measurement_units);
     default:
-      return '<span class="value">'. sprintf('%1.0f', $value) .'</span>';
+      $format = ($format) ? $format : '%1.1f';
+      return theme('ecenter_network_format_value', sprintf($format, $value));
   }
 }
 
-/** 
+/**
  * Format a value
  */
-function theme_ecenter_network_format_value($value, $units) {
-  return '<span class="value">'. $value .'</span><span class="unit">'. $units .'</span>';
+function theme_ecenter_network_format_value($value, $units = NULL) {
+  $output = '<span class="value">'. $value .'</span>';
+  $output .= ($units) ? '<span class="unit">'. $units .'</span>' : '';
+  return $output;
 }
 
 /**

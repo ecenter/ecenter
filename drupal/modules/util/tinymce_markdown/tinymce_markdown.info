@@ -1,9 +1,0 @@
-;$Id$
-name = TinyMCE Markdown
-package = User interface
-description = Use TinyMCE as a Markdown editor
-core = 6.x
-
-dependencies[] = ajax_markup
-dependencies[] = markdown
-dependencies[] = wysiwyg

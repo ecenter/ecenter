@@ -228,17 +228,23 @@ table tr:hover td, table tbody tr:hover th {
 }
 /* }}} */
 /* Lists {{{ */
-#content-body ul {
+#content-body ul, #content-body ol {
   margin-bottom: 1.5em;  
+  li {
+    list-style-type: square;
+    margin: .5em 0 .5em 1.5em;
+  }
+  &.inline, &.inline li {
+    display: inline;
+  }
+  &.inline li {
+    margin: 0 0 0 .75em;
+  }
 }
-#content-body li {
-  margin: .5em 0 .5em 1.5em;
-}
-#content-body ul.inline, #content-body ul.inline li {
-  display: inline;
-}
-#content-body ul.inline li {
-  margin: 0 0 0 .75em;
+#content-body ol {
+  li {
+    list-style-type: decimal;
+  }
 }
 /* }}} */
 /* Paragraph and text {{{ */
@@ -859,7 +865,7 @@ ul.ui-autocomplete {
 /* -- Common Drupal objects -- */
 /* Nodes {{{ */
 #page-title {
-  margin-bottom: .25em;
+  margin-bottom: 0;
 }
 .node .picture {
   float: left;

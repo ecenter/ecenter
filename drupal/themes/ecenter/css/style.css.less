@@ -39,6 +39,7 @@
 @font_helvetica: "Helvetica Neue", Helvetica, Verdana, sans-serif;
 @font_droid: "Droid Sans", Arial, sans-serif;
 /* }}} */
+
 /* --- Less CSS Mixins --- */
 /* Mixins: Padding (.page_side_padding, .page_top_padding, .reset_padding) {{{ */ 
 .page_side_padding {
@@ -96,9 +97,9 @@
 }
 
 /* }}} */
-/* Mixins: Button (.button) {{{ */
+/* Mixins: Button (.button, .button_link) {{{ */
+// For making things look like buttons
 .button {
-  //.vertical_gradient;
   .vertical_glass_gradient(@color_grey_93; @color_grey_73; @color_grey_80);
   .round_corner;
   text-shadow: 0 1px 1px #fff;
@@ -114,6 +115,14 @@
     border: 1px solid @color_grey_20;
     cursor: default; 
   }
+}
+// For making buttons look like links
+.button_link {
+  .round_corner(0; 0; 0; 0;);
+  border: none;
+  padding: 0;
+  background: none;
+  color: @color_blue;
 }
 /* }}} */
 
@@ -141,7 +150,6 @@ body {
   font-family: @font_droid; 
   margin: 0;
 }
-/* }}} */
 /* }}} */
 /* Columns {{{ */
 body.sidebar-right #content {
@@ -701,8 +709,8 @@ body.page-network #content-wrapper {
       font-size: .875em;
       color: #888;
     }
-
   }
+
   #results-toolbar {
     position: relative;
     z-index: 10;
@@ -739,33 +747,52 @@ body.page-network #content-wrapper {
     }
   }
 
+  .data-table {
+    display: none;
+    table {
+      display: none;
+      font-size: .825em;
+    }
+    &.time-series {
+      display: block;
+      margin-bottom: 45px;
+    }
+    .chart-title {
+      .box;
+      margin-top: -25px;
+      h3 {
+        .box;
+        font-size: .875em;
+        margin: 0;
+      }
+      .toggle-data {
+        .button_link;
+        .box;
+        font-size: .8em;
+        text-align: right;
+      }
+    }
+  }
+
+
   #end-to-end-wrapper {
     margin-bottom: 1.5em;
     #end-to-end-results { 
       .box; 
       width: 500px;
       margin-right: 20px;
-      th { white-space: nowrap; }
+      th { white-space: nowrap; font-size: .75em; }
       td { text-align: right; }
     }
     #end-to-end-charts { 
       .box;
       width: 420px;
+      margin-top: 30px;
       .data-table {
-        display: none;
-        &.time-series {
-          display: block;
-          padding: 10px;
-          background-color: #eee;
-          margin-bottom: 18px;
-          h3 {
-            text-align: center;
-            font-size: 1em;
-          }
+        .chart-title {
+          h3 { width: 220px; }
+          .toggle-data { width: 200px; }
         }
-      }
-      table {
-        display: none;
       }
     }
   }
@@ -778,7 +805,7 @@ body.page-network #content-wrapper {
 /* jqPlot {{{ */
 .tablechart {
   .jqplot-axis {
-    font-size: 12px;
+    font-size: 10px;
   }
 }
 /* }}} */
@@ -986,7 +1013,7 @@ ul.ui-autocomplete {
   font-size: .8em;
 }
 /* }}} */
-/* WYSIWYG {{{ */
+/* Wysiwyg {{{ */
 #content-body table.mceLayout {
   border: 1px solid #aaa;
 }
@@ -1009,3 +1036,4 @@ ul.ui-autocomplete {
   -moz-box-shadow: 1px 1px .1em 0 #aaa;
 }
 /* }}} */
+

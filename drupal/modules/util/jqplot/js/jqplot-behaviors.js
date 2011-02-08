@@ -1,3 +1,6 @@
+// Use per-plot plugin settings always
+$.jqplot.config.enablePlugins = false;
+
 Drupal.behaviors.jqPlot = function(context) {
   if (Drupal.settings.jqPlot) {
     var replace = ['renderer', 'markerRenderer', 'labelRenderer', 'parseX',

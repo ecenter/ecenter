@@ -61,6 +61,8 @@ function jqplot_register_tablechart($selector, $settings = array()) {
     $behavior['jqPlot'][$selector] = $settings;
     drupal_add_js($behavior, 'setting');
     $selectors[$selector] = $behavior;
+
+    drupal_add_css($path .'/jqplot/jquery.jqplot.css');
   }
 }
 

@@ -755,7 +755,7 @@ body.page-network #content-wrapper {
     }
     &.time-series {
       display: block;
-      margin-bottom: 45px;
+      margin-bottom: 55px;
     }
     .chart-title {
       .box;
@@ -781,7 +781,17 @@ body.page-network #content-wrapper {
       .box; 
       width: 500px;
       margin-right: 20px;
-      th { white-space: nowrap; font-size: .75em; }
+      th { 
+        white-space: nowrap; 
+        font-size: .75em;
+      }
+      tbody th {
+        width: 185px;
+        .advanced-help-link {
+          margin-top: 4px;
+          float: right;
+        }
+      }
       td { text-align: right; }
     }
     #end-to-end-charts { 
@@ -790,8 +800,8 @@ body.page-network #content-wrapper {
       margin-top: 30px;
       .data-table {
         .chart-title {
-          h3 { width: 220px; }
-          .toggle-data { width: 200px; }
+          h3 { width: 320px; }
+          .toggle-data { width: 100px; }
         }
       }
     }

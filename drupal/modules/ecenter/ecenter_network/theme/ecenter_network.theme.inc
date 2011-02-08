@@ -223,16 +223,30 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
             'ecenter_network_format_'. $type,
             'ecenter_network_format_default',
           );
+
+          // Theme each statistic
           foreach ($statistics as $key => $value) {
             $statistics[$key] = array('data' => theme($suggestions, $value, $type, $measurement), 'class' => $key);
           }
+
+          // Add time-series class
           if (in_array($measurement, array('loss', 'max_delay', 'maxRTT', 'medianRTT', 'meanRTT')) || ($measurement == 'throughput' && count($timeseries) > 1)) {
             $extra_class = ' time-series';
           }
+
+          // Add help icons
+          $help = '';
+          switch ($measurement) {
+            case 'max_delay':
+            case 'maxRTT':
+              $help = theme('advanced_help_topic', 'ecenter_network', 'rtt') .' ';
+          }
+         
+          // Create table row
           $table[$type .'_'. $measurement .'_'. $direction] = array(
             'class' => $type .'-'. $measurement .'-'. $direction . $extra_class, 
             'data' => array(
-              'header' => array('data' => ucfirst($direction) .' '. $measurement .' ('. $type .')', 'header' => TRUE)
+              'header' => array('data' => $help . ucfirst($direction) .' '. $measurement .' ('. $type .')', 'header' => TRUE)
             ) + $statistics,
           );
         }

@@ -1,5 +1,5 @@
 $.fn.tablechart.defaults.attachMethod = function(container) {
-  $('h3', this.el).after(container); 
+  $('.chart-title', this.el).after(container); 
 }
 
 // Add traceroute

@@ -138,6 +138,9 @@ function ecenter_network_init() {
     drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.traceroute.js');
     drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/behaviors.js');
 
+    drupal_add_css($jq_path .'/jqplot/jquery.jqplot.css');
+
+    // @TODO overhaul
     $inline_css = array(
       '.ecenter-critical' => array('color' => variable_get('ecenter_network_threshold_critical_color', '#cc0000')),
       '.ecenter-marginal' => array('color' => variable_get('ecenter_network_threshold_marginal_color', '#fe890c')),

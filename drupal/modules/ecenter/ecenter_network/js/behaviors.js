@@ -41,14 +41,17 @@ Drupal.behaviors.EcenterSelectSetForm = function(context) {
 }
 
 Drupal.behaviors.EcenterShowTables = function(context) {
-  var show_label = Drupal.t('Show data tables');
-  var hide_label = Drupal.t('Hide data tables');
-  $('.tablechart', context).after('<button class="toggle-data">' + show_label + '</button>');
-  $('.toggle-data', context).toggle(function() {
-    $(this).text(hide_label).parent().find('table').slideDown('fast');
+  var show_label = Drupal.t('Show data');
+  var hide_label = Drupal.t('Hide data');
+  //$('.tablechart .title', context).append('<button class="toggle-data">' + show_label + '</button>');
+
+  $('<button class="toggle-data">' + show_label + '</button>')
+  .toggle(function() {
+    $(this).text(hide_label).parents('.data-table').find('table').slideDown('fast');
   }, function() {
-    $(this).text(show_label).parent().find('table').slideUp('fast');
-  });
+    $(this).text(show_label).parents('.data-table').find('table').slideUp('fast');
+  })
+  .appendTo($('.data-table .chart-title', context));
 }
 
 EcenterNetwork = {};

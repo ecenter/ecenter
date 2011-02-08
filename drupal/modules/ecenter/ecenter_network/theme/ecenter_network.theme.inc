@@ -232,7 +232,8 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
           $table[$type .'_'. $measurement .'_'. $direction] = array(
             'class' => $type .'-'. $measurement .'-'. $direction . $extra_class, 
             'data' => array(
-            'header' => array('data' => ucfirst($direction) .' '. $measurement .' ('. $type .')', $header => TRUE)) + $statistics,
+              'header' => array('data' => ucfirst($direction) .' '. $measurement .' ('. $type .')', 'header' => TRUE)
+            ) + $statistics,
           );
         }
         foreach ($measurements[$direction]['timeseries'] as $measurement => $timeseries) {
@@ -254,12 +255,15 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
           if (in_array($measurement, array('loss', 'max_delay', 'maxRTT', 'medianRTT', 'meanRTT')) || ($measurement == 'throughput' && count($timeseries) > 1)) {
             $extra_class = ' time-series';
           }
-          $data_tables[] = '<div class="data-table '. $type .'-'. $measurement .'-'. $direction . $extra_class .'"><h3>'. ucfirst($direction) .' '. $measurement .'</h3>'.
+          $data_tables[] = '<div class="data-table '. $type .'-'. $measurement .'-'. $direction . $extra_class .'">'.
+            '<div class="chart-title clearfix"><h3>'. 
+            ucfirst($direction) .' '. $measurement 
+            .'</h3></div>'.
             theme('jqplot_table', array(t('Time'), t('Value')), $data_table) .'</div>';
 
           $plot_options = array(
-            'width' => 400,
-            'height' => 200,
+            'width' => 410,
+            'height' => 130,
             'hideTables' => FALSE,
             'plotOptions' => array(
               'seriesDefaults' => array(
@@ -268,8 +272,7 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
                 'fill' => FALSE,
                 'color' => '#888888',
                 'markerOptions' => array(
-                  'show' => FALSE,
-                  'size' => 3,
+                  'size' => 5,
                 ),
               ),
               'axesDefaults' => array(
@@ -279,23 +282,35 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
                 'xaxis' => array(
                   'pad' => 0,
                   'autoscale' => TRUE,
-                  'numberTicks' => 10,
+                  'numberTicks' => 9,
                   'renderer' => '$.jqplot.DateAxisRenderer',
                   'tickOptions' => array(
                     'formatString' => "%H:%M",
                   ),
-                  'label' => t('Time'),
-                  'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
                 ),
                 'yaxis' => array(
                   'autoscale' => TRUE,
-                  'numberTicks' => 5,
+                  'numberTicks' => 4,
+                  'label' => t('Unit stub'),
+                  'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
+                  'labelOptions' => array(
+                    'fontFamily' => 'Georgia',
+                    'fontSize' => '12px',
+                  ),
                   'tickOptions' => array(
                     'color' => '#cccccc',
                   ),
                 ),
               ),
-              'linehighlighter' => FALSE,
+              'highlighter' => array(
+                'show' => TRUE,
+              ),
+              'cursor' => array(
+                'show' => TRUE,
+                'showTooltip' => FALSE,
+                'zoom' => TRUE,
+                'clickReset' => TRUE,
+              ),
             ),
           );
           jqplot_register_tablechart('#end-to-end-charts .time-series.'. $type .'-'. $measurement .'-'. $direction, $plot_options);
@@ -368,7 +383,7 @@ function theme_ecenter_network_utilization_table($hop, $direction, $table) {
   $attributes['class'] .= ($direction == 'forward') ? "{lineWidth : 1}" : "{lineWidth : 0, sizeAdjust: 0}";
 
   $headers = array(t('Time'), t('Percent utilization'));
-  $output = '<div class="snmp-data-table">';
+  $output = '<div class="data-table">';
   $output .= '<h3>'. $hop['nodename'] .' ('. t(ucfirst($direction)) .')</h3>';
   $output .= theme('jqplot_table', $headers, $table, $attributes);
   $output .= '</div>';

@@ -109,8 +109,15 @@
 
   function handleMove(ev, gridpos, datapos, neighbor, plot) {
     var lh = plot.plugins.linehighlighter;
+
+    // Plugin is disabled
+    if (!lh.show) {
+      return;
+    }
+
     var hc = lh.highlightCanvas;
     var c = plot.plugins.cursor;
+
 
     var series = plot.series;
     var i, k, s, xleft, ytop, xright, ybottom;

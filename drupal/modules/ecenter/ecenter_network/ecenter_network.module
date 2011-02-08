@@ -67,6 +67,7 @@ function ecenter_network_theme() {
       ),
     ) + $options,
     'ecenter_network_end_to_end' => array(
+      'template' => 'ecenter-network-end-to-end',
       'arguments' => array(
         'data' => NULL,
       ),

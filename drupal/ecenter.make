@@ -13,12 +13,18 @@ api = 2
 projects[adminrole][subdir] = "contrib"
 projects[adminrole][version] = "1.3"
 
+projects[advanced_help][subdir] = "contrib"
+projects[advanced_help][version] = "1.2"
+
 projects[ahah_helper][subdir] = "contrib"
 projects[ahah_helper][version] = "2.1"
 
 ; Allow ahah_helper to manipulate all Drupal javascript settings
 ; (may cause instability for untested modules)
 projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/buildsystem/raw/drupal/patches/ahah_helper_js_settings.patch"
+
+projects[beautytips][subdir] = "contrib"
+projects[beautytips][version] = "2.0"
 
 projects[conditional_styles][subdir] = "contrib"
 projects[conditional_styles][version] = "1.1"

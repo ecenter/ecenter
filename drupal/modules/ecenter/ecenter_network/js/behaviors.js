@@ -47,11 +47,11 @@ Drupal.behaviors.EcenterShowTables = function(context) {
 
   $('<button class="toggle-data">' + show_label + '</button>')
   .toggle(function() {
-    $(this).text(hide_label).parents('.data-table').find('table').slideDown('fast');
+    $(this).text(hide_label).parents('.end-to-end-chart-wrapper').find('.data-tables').slideDown('fast');
   }, function() {
-    $(this).text(show_label).parents('.data-table').find('table').slideUp('fast');
+    $(this).text(show_label).parents('.end-to-end-chart-wrapper').find('.data-tables').slideUp('fast');
   })
-  .appendTo($('.data-table .chart-title', context));
+  .appendTo($('.chart-title', context));
 }
 
 EcenterNetwork = {};

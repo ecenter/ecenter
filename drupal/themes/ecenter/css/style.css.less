@@ -123,6 +123,9 @@
   padding: 0;
   background: none;
   color: @color_blue;
+  :hover {
+    text-decoration: underline;
+  }
 }
 /* }}} */
 
@@ -747,33 +750,46 @@ body.page-network #content-wrapper {
     }
   }
 
-  .data-table {
-    display: none;
-    table {
-      display: none;
-      font-size: .825em;
-    }
-    &.time-series {
-      display: block;
-      margin-bottom: 55px;
-    }
-    .chart-title {
+   
+  #end-to-end-charts {
+    margin-top: 25px;
+    .box;
+    width: 420px;
+    .end-to-end-chart-wrapper {
       .box;
-      margin-top: -25px;
-      h3 {
+      width: 420px;
+      margin-bottom: 55px;
+      .chart-title {
         .box;
-        font-size: .875em;
-        margin: 0;
+        margin-top: -25px;
+        h3 {
+          .box;
+          width: 300px;
+          font-size: .875em;
+          margin: 0;
+        }
+        h4 {
+          font-size: .8em;
+        }
+        .toggle-data {
+          .button_link;
+          .box;
+          width: 120px;
+          font-size: .8em;
+          text-align: right;
+        }
       }
-      .toggle-data {
-        .button_link;
-        .box;
-        font-size: .8em;
-        text-align: right;
+      .data-tables {
+        display: none;
+        margin-bottom: 55px;
+        .data-table {
+          float: left;
+          margin-right: 15px;
+          font-size: .825em;
+        }
       }
     }
   }
-
 
   #end-to-end-wrapper {
     margin-bottom: 1.5em;
@@ -784,6 +800,15 @@ body.page-network #content-wrapper {
       th { 
         white-space: nowrap; 
         font-size: .75em;
+        &.result-header {
+          color: #fff;
+          background-color: #666;
+          font-size: .875em;
+        }
+      }
+      thead th {
+        background-color: #ccc;
+        color: #111;
       }
       tbody th {
         width: 185px;
@@ -792,9 +817,9 @@ body.page-network #content-wrapper {
           float: right;
         }
       }
-      td { text-align: right; }
+      td { text-align: left; }
     }
-    #end-to-end-charts { 
+    /*#end-to-end-charts { 
       .box;
       width: 420px;
       margin-top: 30px;
@@ -804,18 +829,29 @@ body.page-network #content-wrapper {
           .toggle-data { width: 100px; }
         }
       }
-    }
+    }*/
   }
-  #hop-wrapper { 
-    display: inline-block;
-    #snmp-results { .box; width: 540px; }
-  } 
 }
 /* }}} */
 /* jqPlot {{{ */
 .tablechart {
   .jqplot-axis {
     font-size: 10px;
+  }
+  table.jqplot-table-legend {
+    font-size: 11px;
+    border: none;
+    border-left: 1px solid #ccc;
+    border-top: 1px solid #ccc;
+    td {
+      background: none;
+      padding: 2px;
+      border: none;
+    }
+    td.jqplot-table-legend > div {
+      padding: 0;
+      border: none;
+    }
   }
 }
 /* }}} */

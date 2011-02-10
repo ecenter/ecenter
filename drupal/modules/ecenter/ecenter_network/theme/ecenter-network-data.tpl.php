@@ -15,7 +15,6 @@
 
 <div id="results"> 
   <div id="end-to-end-wrapper" class="clear-block">
-    <h3><?php print t('End to end results'); ?></h3>
     <?php print $end_to_end; ?>
   </div>
 

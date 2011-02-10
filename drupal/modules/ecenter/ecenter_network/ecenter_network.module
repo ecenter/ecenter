@@ -72,6 +72,11 @@ function ecenter_network_theme() {
         'data' => NULL,
       ),
     ) + $options,
+    'ecenter_network_end_to_end_tables' => array(
+      'arguments' => array(
+        'tables' => NULL,
+      ),
+    ) + $options,
     'ecenter_network_utilization_table' => array(
       'arguments' => array(
         'hop' => NULL,
@@ -86,6 +91,14 @@ function ecenter_network_theme() {
         'measurement' => NULL,
         'units' => TRUE,
         'format' => NULL,
+      ),
+    ) + $options,
+    'ecenter_network_format_default_label' => array(
+      'arguments' => array(
+        'measurement' => NULL,
+        'type' => NULL,
+        'direction' => NULL,
+        'help' => FALSE,
       ),
     ) + $options,
     'ecenter_network_format_value' => array(

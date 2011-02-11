@@ -583,10 +583,14 @@ body.page-network #content-wrapper {
     width: 660px;
     padding-top: 20px;
     background-color: rgba(255, 255, 255, 0.6);
-    font-weight: bold;
-    font-size: 11px;
+    color: #000;
+    font-size: 10px;
+    text-transform: uppercase;
     #traceroute {
       margin: 0 auto;
+      .highlight {
+        background-color: #ff9;
+      }
     }
   }
   #query-wrapper {
@@ -771,13 +775,6 @@ body.page-network #content-wrapper {
         h4 {
           font-size: .8em;
         }
-        .toggle-data {
-          .button_link;
-          .box;
-          width: 120px;
-          font-size: .8em;
-          text-align: right;
-        }
       }
       .data-tables {
         display: none;
@@ -787,6 +784,37 @@ body.page-network #content-wrapper {
           margin-right: 15px;
           font-size: .825em;
         }
+      }
+    }
+  }
+
+  .toggle-data {
+    .button_link;
+    .box;
+    width: 120px;
+    font-size: .8em;
+    text-align: right;
+  }
+
+
+  #utilization-tables {
+    .data-tables {
+      display: none;
+      margin-bottom: 55px;
+      .data-table {
+        float: left;
+        margin-right: 15px;
+        font-size: .825em;
+      }
+    }
+    .chart-title {
+      .box;
+      margin-top: -25px;
+      h3 {
+        .box;
+        width: 400px;
+        font-size: .875em;
+        margin: 0;
       }
     }
   }
@@ -819,17 +847,6 @@ body.page-network #content-wrapper {
       }
       td { text-align: left; }
     }
-    /*#end-to-end-charts { 
-      .box;
-      width: 420px;
-      margin-top: 30px;
-      .data-table {
-        .chart-title {
-          h3 { width: 320px; }
-          .toggle-data { width: 100px; }
-        }
-      }
-    }*/
   }
 }
 /* }}} */
@@ -837,6 +854,17 @@ body.page-network #content-wrapper {
 .tablechart {
   .jqplot-axis {
     font-size: 10px;
+  }
+  .jqplot-highlighter-tooltip {
+    border: none;
+    background-color: rgba(15, 15, 15, 0.75);
+    color: #fff;
+    font-size: 11px;
+    line-height: 11px;
+    padding: 5px;
+    .value {
+      font-weight: bold;
+    }
   }
   table.jqplot-table-legend {
     font-size: 11px;

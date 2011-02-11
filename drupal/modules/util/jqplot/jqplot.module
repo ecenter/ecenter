@@ -111,10 +111,17 @@ function jqplot_register_tablechart($selector, $settings = array()) {
       }
     }
 
+    // Add jqPlot settings
     $behavior = array();
     $behavior['jqPlot'][$selector] = $settings;
     drupal_add_js($behavior, 'setting');
     $selectors[$selector] = $behavior;
+    
+    // Our libraries and behaviors
+    drupal_add_js($path .'/tablechart/jquery.tablechart.js');
+    drupal_add_js($path .'/js/jqplot-behaviors.js');
+  }
+}
 
 /**
  * array_walk_recursive() callback to include renderers

@@ -82,15 +82,15 @@ function jqplot_register_tablechart($selector, $settings = array()) {
   $plugins = module_invoke_all('jqplot_plugins');
 
   if (empty($selectors[$selector])) {
+    $compression = variable_get('jquery_update_compression_type', 'none');
+    $min = ($compression != 'none') ? '.'. $compression : '';
+
     $path = drupal_get_path('module', 'jqplot');
 
     // Core library
     drupal_add_js($path .'/jqplot/excanvas.min.js');
-    drupal_add_js($path .'/jqplot/jquery.jqplot.js');
-
-    // Our libraries and behaviors
-    drupal_add_js($path .'/tablechart/jquery.tablechart.js');
-    drupal_add_js($path .'/js/jqplot-behaviors.js');
+    drupal_add_js($path .'/jqplot/jquery.jqplot'. $min .'.js');
+    drupal_add_css($path .'/jqplot/jquery.jqplot.css');
 
     // @TODO:  Support ALL plugins, with more intelligence!
     drupal_add_js($path .'/jqplot/plugins/jqplot.dateAxisRenderer.js');
@@ -118,10 +118,15 @@ function jqplot_register_tablechart($selector, $settings = array()) {
  * Implementation of hook_jqplot_plugins().
  */
 function jqplot_jqplot_plugins() {
-  $path = drupal_get_path('module', 'jqplot');
+  $path = drupal_get_path('module', 'jqplot') .'/jqplot/plugins/';
+  $compression = variable_get('jquery_update_compression_type', 'none');
+  $min = ($compression != 'none') ? '.'. $compression : '';
   return array(
-    'highlighter' => $path .'/jqplot/plugins/jqplot.highlighter.js',
-    'cursor' => $path .'/jqplot/plugins/jqplot.cursor.js',
+    'highlighter' => $path .'jqplot.highlighter'. $min .'.js',
+    'cursor'      => $path .'jqplot.cursor'. $min . '.js',
+    'dragable'    => $path .'jqplot.dragable'. $min .'.js',
+    'pointLabels' => $path .'jqplot.pointLabels'. $min .'.js',
+    'trendLine'   => $path .'jqplot.trendLine'. $min .'.js',
   );
 }
 

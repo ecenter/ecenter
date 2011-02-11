@@ -130,9 +130,31 @@ function theme_ecenter_network_hops($data) {
       }
     }
   }
-  //jqplot_register_tablechart('#utilization-tables', $plot_options);
 
-  return '<div id="utilization-tables">'. implode("\n", $tables) .'</div>';
+  $plot_options = _ecenter_network_plot_options_template();
+  $plot_options['seriesDefaults']['markerOptions']['show'] = FALSE;
+  $plot_options['seriesDefaults']['lineWidth'] = 1.2;
+  $plot_options['seriesDefaults']['color'] = '#555555';
+  $plot_options['axes']['xaxis']['pad'] = 0;
+  $plot_options['axes']['xaxis']['numTicks'] = 8;
+  $plot_options['axes']['yaxis']['min'] = 0;
+  $plot_options['axes']['yaxis']['max'] = 100;
+  $plot_options['axes']['yaxis']['numTicks'] = 5;
+  $plot_options['linehighlighter'] = array(
+    'show' => TRUE,
+    'sizeAdjust' => 1.5,
+    'threshold' => 2,
+  );
+  drupal_alter('ecenter_network_plot_options', $plot_options, 'utilization', 'snmp');  
+  $options = array(
+    'height' => 200,
+    'width' => 700,
+    'hideTables' => FALSE,
+    'dependencies' => array('canvasTextRenderer'),
+    'plotOptions' => $plot_options,
+  );
+  jqplot_register_tablechart('#utilization-tables', $options);
+  return '<div id="utilization-tables" class="wrapper"><div class="chart-title"><h3>'. t('Per hop utilization').'</h3></div><div class="data-tables">'. implode("\n", $tables) .'</div></div>';
 }
 
 /**
@@ -252,6 +274,7 @@ function theme_ecenter_network_end_to_end_tables($tables) {
         'height' => 150,
         'width' => 400,
         'hideTables' => FALSE,
+        'dependencies' => array('canvasTextRenderer'),
         'plotOptions' => $plot_options,
       );
       jqplot_register_tablechart('#'. $type .'-'. $measurement .'-data-tables', $options);
@@ -265,17 +288,45 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
     array('label' => t('Forward'),),
     array('label' => t('Reverse'),),
   );
+  $line_options = array(
+    'highlighter' => array(
+      'show' => TRUE,
+      'sizeAdjust' => 4,
+      'lineWidthAdjust' => 3,
+      'tooltipLocation' => 'n',
+      'tooltipOffset' => 10,
+      'tooltipSeparator' => ': ',
+    ),
+    'cursor' => array(
+      'show' => TRUE,
+      'showTooltip' => FALSE,
+      'zoom' => TRUE,
+      'clickReset' => TRUE,
+    ),
+  );
   switch ($measurement) {
     case 'throughput':
       $options['axes']['yaxis']['label'] = t('mbps');
+      $options['seriesDefaults']['renderer'] = '$.jqplot.BarRenderer';
+      $options['seriesDefaults']['rendererOptions'] = array(
+        'barWidth' => 10,
+      );
       return;
     case 'max_delay':
+      $options += $line_options;
       $options['axes']['yaxis']['label'] = t('milliseconds');
+      $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%dms</span>';
       return;
     case 'loss':
-      $options['axes']['yaxis']['label'] = t('%');
+      $options += $line_options;
+      $options['axes']['yaxis']['label'] = t('% loss');
+      $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%d%</span>';
       return;
-
+    case 'utilization':
+      $options += $line_options;
+      $options['axes']['yaxis']['label'] = t('% utilization');
+      $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%d%</span>';
+      return;
   }
 }
 
@@ -286,7 +337,7 @@ function _ecenter_network_plot_options_template() {
       'shadow' => FALSE,
       'fill' => FALSE,
       'markerOptions' => array(
-        'size' => 4,
+        'size' => 5,
         'shadow' => FALSE,
       ),
     ),
@@ -309,6 +360,9 @@ function _ecenter_network_plot_options_template() {
         'autoscale' => TRUE,
         'min' => 0,
         'numberTicks' => 4,
+        'tickOptions' => array(
+          'formatString' => '%d',
+        ),
         'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
         'labelOptions' => array(
           'fontSize' => '11px',
@@ -320,20 +374,6 @@ function _ecenter_network_plot_options_template() {
       'borderWidth' => 0,
       'background' => '#ffffff',
       'gridLineColor' => '#cccccc',
-    ),
-    'highlighter' => array(
-      'show' => TRUE,
-      'sizeAdjust' => 2,
-      'lineWidthAdjust' => 3,
-      'tooltipLocation' => 'n',
-      'tooltipOffset' => 20,
-      'tooltipSeparator' => ': ',
-    ),
-    'cursor' => array(
-      'show' => TRUE,
-      'showTooltip' => FALSE,
-      'zoom' => TRUE,
-      'clickReset' => TRUE,
     ),
   );
 }

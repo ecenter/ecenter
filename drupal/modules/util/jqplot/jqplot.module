@@ -92,10 +92,12 @@ function jqplot_register_tablechart($selector, $settings = array()) {
     drupal_add_js($path .'/jqplot/jquery.jqplot'. $min .'.js');
     drupal_add_css($path .'/jqplot/jquery.jqplot.css');
 
-    // @TODO:  Support ALL plugins, with more intelligence!
-    drupal_add_js($path .'/jqplot/plugins/jqplot.dateAxisRenderer.js');
-    drupal_add_js($path .'/jqplot/plugins/jqplot.canvasTextRenderer.js');
-    drupal_add_js($path .'/jqplot/plugins/jqplot.canvasAxisLabelRenderer.js');
+    // Include dependencies
+    if (is_array($settings['dependencies'])) {
+      foreach($settings['dependencies'] as $dependency) {
+        drupal_add_js($path .'/jqplot/plugins/jqplot.'. $dependency . $min .'.js');
+      }
+    }
 
     // Get plugins
     if (!empty($settings['plotOptions'])) {

@@ -140,6 +140,7 @@ function ecenter_network_init() {
     drupal_add_js($jq_path .'/jqplot/plugins/jqplot.dateAxisRenderer.js');
     drupal_add_js($jq_path .'/jqplot/plugins/jqplot.highlighter.js');
     drupal_add_js($jq_path .'/jqplot/plugins/jqplot.cursor.js');
+    drupal_add_js($jq_path .'/jqplot/plugins/jqplot.barRenderer.js');
     drupal_add_js($jq_path .'/jqplot/plugins/jqplot.canvasTextRenderer.js');
     drupal_add_js($jq_path .'/jqplot/plugins/jqplot.canvasAxisLabelRenderer.js');
     drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jqplot/jqplot.linehighlighter.js');

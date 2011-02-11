@@ -203,17 +203,19 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
     }
   }
 
-  // Sort table
-  ksort($table);
-
-  $headers = array(
-    array('data' => t('End-to-end results'), 'class' => 'result-header',),
-    t('Average'), t('Max'), t('Min'),
-  );
-
   if (!empty($table)) {
+    // Sort table
+    ksort($table);
+
+    $headers = array(
+      array('data' => t('End-to-end results'), 'class' => 'result-header',),
+      t('Average'), t('Max'), t('Min'),
+    );
     $vars['table'] = theme('jqplot_table', $headers, $table, array('class' => 'end-to-end-table'));
     $vars['data_tables'] = theme('ecenter_network_end_to_end_tables', $data_tables);
+  }
+  else {
+    $vars['table'] = '<p>'. t('No end-to-end results are available at this time.') .'</p>';
   }
 }
 

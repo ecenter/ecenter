@@ -216,7 +216,9 @@ $.tablechart.scrapeMultiple = function(tables) {
   }
 
   var series_idx = 0;
-  $(tables).each(function() {
+  $(tables)
+  .not('.jqplot-target table') // Filter out jqplot-added tables
+  .each(function() {
     // Generate series labels (requires "global" counter)
     if (tablechart.options.multitablesHeaderSeriesLabels) {
       $(this).find('thead th:gt(0)').each(function() {

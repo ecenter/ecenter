@@ -2,9 +2,29 @@
 // $Id$
 
 /**
- * @file
+ * @file jqplot.module
  *
- * Integrates jqPlot library with Drupal with help of "tablechart" plugin.
+ * Integrates jqPlot library with Drupal with help of Tablechart jQuery plugin.
+ * Tablechart takes scrapes HTML tables to be charted with the help of the
+ * wonderful jqPlot charting library. 
+ *
+ * This module inplements a simple hook system for registering jqPlot plugins:
+ * 
+ * function hook_jqplot_plugins() {
+ *   return array(
+ *     'plugin_name' => '/path/to/plugin',
+ *   );
+ * }
+ *
+ * If a plugin's options are specified in the chart's plot options (passed
+ * to the chart registration function), the plugin will be loaded with 
+ * drupal_add_js.
+ *
+ * This module depends on jquery_update module, preferably patched to 
+ * support jQuery 1.4.x, and uses jquery_update's specified compression
+ * type when loading files. Plugins are not cached, and may do whatever
+ * they wish when constructing the inclusion path.
+ *
  */
 
 /**
@@ -12,6 +32,7 @@
  */
 function jqplot_theme() {
   return array(
+    // A table without sticky headers
     'jqplot_table' => array(
       'arguments' => array(
         'header' => NULL,
@@ -26,7 +47,34 @@ function jqplot_theme() {
 /**
  * Register a "tablechart"
  *
- * ONLY the first call's settings for a given selector will be respected.
+ * Beware: Only the first callers settings for a given selector will be respected.
+ * 
+ * @param $selector
+ *   A jQuery selector (e.g. '#my-id div > .chart')
+ * 
+ * @param $settings
+ *   An array of settings, defined as:
+ *
+ *   array( 
+ *     'height' => INT (height in pixels),
+ *     
+ *     'width' => INT (width in pixels),
+ *     
+ *     'hideTables' => TRUE/FALSE (if FALSE, don't use tablechart table hiding),
+ *  
+ *     'dependencies' => ARRAY (array of additional jqPlot files to include 
+ *                       from plugins directory as needed),
+ *     
+ *     'plotOptions' => ARRAY (array of jqPlot plotting options; the module
+ *                      will try to intelligently include plugins and renderers 
+ *                      as needed)
+ *  )
+ *
+ * Special attention should be given to the dependency array: most plugins and 
+ * renderers are detected and loaded from the options array, but some entities
+ * have other dependencies (CanvasAxisLabelRenderer depends on 
+ * CanvasTextRenderer, for example).
+ *  
  */
 function jqplot_register_tablechart($selector, $settings = array()) {
   static $selectors = array();

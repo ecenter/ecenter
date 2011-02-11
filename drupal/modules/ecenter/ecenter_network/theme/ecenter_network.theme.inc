@@ -229,7 +229,7 @@ function theme_ecenter_network_end_to_end_tables($tables) {
         'ecenter_network_format_'. $type .'_label',
         'ecenter_network_format_default_label',
       );
-      $output .= '<div class="end-to-end-chart-wrapper" id="'. $type .'-'. $measurement .'-data-tables">';
+      $output .= '<div class="wrapper" id="'. $type .'-'. $measurement .'-data-tables">';
       $output .= '<div class="chart-title"><h3>'. 
         theme($suggestions, $measurement, $type) .'</h3></div>'; 
       

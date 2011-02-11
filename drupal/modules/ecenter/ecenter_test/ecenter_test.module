@@ -81,6 +81,36 @@ function theme_ecenter_test_jqplot() {
     'width' => 700,
     'height' => 200,
     'hideTables' => FALSE,
+    'dependencies' => array('canvasTextRenderer'),
+    'plotOptions' => array(
+      'seriesDefaults' => array(
+        'shadow' => FALSE,
+        'pointLabels' => array(
+          'show' => TRUE,
+          'edgeTolerance' => 3,
+        ),
+      ),
+      'legend' => array(
+        'show' => TRUE,
+      ),
+      'axes' => array(
+        'xaxis' => array(
+          'autoscale' => TRUE,
+          'label' => 'x axis',
+          'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
+          'renderer' => '$.jqplot.CategoryAxisRenderer',          
+        ),
+        'yaxis' => array(
+          'autoscale' => TRUE,
+          'label' => 'y axis',
+          'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
+        ),
+      ),
+      'pointLabels' => array('show' => TRUE,),
+      'linehighlighter' => array(
+        'show' => TRUE,
+      ),
+    ),
   );
   jqplot_register_tablechart('#chart', $plot_options);
 

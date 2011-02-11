@@ -160,17 +160,26 @@ $(document).ready(function() {
       var hop = Drupal.settings.ecenterNetwork.seriesLookup.idx[sidx];
       var tc = $('#utilization-tables').data('tablechart');
       var lh = tc['default'].chart.plugins.linehighlighter;
-        
-      $('#trace-hop-label-' + hop.id).addClass('highlight');
+
+      var background_color = (lh.colors && lh.colors[sidx] != undefined) ? lh.colors[sidx] : tc['default'].chart.seriesColors[sidx];
+
+      $('#trace-hop-label-' + hop.id)
+      .addClass('highlight')
+      .css({'background-color': background_color});
+      
       if (hop.corresponding_id) {
-        $('#trace-hop-label-' + hop.corresponding_id).addClass('highlight');
+        $('#trace-hop-label-' + hop.corresponding_id)
+        .addClass('highlight')
+        .css({'background-color': background_color});
       }
     }
   });
 
   // Bind to series unhighlighting
   $('#results').bind('jqplotUnhighlightSeries', function(e, sidx, plot) {
-    $('.trace-label').removeClass('highlight');
+    $('.trace-label')
+    .removeClass('highlight')
+    .css({'background-color' : 'transparent' });
   });
 
   // Bind to feature select: Set value, then call autocomplete's change function

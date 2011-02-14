@@ -134,7 +134,7 @@ function _jqplot_add_renderers($item, $key) {
       $compression = variable_get('jquery_update_compression_type', 'none');
       $min = ($compression != 'none') ? '.'. $compression : '';
       $path = drupal_get_path('module', 'jqplot') .'/jqplot/plugins/'; 
-      $file = 'jqplot.'. lcfirst(substr($item, 9)) . $min .'.js';
+      $file = 'jqplot.'. strtolower(substr($item, 9)) . $min .'.js';
       drupal_add_js($path . $file);
       return;
     default:

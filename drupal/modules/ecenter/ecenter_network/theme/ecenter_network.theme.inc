@@ -423,14 +423,18 @@ function theme_ecenter_network_format_default($value, $type = NULL, $measurement
 function theme_ecenter_network_format_default_label($measurement, $type = NULL, $direction = NULL, $help = NULL) {
   if ($help) {
     switch ($measurement) {
+      case 'throughput':
+        $help = theme('advanced_help_topic', 'ecenter_network', 'throughput');
+        break;
       case 'maxRTT':
       case 'max_delay':
         $help = theme('advanced_help_topic', 'ecenter_network', 'rtt');
+        break;
       default:
         $help = NULL;
     }
   }
-  
+
   $type = ($type) ? t('(@type)', array('@type' => $type)) : '';
   return $help . t(ucfirst($direction)) .' '. t(ucfirst(str_replace('_', ' ', $measurement))) .' '. $type; 
 }

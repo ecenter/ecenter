@@ -73,7 +73,7 @@ projects[jquery_update][version] = "1.1"
 projects[jquery_update][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/buildsystem/raw/drupal/patches/jquery_update_jquery-1.4.4.patch"
 
 projects[less][subdir] = "contrib"
-projects[less][version] = "2.5"
+projects[less][version] = "2.6"
 
 projects[openlayers][subdir] = "contrib"
 projects[openlayers][version] = "2.0-alpha10"

@@ -7,7 +7,7 @@ Drupal.behaviors.EcenterTraceroute = function(context) {
   $('#traceroute-wrapper').remove();
   if (Drupal.settings.ecenterNetwork && Drupal.settings.ecenterNetwork.tracerouteData) {
     $('<div id="traceroute-wrapper">')
-    .appendTo($('#network-map'));
+    .prependTo($('#hop-wrapper'));
     $('<div id="traceroute"></div>')
     .appendTo($('#traceroute-wrapper'))
     .traceroute(Drupal.settings.ecenterNetwork.tracerouteData);
@@ -155,7 +155,7 @@ $(document).ready(function() {
   });
 
   // Bind to series highlighting
-  $('#results').bind('jqplotHighlightSeries', function(e, sidx, plot) {
+  $('#results').live('jqplotHighlightSeries', function(e, sidx, plot) {
     if (Drupal.settings.ecenterNetwork.seriesLookup) {
       var hop = Drupal.settings.ecenterNetwork.seriesLookup.idx[sidx];
       var tc = $('#utilization-tables').data('tablechart');
@@ -176,7 +176,7 @@ $(document).ready(function() {
   });
 
   // Bind to series unhighlighting
-  $('#results').bind('jqplotUnhighlightSeries', function(e, sidx, plot) {
+  $('#results').live('jqplotUnhighlightSeries', function(e, sidx, plot) {
     $('.trace-label')
     .removeClass('highlight')
     .css({'background-color' : 'transparent' });

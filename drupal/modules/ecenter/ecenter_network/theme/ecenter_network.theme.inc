@@ -283,6 +283,9 @@ function theme_ecenter_network_end_to_end_tables($tables) {
   return $output;
 }
 
+/**
+ * Implementation of hook_ecenter_network_plot_options_alter().
+ */
 function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurement, $type) {
   $options['series'] = array(
     array('label' => t('Forward'),),
@@ -331,6 +334,9 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
   }
 }
 
+/**
+ * Get plot options template
+ */
 function _ecenter_network_plot_options_template() {
   return array( 
     'seriesDefaults' => array(
@@ -377,7 +383,6 @@ function _ecenter_network_plot_options_template() {
     ),
   );
 }
-
 
 /**
  * Consolidated value formatter
@@ -430,9 +435,8 @@ function theme_ecenter_network_format_default_label($measurement, $type = NULL, 
   return $help . t(ucfirst($direction)) .' '. t(ucfirst(str_replace('_', ' ', $measurement))) .' '. $type; 
 }
 
-
 /**
- * Format a value
+ * Format a numeric value for display in the E-center diagnostic tool
  */
 function theme_ecenter_network_format_value($value, $units = NULL) {
   $output = '<span class="value">'. $value .'</span>';

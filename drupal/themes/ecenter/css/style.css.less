@@ -578,18 +578,17 @@ body.page-network #content-wrapper {
     position: relative;
   }
   #traceroute-wrapper {
-    position: absolute;
-    bottom: 0;
-    width: 660px;
-    padding-top: 20px;
-    background-color: rgba(255, 255, 255, 0.6);
-    color: #000;
-    font-size: 10px;
-    text-transform: uppercase;
+    margin-bottom: 2.5em;
     #traceroute {
-      margin: 0 auto;
-      .highlight {
-        background-color: #ff9;
+      margin-left: 15px;
+      .trace-label {
+        font-size: 11px;
+        font-weight: bold;
+        .round_corner;
+        &.highlight {
+          background-color: #ff9;
+          color: #fff;
+        }
       }
     }
   }
@@ -798,6 +797,8 @@ body.page-network #content-wrapper {
 
 
   #utilization-tables {
+    margin-top: 25px;
+    margin-bottom: 1.5em;
     .data-tables {
       display: none;
       margin-bottom: 55px;
@@ -812,7 +813,7 @@ body.page-network #content-wrapper {
       margin-top: -25px;
       h3 {
         .box;
-        width: 400px;
+        width: 474px;
         font-size: .875em;
         margin: 0;
       }

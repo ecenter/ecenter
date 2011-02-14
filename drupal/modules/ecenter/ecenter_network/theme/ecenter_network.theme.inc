@@ -136,10 +136,10 @@ function theme_ecenter_network_hops($data) {
   $plot_options['seriesDefaults']['lineWidth'] = 1.2;
   $plot_options['seriesDefaults']['color'] = '#555555';
   $plot_options['axes']['xaxis']['pad'] = 0;
-  $plot_options['axes']['xaxis']['numTicks'] = 8;
+  $plot_options['axes']['xaxis']['numberTicks'] = 10;
   $plot_options['axes']['yaxis']['min'] = 0;
   $plot_options['axes']['yaxis']['max'] = 100;
-  $plot_options['axes']['yaxis']['numTicks'] = 5;
+  $plot_options['axes']['yaxis']['numberTicks'] = 5;
   $plot_options['linehighlighter'] = array(
     'show' => TRUE,
     'sizeAdjust' => 1.5,
@@ -148,7 +148,7 @@ function theme_ecenter_network_hops($data) {
   drupal_alter('ecenter_network_plot_options', $plot_options, 'utilization', 'snmp');  
   $options = array(
     'height' => 200,
-    'width' => 700,
+    'width' => 600,
     'hideTables' => FALSE,
     'dependencies' => array('canvasTextRenderer'),
     'plotOptions' => $plot_options,
@@ -309,7 +309,7 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
       $options['axes']['yaxis']['label'] = t('mbps');
       $options['seriesDefaults']['renderer'] = '$.jqplot.BarRenderer';
       $options['seriesDefaults']['rendererOptions'] = array(
-        'barWidth' => 10,
+        'barWidth' => 7,
       );
       return;
     case 'max_delay':
@@ -319,6 +319,7 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
       return;
     case 'loss':
       $options += $line_options;
+      $options['axes']['yaxis']['min'] = 0;
       $options['axes']['yaxis']['label'] = t('% loss');
       $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%d%</span>';
       return;
@@ -358,7 +359,6 @@ function _ecenter_network_plot_options_template() {
       ),
       'yaxis' => array(
         'autoscale' => TRUE,
-        'min' => 0,
         'numberTicks' => 4,
         'tickOptions' => array(
           'formatString' => '%d',

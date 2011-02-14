@@ -39,9 +39,9 @@ $.fn.traceroute.defaults = {
   'drawArrows' : true,
   'append' : true,
   'link' : {
-    'linkLength' : 36,
+    'linkLength' : 45,
     'style' : {
-      'lineWidth' : 4,
+      'lineWidth' : 5,
       'strokeStyle' : '#aaaaaa'
     }
   },
@@ -58,7 +58,7 @@ $.fn.traceroute.defaults = {
     'style' : {
       'strokeStyle' : '#0000ff',
       'fillStyle' : '#ffffff',
-      'lineWidth' : 3
+      'lineWidth' : 4
     }
   },
   'label' : {

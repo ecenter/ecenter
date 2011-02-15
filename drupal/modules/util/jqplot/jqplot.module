@@ -85,17 +85,37 @@ function jqplot_register_tablechart($selector, $settings = array()) {
     $compression = variable_get('jquery_update_compression_type', 'none');
     $min = ($compression != 'none') ? '.'. $compression : '';
 
-    $path = drupal_get_path('module', 'jqplot');
+    // Intelligently discover jqplot path
+    if (module_exists('libraries')) {
+      $library_path = libraries_get_path('jqplot');
+    }
+    $module_path = drupal_get_path('module', 'jqplot') .'/jqplot';
+
+    if ($library_path && file_exists($library_path .'/jquery.jqplot.js')) {
+      $path = $library_path;
+    }
+    else if (file_exists($module_path .'/jquery.jqplot.js')) {
+      $path = $module_path;
+    }
+
+    if (!$path) {
+      drupal_set_message(t('jqPlot library is not available. Please 
+        <a href="https://bitbucket.org/cleonello/jqplot/downloads/">download 
+        jqPlot</a> and install in @path', 
+        array('@path' => ($library_path) ? $library_path : $module_path)), 
+        'error');
+      return;
+    }
 
     // Core library
-    drupal_add_js($path .'/jqplot/excanvas.min.js');
-    drupal_add_js($path .'/jqplot/jquery.jqplot'. $min .'.js');
-    drupal_add_css($path .'/jqplot/jquery.jqplot.css');
+    drupal_add_js($path .'/excanvas.min.js');
+    drupal_add_js($path .'/jquery.jqplot'. $min .'.js');
+    drupal_add_css($path .'/jquery.jqplot.css');
 
     // Include dependencies
     if (is_array($settings['dependencies'])) {
       foreach($settings['dependencies'] as $dependency) {
-        drupal_add_js($path .'/jqplot/plugins/jqplot.'. $dependency . $min .'.js');
+        drupal_add_js($path .'/plugins/jqplot.'. $dependency . $min .'.js');
       }
     }
 
@@ -118,8 +138,8 @@ function jqplot_register_tablechart($selector, $settings = array()) {
     $selectors[$selector] = $behavior;
     
     // Our libraries and behaviors
-    drupal_add_js($path .'/tablechart/jquery.tablechart.js');
-    drupal_add_js($path .'/js/jqplot-behaviors.js');
+    drupal_add_js(drupal_get_path('module', 'jqplot') .'/tablechart/jquery.tablechart.js');
+    drupal_add_js(drupal_get_path('module', 'jqplot') .'/js/jqplot-behaviors.js');
   }
 }
 

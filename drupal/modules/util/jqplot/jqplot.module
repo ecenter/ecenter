@@ -48,33 +48,33 @@ function jqplot_theme() {
  * Register a "tablechart"
  *
  * Beware: Only the first callers settings for a given selector will be respected.
- * 
+ *
  * @param $selector
  *   A jQuery selector (e.g. '#my-id div > .chart')
- * 
+ *
  * @param $settings
  *   An array of settings, defined as:
  *
- *   array( 
+ *   array(
  *     'height' => INT (height in pixels),
- *     
+ *
  *     'width' => INT (width in pixels),
- *     
+ *
  *     'hideTables' => TRUE/FALSE (if FALSE, don't use tablechart table hiding),
- *  
- *     'dependencies' => ARRAY (array of additional jqPlot files to include 
+ *
+ *     'dependencies' => ARRAY (array of additional jqPlot files to include
  *                       from plugins directory as needed),
- *     
+ *
  *     'plotOptions' => ARRAY (array of jqPlot plotting options; the module
- *                      will try to intelligently include plugins and renderers 
+ *                      will try to intelligently include plugins and renderers
  *                      as needed)
  *  )
  *
- * Special attention should be given to the dependency array: most plugins and 
+ * Special attention should be given to the dependency array: most plugins and
  * renderers are detected and loaded from the options array, but some entities
- * have other dependencies (CanvasAxisLabelRenderer depends on 
+ * have other dependencies (CanvasAxisLabelRenderer depends on
  * CanvasTextRenderer, for example).
- *  
+ *
  */
 function jqplot_register_tablechart($selector, $settings = array()) {
   static $selectors = array();

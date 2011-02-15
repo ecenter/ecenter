@@ -11,17 +11,10 @@ Drupal.behaviors.ecenter_network_behavior_curves = function(context) {
     var options = data.map.behaviors['ecenter_network_behavior_curves'];
     var layers = [];
 
-    // For backwards compatiability, if layers is not
-    // defined, then include all vector layers
-    if (typeof options.layers == 'undefined' || options.layers.length == 0) {
-      layers = map.getLayersByClass('OpenLayers.Layer.Vector');
-    }
-    else {
-      for (var i in options.layers) {
-        var selectedLayer = map.getLayersBy('drupalID', options.layers[i]);
-        if (typeof selectedLayer[0] != 'undefined') {
-          layers.push(selectedLayer[0]);
-        }
+    for (var i in options.layers) {
+      var selectedLayer = map.getLayersBy('drupalID', options.layers[i]);
+      if (typeof selectedLayer[0] != 'undefined') {
+        layers.push(selectedLayer[0]);
       }
     }
 

@@ -906,7 +906,6 @@ function _ecenter_network_sort_grouped_hops($a, $b) {
   return ((float) $b['hop']['hop_delay'] > (float) $a['hop']['hop_delay']);
 }
 
-
 /**
  * Parse hops
  *
@@ -1013,6 +1012,7 @@ function ecenter_network_openlayers_presets() {
         'layers' => array(
           'ecenter_network_traceroute' => 'ecenter_network_traceroute',
         ),
+        'style' => 'ecenter_default',
       ),
     ),
     'default_layer' => 'osm_mapnik',

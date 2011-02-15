@@ -56,6 +56,9 @@ projects[geoip][version] = "1.2"
 projects[homebox][subdir] = "contrib"
 projects[homebox][version] = "2.1"
 
+projects[libraries][subdir] = "contrib"
+projects[libraries][version] = "1.0"
+
 projects[imageapi][subdir] = "contrib"
 projects[imageapi][version] = "1.9"
 

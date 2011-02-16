@@ -118,6 +118,10 @@ function ecenter_network_theme() {
  */
 function ecenter_network_init() {
   if (arg(0) == 'network' && !arg(1)) {
+    // Compression type
+    $compression = variable_get('jquery_update_compression_type', 'none');
+    $min = ($compression != 'none') ? '.'. $compression : '';
+
     // Force load OL
     openlayers_include();
     drupal_add_js(drupal_get_path('module', 'openlayers') .
@@ -132,27 +136,26 @@ function ecenter_network_init() {
     // Force version 1.8, load libraries for datepicker and combobox
     jquery_ui_add(array('ui.widget', 'ui.mouse', 'ui.button', 'ui.position', 'ui.autocomplete', 'ui.datepicker'), '1.8');
 
-    // jqPlot -- @TODO could this be handled by a "pre register" fn?
-    $jq_path = drupal_get_path('module', 'jqplot');
-    drupal_add_js($jq_path .'/jqplot/excanvas.min.js');
-    drupal_add_js($jq_path .'/jqplot/jquery.jqplot.js');
+    $jq_path = _jqplot_get_path();
+    $tablechart_path = _jqplot_get_tablechart_path();
+    drupal_add_js($jq_path .'/excanvas.min.js');
+    drupal_add_js($jq_path .'/jquery.jqplot.js');
 
-    drupal_add_js($jq_path .'/jqplot/plugins/jqplot.dateAxisRenderer.js');
-    drupal_add_js($jq_path .'/jqplot/plugins/jqplot.highlighter.js');
-    drupal_add_js($jq_path .'/jqplot/plugins/jqplot.cursor.js');
-    drupal_add_js($jq_path .'/jqplot/plugins/jqplot.barRenderer.js');
-    drupal_add_js($jq_path .'/jqplot/plugins/jqplot.canvasTextRenderer.js');
-    drupal_add_js($jq_path .'/jqplot/plugins/jqplot.canvasAxisLabelRenderer.js');
+    drupal_add_js($jq_path .'/plugins/jqplot.dateAxisRenderer'. $min .'.js');
+    drupal_add_js($jq_path .'/plugins/jqplot.highlighter'. $min .'.js');
+    drupal_add_js($jq_path .'/plugins/jqplot.cursor'. $min .'.js');
+    drupal_add_js($jq_path .'/plugins/jqplot.barRenderer'. $min .'.js');
+    drupal_add_js($jq_path .'/plugins/jqplot.canvasTextRenderer'. $min .'.js');
+    drupal_add_js($jq_path .'/plugins/jqplot.canvasAxisLabelRenderer'. $min .'.js');
     drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jqplot/jqplot.linehighlighter.js');
-
-    drupal_add_js($jq_path .'/tablechart/jquery.tablechart.js');
-    drupal_add_js($jq_path .'/js/jqplot-behaviors.js');
+    drupal_add_js($tablechart_path .'/jquery.tablechart.js');
+    drupal_add_js(drupal_get_path('module', 'jqplot') .'/js/jqplot-behaviors.js');
 
     drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.metadata.js');
     drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.traceroute.js');
     drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/behaviors.js');
 
-    drupal_add_css($jq_path .'/jqplot/jquery.jqplot.css');
+    drupal_add_css($jq_path .'/jquery.jqplot.css');
 
     // @TODO overhaul
     $inline_css = array(

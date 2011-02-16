@@ -1,5 +1,6 @@
 core = "6.x"
 dependencies[] = "advanced_help"
+dependencies[] = "beautytips"
 dependencies[] = "ahah_helper"
 dependencies[] = "combobox"
 dependencies[] = "date"

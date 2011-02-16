@@ -398,14 +398,14 @@ function theme_ecenter_network_format_default($value, $type = NULL, $measurement
       $measurement_units = ($units) ? t('ms') : NULL;
       $format = ($format) ? $format : '%1.0f';
       return theme('ecenter_network_format_value', sprintf($format, $value * 1000), $measurement_units);
-    case 'minRtt':
     case 'maxRtt':
+    case 'minRtt':
     case 'medianRtt':
     case 'meanRtt':
     case 'iqrIpd':
       $format = ($format) ? $format : '%1.0f';
       $measurement_units = ($units) ? t('ms') : NULL;
-      return theme('ecenter_network_format_value', sprintf($format, $value), $mesurement_units);
+      return theme('ecenter_network_format_value', sprintf($format, $value), $measurement_units);
     case 'loss': 
     case 'lossPercent': 
       $format = ($format) ? $format : '%1.1f';
@@ -426,13 +426,27 @@ function theme_ecenter_network_format_default_label($measurement, $type = NULL, 
       case 'throughput':
         $help = theme('advanced_help_topic', 'ecenter_network', 'throughput');
         break;
-      case 'maxRTT':
       case 'max_delay':
+      case 'min_delay':
+        $help = theme('advanced_help_topic', 'ecenter_network', 'delay');
+        break;
+      case 'maxRtt':
+      case 'minRtt':
+      case 'medianRtt':
+      case 'meanRtt':
         $help = theme('advanced_help_topic', 'ecenter_network', 'rtt');
         break;
       default:
-        $help = NULL;
+        $help = theme('advanced_help_topic', 'ecenter_network', strtolower($measurement));
     }
+  }
+
+  switch ($measurement) {
+    case 'iqrIpd':
+      $measurement = 'inter-packet delay';
+      break;
+    case 'sent':
+      $measurement = 'packets per test';
   }
 
   $type = ($type) ? t('(@type)', array('@type' => $type)) : '';

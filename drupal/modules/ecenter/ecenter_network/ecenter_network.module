@@ -254,14 +254,15 @@ function _ecenter_network_select_form() {
     '#type' => 'date_popup',
     '#title' => t('Start date'),
     '#date_increment' => $inc,
-    '#value' => date_format($start, 'Y-m-d H:i'),
+    '#default_value' => date_format($start, 'Y-m-d H:i'),
   );
   $form['network_wrapper']['query']['end'] = array(
     '#type' => 'date_popup',
     '#title' => t('End date'),
     '#date_increment' => $inc,
-    '#value' => date_format($end, 'Y-m-d H:i'),
+    '#default_value' => date_format($end, 'Y-m-d H:i'),
   );
+
   $form['network_wrapper']['query']['date_description'] = array(
     '#prefix' => '<div id="date-description-wrapper"><p>',
     '#suffix' => '</p></div>',
@@ -1392,11 +1393,14 @@ function _ecenter_network_extract_query() {
     );
   }
   else {
+    $tz = date_default_timezone_name(TRUE);
+    $start = date_format(date_create($_REQUEST['start']), 'Y-m-d H:i');
+    $end = date_format(date_create($_REQUEST['end']), 'Y-m-d H:i');
     $vars = array(
       'src' => $_REQUEST['src'],
       'dst' => $_REQUEST['dst'],
-      'start' => $_REQUEST['start'],
-      'end' => $_REQUEST['end'],
+      'start' => $start,
+      'end' => $end,
     );
   }
   return $vars;

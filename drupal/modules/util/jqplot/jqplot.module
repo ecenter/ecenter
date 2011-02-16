@@ -84,29 +84,8 @@ function jqplot_register_tablechart($selector, $settings = array()) {
   if (empty($selectors[$selector])) {
     $compression = variable_get('jquery_update_compression_type', 'none');
     $min = ($compression != 'none') ? '.'. $compression : '';
-
-    // Intelligently discover jqplot path
-    if (module_exists('libraries')) {
-      $library_path = libraries_get_path('jqplot');
-    }
-    $module_path = drupal_get_path('module', 'jqplot') .'/jqplot';
-
-    if ($library_path && file_exists($library_path .'/jquery.jqplot.js')) {
-      $path = $library_path;
-    }
-    else if (file_exists($module_path .'/jquery.jqplot.js')) {
-      $path = $module_path;
-    }
-
-    if (!$path) {
-      drupal_set_message(t('jqPlot library is not available. Please 
-        <a href="https://bitbucket.org/cleonello/jqplot/downloads/">download 
-        jqPlot</a> and install in @path', 
-        array('@path' => ($library_path) ? $library_path : $module_path)), 
-        'error');
-      return;
-    }
-
+    $path = _jqplot_get_path();
+      
     // Core library
     drupal_add_js($path .'/excanvas.min.js');
     drupal_add_js($path .'/jquery.jqplot'. $min .'.js');
@@ -122,7 +101,7 @@ function jqplot_register_tablechart($selector, $settings = array()) {
     // Get plugins and renderers
     if (!empty($settings['plotOptions'])) {
       // Load renderers
-      array_walk_recursive($settings['plotOptions'], '_jqplot_add_renderers');
+      array_walk_recursive($settings['plotOptions'], '_jqplot_add_renderers', $path);
 
       // Add plugins 
       $chart_plugins = array_intersect_key($plugins, $settings['plotOptions']);
@@ -146,15 +125,14 @@ function jqplot_register_tablechart($selector, $settings = array()) {
 /**
  * array_walk_recursive() callback to include renderers
  */
-function _jqplot_add_renderers($item, $key) {
+function _jqplot_add_renderers($item, $key, $path) {
   switch ($key) {
     case 'renderer':
     case 'labelRenderer':
     case 'markerRenderer':
       $compression = variable_get('jquery_update_compression_type', 'none');
       $min = ($compression != 'none') ? '.'. $compression : '';
-      $path = drupal_get_path('module', 'jqplot') .'/jqplot/plugins/'; 
-      $file = 'jqplot.'. strtolower(substr($item, 9, 1)) . substr($item, 10) . $min .'.js';
+      $file = '/plugins/jqplot.'. strtolower(substr($item, 9, 1)) . substr($item, 10) . $min .'.js';
       drupal_add_js($path . $file);
       return;
     default:
@@ -163,10 +141,74 @@ function _jqplot_add_renderers($item, $key) {
 }
 
 /**
+ * Get jqPlot library path
+ */
+function _jqplot_get_path() {
+  static $path;
+
+  if (!$path) {
+    $module_path = drupal_get_path('module', 'jqplot') .'/jqplot';
+    
+    if (module_exists('libraries')) {
+      $library_path = libraries_get_path('jqplot');
+    }
+
+    if ($library_path && file_exists($library_path .'/jquery.jqplot.js')) {
+      $path = $library_path;
+    }
+    else if (file_exists($module_path .'/jquery.jqplot.js')) {
+      $path = $module_path;
+    }
+
+    if (!$path) {
+      drupal_set_message(t('jqPlot library is not available. Please 
+        <a href="https://bitbucket.org/cleonello/jqplot/downloads/">download 
+        jqPlot</a> and install in @path', 
+        array('@path' => ($library_path) ? $library_path : $module_path)), 
+        'error');
+    }
+  }
+
+  return $path;
+}
+
+/**
+ * Get jqPlot library path
+ */
+function _jqplot_get_tablechart_path() {
+  static $path;
+
+  if (!$path) {
+    $module_path = drupal_get_path('module', 'jqplot') .'/tablechart';
+    
+    if (module_exists('libraries')) {
+      $library_path = libraries_get_path('tablechart');
+    }
+
+    if ($library_path && file_exists($library_path .'/jquery.tablechart.js')) {
+      $path = $library_path;
+    }
+    else if (file_exists($module_path .'/jquery.tablechart.js')) {
+      $path = $module_path;
+    }
+
+    if (!$path) {
+      drupal_set_message(t('Tablechart library is not available. Please 
+        <a href="https://bitbucket.org/eads/tablechart/downloads/">download 
+        tablechart</a> and install in @path', 
+        array('@path' => ($library_path) ? $library_path : $module_path)), 
+        'error');
+    }
+  }
+
+  return $path;
+}
+
+/**
  * Implementation of hook_jqplot_plugins().
  */
 function jqplot_jqplot_plugins() {
-  $path = drupal_get_path('module', 'jqplot') .'/jqplot/plugins/';
+  $path = _jqplot_get_path() .'/plugins/';
   $compression = variable_get('jquery_update_compression_type', 'none');
   $min = ($compression != 'none') ? '.'. $compression : '';
   return array(

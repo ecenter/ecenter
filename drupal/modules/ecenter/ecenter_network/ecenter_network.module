@@ -1432,8 +1432,10 @@ function _ecenter_network_extract_query() {
   }
   else {
     $tz = date_default_timezone_name(TRUE);
-    $start = date_format(date_create($_REQUEST['start']), 'Y-m-d H:i');
-    $end = date_format(date_create($_REQUEST['end']), 'Y-m-d H:i');
+    $start = ($_REQUEST['start']) ? 
+      date_format(date_create($_REQUEST['start']), 'Y-m-d H:i') : NULL;
+    $end = ($_REQUEST['end']) ? 
+      date_format(date_create($_REQUEST['end']), 'Y-m-d H:i') : NULL;
     $vars = array(
       'src' => $_REQUEST['src'],
       'dst' => $_REQUEST['dst'],

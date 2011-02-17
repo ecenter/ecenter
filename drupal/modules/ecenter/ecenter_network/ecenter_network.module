@@ -1263,7 +1263,7 @@ function ecenter_network_layers_traceroute() {
   $layer->description = '';
   $layer->data = array(
     'layer_type' => 'openlayers_layer_type_raw',
-    'projection' => array('4326'),
+    'projection' => array('900913'),
     'options' => array(
       'rendererOptions' => array('zIndexing' => TRUE),
     ),
@@ -1284,9 +1284,6 @@ function ecenter_network_layers_traceroute() {
       foreach ($traceroute as $hop_data) {
         $hop = $hop_data['hop'];
         if ($hop['longitude'] && $hop['latitude']) {
-          // BAD...
-          $hop['longitude'] = $hop['longitude'] * 110000;
-          $hop['latitude'] = $hop['latitude'] * 120000;
           $features[] = array(
             'wkt' => "POINT({$hop['longitude']} {$hop['latitude']})",
             'projection' => "4326",

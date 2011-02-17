@@ -52,34 +52,38 @@
 
 <?php if (!empty($messages)): print $messages; endif; ?>
 
-<?php if (!empty($tabs)): ?>
-  <div id="tasks" class="clear-block">
-    <?php print $tabs; ?>
-  </div>
-<?php endif; ?>
+<div id="page-wrapper">
 
-<div id="content-wrapper" class="clear-block">
-
-  <?php if (!empty($left)): ?>
-  <div id="sidebar-left" class="column sidebar">
-    <?php print $left; ?>
-  </div>
-  <?php endif; ?>
-
-  <div id="content">
-    <?php if (!empty($help)): print $help; endif; ?>
-    <?php if (!empty($title)): ?><h1 class="title" id="page-title"><?php print $title; ?></h1><?php endif; ?>
-    <div id="content-body">
-      <?php print $content; ?>
+  <?php if (!empty($tabs)): ?>
+    <div id="tasks" class="clear-block">
+      <?php print $tabs; ?>
     </div>
-    <?php print $feed_icons; ?>
-  </div>
-
-  <?php if (!empty($right)): ?>
-  <div id="sidebar-right" class="column sidebar">
-    <?php print $right; ?>
-  </div>
   <?php endif; ?>
+
+  <div id="content-wrapper" class="clear-block">
+
+    <?php if (!empty($left)): ?>
+    <div id="sidebar-left" class="column sidebar">
+      <?php print $left; ?>
+    </div>
+    <?php endif; ?>
+
+    <div id="content">
+      <?php if (!empty($help)): print $help; endif; ?>
+      <?php if (!empty($title)): ?><h1 class="title" id="page-title"><?php print $title; ?></h1><?php endif; ?>
+      <div id="content-body">
+        <?php print $content; ?>
+      </div>
+      <?php print $feed_icons; ?>
+    </div>
+
+    <?php if (!empty($right)): ?>
+    <div id="sidebar-right" class="column sidebar">
+      <?php print $right; ?>
+    </div>
+    <?php endif; ?>
+
+  </div>
 
 </div>
 

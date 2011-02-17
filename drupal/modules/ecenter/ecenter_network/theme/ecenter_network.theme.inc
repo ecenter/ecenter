@@ -294,8 +294,8 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
   $line_options = array(
     'highlighter' => array(
       'show' => TRUE,
-      'sizeAdjust' => 4,
-      'lineWidthAdjust' => 3,
+      'sizeAdjust' => 2,
+      'lineWidthAdjust' => 2,
       'tooltipLocation' => 'n',
       'tooltipOffset' => 10,
       'tooltipSeparator' => ': ',
@@ -318,6 +318,7 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
     case 'max_delay':
       $options += $line_options;
       $options['axes']['yaxis']['label'] = t('milliseconds');
+      $options['axes']['yaxis']['min'] = 0;
       $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%dms</span>';
       return;
     case 'loss':

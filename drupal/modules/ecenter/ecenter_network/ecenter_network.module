@@ -990,13 +990,13 @@ function ecenter_network_openlayers_presets() {
     'hide_empty_map' => 0,
     'center' => array(
       'initial' => array(
-        'centerpoint' => '-97.892187496064, 38.822590974865',
+        'centerpoint' => '-10770975.995875, 4691969.809375',
         'zoom' => '4',
       ),
-      'restrict' => array(
+      /*'restrict' => array(
         'restrictextent' => 0,
         'restrictedExtent' => '',
-      ),
+      ),*/
     ),
     'behaviors' => array(
       'openlayers_behavior_navigation' => array(
@@ -1019,11 +1019,10 @@ function ecenter_network_openlayers_presets() {
         'style' => 'ecenter_default',
       ),
     ),
-    'default_layer' => 'osm_mapnik',
-    //'default_layer' => 'world_light_usa',
+    'default_layer' => 'world_glass',
     'layers' => array(
-      'osm_mapnik' => 'osm_mapnik',
-      //'world_light_usa' => 'world_light_usa',
+      //'osm_mapnik' => 'osm_mapnik',
+      'world_glass' => 'world_glass',
       'ecenter_network_sites' => 'ecenter_network_sites',
       'ecenter_network_traceroute' => 'ecenter_network_traceroute',
     ),
@@ -1032,7 +1031,7 @@ function ecenter_network_openlayers_presets() {
       'ecenter_network_traceroute' => 'ecenter_network_traceroute',
     ),
     'projection' => '900913',
-    'displayProjection' => '4326',
+    //'displayProjection' => '4326',
     'styles' => array(
       'default' => 'ecenter_default',
       'select' => 'ecenter_selected',
@@ -1149,6 +1148,25 @@ function ecenter_network_openlayers_layers() {
   $layers = array();
   $layers['ecenter_network_traceroute'] = ecenter_network_layers_traceroute();
   $layers['ecenter_network_sites'] = ecenter_network_layers_sites();
+
+  $mapbox_layer = new stdClass;
+  $mapbox_layer->disabled = FALSE; /* Edit this to true to make a default mapbox_layer disabled initially */
+  $mapbox_layer->api_version = 1;
+  $mapbox_layer->name = 'world_glass';
+  $mapbox_layer->title = 'World glass';
+  $mapbox_layer->description = 'A transparent world map base layer.';
+  $mapbox_layer->data = array(
+    'layername' => 'world-glass',
+    'layer_type' => 'openlayers_layer_type_mapbox',
+    'osm' => 0,
+    'baselayer' => 1,
+    'type' => 'png',
+    'projection' => array('900913'),
+    'resolutions' => openlayers_get_resolutions('900913'),
+    'maxExtent' => openlayers_get_extent('900913'), 
+  );
+  $layers['world_dark'] = $mapbox_layer;
+
   return $layers;
 }
 
@@ -1231,7 +1249,7 @@ function ecenter_network_layers_traceroute() {
   $layer->description = '';
   $layer->data = array(
     'layer_type' => 'openlayers_layer_type_raw',
-    'projection' => array('900913'),
+    'projection' => array('4326'),
     'options' => array(
       'rendererOptions' => array('zIndexing' => TRUE),
     ),
@@ -1252,6 +1270,9 @@ function ecenter_network_layers_traceroute() {
       foreach ($traceroute as $hop_data) {
         $hop = $hop_data['hop'];
         if ($hop['longitude'] && $hop['latitude']) {
+          // BAD...
+          $hop['longitude'] = $hop['longitude'] * 110000;
+          $hop['latitude'] = $hop['latitude'] * 120000;
           $features[] = array(
             'wkt' => "POINT({$hop['longitude']} {$hop['latitude']})",
             'projection' => "4326",
@@ -1261,6 +1282,12 @@ function ecenter_network_layers_traceroute() {
               'strokeColor' => '#0000ff',
               'strokeWidth' => 2,
               'fillOpacity' => 0.75,
+              'label' => $hop['hub'],
+              'labelYOffset' => -16,
+              'fontWeight' => 'bold',
+              'fontSize' => '12px',
+              'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',
+              'fontColor' => '#222222',
             ),
           );
         }

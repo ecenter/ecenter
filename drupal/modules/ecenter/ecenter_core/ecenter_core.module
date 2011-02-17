@@ -41,6 +41,7 @@ function ecenter_core_block($op = 'list', $delta = 0, $edit = array()) {
       );
       return $blocks;
     case 'view': default:
+      drupal_add_js(drupal_get_path('module', 'ecenter_core') .'/ecenter-core.css');
       return array(
         'content' => theme('ecenter_core_'. $delta .'_block'),
       );
@@ -75,4 +76,22 @@ function template_preprocess_ecenter_core_login_block(&$vars) {
 }
 
 function template_preprocess_ecenter_core_sponsors_block(&$vars) {
+  $vars['sponsors'] = array(
+    array(
+      'data' => l(t('Fermi National Accelerator Lab'), 'http://fnal.gov'), 
+      'class' => 'fnal replace'
+    ),
+    array(
+      'data' => l(t('U.S. Department of Energy Office of Science'), 'http://www.science.doe.gov'), 
+      'class' => 'doe replace'
+    ),
+    array(
+      'data' => l(t('Energy Science Net'), 'http://es.net'), 
+      'class' => 'esnet replace'
+    ),
+    array(
+      'data' => l(t('Bucknell University'), 'http://bucknell.edu'), 
+      'class' => 'bucknell replace'
+    ),
+  );
 }

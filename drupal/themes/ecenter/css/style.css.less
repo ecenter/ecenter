@@ -130,6 +130,12 @@
 /* }}} */
 
 /* --- Structure --- */
+/* Image replace {{{ */
+.replace {
+  text-indent: -100em;
+  overflow: hidden;
+}
+/* }}} */
 /* Un-resets {{{ */
 /* Some styles are clobbered by reset.css that we want to work */
 em {
@@ -980,6 +986,23 @@ ul.ui-autocomplete {
   background-color: rgba(255, 255, 255, 0.75);
   text-align: center;
   padding-top: 30px;
+}
+/* }}} */
+/* BeautyTips {{{ */
+#content-body {
+  .bt-wrapper {
+    .bt-content {
+      padding: 3px 7px;
+      .advanced-help-topic {
+        .help-navigation {
+          display: none;
+        }
+      }
+      p {
+        margin: 0.35em 0;
+      }
+    }
+  }
 }
 /* }}} */
 

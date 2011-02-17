@@ -157,6 +157,8 @@ function ecenter_network_init() {
 
     drupal_add_css($jq_path .'/jquery.jqplot.css');
 
+    drupal_add_css(drupal_get_path('module', 'advanced_help') .'/help-icon.css');
+
     // @TODO overhaul
     $inline_css = array(
       '.ecenter-critical' => array('color' => variable_get('ecenter_network_threshold_critical_color', '#cc0000')),

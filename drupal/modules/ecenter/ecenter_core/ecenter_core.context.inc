@@ -39,6 +39,18 @@ function ecenter_core_context_default_contexts() {
           'region' => 'navigation',
           'weight' => 1,
         ),
+        'ecenter_core-sponsors' => array(
+          'module' => 'ecenter_core',
+          'delta' => 'sponsors',
+          'region' => 'footer',
+          'weight' => 0,
+        ),
+        'ecenter_core-site_info' => array(
+          'module' => 'ecenter_core',
+          'delta' => 'site_info',
+          'region' => 'footer',
+          'weight' => 1,
+        ),
       ),
     ),
   );

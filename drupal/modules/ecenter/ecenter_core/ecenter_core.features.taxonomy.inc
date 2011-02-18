@@ -16,7 +16,6 @@ function ecenter_core_taxonomy_default_vocabularies() {
       'tags' => '1',
       'module' => 'features_tags',
       'weight' => '0',
-      'machine_name' => 'tags',
       'nodes' => array(
         'blog_post' => 'blog_post',
         'page' => 'page',

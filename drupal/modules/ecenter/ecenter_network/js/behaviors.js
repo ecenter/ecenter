@@ -129,8 +129,10 @@ $(document).ready(function() {
     $('button.cancel', overlay).click(function(e) {
       e.stopPropagation();
 
-      xhr.abort();
       xhr.aborted = true;
+      xhr.abort();
+
+      console.log(xhr, 'called from cancel click');
 
       var input = $('#edit-network-wrapper-query-dst-wrapper-dst-wrapper input');
       input.val('');

@@ -88,6 +88,47 @@ function template_preprocess_ecenter_network_data(&$vars) {
 }
 
 /**
+ * Theme recent user queries
+ */
+function template_preprocess_ecenter_network_recent_queries(&$vars) {
+  global $user;
+  if ($user->uid > 0) {
+    $queries = $user->ecenter_network_queries; 
+  }
+  else if (isset($_COOKIE[session_name()])) {
+    $queries = unserialize(sess_read('ecenter_network_queries'));
+  }
+
+  $links = array();
+  foreach ($queries as $query) {
+    $tz = date_default_timezone_name(TRUE);
+    $time = date_make_date($query['time'], timezone_open('UTC'), DATE_UNIX);
+    date_timezone_set($time, timezone_open($tz));
+    $links[] = theme('ecenter_network_recent_query', $query['query'], $time); 
+  }
+  $vars['queries'] = array_reverse($links);
+}
+
+/**
+ * Theme a single query link
+ */
+function theme_ecenter_network_recent_query($query, $time) {
+  $query_text = array();
+  $query_parts = explode('&amp;', urldecode($query));
+  foreach ($query_parts as $part) {
+    list($key, $value) = explode('=', $part);
+    $query_text[] = '<span class="key '. $key .'">'. strtoupper($key) .':</span> '. 
+      '<span class="value">'. $value .'</span>';
+  }
+
+  $date = '<span class="date"><a href="'. check_plain(url('network') .'?'. $query) .'">'. 
+    date_format($time, 'n-j-Y g:ia') .'</a></span>';
+  $query = '<span class="query">'. implode(' | ', $query_text) .'</span>';
+  
+  return $date .' '. $query;
+}
+
+/**
  * Theme SNMP data
  */
 function theme_ecenter_network_hops($data) {

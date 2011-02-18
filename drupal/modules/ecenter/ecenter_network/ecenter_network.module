@@ -61,6 +61,16 @@ function ecenter_network_theme() {
         'params' => NULL,
       )
     ) + $options,
+   'ecenter_network_recent_queries' => array(
+      'template' => 'ecenter-network-recent-queries',
+      'arguments' => array(),
+    ) + $options,
+    'ecenter_network_recent_query' => array(
+      'arguments' => array(
+        'time' => NULL,
+        'query' => NULL,
+      ),
+    ) + $options,
     'ecenter_network_hops' => array(
       'arguments' => array(
         'data' => NULL,
@@ -385,6 +395,9 @@ function ecenter_network_select_form(&$form_state) {
       $form['results_wrapper']['results']['#value'] .= '<p>'. l(t('Permalink'), 'network', array('query' => $query_params)) .'</p>';
     }
   }
+  else {
+    $form['results_wrapper']['results']['#value'] = theme('ecenter_network_recent_queries');
+  }
   return $form;
 }
 
@@ -481,7 +494,7 @@ function ecenter_network_get_data($src, $dst, $start, $end, $debug_url = FALSE) 
     else if (isset($_COOKIE[session_name()])) {
       $queries = unserialize(sess_read('ecenter_network_queries'));
       if (count($queries) > 
-        (variable_get('ecenter_network_recent_query_limit', 5))) {
+        (variable_get('ecenter_network_recent_query_limit', 5) - 1)) {
         array_shift($queries);
       }
       $queries[] = array('time' => time(), 'query' => $query);
@@ -505,7 +518,8 @@ function ecenter_network_get_data($src, $dst, $start, $end, $debug_url = FALSE) 
       }
       else { // Note that the static variable is NOT set in this case
         drupal_set_message(t('Request (@url) failed with code @code (@response).', 
-          array('@url' => $result['url'], '@code' => $result['code'], '@response' => $result['response'])));
+          array('@url' => $result['url'], '@code' => $result['code'], 
+          '@response' => $result['response'])));
       }
     }
   }

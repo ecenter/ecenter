@@ -12,10 +12,16 @@ include_once('ecenter_core.features.inc');
  */
 function ecenter_core_theme() {
   $path = array('path' => drupal_get_path('module', 'ecenter_core') .'/tpl');
-  return array(
-    'ecenter_core_login_block' => array('arguments' => array(), 'template' => 'ecenter-login-block') + $path,
-    'ecenter_core_sponsors_block' => array('arguments' => array(), 'template' => 'ecenter-sponsors-block') + $path,
-  );
+  $blocks = ecenter_core_block();
+
+  $theme = array();
+  foreach ($blocks as $block => $info) {
+    $theme['ecenter_core_'. $block .'_block'] = array(
+      'arguments' => array(),
+      'template' => 'ecenter-'. $block .'-block',
+    ) + $path;
+  }
+  return $theme;
 }
 
 /**
@@ -39,9 +45,11 @@ function ecenter_core_block($op = 'list', $delta = 0, $edit = array()) {
       $blocks['sponsors'] = array(
         'info' => t('E-Center: Sponsors block'),
       );
+      $blocks['site_info'] = array(
+        'info' => t('E-Center: Site info'),
+      );
       return $blocks;
     case 'view': default:
-      drupal_add_js(drupal_get_path('module', 'ecenter_core') .'/ecenter-core.css');
       return array(
         'content' => theme('ecenter_core_'. $delta .'_block'),
       );
@@ -61,6 +69,9 @@ function ecenter_core_form_alter(&$form, &$form_state, $form_id) {
   }
 }
 
+/**
+ * Theme login block
+ */
 function template_preprocess_ecenter_core_login_block(&$vars) {
   global $user;
   if ($user->uid > 0) {
@@ -75,23 +86,24 @@ function template_preprocess_ecenter_core_login_block(&$vars) {
   $vars['content'] = theme('item_list', $links);
 }
 
+/**
+ * Theme sponsor list 
+ */
 function template_preprocess_ecenter_core_sponsors_block(&$vars) {
   $vars['sponsors'] = array(
-    array(
-      'data' => l(t('Fermi National Accelerator Lab'), 'http://fnal.gov'), 
-      'class' => 'fnal replace'
-    ),
-    array(
-      'data' => l(t('U.S. Department of Energy Office of Science'), 'http://www.science.doe.gov'), 
-      'class' => 'doe replace'
-    ),
-    array(
-      'data' => l(t('Energy Science Net'), 'http://es.net'), 
-      'class' => 'esnet replace'
-    ),
-    array(
-      'data' => l(t('Bucknell University'), 'http://bucknell.edu'), 
-      'class' => 'bucknell replace'
-    ),
+    l(t('Fermi National Accelerator Lab'), 'http://wwww.fnal.gov', 
+      array('attributes' => array('class' => 'fnal replace'))), 
+    l(t('U.S. Department of Energy Office of Science'), 'http://www.science.doe.gov', 
+      array('attributes' => array('class' => 'doe replace'))), 
+    l(t('Energy Science Net'), 'http://es.net', 
+      array('attributes' => array('class' => 'esnet replace'))), 
+    l(t('Bucknell University'), 'http://bucknell.edu', 
+      array('attributes' => array('class' => 'bucknell replace'))), 
   );
+}
+
+/**
+ * Theme site info block
+ */
+function template_preprocess_ecenter_core_site_info_block(&$vars) {
 }

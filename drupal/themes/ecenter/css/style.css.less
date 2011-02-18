@@ -134,6 +134,7 @@
 .replace {
   text-indent: -100em;
   overflow: hidden;
+  display: block;
 }
 /* }}} */
 /* Un-resets {{{ */
@@ -155,7 +156,7 @@ html {
 body {
   font-size: 100%;
   color: @color_body_text;
-  background-color: #555;
+  background-color: #333;
   font-family: @font_droid; 
   margin: 0;
 }
@@ -574,10 +575,26 @@ div.messages {
 #footer {
   padding: 15px;
   color: #fff;
+  font-size: .85em;
+  line-height: 1.25;
+  p {
+    margin-bottom: 1.5em;
+  }
+  .block {
+    .box;
+    width: 400px;
+    margin-right: 40px;
+  }
+  h2 {
+    font-size: 1.25em;
+    border-bottom: 1px solid #999;
+    line-height: 1.5;
+    margin-bottom: .75em;
+  }
 }
 /* }}} */
 
-/* -- Extended styles --- */
+/* --- Extended styles --- */
 /* E-Center Custom Login Block {{{ */
 #block-ecenter_core-login {
   float: right;
@@ -1193,3 +1210,39 @@ ul.ui-autocomplete {
 }
 /* }}} */
 
+/* --- Blocks --- */
+/* Site info {{{ */
+#block-ecenter_core-site_info {}
+/* }}} */
+/* Sponsors {{{ */
+#block-ecenter_core-sponsors {
+  li {
+    .box;
+    margin: 0 15px 20px 15px;
+    height: 58px;
+    width: 170px; 
+  }
+  .replace { 
+    width: 170px; 
+  }
+  .doe {
+    background: url('../img/sponsor/doe.png');
+    height: 58px;
+  }
+  .esnet {
+    background: url('../img/sponsor/esnet.png');
+    height: 52px;
+  }
+  .fnal {
+    background: url('../img/sponsor/fnal.png');
+    margin-top: 15px;
+    height: 31px;
+  }
+  .bucknell {
+    background: url('../img/sponsor/bucknell.png');
+    height: 50px;
+    width: 110px;
+    margin: 0 auto;
+  }
+}
+/* }}} */

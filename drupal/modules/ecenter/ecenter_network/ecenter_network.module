@@ -478,14 +478,14 @@ function ecenter_network_get_data($src, $dst, $start, $end, $debug_url = FALSE) 
       $queries[] = array('time' => time(), 'query' => $query);
       user_save($user, array('ecenter_network_queries' => $queries));
     }
-    else if (!isset($_COOKIE[session_name()])) {
-      $queries = sess_read('ecenter_network_queries');
+    else if (isset($_COOKIE[session_name()])) {
+      $queries = unserialize(sess_read('ecenter_network_queries'));
       if (count($queries) > 
         (variable_get('ecenter_network_recent_query_limit', 5))) {
         array_shift($queries);
       }
       $queries[] = array('time' => time(), 'query' => $query);
-      sess_write('ecenter_network_queries', $queries);
+      sess_write('ecenter_network_queries', serialize($queries));
     }
 
     $caching = variable_get('ecenter_network_data_cache_enabled', 0);

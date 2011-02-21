@@ -24,7 +24,10 @@ function ecenter_test_perm() {
  */
 function ecenter_test_theme() {
   return array(
-    'ecenter_test_hello_world' => array(
+    'ecenter_test_html' => array(
+      'arguments' => array(),
+    ),
+    'ecenter_test_markdown' => array(
       'arguments' => array(),
     ),
     'ecenter_test_combobox' => array(
@@ -60,7 +63,11 @@ function ecenter_test_menu() {
   return $items;
 }
 
-function theme_ecenter_test_hello_world() {
+function theme_ecenter_test_html() {
+  return file_get_contents(dirname(__FILE__) . '/markup/html-markup.html');
+}
+
+function theme_ecenter_test_markdown() {
   return t('Hello world');
 }
 

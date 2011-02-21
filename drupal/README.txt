@@ -29,6 +29,11 @@ Download from our git repository:
 
 $ git clone http://cdcvs.fnal.gov/projects/ecenter
 
+Contributors (with Kerberos access to Fermi Lab resources) may clone with
+the user 'p-center' using ssh. If there is interest in contributions from 
+outside the Department of Energy community, we will set up a project on
+github.
+
 Use Drush Make to build the base Drupal installation:
 
 $ drush make /path/to/ecenter.make /path/to/target

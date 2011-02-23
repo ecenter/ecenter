@@ -8,7 +8,6 @@ include_once('editor_tinymce_markdown.features.inc');
  */
 function editor_tinymce_markdown_wysiwyg_plugin($editor, $version) {
   if ($editor == 'tinymce' && version_compare($version, '3', '>')) {
-    markdownify_on();
     return array(
       'markdown' => array(
         'path' => drupal_get_path('module', 'editor_tinymce_markdown') 
@@ -26,6 +25,8 @@ function editor_tinymce_markdown_wysiwyg_plugin($editor, $version) {
 function editor_tinymce_markdown_wysiwyg_editor_settings_alter(&$settings, $context) {
   $format = _editor_tinymce_markdown_format();
   if ($context['profile']->format == $format) {
+    markdownify_on(); 
+    
     // Reorder buttons
     $buttons = array_flip(explode(',', $settings['theme_advanced_buttons1']));
     unset($buttons['linkit'], $buttons['unlink']);

@@ -81,7 +81,7 @@
 
 </div>
 
-<div id="footer">
+<div id="footer" class="clearfix">
   <?php print $footer_message; ?>
   <?php if (!empty($footer)): print $footer; endif; ?>
 </div>

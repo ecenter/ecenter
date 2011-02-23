@@ -711,7 +711,7 @@ function ecenter_network_parse_response($response, $src, $dst) {
       }
       else { // Test against netblock
         $test = long2ip(ip2long($test_src) & ~((1 << 8) - 1));
-        $val = $src_netblock;       
+        $val = $src_netblock;
       }
 
       // If we have a proper match
@@ -721,7 +721,7 @@ function ecenter_network_parse_response($response, $src, $dst) {
         $combined_data = array();
         $process_fn = 'ecenter_network_'. $type .'_process';
         if (function_exists($process_fn)) {
-          $combined_data = $process_fn($destinations, $test_src); 
+          $combined_data = $process_fn($destinations, $test_src);
         }
         else {
           foreach ($destinations as $test_dst => $test_data) {
@@ -737,7 +737,7 @@ function ecenter_network_parse_response($response, $src, $dst) {
             $combined_data = array_merge_recursive($combined_data, $timeseries);
           }
         }
-        
+
         $end_to_end[$type]['forward']['timeseries'] = $combined_data;
 
         // @TODO alter? Simple, stupid callback system
@@ -753,7 +753,7 @@ function ecenter_network_parse_response($response, $src, $dst) {
               'mean' => array_sum($timeseries)/count($timeseries),
               'max' => max($timeseries),
               'min' => min($timeseries),
-            ); 
+            );
           }
         }
 
@@ -767,7 +767,7 @@ function ecenter_network_parse_response($response, $src, $dst) {
       }
       else {
         $test = long2ip(ip2long($test_src) & ~((1 << 8) - 1));
-        $val = $dst_netblock;       
+        $val = $dst_netblock;
       }
       if ($test == $val) {
         // @TODO alter? Simple, stupid callback system
@@ -775,7 +775,7 @@ function ecenter_network_parse_response($response, $src, $dst) {
         $combined_data = array();
         $process_fn = 'ecenter_network_'. $type .'_process';
         if (function_exists($process_fn)) {
-          $combined_data = $process_fn($destinations, $test_src); 
+          $combined_data = $process_fn($destinations, $test_src);
         }
         else {
           foreach ($destinations as $test_dst => $test_data) {
@@ -791,7 +791,7 @@ function ecenter_network_parse_response($response, $src, $dst) {
             $combined_data = array_merge_recursive($combined_data, $timeseries);
           }
         }
-        
+
         $end_to_end[$type]['reverse']['timeseries'] = $combined_data;
 
         // @TODO alter? Simple, stupid callback system
@@ -807,7 +807,7 @@ function ecenter_network_parse_response($response, $src, $dst) {
               'mean' => array_sum($timeseries)/count($timeseries),
               'max' => max($timeseries),
               'min' => min($timeseries),
-            ); 
+            );
           }
         }
 
@@ -816,10 +816,10 @@ function ecenter_network_parse_response($response, $src, $dst) {
 
 
     }
-      
+
   }
 
-  if (!empty($end_to_end)) { 
+  if (!empty($end_to_end)) {
     $parsed_data['end_to_end'] = $end_to_end;
   }
 

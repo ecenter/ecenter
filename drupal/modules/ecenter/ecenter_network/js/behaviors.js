@@ -132,8 +132,6 @@ $(document).ready(function() {
       xhr.aborted = true;
       xhr.abort();
 
-      console.log(xhr, 'called from cancel click');
-
       var input = $('#edit-network-wrapper-query-dst-wrapper-dst-wrapper input');
       input.val('');
       input.data('autocomplete')._trigger('change');

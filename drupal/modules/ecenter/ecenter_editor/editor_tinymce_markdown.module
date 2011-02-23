@@ -1,0 +1,3 @@
+<?php
+
+include_once('editor_tinymce_markdown.features.inc');

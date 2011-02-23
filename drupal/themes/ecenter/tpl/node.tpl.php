@@ -11,7 +11,6 @@
     <?php print $content ?>
   </div>
 
-
   <?php if ($terms): ?>
     <div class="terms terms-inline"><?php print t('Tags:'); ?><?php print $terms ?></div>
   <?php endif;?>

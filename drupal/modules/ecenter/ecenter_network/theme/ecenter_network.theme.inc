@@ -12,6 +12,7 @@
 function template_preprocess_ecenter_network_data(&$vars) {
   // Generate permalink
   $permalink['permalink'] = array(
+    '#id' => 'ecenter-permalink',
     '#type' => 'textfield',
     '#size' => 45,
     '#title' => l(t('Permalink'), 'network',

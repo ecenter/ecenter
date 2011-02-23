@@ -13,7 +13,7 @@
   <?php endif; ?>
 </div>
 
-<div id="results"> 
+<div id="results">
   <div id="hop-wrapper" class="clear-block">
     <div id="snmp-results">
       <?php print $hops; ?>
@@ -22,4 +22,4 @@
   <div id="end-to-end-wrapper" class="clear-block">
     <?php print $end_to_end; ?>
   </div>
-<div>
+</div>

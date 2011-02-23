@@ -27,7 +27,7 @@
 <div id="header-wrapper" class="clearfix">
   <div class="logo">
     <h1 id="site-name">
-      <a href="<?php print $front_page; ?>" title="<?php print t('Home'); ?>" rel="home"><?php print $site_name; ?></a>
+      <?php print $site_name; ?>
     </h1>
   </div>
 

@@ -113,7 +113,7 @@ $(document).ready(function() {
     // Add overlay...
     $(this).addClass('data-loading').css('position', 'relative');
 
-    var overlay = $('<div class="loading-overlay"><p class="loading">' + Drupal.t('Loading') + '</p><button class="cancel">' + Drupal.t('Cancel') + '</button></div>');
+    var overlay = $('<div class="loading-overlay"><div class="loading-wrapper"><p class="loading">' + Drupal.t('Loading...') + '</p><button class="cancel">' + Drupal.t('Cancel') + '</button></div></div>');
     overlay.css({
       'position' : 'absolute',
       'top' : 0,

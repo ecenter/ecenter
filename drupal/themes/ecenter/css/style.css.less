@@ -37,9 +37,18 @@
 @font_helvetica: "Helvetica Neue", Helvetica, Verdana, sans-serif;
 @font_droid: "Droid Sans", Arial, sans-serif;
 @font_liberation: "Liberation Mono", monospace;
-@font_size_12: .75em;
-@font_size_13: .8125em;
-@font_size_14: .875em;
+@font_size_12: 0.75em;
+@font_size_13: 0.8125em;
+@font_size_14: 0.875em;
+@font_size_15: 0.9325em;
+@font_size_17: 1.0625em;
+@font_size_18: 1.125em;
+@font_size_19: 1.1875em;
+@font_size_20: 1.25em;
+@font_size_21: 1.3125em;
+@font_size_22: 1.375em;
+@font_size_23: 1.4375em;
+@font_size_24: 1.5em;
 /* }}} */
 
 /* --- Less CSS Mixins --- */
@@ -916,11 +925,12 @@ body.page-network { // Network diagnostic display {{{
         margin: 0;
         &.form-item-labeled { margin-bottom: 1em; }
         .form-item { margin: 0 9px 0 0; };
-        label { 
-          float: left; 
+        label {
+          float: left;
           width: 85px;
           margin-top: 2px;
-          font-size: @font_size_14;
+          font-size: @font_size_15;
+          .form-required { .hide; }
         }
       } // }}}
       #edit-network-wrapper-query-start-wrapper { // {{{
@@ -931,10 +941,10 @@ body.page-network { // Network diagnostic display {{{
         label {
           margin-top: 1px;
           font-weight: normal;
-          font-size: .925em; 
+          font-size: @font_size_13;
         }
         input {
-          font-size: .875em; 
+          font-size: @font_size_13;
         }
       } // }}}
       .container-inline-date { // {{{
@@ -1158,6 +1168,13 @@ body.page-network { // Network diagnostic display {{{
 .loading-overlay { // Loading overlay {{{ 
   background-color: rgba(255, 255, 255, 0.75);
   text-align: center;
+  .loading-wrapper {
+    padding-top: 40px;
+    .loading {
+      font-size: 1.75em !important;
+      font-weight: bold;
+    }
+  }
 } // }}}
 /* BeautyTips {{{ */
 #content-body {

@@ -73,6 +73,7 @@ projects[exportables][version] = "2.x-dev"
 
 projects[input_formats][subdir] = "contrib"
 projects[input_formats][version] = "1.0-beta6"
+projects[input_formats][patch][] = "http://drupal.org/files/issues/wysiwyg_filter-form-alter.patch"
 
 projects[linkit][subdir] = "contrib"
 projects[linkit][version] = "1.9"

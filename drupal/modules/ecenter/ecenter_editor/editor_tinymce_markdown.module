@@ -81,7 +81,7 @@ function editor_tinymce_markdown_form_alter(&$form, $form_state, $form_id) {
       drupal_set_message(t('This WYSWYG profile is managed by the Tinymce Markdown module.
         Output settings and some plugins may not be changed.'));
 
-      foreach (element_children($form['buttons']) as $button) {
+      foreach (element_children($form['buttons']) as $buttons) {
         foreach ($form['buttons'][$buttons] as $key=>$button) {
           if ($button['#default_value']) {
             $form['buttons'][$buttons][$key]['#value'] = TRUE;

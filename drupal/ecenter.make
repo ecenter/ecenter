@@ -65,6 +65,40 @@ projects[imageapi][version] = "1.9"
 projects[imagecache][subdir] = "contrib"
 projects[imagecache][version] = "2.0-beta10"
 
+projects[mapbox][subdir] = "contrib"
+projects[mapbox][version] = "1.0-alpha3"
+
+projects[exportables][subdir] = "contrib"
+projects[exportables][version] = "2.x-dev"
+
+projects[input_formats][subdir] = "contrib"
+projects[input_formats][version] = "1.0-beta6"
+
+projects[linkit][subdir] = "contrib"
+projects[linkit][version] = "1.9"
+
+projects[oembed][subdir] = "contrib"
+projects[oembed][version] = "0.8"
+
+projects[markdown][subdir] = "contrib"
+projects[markdown][version] = "1.2"
+
+projects[pathologic][subdir] = "contrib"
+projects[pathologic][version] = "3.4"
+
+projects[wysiwyg_filter][subdir] = "contrib"
+projects[wysiwyg_filter][version] = "1.5"
+
+projects[editor_tinymce_markdown][subdir] = "ecenter-contrib"
+projects[editor_tinymce_markdown][download][type] = "get"
+projects[editor_tinymce_markdown][download][url] = "https://github.com/ecenter/editor_tinymce_markdown/tarball/alpha-1"
+projects[editor_tinymce_markdown][type] = "module"
+
+projects[markdownify][subdir] = "ecenter-contrib"
+projects[markdownify][download][type] = "get"
+projects[markdownify][download][url] = "https://github.com/ecenter/markdownify/tarball/alpha-1"
+projects[markdownify][type] = "module"
+
 projects[jquery_ui][subdir] = "contrib"
 projects[jquery_ui][version] = "1.4"
 ; Handle multiple jQuery UI versions

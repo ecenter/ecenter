@@ -169,7 +169,6 @@ libraries[openlayers][directory_name] = "openlayers"
 libraries[jqplot][download][type] = "get"
 libraries[jqplot][download][url] = "http://bitbucket.org/cleonello/jqplot/downloads/jquery.jqplot.0.9.7r635.zip"
 libraries[jqplot][directory_name] = "jqplot"
-libraries[jqplot][destination] = "modules/contrib/jqplot"
 
 ; Markdownify
 ; @TODO Add Markdownify library once module work is further along

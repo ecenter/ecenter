@@ -1,0 +1,99 @@
+/* $Id$ */
+
+table.mceLayout td.mceToolbar {
+  filter:progid:DXImageTransform.Microsoft.vertical_gradient(startColorstr='#eeeeee',endColorstr='#aaaaaa');
+  background:-webkit-gradient(linear,left top,left bottom,from(#eeeeee),to(#aaaaaa));
+  background:-moz-linear-gradient(top,#eeeeee,#aaaaaa);
+ 
+}
+table.mceLayout .mceButton {
+  border: none;
+  background: transparent;
+  padding: 2px;
+  margin: 2px 3px;
+  border-radius: 5px; 
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+}
+table.mceLayout .mceButtonEnabled:hover {
+  border: none !important;
+  background-color: #fff !important;
+}
+table.mceLayout .mceListBox {
+  margin: 2px 3px;
+  background: transparent;
+}
+table.mceLayout .mceListBox .mceText {
+  padding-left: 7px;
+  padding-right: 7px;
+  border-radius: 9px 0 0 9px;
+  -webkit-border-radius: 9px 0 0 9px;
+  -moz-border-radius: 9px 0 0 9px;
+  height: 21px !important;
+  line-height: 23px !important;
+}
+table.mceLayout .mceListBox .mceOpen {
+  height: 21px !important;
+  background-position: -738px 1px !important;
+  width: 17px !important;
+  margin: 0 !important;
+  border-radius: 0 9px 9px 0; 
+  -webkit-border-radius: 0 9px 9px 0;
+  -moz-border-radius: 0 9px 9px 0;
+  background-color: #eee !important;
+}
+.mceMenu {
+  margin-left: 1px;
+  border-width: 1px !important;
+  border-color: #ccc !important;
+  -moz-box-shadow: 2px 2px 4px #999;
+  min-height: 220px;
+}
+.mceMenu table {
+  background-color: #fff !important;
+}
+.mceMenuItemTitle { display: none; }
+.mceMenuItemTitle a {
+  background-color: #fff !important;
+  padding: 0 2px !important;
+  border-bottom: 1px solid #999;
+}
+.mceMenuItemTitle span.mceText {
+  color: #666 !important;
+  font-style: italic !important;
+}
+.mceListBoxMenu {
+  min-width: 160px;
+}
+.mceMenu table {
+  min-width: 160px;
+}
+.mceMenu a {
+  padding: 2px 2px;
+}
+.mce_p span.mceText {
+  font-size: 1.25em !important;
+}
+.mce_h2 span.mceText {
+  font-size: 1.65em !important;
+}
+.mce_h3 span.mceText {
+  font-size: 1.5em !important;
+}
+.mce_h4 span.mceText {
+  font-size: 1.35em !important;
+}
+.mce_h5 span.mceText {
+  font-size: 1.25em !important;
+}
+.mce_h6 span.mceText {
+  font-size: 1em !important;
+}
+.mce_div span.mceText {
+  font-weight: bold;
+  border: 1px dotted #000;
+  width: 110px;
+  margin-left: 8px !important;
+  padding-left: 3px !important;
+  display: block;
+}

@@ -23,11 +23,13 @@ function editor_tinymce_markdown_wysiwyg_plugin($editor, $version) {
  * Implementation of hook_wysiwyg_editor_settings_alter.
  */
 function editor_tinymce_markdown_wysiwyg_editor_settings_alter(&$settings, $context) {
-  $format = _editor_tinymce_markdown_format();
-  if ($context['profile']->format == $format) {
-    markdownify_on(); 
-    
-    // Reorder buttons
+  if ($context['profile']->format == _editor_tinymce_markdown_format()) {
+    markdownify_on();
+
+    drupal_add_css(drupal_get_path('module', 'editor_tinymce_markdown') 
+      .'/css/tinymce.css');
+
+    // Reorder buttons to put links at the front
     $buttons = array_flip(explode(',', $settings['theme_advanced_buttons1']));
     unset($buttons['linkit'], $buttons['unlink']);
     $buttons = array('linkit' => 1, 'unlink' => 1) + $buttons;
@@ -99,8 +101,28 @@ function editor_tinymce_markdown_form_alter(&$form, $form_state, $form_id) {
 // Handle installation
 // PROOF OF CONCEPT: This should not be here
 function editor_tinymce_markdown_init() {
-  if (!variable_get('editor_tinymce_markdown_profile_installed', FALSE)) {
+  _editor_tinymce_markdown_install_profile();
+
+  if (arg(0) == 'admin' && arg(1) == 'linkit' && arg(2) == 'dashboard') {
+    drupal_add_css(drupal_get_path('module', 'editor_tinymce_markdown') 
+      .'/css/linkit.css');
+  }
+}
+
+/**
+ * Install TinyMCE Markdown WYSIWYG profile
+ *
+ * @param $reset
+ *   Boolean: if TRUE, reinstall profile
+ */
+function _editor_tinymce_markdown_install_profile($reset = FALSE) {
+  if ($reset || !variable_get('editor_tinymce_markdown_profile_installed', FALSE)) {
     $format = _editor_tinymce_markdown_format();
+
+    if ($reset) {
+      db_query('DELETE FROM {wysiwyg} WHERE format=%d', $format);
+    }
+
     $settings = 'a:20:{s:7:"default";i:1;s:11:"user_choose";i:0;s:11:"show_toggle";i:1;s:5:"theme";s:8:"advanced";s:8:"language";s:2:"en";s:7:"buttons";a:5:{s:7:"default";a:11:{s:4:"bold";i:1;s:6:"italic";i:1;s:13:"strikethrough";i:1;s:13:"justifycenter";i:1;s:7:"bullist";i:1;s:7:"numlist";i:1;s:4:"undo";i:1;s:4:"redo";i:1;s:6:"unlink";i:1;s:5:"image";i:1;s:10:"blockquote";i:1;}s:4:"font";a:1:{s:12:"formatselect";i:1;}s:12:"inlinepopups";a:1:{s:12:"inlinepopups";i:1;}s:8:"markdown";a:1:{s:8:"markdown";i:1;}s:6:"linkit";a:1:{s:6:"linkit";i:1;}}s:11:"toolbar_loc";s:3:"top";s:13:"toolbar_align";s:4:"left";s:8:"path_loc";s:6:"bottom";s:8:"resizing";i:1;s:11:"verify_html";i:0;s:12:"preformatted";i:0;s:22:"convert_fonts_to_spans";i:0;s:17:"remove_linebreaks";i:0;s:23:"apply_source_formatting";i:0;s:27:"paste_auto_cleanup_on_paste";i:1;s:13:"block_formats";s:24:"p,h2,h3,h4,h5,h6,div,pre";s:11:"css_setting";s:4:"self";s:8:"css_path";s:0:"";s:11:"css_classes";s:0:"";}';
     db_query("INSERT INTO {wysiwyg} (format, editor, settings) VALUES (%d, '%s', '%s')",
       $format, 'tinymce', $settings);

@@ -40,11 +40,70 @@ function editor_tinymce_markdown_wysiwyg_editor_settings_alter(&$settings, $cont
  */
 function _editor_tinymce_markdown_format() {
   return db_result(db_query(
-    'SELECT format FROM {filter_formats} WHERE name = "%s"', 
-    array('WYSIWYG Markdown')
+    'SELECT format FROM {filter_formats} WHERE name = "WYSIWYG Markdown"' 
   ));
 }
 
 // Disable some form settings
+function editor_tinymce_markdown_form_alter(&$form, $form_state, $form_id) {
+  if ($form_id == 'filter_admin_format_form') { 
+    if (($format = _editor_tinymce_markdown_format())
+      && $form['format']['#value'] == $format) {
+   
+      drupal_set_message(t('This input format is for use with the TinyMCE
+        Markdown module. The name and filter order may not be changed.'));
+    
+      $form['name']['#disabled'] = TRUE;  
+      $form['name']['#value'] = 'WYSIWYG Markdown';  
+
+      foreach (element_children($form['filters']) as $child) {
+        $form['filters'][$child]['#disabled'] = TRUE;
+        $form['filters'][$child]['#value'] = $form['filters'][$child]['#default_value'];  
+      }
+    }
+  }
+  
+  if ($form_id == 'filter_admin_order') {
+    if (($format = _editor_tinymce_markdown_format())
+      && $form['format']['#value'] == $format) {
+      drupal_set_message(t('This input format is for use with the TinyMCE
+        Markdown module. The name and filter order may not be changed.'));
+      unset($form['names'], $form['submit'], $form['weights']);  
+    }
+  }
+
+  if ($form_id == 'wysiwyg_profile_form') {
+    if (($format = _editor_tinymce_markdown_format())
+      && $form['format']['#value'] == $format) {
+
+      drupal_set_message(t('This WYSWYG profile is managed by the Tinymce Markdown module.
+        Output settings and some plugins may not be changed.'));
+
+      foreach (element_children($form['buttons']) as $button) {
+        foreach ($form['buttons'][$buttons] as $key=>$button) {
+          if ($button['#default_value']) {
+            $form['buttons'][$buttons][$key]['#value'] = TRUE;
+            $form['buttons'][$buttons][$key]['#disabled'] = TRUE;
+          }
+        }
+      }
+      
+      foreach (element_children($form['output']) as $item) {
+        $form['output'][$item]['#disabled'] = TRUE;
+        $form['output'][$item]['#value'] = $form['output'][$item]['#default_value'];
+      }
+    }
+  } 
+}
 
 // Handle installation
+// PROOF OF CONCEPT: This should not be here
+function editor_tinymce_markdown_init() {
+  if (!variable_get('editor_tinymce_markdown_profile_installed', FALSE)) {
+    $format = _editor_tinymce_markdown_format();
+    $settings = 'a:20:{s:7:"default";i:1;s:11:"user_choose";i:0;s:11:"show_toggle";i:1;s:5:"theme";s:8:"advanced";s:8:"language";s:2:"en";s:7:"buttons";a:5:{s:7:"default";a:11:{s:4:"bold";i:1;s:6:"italic";i:1;s:13:"strikethrough";i:1;s:13:"justifycenter";i:1;s:7:"bullist";i:1;s:7:"numlist";i:1;s:4:"undo";i:1;s:4:"redo";i:1;s:6:"unlink";i:1;s:5:"image";i:1;s:10:"blockquote";i:1;}s:4:"font";a:1:{s:12:"formatselect";i:1;}s:12:"inlinepopups";a:1:{s:12:"inlinepopups";i:1;}s:8:"markdown";a:1:{s:8:"markdown";i:1;}s:6:"linkit";a:1:{s:6:"linkit";i:1;}}s:11:"toolbar_loc";s:3:"top";s:13:"toolbar_align";s:4:"left";s:8:"path_loc";s:6:"bottom";s:8:"resizing";i:1;s:11:"verify_html";i:0;s:12:"preformatted";i:0;s:22:"convert_fonts_to_spans";i:0;s:17:"remove_linebreaks";i:0;s:23:"apply_source_formatting";i:0;s:27:"paste_auto_cleanup_on_paste";i:1;s:13:"block_formats";s:24:"p,h2,h3,h4,h5,h6,div,pre";s:11:"css_setting";s:4:"self";s:8:"css_path";s:0:"";s:11:"css_classes";s:0:"";}';
+    db_query("INSERT INTO {wysiwyg} (format, editor, settings) VALUES (%d, '%s', '%s')",
+      $format, 'tinymce', $settings);
+    variable_set('editor_tinymce_markdown_profile_installed', TRUE);
+  }
+}

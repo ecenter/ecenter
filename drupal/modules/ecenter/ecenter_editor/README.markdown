@@ -32,7 +32,14 @@ WYSIWYG profile associated with the input format (admin/settings/wysiwyg).
 
 ## Implementation notes
 
-The Drupal editor and input format situation is very complicated. This module tries
-to work around this situation by locking down various 
+The Drupal editor and input format situation is very complicated. This module 
+tries to work around this situation by locking down various format configuration 
+screens. 
+
+This module consists of what amount to a series of hacks to allow the editor to
+be installed and configured correctly. Once installed, the module works by 
+providing a tiny TinyMCE plugin that makes AJAX calls to the Markdownify module 
+to convert from HTML to Markdown when the editor is disabled by the user or 
+unloaded prior to saving content.
 
  [1]: https://cdcvs.fnal.gov/redmine/projects/ecenter/

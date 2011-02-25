@@ -78,18 +78,23 @@ function editor_tinymce_markdown_form_alter(&$form, $form_state, $form_id) {
     if (($format = _editor_tinymce_markdown_format())
       && $form['format']['#value'] == $format) {
 
-      drupal_set_message(t('This WYSWYG profile is managed by the Tinymce Markdown module.
-        Output settings and some plugins may not be changed.'));
+      drupal_set_message(t('This WYSWYG profile is managed by the Editor: 
+        Tinymce Markdown module. Output settings and some plugins may not
+        be changed.'));
 
-      foreach (element_children($form['buttons']) as $buttons) {
-        foreach ($form['buttons'][$buttons] as $key=>$button) {
-          if ($button['#default_value']) {
-            $form['buttons'][$buttons][$key]['#value'] = TRUE;
-            $form['buttons'][$buttons][$key]['#disabled'] = TRUE;
-          }
-        }
-      }
-      
+      // Some plugins may not be removed: linkit and unlink because they are
+      // required by wysiwyg icon-reordering, markdown because the editor will
+      // break without it.
+      $form['buttons']['default']['unlink']['#value'] = TRUE;
+      $form['buttons']['default']['unlink']['#disabled'] = TRUE;
+
+      $form['buttons']['linkit']['linkit']['#value'] = TRUE;
+      $form['buttons']['linkit']['linkit']['#disabled'] = TRUE;
+
+      $form['buttons']['markdown']['markdown']['#value'] = TRUE;
+      $form['buttons']['markdown']['markdown']['#disabled'] = TRUE;
+
+      // All output settings are disabled
       foreach (element_children($form['output']) as $item) {
         $form['output'][$item]['#disabled'] = TRUE;
         $form['output'][$item]['#value'] = $form['output'][$item]['#default_value'];

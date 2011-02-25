@@ -98,15 +98,23 @@ function editor_tinymce_markdown_form_alter(&$form, $form_state, $form_id) {
   } 
 }
 
-// Handle installation
-// PROOF OF CONCEPT: This should not be here
+/**
+ * Implementation of hook_init().
+ */
 function editor_tinymce_markdown_init() {
-  _editor_tinymce_markdown_install_profile();
-
   if (arg(0) == 'admin' && arg(1) == 'linkit' && arg(2) == 'dashboard') {
     drupal_add_css(drupal_get_path('module', 'editor_tinymce_markdown') 
       .'/css/linkit.css');
   }
+}
+
+/**
+ * Implementation of hook_features_post_install().
+ *
+ * See http://drupal.org/node/981248
+ */
+function editor_tinymce_markdown_features_post_install() {
+  _editor_tinymce_markdown_install_profile();
 }
 
 /**

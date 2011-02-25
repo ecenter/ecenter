@@ -100,14 +100,19 @@ function template_preprocess_ecenter_network_recent_queries(&$vars) {
     $queries = unserialize(sess_read('ecenter_network_queries'));
   }
 
-  $links = array();
-  foreach ($queries as $query) {
-    $tz = date_default_timezone_name(TRUE);
-    $time = date_make_date($query['time'], timezone_open('UTC'), DATE_UNIX);
-    date_timezone_set($time, timezone_open($tz));
-    $links[] = theme('ecenter_network_recent_query', $query['query'], $time); 
+  if (count($queries)) {
+    $links = array();
+    foreach ($queries as $query) {
+      $tz = date_default_timezone_name(TRUE);
+      $time = date_make_date($query['time'], timezone_open('UTC'), DATE_UNIX);
+      date_timezone_set($time, timezone_open($tz));
+      $links[] = theme('ecenter_network_recent_query', $query['query'], $time); 
+    }
+    $vars['queries'] = array_reverse($links);
   }
-  $vars['queries'] = array_reverse($links);
+  else {
+    $vars['queries'] = array(t('No recent queries available.'));
+  }
 }
 
 /**

@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/local/bin/perl -w
 
 use strict;
 use warnings;
@@ -69,7 +69,8 @@ Default: from /etc/my_ecenter
  
 use FindBin qw($Bin);
 use lib ($Bin,  "$Bin/client_lib", "$Bin/ps_trunk/perfSONAR_PS-PingER/lib");
- 
+use forks;
+
 use Pod::Usage;
 use Log::Log4perl qw(:easy);
 use Getopt::Long;
@@ -77,7 +78,7 @@ use Data::Dumper;
 use XML::LibXML;
 use Net::Netmask;
 use POSIX qw(strftime);
-use Parallel::ForkManager;
+#use Parallel::ForkManager;
 use DBI;
 use English;
 use perfSONAR_PS::Client::MA;
@@ -121,14 +122,14 @@ our %ESNET_HUB = (
 
 # Maximum working threads
 my $MAX_THREADS = 10;
-
+local $SIG{CHLD} = 'IGNORE';
 my %OPTIONS;
 
 my @E2E = qw/pinger owamp bwctl traceroute/;
 my @string_option_keys = qw/password user db procs past/;
 GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
-            qw/debug help  snmp no_topo/, @E2E
+            qw/debug help v snmp no_topo/, @E2E
 ) or pod2usage(1);
 my $output_level =  $OPTIONS{debug} || $OPTIONS{d}?$DEBUG:$INFO;
 
@@ -141,7 +142,7 @@ my  $logger = Log::Log4perl->get_logger(__PACKAGE__);
 
 pod2usage(-verbose => 2) 
     if (  $OPTIONS{help} || 
-         ($OPTIONS{procs} && $OPTIONS{procs} !~ /^\d\d?$/) || 
+         ($OPTIONS{procs} && $OPTIONS{procs} !~ /^\d{1,2}$/) || 
 	 ($OPTIONS{past}  && ($OPTIONS{past}<0 || $OPTIONS{past}>1000)));
 
 $MAX_THREADS = $OPTIONS{procs} if $OPTIONS{procs}  && $OPTIONS{procs}  < 40;
@@ -150,8 +151,8 @@ my $PAST_START =  $OPTIONS{past}?$OPTIONS{past}:7;
 # snmp data cache request time limit - one week back - epoch
 $PAST_START = (time() - $PAST_START *24*3600);
 
-my $pm  =   new Parallel::ForkManager($MAX_THREADS);
-
+#my $pm  =   new Parallel::ForkManager($MAX_THREADS);
+my $pm = '';
 $OPTIONS{db} ||= 'ecenter_data';
 $OPTIONS{user} ||= 'ecenter';
 unless($OPTIONS{password}) {
@@ -164,7 +165,7 @@ our $IP_TOPOLOGY = 'ps.es.net';
 my @esnet_hosts = qw/ps1 ps2 ps3/;
 my $dbh =  Ecenter::DB->connect('DBI:mysql:' . $OPTIONS{db},  $OPTIONS{user}, $OPTIONS{password}, 
                                     {RaiseError => 1, PrintError => 1});
-$dbh->storage->debug(1)  if $OPTIONS{debug};
+$dbh->storage->debug(1)  if $OPTIONS{debug} || $OPTIONS{v};
 #
 #  if asked then collect e2e stats from remote services asynchronously
 #
@@ -172,7 +173,7 @@ foreach my $e2e (@E2E) {
   if($OPTIONS{$e2e}) {
      get_e2e($pm,  $PAST_START, $e2e);
   }
-}	
+}
 #
 # now collect topology and SNMP data from ESnet
 # 
@@ -185,7 +186,7 @@ foreach my $service ( qw/ps3/ ) {
             my $urn = "domain=$IP_TOPOLOGY";
             my ($status, $res) = $client->xQuery("//*[matches(\@id, '$urn', 'xi')]", 'encoded');
             throw  perfSONAR_PS::Error if $status;
-	   parse_topo($dbh, $res);
+	    parse_topo($dbh, $res);
 	}
 	get_snmp($dbh, $pm) if $OPTIONS{snmp};
 	set_end_sites($dbh, $pm);
@@ -203,7 +204,12 @@ foreach my $service ( qw/ps3/ ) {
         $dbh->storage->disconnect if $dbh;
     };
 }
-$pm->wait_all_children ;
+#$pm->wait_all_children ;
+$logger->info("cleanup...");
+#$e2e_threads{$_}->join foreach map($e2e_threads{$_}->is_joinable ? $_ : (),   keys %e2e_threads);
+pool_control($MAX_THREADS, 1);
+$logger->info("cleanup...done");
+$dbh->storage->disconnect if $dbh;
 exit(0);
  
 
@@ -282,10 +288,11 @@ sub parse_topo {
 		    					       nodename => $ip_name,
 							       netmask =>   $net_ip->bits,
 		    					       ip_noted => $ip_addr}); 
-	    my $ip_addr_obj =  $dbh->resultset('Node')->find({ip_noted => $ip_addr});
+	    my ($ip_addr_obj) =  $dbh->resultset('Node')->search({ip_noted => $ip_addr});
+	    next unless $ip_addr_obj && $ip_addr_obj->ip_addr;
 	    $dbh->resultset('L2L3Map')->update_or_create({ ip_addr => $ip_addr_obj->ip_addr,
 	                                                   l2_urn => $port2_name,
-							   updated =>  \"NOW()",
+							   updated =>  $now_str
 							  },
 							  {key => 'ip_l2_time'});
         }
@@ -308,11 +315,12 @@ sub parse_topo {
 #
 sub set_end_sites {
    my ($dbh, $pm ) = @_;
-   my $dbi =  db_connect(\%OPTIONS);
+   my $dbi =  db_connect(\%OPTIONS); 
+   my $now_time = strftime('%Y-%m-%d %H:%M:%S', localtime());
    foreach my $hub_name (qw/FNAL   LBL   ORNL   SLAC    BNL  ANL/) {
       my $hub = Ecenter::Data::Hub->new({hub_name => $hub_name});
       my %subnets =  %{$hub->get_ips()};
-      my $l2_port =   $dbh->resultset('L2Port')->find({'hub.hub_name' => $hub_name}, {join => 'hub', limit => 1});
+      my ($l2_port) =   $dbh->resultset('L2Port')->search({'hub.hub_name' => $hub_name}, {join => 'hub', limit => 1});
       unless($l2_port && $l2_port->l2_urn) {
           $logger->error("NO ports available - check topology info or hub_name:$hub_name");
           next;
@@ -334,7 +342,7 @@ sub set_end_sites {
 	    $logger->debug("Checking::: $ip");
 	    $dbh->resultset('L2L3Map')->update_or_create({ ip_addr => $nodes->{$ip}{ip_addr},
 	                                                   l2_urn => $l2_port->l2_urn,
-							   updated =>   \"NOW()",
+							   updated =>   $now_time,
 							 },
 							 { key => 'ip_l2_time'});
 	 }
@@ -354,43 +362,50 @@ sub get_e2e {
 						          '+select' => [qw/eventtype.ref_id service.service inet6_ntop(me.src_ip) inet6_ntop(me.dst_ip)/],
 						        }
 						    );
+				
      my $table_name = ucfirst($e2e); 
      my $now_table = strftime('%Y%m', localtime());
      foreach my $md (@metadata) {
-         my $pid = $pm->start and next; 
-	
-	 my $last_time = $dbh->resultset("${table_name}Data$now_table")->find( { metaid => $md->metaid },
-	    						  {  limit => 1,  order_by => { -desc => 'timestamp'} }
-	    						);
-	 ###$logger->debug("MD::", sub{Dumper($md->eventtype->service)});  
-         my $secs_past = $last_time && ($last_time->timestamp >  $PAST_START)?$last_time->timestamp:$PAST_START;
-    	 my $e2e_data = [];
-	 eval {
-	    $e2e_data =   Ecenter::Client->new({ type    => $e2e,  
-	                                               url     => $md->eventtype->service->service,
-	                                               start   =>   $secs_past,
-    	    			                       end     => time(),
-						       resolution => 1000000,
-						       args => {
-						            subject => $md->subject
-						      }
-	    		      })->get_data;
-	 };
-	 if($EVAL_ERROR) {
-	    $logger->error("Data ::Failed - $EVAL_ERROR");
-	    $pm->finish;
+         #my $pid = $pm->start and next;
+	 
+	 pool_control($MAX_THREADS,undef); 
+	 threads->new({'context' => 'scalar'}, 
+	                          sub { 
 	    
-	 }
-    	 $logger->debug("Data :: ", sub{Dumper(  $e2e_data )});
-    	 $pm->finish unless   $e2e_data  && @{  $e2e_data };
-    	 foreach my $data (@{ $e2e_data }) { 
-    	     dbh->resultset("${table_name}Data$now_table")->update_or_create({ metaid =>  $md->metaid,
-    	    								       timestamp => $data->[0],
-    	    								       %{$data->[1]},
-    	    								    },
-    	    								    { key => 'meta_time'});
-    	}
-	$pm->finish;
+	     my $last_time = $dbh->resultset("${table_name}Data$now_table")->find( { metaid => $md->metaid },
+	    						      {  limit => 1,  order_by => { -desc => 'timestamp'} }
+	    						    );
+	     ###$logger->debug("MD::", sub{Dumper($md->eventtype->service)});  
+             my $secs_past = $last_time && ($last_time->timestamp >  $PAST_START)?$last_time->timestamp:$PAST_START;
+    	     my $e2e_data = [];
+	     eval {
+		$e2e_data =   Ecenter::Client->new({ type    => $e2e,  
+	                                        	   url     => $md->eventtype->service->service,
+	                                        	   start   =>   $secs_past,
+    	    			                	   end     => time(),
+							   resolution => 1000000,
+							   args => {
+						        	subject => $md->subject
+							  }
+	    			  })->get_data;
+	     };
+	     if($EVAL_ERROR) {
+		$logger->error("Data ::Failed - $EVAL_ERROR");
+		##$pm->finish;
+		return;
+	     }
+    	     $logger->debug("Data :: ", sub{Dumper(  $e2e_data )});
+    	     ##$pm->finish unless   $e2e_data  && @{  $e2e_data };
+	     return unless   $e2e_data  && @{  $e2e_data };
+    	     foreach my $data (@{ $e2e_data }) { 
+    		 $dbh->resultset("${table_name}Data$now_table")->update_or_create({ metaid =>  $md->metaid,
+    	    									   timestamp => $data->[0],
+    	    									   %{$data->[1]},
+    	    									},
+    	    									{ key => 'meta_time'});
+    	    }
+	});
+	##$pm->finish;
     }
   
 }
@@ -399,15 +414,15 @@ sub get_e2e {
 #
 sub get_snmp { 
     my ($dbh, $pm ) = @_; 
-    my $service = $dbh->resultset('Service')->search({'eventtypes.service_type' => 'snmp', 
+    my ($service) = $dbh->resultset('Service')->search({'eventtypes.service_type' => 'snmp', 
                                                       'me.service' => {like => '%es.net%'}}, 
                                                      { 'join' => 'eventtypes',
 						       '+select' => ['eventtypes.ref_id'],
 						     
 						      }
-						    )->single;
+						    );
     my $now_table = strftime('%Y%m', localtime());
-    # harcoded fix for miserable  ESnet services 
+    # harcoded fix for miserable  ESnet service
     my $eventtype_obj; 
     unless($service) {
         my $ps3_node =   $dbh->resultset('Node')->find({nodename => 'ps3.es.net'});
@@ -423,66 +438,87 @@ sub get_snmp {
 								         },
 								         { key => 'eventtype_service_type' }
 							      );				    
-	$service = $dbh->resultset('Service')->search({ 'eventtypes.service_type' => 'snmp', 
+	$service = $dbh->resultset('Service')->find({ 'eventtypes.service_type' => 'snmp', 
 	                                                'me.service' => {like => '%es.net%'}}, 
-                                                       {join => 'eventtypes', '+select' => ['eventtypes.ref_id'] } )->single();
+                                                       {join => 'eventtypes', '+select' => ['eventtypes.ref_id'] } );
     }
     my $eventtype_id =  $service->eventtypes->first->ref_id;
-    my $ports = $dbh->resultset('L2Port')->search({ }, { 'join'  =>  'l2_link_l2_src_urns' });
-    my %threads;
-    my $thread_counter = 0;
+    my @ports = $dbh->resultset('L2Port')->search({ }, { 'join'  =>  'l2_link_l2_src_urns' });
     # get SNMP MA handler
-    my $snmp_ma =  Ecenter::Data::Snmp->new({ url => $service->service});
+    ###my $snmp_ma =  Ecenter::Data::Snmp->new({ url => $service->service});
     
     #$logger->info("=====---- SERVICE eventtype ---------", sub{Dumper($service->eventtypes)});
-    unless($ports->count) {
+    unless(@ports) {
     	$logger->error(" !!! NO Ports !!! ");
     	return;
     }
-    while( my  $port = $ports->next) {
-    	my $ifAddresses = $dbh->resultset('L2L3Map')->search( { l2_urn => $port->l2_urn }, 
+    my $num_ports = @ports;
+    $logger->info("PORTS::" . @ports);
+    my $counter = 1;
+    foreach my  $port (@ports) {
+        $logger->info(sprintf("Progressed ... %5.2f %% out of %d", ($counter/$num_ports)*100., $num_ports));
+    	my @ifAddresses = $dbh->resultset('L2L3Map')->search( { l2_urn => $port->l2_urn }, 
     							      { 'join' => 'ip_addr', '+select' => ['ip_addr.ip_noted'] }
     							    );
-    	unless ($ifAddresses->count) {
+    	unless (@ifAddresses) {
     	    $logger->error(" !!! NO Addresses !!! ");
     	    next;
     	}
-    	while(my  $l3 = $ifAddresses->next) {
+    	foreach my  $l3 (@ifAddresses) {
     	    $logger->debug("=====---------------===== \n ifAddress::" . $l3->ip_addr->ip_noted . " URN:" . $port->l2_urn );
 	
-    	    my $pid = $pm->start and next;
-	    # get last timestamp
-	    my $last_time = $dbh->resultset("SnmpData$now_table")->find( {  
-	                                                     'metaid.eventtype_id' => $eventtype_id,
-    	    						     'metaid.src_ip'	  => $l3->ip_addr->ip_addr,
-    	    						     'metaid.dst_ip'	  => '0'
-	    						  },
-	    						  { 'join' => 'metaid', limit => 1,  order_by => { -desc => 'timestamp'} }
-	    						);
-	    
-            my $secs_past = $last_time && ($last_time->timestamp >  $PAST_START)?$last_time->timestamp:$PAST_START;
-    	    $snmp_ma->get_data({ direction => 'out',
-    	    			 ifAddress => $l3->ip_addr->ip_noted, 
-    	    			 start     => DateTime->from_epoch( epoch =>  $secs_past),
-    	    			 end	   => DateTime->now()	
-	    		      });
-    	    $logger->debug("Data :: ", sub{Dumper( $snmp_ma->data)});
-    	    my $meta = $dbh->resultset('Metadata')->update_or_create({ 
-    	    					     eventtype_id => $eventtype_id ,
-    	    					     src_ip	  => $l3->ip_addr->ip_addr,
-    	    					     dst_ip => '0',
-    	    					  },
-	    					  {key => 'md_ips_type'}
-    	    					  );
-    	    $pm->finish unless $snmp_ma->data && @{$snmp_ma->data};
-    	    foreach my $data (@{ $snmp_ma->data}) { 
-    	    	$dbh->resultset("SnmpData$now_table")->update_or_create({ metaid =>  $meta->metaid,
-    	    								   timestamp => $data->[0],
-    	    								   utilization => $data->[1],
-    	    								 },
-    	    								 { key => 'meta_time'});
-    	    }
-    	    $pm->finish;
+    	    ### my $pid = $pm->start and next;
+	    pool_control($MAX_THREADS, undef);
+	    my $src_ip = $l3->ip_addr->ip_addr;
+	    threads->new({'context' => 'scalar'}, 
+	                          sub { 
+		# get last timestamp
+		 my $dbh =  Ecenter::DB->connect('DBI:mysql:' . $OPTIONS{db},  $OPTIONS{user}, $OPTIONS{password}, 
+                                	    {RaiseError => 1, PrintError => 1});
+        	$dbh->storage->debug(1)  if $OPTIONS{debug}|| $OPTIONS{v}; 
+		my $snmp_ma =  Ecenter::Data::Snmp->new({ url => $service->service});
+   
+		my ($last_time) = $dbh->resultset("SnmpData$now_table")->search( {  
+	                                                	 'metaid.eventtype_id' => $eventtype_id,
+    	    							 'metaid.src_ip'       =>  $src_ip,
+    	    							 'metaid.dst_ip'       => '0'
+	    						      },
+	    						      { 'join' => 'metaid', limit => 1,  order_by => { -desc => 'timestamp'} }
+	    						    );
+
+        	my $secs_past = $last_time && ($last_time->timestamp >  $PAST_START)?$last_time->timestamp:$PAST_START;
+		
+    		$snmp_ma->get_data({ direction => 'out',
+    	    			     ifAddress => $l3->ip_addr->ip_noted, 
+    	    			     start     => DateTime->from_epoch( epoch =>  $secs_past),
+    	    			     end       => DateTime->now()	
+	    			  });
+    		$logger->debug("Data :: ", sub{Dumper( $snmp_ma->data)});
+    		my $meta = $dbh->resultset('Metadata')->update_or_create({ 
+    	    						 eventtype_id => $eventtype_id ,
+    	    						 src_ip	  => $src_ip,
+    	    						 dst_ip => '0',
+    	    					      },
+	    					      {key => 'md_ips_type'}
+    	    					      );
+    		if($snmp_ma->data && @{$snmp_ma->data}) {
+    		    foreach my $data (@{ $snmp_ma->data}) { 
+    	    	       eval {
+		        $dbh->resultset("SnmpData$now_table")->find_or_create({ metaid =>  $meta->metaid,
+    	    								       timestamp => $data->[0],
+    	    								       utilization => $data->[1],
+    	    								     },
+    	    								     { key => 'meta_time'});
+		      };
+		      if($EVAL_ERROR) {
+		         $logger->error($meta->metaid . " metaid failed due some error $EVAL_ERROR skipping ...  ");
+		      }
+    		    }
+		}
+		$dbh->storage->disconnect if $dbh;
+		return;
+	    });
+    	    #$pm->finish;
     	}
     }
 }

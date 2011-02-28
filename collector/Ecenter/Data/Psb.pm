@@ -1,6 +1,7 @@
 package Ecenter::Data::Psb;
 
 use Moose;
+use namespace::autoclean;
 
 use FindBin qw($RealBin);
 use lib  "$FindBin::Bin";
@@ -97,8 +98,9 @@ after 'get_metadata' => sub {
         $result = $self->ma->metadataKeyRequest({ subject    => $self->subject,
                                                   eventTypes => $self->eventtypes });
     };
-    if($EVAL_ERROR) {
-	$self->logger->logdie(" Problem with MA $EVAL_ERROR ");
+    if($EVAL_ERROR ||  !($result && $result->{metadata})) {
+	$self->logger->error(" Problem with MA $EVAL_ERROR ");
+	return;
     }
     $self->logger->debug("  MDKrrequest Result ", sub{ Dumper    $result });
     my $md_keys = {};
@@ -117,7 +119,7 @@ after 'get_metadata' => sub {
     my @keys = keys %{$md_keys};
     $self->logger->debug(" MD :: ", sub{ Dumper $md_keys } );
     $self->meta_keys(\@keys);
-    $self->metadata($md_keys);
+    return $self->metadata($md_keys);
 };
 
 
@@ -128,11 +130,12 @@ after  'get_data' => sub   {
         $self->logger->logdie(" Missed src_name and  dst_name or meta_keys parameter ");
     } 
     $self->get_metadata() unless $self->meta_keys; 
-    $self->logger->debug(" -------------------METADATA :: ", sub{ Dumper $self->meta_keys } );
     unless($self->meta_keys) {
           $self->logger->error(" No metadata returned !!! ");
 	  return;
     }
+    $self->logger->debug(" -------------------METADATA :: ", sub{ Dumper $self->meta_keys } );
+     
     my @data_raw = ();
     foreach my $key_id  (@{$self->meta_keys}) {
         my $subject = "  <nmwg:key id=\"key-1\">\n";
@@ -150,18 +153,16 @@ after  'get_data' => sub   {
             my $result = $self->ma->setupDataRequest( $request );
             $doc1 =  $self->parser->parse_string( $result->{"data"}->[0] ); };
         if ( $EVAL_ERROR ) {
-           $self->logger->logdie(" Problem with MA $EVAL_ERROR ");
+            $self->logger->logdie(" Problem with MA $EVAL_ERROR ");
         }
         my $datum1 = find( $doc1->getDocumentElement, "./*[local-name()='datum']", 0 );
         if ( $datum1 ) {
             foreach my $dt ( $datum1->get_nodelist ) {
-	         $self->logger->debug("  Datum: ". $dt->toString);
-	         my $processed =  $self->process_datum($dt); ## provide implementation in the subclass
-	         $self->logger->debug("  Datum Parsed ", sub{ Dumper  $processed}); 
-                 push  @data_raw,  $processed if $processed &&  @{$processed};
+	        $self->logger->debug("  Datum: ". $dt->toString);
+	        my $processed =  $self->process_datum($dt); ## provide implementation in the subclass
+	        $self->logger->debug("  Datum Parsed ", sub{ Dumper  $processed}); 
+                push  @data_raw,  $processed if $processed &&  @{$processed};
             }
-	  
-	    
         } 
     } 
     $self->logger->debug("  Data Result ", sub{ Dumper  \@data_raw });

@@ -52,7 +52,7 @@ __PACKAGE__->table("hop_data_201011");
   default_value: 0
   is_nullable: 0
 
-=head2 updated
+=head2 timestamp
 
   data_type: 'bigint'
   extra: {unsigned => 1}
@@ -81,10 +81,11 @@ __PACKAGE__->add_columns(
   { data_type => "tinyint", default_value => 1, is_nullable => 0 },
   "hop_delay",
   { data_type => "float", default_value => 0, is_nullable => 0 },
-  "updated",
+  "timestamp",
   { data_type => "bigint", extra => { unsigned => 1 }, is_nullable => 0 },
 );
 __PACKAGE__->set_primary_key("hop_id");
+__PACKAGE__->add_unique_constraint("meta_time", ["metaid", "hop_ip", "timestamp"]);
 
 =head1 RELATIONS
 
@@ -119,8 +120,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07002 @ 2010-11-04 14:44:08
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:teWpSt8ThAVQySAtzJNkOA
+# Created by DBIx::Class::Schema::Loader v0.07002 @ 2011-02-18 15:34:04
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:eraaN3TD1lIccTrEhRmpVg
 
 
 # You can replace this text with custom content, and it will be preserved on regeneration

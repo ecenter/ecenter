@@ -80,7 +80,7 @@ __PACKAGE__->add_columns(
   },
 );
 __PACKAGE__->set_primary_key("l2_l3_map");
-__PACKAGE__->add_unique_constraint("ip_l2_time", ["ip_addr", "l2_urn", "created"]);
+__PACKAGE__->add_unique_constraint("ip_l2_time", ["ip_addr", "l2_urn", "updated"]);
 
 =head1 RELATIONS
 
@@ -115,8 +115,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07002 @ 2010-11-04 14:44:08
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:re6LDAFKy7NIVi1wooFy1A
+# Created by DBIx::Class::Schema::Loader v0.07002 @ 2011-01-28 16:15:19
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:r8zZEhwsPxw8vWx9a38hkw
 
 
 # You can replace this text with custom content, and it will be preserved on regeneration

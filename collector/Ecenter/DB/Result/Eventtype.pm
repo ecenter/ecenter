@@ -34,10 +34,10 @@ __PACKAGE__->table("eventtype");
 
 =head2 service
 
-  data_type: 'bigint'
-  extra: {unsigned => 1}
+  data_type: 'varchar'
   is_foreign_key: 1
   is_nullable: 0
+  size: 255
 
 =head2 service_type
 
@@ -59,12 +59,7 @@ __PACKAGE__->add_columns(
   "eventtype",
   { data_type => "varchar", is_nullable => 1, size => 255 },
   "service",
-  {
-    data_type => "bigint",
-    extra => { unsigned => 1 },
-    is_foreign_key => 1,
-    is_nullable => 0,
-  },
+  { data_type => "varchar", is_foreign_key => 1, is_nullable => 0, size => 255 },
   "service_type",
   {
     data_type => "varchar",
@@ -112,8 +107,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07002 @ 2010-11-04 14:44:08
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:vsgV4fGccixq+OUuzcmmqg
+# Created by DBIx::Class::Schema::Loader v0.07002 @ 2011-01-28 16:15:19
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:nBbEUORHMsl5qT2ryPCFTA
 
 
 # You can replace this text with custom content, and it will be preserved on regeneration

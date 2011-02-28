@@ -1,6 +1,7 @@
 package Ecenter::Data::Owamp;
 
 use Moose;
+use namespace::autoclean;
 
 use FindBin qw($RealBin);
 use lib  "$FindBin::Bin";

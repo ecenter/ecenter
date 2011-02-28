@@ -124,9 +124,11 @@ after 'get_data' => sub  {
     return unless $ma_result;
     my $parser = XML::LibXML->new();
     my @datum = ();
+    my $metadata = $self->metadata;
+    $self->logger->debug("SNMP MDS::", sub{Dumper($metadata)});
     foreach my $d ( @{ $ma_result->{"data"} } ) {
         my $data = $parser->parse_string($d);
-        my $idref = $data->getDocumentElement->getAttribute('metadataIdRef'); 
+        my $idref = $data->getDocumentElement->getAttribute('metadataIdRef');
         # Extract the datum elements.
         foreach my $dt ( $data->getDocumentElement->getChildrenByTagNameNS( "http://ggf.org/ns/nmwg/base/2.0/", "datum" ) ) {
 
@@ -137,13 +139,13 @@ after 'get_data' => sub  {
                 if ( $dt->getAttribute("value") and $dt->getAttribute("value") ne "nan" ) {
 		    $self->logger->debug("Data value: ".$dt->getAttribute("value"));
                     my $data_value = eval { $dt->getAttribute("value")  };
-		    push @datum, [$dt->getAttribute("timeValue"), $data_value];
+		    push @datum, [$dt->getAttribute("timeValue"), $data_value, $metadata->{$idref}{capacity}];
 		    $self->logger->debug("Post-mod data value: ".$data_value);
                 }
                 else {
 
                     # these are usually 'NaN' values
-                     push @datum, [$dt->getAttribute("timeValue"),$dt->getAttribute("value")];
+                     push @datum, [$dt->getAttribute("timeValue"),$dt->getAttribute("value"), $metadata->{$idref}{capacity}];
                 }
             }
         }

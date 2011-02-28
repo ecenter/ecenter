@@ -35,10 +35,10 @@ __PACKAGE__->table("keywords_service");
 
 =head2 service
 
-  data_type: 'bigint'
-  extra: {unsigned => 1}
+  data_type: 'varchar'
   is_foreign_key: 1
   is_nullable: 0
+  size: 255
 
 =cut
 
@@ -53,12 +53,7 @@ __PACKAGE__->add_columns(
   "keyword",
   { data_type => "varchar", is_foreign_key => 1, is_nullable => 0, size => 255 },
   "service",
-  {
-    data_type => "bigint",
-    extra => { unsigned => 1 },
-    is_foreign_key => 1,
-    is_nullable => 0,
-  },
+  { data_type => "varchar", is_foreign_key => 1, is_nullable => 0, size => 255 },
 );
 __PACKAGE__->set_primary_key("ref_id");
 __PACKAGE__->add_unique_constraint("key_service", ["keyword", "service"]);
@@ -96,8 +91,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07002 @ 2010-11-04 14:44:08
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:LsDl9vLQUxRIv52uHJjwdg
+# Created by DBIx::Class::Schema::Loader v0.07002 @ 2011-01-28 16:15:19
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:oWwG26BJkYVkCDrlztRDXg
 
 
 # You can replace this text with custom content, and it will be preserved on regeneration

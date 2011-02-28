@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/local/bin/perl -w
 
 use strict;
 use warnings;
@@ -67,6 +67,8 @@ Default: read from /etc/my_ecenter
 use FindBin;
 use lib  ("$FindBin::Bin/topo_lib", "$FindBin::Bin");
 
+use forks;
+
 use English;
 use Time::HiRes qw(usleep);
 use XML::LibXML;
@@ -81,7 +83,7 @@ use Net::Netmask;
 use File::Slurp;
 
 #use Parallel::ForkControl;
-use Parallel::ForkManager;
+##use Parallel::ForkManager;
 
 
 use Ecenter::DB;
@@ -96,13 +98,14 @@ use perfSONAR_PS::Error_compat qw/:try/;
 use perfSONAR_PS::Error;
 use perfSONAR_PS::Client::Echo;
 
+local $SIG{CHLD} = 'IGNORE';
 # Maximum working threads
 my $MAX_THREADS = 10;
 #
 #    pattern to match on hLS names
-#
-our $HOST_MATCH = qr/((es|deemz)\.net|(anl|lbl|nersc|ornl|lbl|lbnl|jlab|bnl)\.gov|slac\.stanford\.edu)/i;
-our $SERVICE_MATCH = qr/pinger|bwctl|owamp|traceroute/;
+ 
+our $HOST_MATCH = qr/((es|deemz)\.net|\w+\.gov|slac\.stanford\.edu)/i;
+our $SERVICE_MATCH = qr/pinger|bwctl|owamp|traceroute/xim;
 
 our %SERVICE_PARAM = ( service => [qw/accessPoint address/], 
 		       name => [qw/serviceName name/],
@@ -171,7 +174,7 @@ $logger->info(" MAX THREADS = $MAX_THREADS ");
 #   				Name			=> 'LS Forker',
 #   				Code			=> \&remote_ls);	  
 
-my $pm  =   new Parallel::ForkManager($MAX_THREADS);
+#my $pm  =   new Parallel::ForkManager($MAX_THREADS);
 
 # 
 my $thread_counter=1;
@@ -215,7 +218,8 @@ unless(@hlses) {
          } 
     }
     @hlses = keys %hls_cache;
-}	
+}
+my %e2e_threads= (); 
 foreach my $hls (@hlses) {
     $logger->debug("LSS INDEX BEFORE:	$hls"); 
     $logger->debug("For... $hls");  
@@ -224,14 +228,33 @@ foreach my $hls (@hlses) {
     
     ### run query/echo/ping async
     $logger->info("LSS INDEX PASSED: $hls");
-    my $pid = $pm->start and next; 
-    chomp $hls;
-    remote_ls( $hls, 'hLS service', 'hLS', 'http://ggf.org/ns/nmwg/tools/org/perfsonar/service/1.0/');
-    $pm->finish;
+    #my $pid = $pm->start and next; 
+    #chomp $hls;
+    #remote_ls( $hls, 'hLS service', 'hLS', 'http://ggf.org/ns/nmwg/tools/org/perfsonar/service/1.0/');
+    #$pm->finish;
+    
+    #my @e2e_keys = keys %e2e_threads;
+    #if(scalar @e2e_keys >= $MAX_THREADS) {
+    #	foreach my $thr (@e2e_keys) {
+    #	     if(  $e2e_threads{$thr}->is_joinable ) {
+    #	        $e2e_threads{$thr}->join;
+#		delete  $e2e_threads{$thr};
+ #   	     }
+	#     last if (my $check_keys =  keys %e2e_threads) < $MAX_THREADS;
+    	 #}
+    	 
+   # }
+    pool_control($MAX_THREADS, 0);
+    threads->new({'context' => 'scalar'}, 
+	                          sub { remote_ls( $hls, 'hLS service', 'hLS', 'http://ggf.org/ns/nmwg/tools/org/perfsonar/service/1.0/')   });
+    
 }
-
+$logger->info("cleanup...");
+#$e2e_threads{$_}->join foreach map($e2e_threads{$_}->is_joinable ? $_ : (),   keys %e2e_threads);
+pool_control($MAX_THREADS, 1);
+$logger->info("cleanup...done"); 
 #$ls_forker->cleanup;
-$pm->wait_all_children;
+#$pm->wait_all_children;
 exit(0);
 
 sub remote_ls {
@@ -267,22 +290,23 @@ sub remote_ls {
     							    },
     							    { key => 'eventtype_service_type' }
     							  );
-    	    unless($status)  {
-    		get_fromHLS($accessPoint, $now_str, $hls, $dbh);
-	        $logger->error("Ping failed for -----  $accessPoint ");
-    	    }
+    	    if($status)  {
+	        $logger->error("Ping failed for  $accessPoint with $res ");
+    	    } else {
+	        get_fromHLS($accessPoint, $now_str, $hls, $dbh);
+	    }
     	 }  else  {
     	    $logger->error(" \t\t\tReject:\t$accessPoint)");
     	 }
     } 
     catch perfSONAR_PS::Error	with {
-    	$logger->error("TID=proc=$$ ... " .  shift);
+    	$logger->error("ERROR TID=proc=$$ ... " .  shift);
     } catch perfSONAR_PS::Error_compat with {
-    	$logger->error("TID=proc=$$ ... " .  shift);
+    	$logger->error("ERROR TID=proc=$$ ... " .  shift);
     }
     otherwise {
     	my $ex  = shift; 
-    	$logger->error("TID= $$ Unhandled exception or crash: $ex");
+    	$logger->error("ERROR TID= $$ Unhandled exception or crash: $ex");
     }
     
     $dbh->storage->disconnect if $dbh;
@@ -330,7 +354,7 @@ sub get_fromHLS {
     my ($hls_url, $now_str, $hls_obj, $dbh) = @_;
     my $logger = get_logger(__PACKAGE__);
    
-    $logger->debug("hLS: $hls_url............");
+    $logger->info("HLS:... $hls_url............");
     my $ls = new perfSONAR_PS::Client::LS( { instance => $hls_url } );
     my $result_disc  = ls_store_request($ls, $DISCOVERY_EVENTTYPE);
     my $result_query = ls_store_request($ls, $QUERY_EVENTTYPE);
@@ -388,7 +412,7 @@ sub get_fromHLS {
 	$param_exist{name} ||= 'N/A';
 	my ( $ip_noted , $nodename) = get_ip_name(  $param_exist{service} );
 	unless($ip_noted) {
-	    $logger->error("TID= $$  !!!! Unable to extract IP from $param_exist{url}   ");
+	    $logger->error("TID= $$  !!!! Unable to extract IP from $param_exist{service}   ");
 	    next;
 	}
 	update_create_fixed($dbh->resultset('Node'),
@@ -408,7 +432,7 @@ sub get_fromHLS {
 	##############  data part processing
         ###my $d1_disc = $look_data_disc_id{$id};
 	unless($look_data_query_id{$id}) {
-	    $logger->error("TID= $$  !!!! Malformed response no data element for $id");
+	    $logger->debug("TID= $$  !!!! Malformed response no data element for $id");
 	    next; 
 	}
 	my @d1_query = @{$look_data_query_id{$id}};
@@ -432,7 +456,7 @@ sub get_fromHLS {
 									},
 									{ key => 'key_service' }
 								      );
- 		 $dbh->resultset('KeywordsService')->update_or_create( { keyword => $keyword_str,
+ 		$dbh->resultset('KeywordsService')->update_or_create( { keyword => $keyword_str,
 									 service => $param_exist{service},
 									},
 									{ key => 'key_service' } 
@@ -455,7 +479,7 @@ sub get_fromHLS {
 							      );
 		    };
 		    if($EVAL_ERROR) {
-		           $logger->error("TID=proc=$$====DATA - erro with Eventtype - $EVAL_ERROR");
+		           $logger->error("TID=proc=$$====DATA - error with Eventtype - $EVAL_ERROR");
 		    }
 	            $snmp ||= $SERVICE_LOOKUP{$value} if $SERVICE_LOOKUP{$value} && $SERVICE_LOOKUP{$value} eq 'snmp';
 		}
@@ -490,7 +514,7 @@ sub get_fromHLS {
 		next if $capacity || $snmp;  ## skip snmp ma      
 	        $logger->debug("TID=proc=$$ ====== src=$ip_addr_h{src}========== \n");
                 unless($ip_addr_h{src}) {
-		    $logger->error("!!! FAILED To extract IP from subject !!!" .  $subj_md->toString);
+		    $logger->info("!!! FAILED To extract IP from subject !!!" .  $subj_md->toString);
 		    next;
 		}
 		my %ip_addr_rs = (   src => '', dst => '');
@@ -507,15 +531,15 @@ sub get_fromHLS {
 					        ip_noted => $ip_cidr 
 					      }
 					   );
-			  $ip_addr_rs{$ip_key} =  $dbh->resultset('Node')->single({ip_noted => $ip_cidr });				    
+			  $ip_addr_rs{$ip_key} =  $dbh->resultset('Node')->find({ip_noted => $ip_cidr }, {rows => 1});				    
 		    } else {
 		        $logger->error("!!! FAILED To get IP/hostname for $ip_key=$ip_addr_h{$ip_key} !!!");
 		    }
 		}
 		# sanity checks
-	        unless ( $ip_addr_rs{src} &&
-		         ( $eventtype_obj->service_type !~ $SERVICE_MATCH || $ip_addr_rs{dst})) {
-		    $logger->error("TID=$$ !! End ======  MISSING SRC or e2e service with missing dst, skipping...:$ip_addr_h{src}");
+	        if ( !$ip_addr_rs{src}  ||
+		         ( $eventtype_obj->service_type =~ $SERVICE_MATCH && !$ip_addr_rs{dst})) {
+		    $logger->debug("TID=$$ !! End ======  MISSING SRC=$ip_addr_rs{src} or e2e without dst=$ip_addr_rs{dst}, skipping...:$ip_addr_h{src} type=" . $eventtype_obj->service_type);
 		    next;
 		}
 	        
@@ -537,6 +561,7 @@ sub get_fromHLS {
 	    }
 	}
     }
+    $logger->info("HLS:... $hls_url  .................................. DONE ... still there: " . threads->list(threads::running));
 }
 
 __END__

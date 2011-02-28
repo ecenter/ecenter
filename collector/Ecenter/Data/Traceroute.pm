@@ -1,6 +1,7 @@
 package Ecenter::Data::Traceroute;
 
 use Moose;
+use namespace::autoclean;
 
 use FindBin qw($RealBin);
 use lib  "$FindBin::Bin";
@@ -11,6 +12,7 @@ use Log::Log4perl qw(get_logger);
 use English qw( -no_match_vars );
 use Data::Dumper;
 use Date::Manip;
+use NetAddr::IP::Util qw(inet_aton ipv6_aton inet_any2n ipv4to6 isIPv4);
 
 =head1 NAME
 
@@ -49,9 +51,10 @@ augment  'process_datum' => sub {
    my $hop_num   = $dt->getAttribute("ttl");
    my $hop_delay = $dt->getAttribute("value");
    return [] unless   $hop_ip && $hop_num && $hop_delay;
-   $hop_delay *= $unit;
+   $hop_delay *= $unit; 
+   my $ip_bin =   inet_any2n($hop_ip);
    $self->logger->debug("parsing..  t=$secs ip=$hop_ip hop_num=$hop_num  hop_delay=$hop_delay") if $hop_ip  && $hop_num  && $hop_delay;
-   return  ($secs?[ $secs, {hop_ip  =>  $hop_ip, hop_num => $hop_num,hop_delay => $hop_delay } ]:[]);
+   return  ($secs?[ $secs, {hop_ip  =>  $ip_bin,  ip_noted =>  $hop_ip, hop_num => $hop_num, hop_delay => $hop_delay } ]:[]);
 };
 
 

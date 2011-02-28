@@ -21,10 +21,9 @@ __PACKAGE__->table("service");
 
 =head2 service
 
-  data_type: 'bigint'
-  extra: {unsigned => 1}
-  is_auto_increment: 1
+  data_type: 'varchar'
   is_nullable: 0
+  size: 255
 
 =head2 name
 
@@ -72,12 +71,7 @@ __PACKAGE__->table("service");
 
 __PACKAGE__->add_columns(
   "service",
-  {
-    data_type => "bigint",
-    extra => { unsigned => 1 },
-    is_auto_increment => 1,
-    is_nullable => 0,
-  },
+  { data_type => "varchar", is_nullable => 0, size => 255 },
   "name",
   { data_type => "varchar", is_nullable => 0, size => 255 },
   "ip_addr",
@@ -102,7 +96,6 @@ __PACKAGE__->add_columns(
   },
 );
 __PACKAGE__->set_primary_key("service");
-__PACKAGE__->add_unique_constraint("url", ["url"]);
 
 =head1 RELATIONS
 
@@ -152,8 +145,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07002 @ 2010-11-04 14:44:08
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:jl81o2XFHN/OmSMykMYlXg
+# Created by DBIx::Class::Schema::Loader v0.07002 @ 2011-01-28 16:15:19
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:kuawKw9RY0qMQrcymgltVQ
 
 
 # You can replace this text with custom content, and it will be preserved on regeneration

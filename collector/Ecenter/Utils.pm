@@ -11,6 +11,7 @@ use forks::shared
 };
 
 use version;our $VERSION = qv("v1.0");
+use NetAddr::IP::Util qw(ipv6_aton inet_any2n ipv4to6 isIPv4);
 use Net::IPv6Addr;
 use Net::CIDR;
 use Data::Validate::IP qw(is_ipv4 is_ipv6);
@@ -24,6 +25,7 @@ use Data::Dumper;
 use Log::Log4perl;
 use Time::HiRes qw(usleep);
 use DBI;
+
 
 use base 'Exporter';
 
@@ -44,7 +46,7 @@ our $logger =   Log::Log4perl->get_logger(__PACKAGE__);
  
 # exported functions  
 
-our @EXPORT = qw/get_ip_name db_connect update_create_fixed pool_control ip_ton nto_ip/;
+our @EXPORT = qw/get_ip_name pack_snmp_data get_datums refactor_result db_connect update_create_fixed pool_control ip_ton nto_ip/;
  
 =head1 FUNCTIONS 
  
@@ -58,9 +60,95 @@ sub db_connect {
     $logger->logdie(" DBI connect failed:  $DBI::errstr") unless $dbh;
     return $dbh; 
 }
+=head2   pack_snmp_dat
+ 
+post-process SNMP data
 
+=cut
+
+sub  pack_snmp_data {
+    my ($data_ref) = @_;
+    my $end_time = -1;
+    my @result = ();
+    my $start_time =  4000000000;
+    foreach my $time (sort {$a<=>$b} grep {$_} keys %{$data_ref->{data}}) { 
+	push @result,   
+	            [ $time, { capacity => $data_ref ->{md}{$data_ref->{data}{$time}{metaid}}{capacity},  
+		               utilization => $data_ref ->{data}{$time}{utilization} }];
+	$end_time = $time if $time > $end_time;
+	$start_time = $time if $time < $start_time;
+    }
+    return { data => \@result, start_time => $start_time, end_time => $end_time };
+}
+
+=head2 get_datums
+    
+    return data from the received datums
+
+=cut
+
+sub get_datums {
+    my ($datas, $result, $datum_names, $resolution) = @_; 
+    my $end_time = -1; 
+    my $start_time =  40000000000;
+    my $results_raw = [];
+    my $count = 0;
+    return ($start_time, $end_time) unless $datas && @{$datas}; 
+    foreach my $datum (@{$datas}) {
+        my %result_row = (timestamp   => $datum->timestamp);
+        map {$result_row{$_} = $datum->$_ } @{$datum_names}; ##$params->{table_map}{$type}{data}
+	###$result_row{hop_ip} =  ipv4to6($result_row{hop_ip}) if exists $result_row{hop_ip} && isIPv4($result_row{hop_ip});
+        push @{$results_raw}, [$datum->timestamp, \%result_row];
+        $end_time =   $datum->timestamp if $datum->timestamp > $end_time;
+        $start_time =  $datum->timestamp if  $datum->timestamp < $start_time;
+    } 
+    $result = refactor_result($results_raw, $resolution) if $results_raw && @{$results_raw};
+    #fixing up resolution - only return no more than requested number of points
+    return  ($start_time, $end_time); 
+}
+
+=head2 refactor_result 
+
+get timestamp and aggregate to return no more than requested data points
+and return as arrayref => [timestamp, {data_row}] 
+
+=cut
+
+sub refactor_result {
+    my ($data_raw, $resolution) = @_;
+    my $count = scalar @{$data_raw};
+    my $result = [];
+    #debug "refactoring..resolution=$params->{resolution}  ==  Data_raw - $count";
+    if($count > $resolution) {
+	my $bin = $count/$resolution;
+	my $j = 0;
+	my $old_j = 0;
+	my $count_j = 0;
+	for(my $i = 0; $i < $count ; $i++) {
+	    $j = int($i/$bin);
+	    $result->[$j][0] += $data_raw->[$i][0];
+	    map {$result->[$j][1]{$_} += $data_raw->[$i][1]{$_}} keys %{$data_raw->[$i][1]};
+	    if( $j > $old_j || $i == ($count-1) ) {
+	        $count_j++ if $i == ($count-1); 
+	        map {$result->[$old_j][1]{$_} /= $count_j if $result->[$old_j][1]{$_} &&  $count_j } keys %{$data_raw->[$i][1]};
+	        $result->[$old_j][0] = int($result->[$old_j][0]/$count_j) if   $result->[$old_j][0] &&  $count_j ;
+	        $count_j = 0; 
+	        $old_j = $j; 
+	    }
+	    $count_j++;       
+	    #debug "REFACTOR: i=$i j=$j old_j=$old_j count_j=$count_j  raw=$data_raw->[$i][0]  result=$result->[$old_j][0] new=$result->[$j][0] ";
+	}	   
+    } else {
+        $result =  $data_raw;
+    }
+    #debug "refactoring..resolution=$params->{resolution}   ==  Data_raw - " . scalar @$result;
+    return $result;
+}
 
 =head2 get_ip_name()
+
+get IP address and hostname from the supplied arg
+returns:  ($ip_addr2,  $unt_test)
 
 =cut
  
@@ -92,8 +180,10 @@ sub get_ip_name {
   	        }
   	    }
         }
-        $logger->debug(" Found IP: $ip_addr2  "); 
-       return  ($ip_addr2,  $unt_test);
+ 	if($ip_addr2) {
+            $logger->debug(" Found IP: $ip_addr2  ");
+            return  ($ip_addr2,  $unt_test);
+	}
     } 
     return;
 }
@@ -119,13 +209,15 @@ sub pool_control {
     }
     my @running =  threads->list(threads::running);
     my $num_threads = scalar   @running;
-    $logger->info("Threads::" . join(' : ', map {$_->tid}  @running) );
+    $logger->info("Threads::$num_threads vs $max_threads");
     
     while( $num_threads >= $max_threads) {
   	foreach my $tidx (@running) {
   	    if( $tidx->is_running() ) {
-  		usleep 10;
+  		sleep 1; 
+		$tidx->join();
   		$num_threads = threads->list(threads::running);
+		$logger->info("Waiting on Threads::$num_threads");
   	    }
   	}
     }

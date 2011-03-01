@@ -871,13 +871,6 @@ function _ecenter_network_sort_traceroute($a, $b) {
 }
 
 /**
- * Sort grouped hops -- @TODO HACK
- */
-function _ecenter_network_sort_grouped_hops($a, $b) {
-  return ((float) $b['hop']['hop_delay'] > (float) $a['hop']['hop_delay']);
-}
-
-/**
  * Parse hops
  *
  * @param $hop_list

@@ -203,67 +203,54 @@ function theme_ecenter_network_hops($data) {
  * Theme end to end data table
  */
 function template_preprocess_ecenter_network_end_to_end(&$vars) {
-  $raw_data = $vars['data'];
+  $data = $vars['data'];
   $statistics_table = array();
   $data_tables = array();
 
-  foreach ($raw_data as $type => $measurements) {
-    foreach ($measurements as $direction=>$data) {
-      if (($statistics = $data['statistics']) && is_array($statistics)) {
-        foreach ($statistics as $measurement => $row) {
-          // Suggestion array to format values
-          $suggestions = array(
-            'ecenter_network_format_'. $type .'_'. $measurement,
-            'ecenter_network_format_'. $type,
-            'ecenter_network_format_default',
-          );
-          // Theme each statistic
-          foreach ($row as $key => $value) {
-            $row[$key] = array('data' => theme($suggestions, $value, $type, $measurement), 'class' => $key);
-          }
+  foreach ($data as $test => $directions) {
+    foreach ($directions as $direction => $measurements) {
+      foreach ($measurements as $measurement => $values) {
+        // Suggestion array to format values
+        $value_suggestions = array(
+          'ecenter_network_format_'. $test .'_'. $measurement,
+          'ecenter_network_format_'. $test,
+          'ecenter_network_format_default',
+        );
 
-          // Suggestion array to format label
-          $suggestions = array(
-            'ecenter_network_format_'. $type .'_'. $measurement .'_label',
-            'ecenter_network_format_'. $type .'_label',
+        // Process stats table
+        if (($statistics = $values['statistics']) && is_array($statistics)) {
+          // Suggestion array to format value labels
+          $label_suggestions = array(
+            'ecenter_network_format_'. $test .'_'. $measurement .'_label',
+            'ecenter_network_format_'. $test .'_label',
             'ecenter_network_format_default_label',
           );
-
-          // Create table row for theming
+          
+          $row = array();
+          foreach ($statistics as $key => $value) {
+            $row[$key] = array('data' => theme($value_suggestions, $value, $test, $measurement), 'class' => $key);
+          }
           $header = array(
             'header' => TRUE,
-            'data' => theme($suggestions, $measurement, $type, $direction, TRUE),
+            'data' => theme($label_suggestions, $measurement, $test, $direction, TRUE),
           );
-          $table[$type .'_'. $measurement .'_'. $direction] = array(
+          // Create table row for theming
+          $table[$test .'_'. $measurement .'_'. $direction] = array(
             'data' => array($header) + $row,
-            'class' => $type .'_'. $measurement .' '. $type .'_'. $measurement .'_'. $direction,
-          ); 
-        }
-      }
-
-      if (($timeseries = $data['timeseries']) && is_array($timeseries)) {
-        foreach ($timeseries as $measurement => $series) {
-
-          if (!in_array($measurement, array('throughput', 'max_delay', 'loss'))) {
-            continue;
-          }
-
-          // Suggestion array to format values
-          $suggestions = array(
-            'ecenter_network_format_'. $type .'_'. $measurement,
-            'ecenter_network_format_'. $type,
-            'ecenter_network_format_default',
+            'class' => $test .'_'. $measurement .' '. $test .'_'. $measurement .'_'. $direction,
           );
 
-          $data_table = array();
-          foreach ($series as $timestamp => $value) {
-            // Note we multiple x 1000 because Javascript uses microseconds!
-            $data_table[] = array(array('data' => $timestamp * 1000, 'header' => TRUE), theme($suggestions, $value, $type, $measurement, FALSE));
-          }
-
-          $data_tables[$type][$measurement][$direction] = $data_table;
         }
-      }  
+
+        if (($timeseries = $values['timeseries']) && is_array($timeseries) && round($statistics['max'], 2) != round($statistics['min'], 2)) {
+          $data_table = array();
+          foreach ($timeseries as $timestamp => $value) {
+            // Note we multiple x 1000 because Javascript uses microseconds!
+            $data_table[] = array(array('data' => $timestamp * 1000, 'header' => TRUE), theme($value_suggestions, $value, $test, $measurement, FALSE));
+          }
+          $data_tables[$test][$measurement][$direction] = $data_table;
+        } 
+      }
     }
   }
 
@@ -273,7 +260,7 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
 
     $headers = array(
       array('data' => t('End-to-end results'), 'class' => 'result-header',),
-      t('Average'), t('Max'), t('Min'),
+      t('Average'), t('Median'), t('Max'), t('Min'),
     );
     $vars['table'] = theme('jqplot_table', $headers, $table, array('class' => 'end-to-end-table'));
     $vars['data_tables'] = theme('ecenter_network_end_to_end_tables', $data_tables);
@@ -445,6 +432,9 @@ function theme_ecenter_network_format_default($value, $type = NULL, $measurement
     case 'minRtt':
     case 'medianRtt':
     case 'meanRtt':
+    case 'maxIpd':
+    case 'meanIpd':
+    case 'minIpd':
     case 'iqrIpd':
       $format = ($format) ? $format : '%1.0f';
       $measurement_units = ($units) ? t('ms') : NULL;
@@ -463,7 +453,7 @@ function theme_ecenter_network_format_default($value, $type = NULL, $measurement
 /**
  * Theme label
  */
-function theme_ecenter_network_format_default_label($measurement, $type = NULL, $direction = NULL, $help = NULL) {
+function theme_ecenter_network_format_default_label($measurement, $test, $direction = NULL, $help = NULL) {
   if ($help) {
     switch ($measurement) {
       case 'throughput':
@@ -479,6 +469,11 @@ function theme_ecenter_network_format_default_label($measurement, $type = NULL, 
       case 'meanRtt':
         $help = theme('advanced_help_topic', 'ecenter_network', 'rtt');
         break;
+      case 'maxIpd':
+      case 'minIpd':
+      case 'meanIpd':
+        $help = theme('advanced_help_topic', 'ecenter_network', 'iqripd');
+        break;
       default:
         $help = theme('advanced_help_topic', 'ecenter_network', strtolower($measurement));
     }
@@ -492,8 +487,9 @@ function theme_ecenter_network_format_default_label($measurement, $type = NULL, 
       $measurement = 'packets per test';
   }
 
-  $type = ($type) ? t('(@type)', array('@type' => $type)) : '';
-  return $help . t(ucfirst($direction)) .' '. t(ucfirst(str_replace('_', ' ', $measurement))) .' '. $type; 
+  $direction = ($test != 'pinger') ? t(ucfirst($direction)) .' ' : NULL;
+
+  return $help . $direction . t(str_replace('_', ' ', ucfirst($measurement))); 
 }
 
 /**

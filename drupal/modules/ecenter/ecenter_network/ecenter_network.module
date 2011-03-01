@@ -624,10 +624,11 @@ function ecenter_network_get_node($ip) {
 function ecenter_network_parse_response($response) {
   $parsed_data = array();
   $data = $response['response'];
-  $hops = ecenter_network_get_hops();
+  $params = $response['parameters'];
 
-  list($src_type, $src_val) = explode(':', $src, 2);
-  list($dst_type, $dst_val) = explode(':', $dst, 2);
+  //dpm($response, 'response');
+
+  $hops = ecenter_network_get_hops();
 
   foreach (array('direct_traceroute', 'reverse_traceroute') as $direction) {
     // We may not have ANY forward or reverse traceroutes
@@ -635,17 +636,16 @@ function ecenter_network_parse_response($response) {
       continue;
     }
 
-    $traceroute = array();
-    $parsed = array();
 
     // Sort, grab latest traceroute, and sort the traceroute
-    krsort($data[$direction]);
-    $traceroute = array_shift(array_values($data[$direction]));
+    //krsort($data[$direction]);
+    //$traceroute = array_shift(array_values($data[$direction]));
     //usort($traceroute, '_ecenter_network_sort_traceroute');
 
-    // Main loop
-    foreach ($traceroute as $hop) {
-      $hop_data = array();
+    // Traceroute
+    $parsed = array();
+    foreach ($data[$direction] as $series) {
+      $hop = array_shift($series);
 
       // Geolocate IP if no geo data available
       if (!$hop['longitude'] || !$hop['latitude']) {
@@ -656,7 +656,7 @@ function ecenter_network_parse_response($response) {
       }
 
       // SNMP
-      $hop_data['snmp'] = $data['snmp'][$hop['hop_id']];
+      $hop['snmp'] = $data['snmp'][$hop['hop_id']];
 
       // Calculate netblock
       if ($hop['netblock'] != 'src' && $hop['netblock'] != 'dst') {
@@ -664,165 +664,55 @@ function ecenter_network_parse_response($response) {
         $hop['netblock'] = long2ip(ip2long($hop['hop_ip']) & ~((1 << (32 - $mask)) - 1));
       }
 
-      $parsed[$hop['hop_num'] - 1][] = array(
-        'hop' => $hop,
-        'data' => $hop_data,
-      );
+      $parsed[$hop['hop_num'] - 1] = $hop;
     }
 
-    // @TODO hack for demo: get lowest delay
     ksort($parsed);
-    $filtered = array();
-    foreach ($parsed as $parsed_hops) {
-      usort($parsed_hops, '_ecenter_network_sort_grouped_hops');
-      $filtered[] = array_pop($parsed_hops);
-    }
-
     $direction_label = ($direction == 'reverse_traceroute') ? 'reverse' : 'forward';
-    $parsed_data[$direction_label] = $filtered;
+    $parsed_data['traceroute'][$direction_label] = $parsed;
   }
 
-  // End to end
-  $end_to_end = array();
- 
-  // If IP based query, get src and dst netblocks 
-  if ($src_type == 'ip') {
-    $src_netblock = long2ip(ip2long($src) & ~((1 << 8) - 1));
-  }
-  if ($dst_type == 'ip') {
-    $dst_netblock = long2ip(ip2long($dst) & ~((1 << 8) - 1));
-  }
+  // Iterate through fwd/reverse + src/dst
+  foreach (array('forward' => 'src', 'reverse' => 'dst') as $direction => $end_type) {
 
-  foreach (array('bwctl', 'owamp', 'pinger') as $type) {
-    if (!is_array($data[$type])) {
-      continue;
+    // Cache source netblock for later comparison
+    if ($params[$end_type]['type'] == 'ip') {
+      $src_netblock = long2ip(ip2long($params[$end_type]['value']) & ~((1 << 8) - 1));
     }
 
-    $end_to_end[$type] = array('forward' => array(), 'reverse' => array());
-
-    // Ouch, this is tricky. For hub based queries, we basically have a
-    // many-to-many relationship between devices involved. Currently we loop
-    // through all sources, then all destinations.
-    foreach ($data[$type] as $test_src => $destinations) {
-      if ($src_type == 'hub') { // Test against hub name
-        $node = ecenter_network_get_node($test_src);
-        $test = $node['hub_name'];
-        $val = $src_val;
+    // @TODO Consider registering data types somehow
+    foreach (array('bwctl', 'owamp', 'pinger') as $test) {
+      if (!is_array($data[$test])) {
+        return;
       }
-      else { // Test against netblock
-        $test = long2ip(ip2long($test_src) & ~((1 << 8) - 1));
-        $val = $src_netblock;
-      }
+      $parsed_data['end_to_end'][$test][$direction] = array();
 
-      // If we have a proper match
-      if ($test == $val) {
-        // @TODO alter? Simple, stupid callback system
-        // Process and merge timeseries data
-        $combined_data = array();
-        $process_fn = 'ecenter_network_'. $type .'_process';
-        if (function_exists($process_fn)) {
-          $combined_data = $process_fn($destinations, $test_src);
-        }
-        else {
-          foreach ($destinations as $test_dst => $test_data) {
-            // Turn DRS data format into processing/theme-friendly format
-            $timeseries = array();
-            foreach ($test_data as $data_row) {
-              unset($data_row[1]['timestamp']);
-              foreach ($data_row[1] as $measurement => $value) {
-                $timeseries[$measurement][$data_row[0]] = $value;
-              }
+      // Check out all sources for this test
+      foreach ($data[$test] as $src => $destinations) {
+        $processed_data = array();
+        $node = ecenter_network_get_node($src);
+        // Does the source match the end node?
+        if (
+          ($params[$end_type]['type'] == 'hub' && 
+            $node['hub_name'] == $params[$end_type]['value']) ||
+            long2ip(ip2long($src) & ~((1 << 8) -1)) == $src_netblock
+        ) {
+          foreach ($destinations as $dst => $row) {
+            foreach ($row as $timestamp => $measurements) {
+              drupal_alter('ecenter_network_end_to_end_measurements', $processed_data, $timestamp, $measurements);    
             }
-            // Merge in all results
-            $combined_data = array_merge_recursive($combined_data, $timeseries);
+            //dpm($processed_data);
+            drupal_alter('ecenter_network_end_to_end_measurements_statistics', $processed_data); 
           }
+        }  
+        if (!empty($processed_data)) {
+          $parsed_data['end_to_end'][$test][$direction] += $processed_data;
         }
-
-        $end_to_end[$type]['forward']['timeseries'] = $combined_data;
-
-        // @TODO alter? Simple, stupid callback system
-        // Generate statistics
-        $statistics = array();
-        $process_statistics_fn = 'ecenter_network_'. $type .'_process_statistics';
-        if (function_exists($process_statistics_fn)) {
-          $statistics = $process_statistics_fn($destinations, $test_src, $end_to_end[$type]['forward']['timeseries']); 
-        }
-        else {
-          foreach ($combined_data as $data_type => $timeseries) {
-            $statistics[$data_type] = array(
-              'mean' => array_sum($timeseries)/count($timeseries),
-              'max' => max($timeseries),
-              'min' => min($timeseries),
-            );
-          }
-        }
-
-        $end_to_end[$type]['forward']['statistics'] = $statistics;
       }
-
-      if ($dst_type == 'hub') {
-        $node = ecenter_network_get_node($test_src);
-        $test = $node['hub_name'];
-        $val = $dst_val;
-      }
-      else {
-        $test = long2ip(ip2long($test_src) & ~((1 << 8) - 1));
-        $val = $dst_netblock;
-      }
-      if ($test == $val) {
-        // @TODO alter? Simple, stupid callback system
-        // Process and merge timeseries data
-        $combined_data = array();
-        $process_fn = 'ecenter_network_'. $type .'_process';
-        if (function_exists($process_fn)) {
-          $combined_data = $process_fn($destinations, $test_src);
-        }
-        else {
-          foreach ($destinations as $test_dst => $test_data) {
-            // Turn DRS data format into processing/theme-friendly format
-            $timeseries = array();
-            foreach ($test_data as $data_row) {
-              unset($data_row[1]['timestamp']);
-              foreach ($data_row[1] as $measurement => $value) {
-                $timeseries[$measurement][$data_row[0]] = $value;
-              }
-            }
-            // Merge in all results
-            $combined_data = array_merge_recursive($combined_data, $timeseries);
-          }
-        }
-
-        $end_to_end[$type]['reverse']['timeseries'] = $combined_data;
-
-        // @TODO alter? Simple, stupid callback system
-        // Generate statistics
-        $statistics = array();
-        $process_statistics_fn = 'ecenter_network_'. $type .'_process_statistics';
-        if (function_exists($process_statistics_fn)) {
-          $statistics = $process_statistics_fn($destinations, $test_src, $end_to_end[$type]['forward']['timeseries']); 
-        }
-        else {
-          foreach ($combined_data as $data_type => $timeseries) {
-            $statistics[$data_type] = array(
-              'mean' => array_sum($timeseries)/count($timeseries),
-              'max' => max($timeseries),
-              'min' => min($timeseries),
-            );
-          }
-        }
-
-        $end_to_end[$type]['reverse']['statistics'] = $statistics;
-      }
-
-
     }
-
   }
 
-  if (!empty($end_to_end)) {
-    $parsed_data['end_to_end'] = $end_to_end;
-  }
-
+  /*
   // Calculate diff
   if (!empty($parsed_data['forward']) && !empty($parsed_data['reverse'])) {
     $forward = $parsed_data['forward'];
@@ -930,9 +820,47 @@ function ecenter_network_parse_response($response) {
       }
     }
     $parsed_data['series_lookup'] = array('id' => $series_by_id, 'idx' => $series_by_idx);
-  }
+  }*/
 
+  dpm($parsed_data); 
   return $parsed_data;
+}
+
+function ecenter_network_ecenter_network_end_to_end_measurements_alter(&$data, $timestamp, $measurements) {
+  unset($measurements['metaid'], $measurements['timestamp']);
+  $timeseries = array();
+  foreach ($measurements as $measurement => $value) {
+    if ($measurement != 'max_delay' && $measurement != 'sent') {
+      $data[$measurement]['timeseries'][$timestamp] = (float) $value;
+    }
+  }
+  ksort($data[$measurement]['timeseries']);
+}
+
+function ecenter_network_ecenter_network_end_to_end_measurements_statistics_alter(&$data) {
+  foreach ($data as $measurement => $measurements) {
+    $values = $measurements['timeseries'];
+    $count = count($values);
+    $keys = array_keys($values);
+      
+    $floor = round($count / 2) - 1;
+    // Calculate median
+    if ($count % 2 > 0) {
+      $median = $values[$keys[$floor]];
+    }
+    else {
+      $lower = $values[$keys[$floor]];
+      $upper = $values[$keys[$floor + 1]];
+      $median = ($lower + $upper) / 2;
+    }
+      
+    $data[$measurement]['statistics'] = array(
+      'mean' => array_sum($values)/$count,
+      'median' => $median,
+      'max' => max($values),
+      'min' => min($values),  
+    );
+  }
 }
 
 /**

@@ -60,7 +60,10 @@ class Ecenter_Data_Service_Client {
    * @param $path
    *   The path to the web service resource.
    * @param $parameters
-   *   An array of search/filter parameters, if required.
+   *   An array of search/filter parameters, if required. May contain key/value
+   *   to pass in the query string, or an array with an array of key/value pairs
+   *   belonging to an element named 'query'. The array invocation allows 
+   *   additional metadata to be maintained with the query parameters.
    * @param $timeout
    *   (optional) Request timeout to use (overrides timeout set in constructor).
    * @param $assoc
@@ -72,16 +75,29 @@ class Ecenter_Data_Service_Client {
    */
   protected function query($path, $parameters = NULL, $timeout = NULL, $assoc = TRUE) {
     $timeout = ($timeout) ? $timeout : $this->_timeout;
-
     $url = $this->_url .'/'. $path .'.'. $this->data_type;
-    $querystring = ($parameters) ? http_build_query($parameters) : FALSE;
 
-    if (!empty($querystring)) {
-      $url .= '?'. $querystring;
+    if (!empty($parameters)) {
+      $query = array();
+      foreach ($parameters as $key => $value) {
+        if (is_array($value)) {
+          foreach ($value['query'] as $query_key => $query_value) {
+            $query[$query_key] = $query_value;
+          }
+        }
+        else {
+          $query[$key] = $value;
+        }
+      }
+      $querystring = http_build_query($query);
+
+      if (!empty($querystring)) {
+        $url .= '?'. $querystring;
+      }
+      // @TODO Fix... somewhere: Dancer does not support encoded ampersands in the querystring
+      $url = str_replace('&amp;', '&', $url);
     }
 
-    // @TODO Fix... somewhere: Dancer does not support encoded ampersands in the querystring
-    $url = str_replace('&amp;', '&', $url);
 
     $handle = curl_init();
 

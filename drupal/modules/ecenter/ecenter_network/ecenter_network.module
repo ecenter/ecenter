@@ -509,7 +509,7 @@ function ecenter_network_get_data($src, $dst, $start, $end, $debug_url = FALSE) 
       $client = ecenter_network_get_client('message');
       $result = $client->getData($src, $dst, $start, $end);
       if ($result['code'] == 200) {
-        $data = ecenter_network_parse_response($result, $src, $dst);
+        $data = ecenter_network_parse_response($result);
         if ($caching) {
           $expires = time() + variable_get('ecenter_network_data_cache_ttl', 3600);
           cache_set($query, $data, 'cache_ecenter_data', $expires);
@@ -602,7 +602,8 @@ function ecenter_network_get_node($ip) {
     }
     else {
       drupal_set_message(t('Request (@url) failed with code @code (@response).', 
-        array('@url' => $result['url'], '@code' => $result['code'], '@response' => $result['response'])));
+        array('@url' => $result['url'], '@code' => $result['code'], 
+          '@response' => $result['response'])));
       return FALSE;
     }
   }
@@ -610,18 +611,17 @@ function ecenter_network_get_node($ip) {
 }
 
 /**
- * Parse data
+ * Parse Data Retrieval Sevice data
  *
- * Parse and prep response from E-Center network data webservice:
- *  - Build an array with fmrward and reverse traceroutes, their hops, and associated data
- *  - Geolocate IP addresses without geodata
+ * Compatible with 3.0 version of DRS. Several portions of the parser are 
+ * computationally
  *
  * @param $response
  *   A response object from the E-center webservice.
  * @return
  *   A big, complicated array of E-center data
  */
-function ecenter_network_parse_response($response, $src, $dst) {
+function ecenter_network_parse_response($response) {
   $parsed_data = array();
   $data = $response['response'];
   $hops = ecenter_network_get_hops();

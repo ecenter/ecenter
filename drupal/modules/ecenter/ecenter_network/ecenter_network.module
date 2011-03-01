@@ -626,27 +626,19 @@ function ecenter_network_parse_response($response) {
   $data = $response['response'];
   $params = $response['parameters'];
 
-  //dpm($response, 'response');
-
-  $hops = ecenter_network_get_hops();
-
   foreach (array('direct_traceroute', 'reverse_traceroute') as $direction) {
     // We may not have ANY forward or reverse traceroutes
     if (empty($data[$direction])) {
       continue;
     }
 
-
-    // Sort, grab latest traceroute, and sort the traceroute
-    //krsort($data[$direction]);
-    //$traceroute = array_shift(array_values($data[$direction]));
-    //usort($traceroute, '_ecenter_network_sort_traceroute');
-
     // Traceroute
     $parsed = array();
     foreach ($data[$direction] as $series) {
+      // @TODO is this a safe way to get series?
       $hop = array_shift($series);
 
+      $hop += $data['traceroute_nodes'][$hop['hop_ip']];
       // Geolocate IP if no geo data available
       if (!$hop['longitude'] || !$hop['latitude']) {
         $geo = geoip_city($hop['hop_ip']);
@@ -656,14 +648,13 @@ function ecenter_network_parse_response($response) {
       }
 
       // SNMP
-      $hop['snmp'] = $data['snmp'][$hop['hop_id']];
+      $hop['snmp'] = $data['snmp'][$hop['hop_ip']];
 
       // Calculate netblock
       if ($hop['netblock'] != 'src' && $hop['netblock'] != 'dst') {
         $mask = (!empty($hop['netmask'])) ? $hop['netmask'] : 24;
         $hop['netblock'] = long2ip(ip2long($hop['hop_ip']) & ~((1 << (32 - $mask)) - 1));
       }
-
       $parsed[$hop['hop_num'] - 1] = $hop;
     }
 

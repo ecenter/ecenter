@@ -2,7 +2,7 @@ E-Center Project Content Management System
 ------------------------------------------
 
 Developed and maintained by David Eads (davideads@gmail.com) for Fermi National
-Accelerator Laboratory and the US Department of Energy.
+Accelerator Laboratory and the U.S. Department of Energy.
 
 This is the root directory of the custom Drupal modules, themes, and other 
 supporting files (patches, makefile, other assets) for E-Center. 

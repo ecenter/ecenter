@@ -195,8 +195,8 @@ class Ecenter_Data_Service_Client {
   public function getData($src, $dst, $start, $end, $resolution = 50) {
 
     // Parse out query type
-    list($src_type, $src) = explode(':', $src, 2);
-    list($dst_type, $dst) = explode(':', $dst, 2);
+    list($src_type, $src_value) = explode(':', $src, 2);
+    list($dst_type, $dst_value) = explode(':', $dst, 2);
 
     if (array_search($src_type, $this->query_types) === FALSE && array_search($dst_type, $this->query_types) !== FALSE) {
       throw new Exception('Invalid source query type.');
@@ -209,8 +209,16 @@ class Ecenter_Data_Service_Client {
     }
 
     $params = array(
-      'src_'. $src_type => $src,
-      'dst_'. $dst_type => $dst,
+      'src' => array(
+        'query' => array('src_'. $src_type => $src_value),
+        'type' => $src_type,
+        'value' => $src_value,
+      ),  
+      'dst' => array(
+        'query' => array('dst_'. $dst_type => $dst_value),
+        'type' => $dst_type,
+        'value' => $dst_value,
+      ),  
       'start' => $start,
       'end' => $end,
       'resolution' => $resolution,

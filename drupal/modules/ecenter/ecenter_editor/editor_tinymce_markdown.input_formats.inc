@@ -14,18 +14,30 @@ function editor_tinymce_markdown_input_formats() {
   );
   $input_format->cache = TRUE;
   $input_format->settings = array(
+    // Settings for: oembed module
+    'oembed' => array(
+      // Maximum width of embed
+      'oembed_maxwidth' => '',
+      // Maximum height of embed
+      'oembed_maxheight' => '',
+    ),
+    // Settings for: pathologic module
+    'pathologic' => array(
+      // Also considered local
+      'filter_pathologic_local_paths' => '',
+      // Output full absolute URLs
+      'filter_pathologic_absolute' => 1,
+    ),
     // Settings for: wysiwyg_filter module
     'wysiwyg_filter' => array(
       // HTML elements and attributes
       'wysiwyg_filter_valid_elements_raw' => '@[class],
-a[!href|target<_blank|title],
-img[src|alt|title],
-div,p,
-pre,br,span,em,strong,cite,code,blockquote,ul,ol,li,dl,dt,dd,
-table,tbody,thead,tr,th,td,
-h2,h3,h4,h5,h6',
+a[href],
+div,p,pre,table,thead,tbody,tr,th,td,h2,h3,h4,h5,h6,
+img[src|title|alt|width|height],
+br,span,em,strong,cite,code,blockquote,ul,ol,li,dl,dt,dd',
       // HTML comments
-      'wysiwyg_filter_allow_comments' => '1',
+      'wysiwyg_filter_allow_comments' => '0',
       // Color and background properties
       'wysiwyg_filter_styles_color' => array(
           'color' => 0,
@@ -153,7 +165,7 @@ h2,h3,h4,h5,h6',
         ),
       // Rules for Class Names
       'wysiwyg_filter_valid_classes' => array(
-          0 => 'editor-*',
+          0 => 'content-*',
         ),
       // Rules for Element IDs
       'wysiwyg_filter_valid_ids' => array(),
@@ -163,37 +175,108 @@ h2,h3,h4,h5,h6',
       'wysiwyg_filter_nofollow_policy' => 'whitelist',
       // Domains list
       'wysiwyg_filter_nofollow_domains' => array(),
-    ),
-    // Settings for: oembed module
-    'oembed' => array(
-      // Maximum width of embed
-      'oembed_maxwidth' => '',
-      // Maximum height of embed
-      'oembed_maxheight' => '',
-    ),
-    // Settings for: pathologic module
-    'pathologic' => array(
-      // Also considered local
-      'filter_pathologic_local_paths' => '',
-      // Output full absolute URLs
-      'filter_pathologic_absolute' => 1,
+      // Valid elements parsed
+      'wysiwyg_filter_valid_elements_parsed' => array(
+          'a' => array(
+            'href' => array(),
+            'class' => array(),
+          ),
+          'blockquote' => array(
+            'class' => array(),
+          ),
+          'br' => array(
+            'class' => array(),
+          ),
+          'cite' => array(
+            'class' => array(),
+          ),
+          'code' => array(
+            'class' => array(),
+          ),
+          'dd' => array(
+            'class' => array(),
+          ),
+          'div' => array(
+            'class' => array(),
+          ),
+          'dl' => array(
+            'class' => array(),
+          ),
+          'dt' => array(
+            'class' => array(),
+          ),
+          'em' => array(
+            'class' => array(),
+          ),
+          'img' => array(
+            'src' => array(),
+            'title' => array(),
+            'alt' => array(),
+            'width' => array(),
+            'height' => array(),
+            'class' => array(),
+          ),
+          'li' => array(
+            'class' => array(),
+          ),
+          'ol' => array(
+            'class' => array(),
+          ),
+          'p' => array(
+            'class' => array(),
+          ),
+          'pre' => array(
+            'class' => array(),
+          ),
+          'span' => array(
+            'class' => array(),
+          ),
+          'strong' => array(
+            'class' => array(),
+          ),
+          'table' => array(
+            'class' => array(),
+          ),
+          'tbody' => array(
+            'class' => array(),
+          ),
+          'td' => array(
+            'class' => array(),
+          ),
+          'th' => array(
+            'class' => array(),
+          ),
+          'thead' => array(
+            'class' => array(),
+          ),
+          'tr' => array(
+            'class' => array(),
+          ),
+          'ul' => array(
+            'class' => array(),
+          ),
+        ),
     ),
   );
   $input_format->filters = array(
     'markdown' => array(
       // Delta => Weight for: Markdown
-      '0' => '-10',
-    ),
-    'wysiwyg_filter' => array(
-      // Delta => Weight for: WYSIWYG Filter
-      '0' => '-9',
+      '0' => '10',
     ),
     'oembed' => array(
       // Delta => Weight for: oEmbed filter
-      '0' => '7',
+      '0' => '10',
     ),
     'pathologic' => array(
       // Delta => Weight for: Pathologic
+      '0' => '10',
+    ),
+    'syntaxhighlighter' => array(
+      // Delta => Weight for: Syntax highlighter
+      '0' => '10',
+    ),
+    'wysiwyg_filter' => array(
+      // Delta => Weight for: WYSIWYG Filter
       '0' => '10',
     ),
   );

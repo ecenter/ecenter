@@ -1,16 +1,16 @@
 /* $Id$ */
 
 table.mceLayout td.mceToolbar {
-  filter:progid:DXImageTransform.Microsoft.vertical_gradient(startColorstr='#eeeeee',endColorstr='#aaaaaa');
-  background:-webkit-gradient(linear,left top,left bottom,from(#eeeeee),to(#aaaaaa));
-  background:-moz-linear-gradient(top,#eeeeee,#aaaaaa);
- 
+  filter:progid:DXImageTransform.Microsoft.vertical_gradient(startColorstr='#f4f4f4',endColorstr='#bbbbb');
+  background:-webkit-gradient(linear,left top,left bottom,from(#f4f4f4),to(#bbbbbb));
+  background:-moz-linear-gradient(top,#f4f4f4,#cccccc);
+  padding-left: 3px;
 }
 table.mceLayout .mceButton {
   border: none;
   background: transparent;
   padding: 2px;
-  margin: 2px 3px;
+  margin: 2px 1px;
   border-radius: 5px; 
   -webkit-border-radius: 5px;
   -moz-border-radius: 5px;
@@ -47,7 +47,7 @@ table.mceLayout .mceListBox .mceOpen {
   border-width: 1px !important;
   border-color: #ccc !important;
   -moz-box-shadow: 2px 2px 4px #999;
-  min-height: 220px;
+  min-height: 179px;
 }
 .mceMenu table {
   background-color: #fff !important;

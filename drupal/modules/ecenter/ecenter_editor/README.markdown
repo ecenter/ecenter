@@ -6,29 +6,51 @@ Accelerator Laboratory and the U.S. Department of Energy as part of the
 
 This Drupal feature installs and configures everything you need to use the 
 TinyMCE WYSIWYG editor with Markdown source code, and includes additional 
-niceties to spruce up the TinyMCE editor UI in Drupal.
+niceties to spruce up the TinyMCE editor UI in Drupal: Linkit module configuration,
+a sane default configuration for WYSIWYG, and filters to handle embedded media
+(via a URL on its own line) and syntax highlighting.
 
-## Installation
+## Requirements
 
-### Warning!
+* exportables module versions AFTER 6.x-2.0-beta1, currently only dev
+* A patch to wYSIWYG filter: http://drupal.org/files/issues/wysiwyg_filter-form-alter.patch
+(see http://drupal.org/node/887532)
+* There is a features patch (http://drupal.org/node/981248) that doesn't work, but
+would be the preferable solution.
 
-There is an upstream bug in the input_formats module when exporting wysiwyg_filter.
-Be advised that until this bug is resolved, installing this module could break your
-site in one or two fairly horrible ways.
+## Install
 
-### Required patches
+1. Enable the feature. 
+1. You **MUST** visit admin/settings/filters/{X}/configure where
+{X} is the format ID of the format installed by this module, called 'WYSIWYG
+Markdown' and save the configuration. Sorry!
 
-* Features: http://drupal.org/files/issues/features-981248.patch
-
-### Install
-
-Enabled the feature.
-
-### Configure
+## Configure
 
 You'll likely want to configure wysiwyg_filter's configuration settings for the
 "Markdown WYSIWYG" input format (admin/settings/filter), as well as the the
 WYSIWYG profile associated with the input format (admin/settings/wysiwyg).
+You may also wish to install Better Formats module and/or additional Linkit
+module plugins and Oembed providers.
+
+## Features
+
+### Embedded media
+
+Enable your desired oembed providers and provide a URL on its own line 
+in your source code.
+
+### Syntax highlighting
+
+To add source code, use markup of this form to allow code to be editable in both
+markdown mode and TinyMCE (less reliable):
+
+    <pre>
+    {syntaxhighlighter class="brush: php"}
+    My code:
+      Indented line
+    {/syntaxhighlighter}
+    </pre>
 
 ## Implementation notes
 

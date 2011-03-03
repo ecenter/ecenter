@@ -24,21 +24,25 @@ You may include or copy the makefile snippet bundled with this module to build u
 the correct versions.
 
 1. Enable the feature. 
-1. You **MUST** visit admin/settings/filters/{X}/configure where
-{X} is the format ID of the format installed by this module, called 'WYSIWYG
-Markdown' and save the configuration. Sorry!
+1. You **MUST** visit `admin/settings/filters/N/configure` where
+`N` is the format ID of the format installed by this module, called 'WYSIWYG
+Markdown' and save the configuration. Sorry! WYSIWYG filter won't properly
+apply otherwise.
 
 ## Configure
 
 You'll likely want to configure wysiwyg_filter's configuration settings for the
-"Markdown WYSIWYG" input format (admin/settings/filter), as well as the the
-WYSIWYG profile associated with the input format (admin/settings/wysiwyg).
+"Markdown WYSIWYG" input format (`admin/settings/filter)`, as well as the the
+WYSIWYG profile associated with the input format (`admin/settings/wysiwyg`).
 
 Configuration checklist:
 
-* 
-* (Optional) Install and configure [Better Formats][3] module
-module plugins and oembed providers.
+* Configure WYSIWYG profile (`admin/settings/wysiwyg/profile/N/edit`) -- you will 
+almost certainly want to specify a special 'editor.css' file and may wish to 
+override or reconfigure WYSIWYG filter's behavior.
+* Configure oembed providers (`admin/build/oembed/provider`)
+* (Optional) Enable additional Linkit modules 
+* (Optional) Install and configure [Better Formats][3] module.
 
 ## Features
 

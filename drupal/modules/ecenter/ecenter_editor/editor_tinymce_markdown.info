@@ -1,6 +1,7 @@
 core = "6.x"
 dependencies[] = "input_formats"
 dependencies[] = "linkit"
+dependencies[] = "linkit_node"
 dependencies[] = "markdown"
 dependencies[] = "markdownify"
 dependencies[] = "oembed"

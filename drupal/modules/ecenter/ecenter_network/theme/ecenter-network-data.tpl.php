@@ -16,7 +16,7 @@
 <div id="results">
   <div id="hop-wrapper" class="clear-block">
     <div id="snmp-results">
-      <?php print $hops; ?>
+      <?php print $snmp; ?>
     </div>
   </div>
   <div id="end-to-end-wrapper" class="clear-block">

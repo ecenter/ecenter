@@ -15,6 +15,7 @@ function template_preprocess_ecenter_network_data(&$vars) {
     '#id' => 'ecenter-permalink',
     '#type' => 'textfield',
     '#size' => 45,
+    '#disabled' => TRUE,
     '#title' => l(t('Permalink'), 'network',
       array('query' => $vars['params'], 'absolute' => TRUE,)
     ),
@@ -72,18 +73,22 @@ function template_preprocess_ecenter_network_data(&$vars) {
 
   // End to end statistics
   if (!empty($vars['data']['end_to_end'])) {
-    $vars['end_to_end'] = theme('ecenter_network_end_to_end', $vars['data']['end_to_end']);
+    $vars['end_to_end'] = theme('ecenter_network_end_to_end', 
+      $vars['data']['end_to_end']);
   }
   else {
-    $vars['end_to_end'] = '<p class="missing">'. t('No end to end data available') .'</p>';
+    $vars['end_to_end'] = '<p class="missing">'. 
+      t('No end to end data available') .'</p>';
   }
 
   // Generate SNMP charts
-  if (!empty($vars['data']['diff'])) {
-    $vars['hops'] = theme('ecenter_network_hops', $vars['data']['diff']);
+  if (!empty($vars['data']['snmp'])) {
+    $vars['snmp'] = theme('ecenter_network_snmp', $vars['data']['snmp'], 
+      $vars['data']['nodes']);
   }
   else {
-    $vars['hops'] = '<p class="missing">'. t('No path or utilization data available.') .'</p>';
+    $vars['snmp'] = '<p class="missing">'. 
+      t('No per-hop utilization data available.') .'</p>';
   }
 
 }
@@ -137,44 +142,31 @@ function theme_ecenter_network_recent_query($query, $time) {
 /**
  * Theme SNMP data
  */
-function theme_ecenter_network_hops($data) {
-
+function theme_ecenter_network_snmp($data, $nodes) {
   // @TODO Determine how to set colors...  MESSY!
   $critical = variable_get('ecenter_network_threshold_critical_snmp_utilization', 60);
   $marginal = variable_get('ecenter_network_threshold_marginal_snmp_utilization', 40);
 
-  //$tables = array('forward', 'reverse');
   $tables = array();
 
-  // Create tables for scrapin'
-  foreach ($data as $row) {
-    $match = (!empty($row['match'])) ? TRUE : FALSE;
-    $all_hops = array_shift(array_values($row));
-
-    foreach (array('forward', 'reverse') as $direction) {
-
-      $hops = $all_hops[$direction];
-
-      if (!empty($hops) && is_array($hops)) {
-        foreach ($hops as $hop) {
-          if (!empty($hop['data']['snmp']) && is_array($hop['data']['snmp'])) {
-            $table = array();
-            foreach ($hop['data']['snmp'] as $item) {
-              $table[] = array(
-                'label' => array(
-                  'data' => $item[0] * 1000,
-                  'header' => TRUE,
-                ),
-                'utilization' => array(
-                  'data' => sprintf('%01.4f', 100 * ($item[1]['utilization'] / $item[1]['capacity'])),
-                  'class' => $class,
-                ),
-              );
-            }
-            $tables[] = theme('ecenter_network_utilization_table', $hop['hop'], $direction, $table);
-          }
-        }
+  // Create tables for scraping
+  foreach ($data as $hop_ip => $timeseries) {
+    $table = array();
+    if (!empty($timeseries)) {
+      foreach ($timeseries as $row) {
+        $table[] = array(
+            'label' => array(
+              'data' => $row[0] * 1000,
+              'header' => TRUE,
+            ),
+            'utilization' => array(
+              'data' => sprintf('%01.4f', 
+                100 * ($row[1]['utilization'] / $row[1]['capacity'])),
+              'class' => $class,
+            ),
+        );
       }
+      $tables[] = theme('ecenter_network_utilization_table', $table, $nodes[$hop_ip]);
     }
   }
 
@@ -527,14 +519,14 @@ function theme_ecenter_network_format_value($value, $units = NULL) {
 /**
  * Theme utilization table
  */
-function theme_ecenter_network_utilization_table($hop, $direction, $table) {
+function theme_ecenter_network_utilization_table($table, $hop) {
   $attributes = array();
   $attributes['class'] = $direction;
   $attributes['class'] .= ($direction == 'forward') ? "{lineWidth : 1}" : "{lineWidth : 0, sizeAdjust: 0}";
 
   $headers = array(t('Time'), t('Percent utilization'));
   $output = '<div class="data-table">';
-  $output .= '<h3>'. $hop['nodename'] .' ('. t(ucfirst($direction)) .')</h3>';
+  $output .= '<h3>'. $hop['nodename'] .' ('. $hop['ip_noted'] .')</h3>';
   $output .= theme('jqplot_table', $headers, $table, $attributes);
   $output .= '</div>';
   return $output;

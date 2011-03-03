@@ -407,17 +407,18 @@ TraceRoute.prototype.drawSegment = function(x1, y1, x2, y2, options, arrow_optio
   ctx.restore();
 }
 
-TraceRoute.prototype.drawHopLabel = function(hop_data, x, y, align) {
+TraceRoute.prototype.drawHopLabel = function(hop, x, y, align) {
   var o = this.options;
 
-  label = '<div class="trace-label" id="trace-hop-label-' + hop_data.hop.hop_id + '" hopid="' + hop_data.hop.hop_id + '">';
-  label += hop_data.hop.hub;
+  label = '<div class="trace-label" id="trace-hop-label-' + hop.hop_id + '" hopid="' + hop.hop_id + '">';
+  label += hop.hub;
   label += '</div>';
   label = $(label);
 
-  if (hop_data.data) {
-    label.addClass('has-chart');
-  }
+  //if (hop_data.data) {
+  //  label.addClass('has-chart');
+  //}
+
   label_width = o.label.width;
   css = {
     'width' : label_width + 'px',

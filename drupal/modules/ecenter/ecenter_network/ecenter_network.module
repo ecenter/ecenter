@@ -136,11 +136,11 @@ function ecenter_network_init() {
     openlayers_include();
     drupal_add_js(drupal_get_path('module', 'openlayers') .
       '/includes/layer_types/js/raw.js');
-    drupal_add_js(drupal_get_path('module', 'ecenter_network') 
+    drupal_add_js(drupal_get_path('module', 'ecenter_network')
       .'/js/openlayers.js');
-    drupal_add_js(drupal_get_path('module', 'ecenter_network') 
+    drupal_add_js(drupal_get_path('module', 'ecenter_network')
       .'/openlayers/ecenter_network_behavior_dynamicload.js');
-    drupal_add_js(drupal_get_path('module', 'ecenter_network') 
+    drupal_add_js(drupal_get_path('module', 'ecenter_network')
       .'/openlayers/ecenter_network_behavior_select.js');
 
     // Force version 1.8, load libraries for datepicker and combobox
@@ -685,8 +685,8 @@ function ecenter_network_parse_response($response) {
         // Does the source match the end node?
         if (
           ($params[$end_type]['type'] == 'hub' && 
-            $node['hub_name'] == $params[$end_type]['value']) ||
-            long2ip(ip2long($src) & ~((1 << 8) -1)) == $src_netblock
+            $node['hub_name'] == $params[$end_type]['value'])
+            || long2ip(ip2long($src) & ~((1 << 8) -1)) == $src_netblock
         ) {
           foreach ($destinations as $dst => $row) {
             foreach ($row as $timestamp => $measurements) {

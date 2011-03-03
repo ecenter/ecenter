@@ -350,8 +350,18 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
       );
       return;
     case 'max_delay':
+    case 'min_delay':
+    case 'maxRtt':
+    case 'minRtt':
+    case 'medianRtt':
+    case 'meanRtt':
+    case 'maxIpd':
+    case 'minIpd':
+    case 'medianIpd':
+    case 'meanIpd':
       $options += $line_options;
       $options['axes']['yaxis']['label'] = t('milliseconds');
+      $options['axes']['yaxis']['max'] = 30;
       $options['axes']['yaxis']['min'] = 0;
       $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%dms</span>';
       return;

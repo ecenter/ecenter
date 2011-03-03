@@ -87,6 +87,9 @@ projects[markdown][version] = "1.2"
 projects[pathologic][subdir] = "contrib"
 projects[pathologic][version] = "3.4"
 
+projects[syntaxhighlighter][subdir] = "contrib"
+projects[syntaxhighlighter][version] = "1.26"
+
 projects[wysiwyg_filter][subdir] = "contrib"
 projects[wysiwyg_filter][version] = "1.x-dev"
 projects[wysiwyg_filter][patch][] = "http://drupal.org/files/issues/wysiwyg_filter-form-alter.patch"
@@ -174,13 +177,15 @@ libraries[jqplot][download][type] = "get"
 libraries[jqplot][download][url] = "http://bitbucket.org/cleonello/jqplot/downloads/jquery.jqplot.0.9.7r635.zip"
 libraries[jqplot][directory_name] = "jqplot"
 
-; Markdownify
-; @TODO Add Markdownify library once module work is further along
-
 ; TinyMCE
 libraries[tinymce][download][type] = "get"
 libraries[tinymce][download][url] = "http://github.com/downloads/tinymce/tinymce/tinymce_3_3_9_3.zip"
 libraries[tinymce][directory_name] = "tinymce"
+
+; SyntaxHighlighter, probably won't work because of download url
+libraries[syntaxhighlighter][download][type] = "get"
+libraries[syntaxhighlighter][download][url] = "http://alexgorbatchev.com/SyntaxHighlighter/download/download.php?sh_current"
+libraries[syntaxhighlighter][directory_name] = "syntaxhighlighter"
 
 ; GeoIP
 libraries[geoip][download][type] = "get"

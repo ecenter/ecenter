@@ -626,49 +626,20 @@ function ecenter_network_parse_response($response) {
   $data = $response['response'];
   $params = $response['parameters'];
 
-  foreach (array('direct_traceroute', 'reverse_traceroute') as $direction) {
-    // We may not have ANY forward or reverse traceroutes
-    if (empty($data[$direction])) {
-      continue;
-    }
+  dpm($response, 'response');
 
-    // Traceroute
-    $parsed = array();
-    foreach ($data[$direction] as $series) {
-      // @TODO is this a safe way to get series?
-      $hop = array_shift($series);
-
-      $hop += $data['traceroute_nodes'][$hop['hop_ip']];
-      // Geolocate IP if no geo data available
-      if (!$hop['longitude'] || !$hop['latitude']) {
-        $geo = geoip_city($hop['hop_ip']);
-        $hop['longitude'] = $geo->longitude;
-        $hop['latitude'] = $geo->latitude;
-        $hop['geolocated'] = TRUE;
-      }
-
-      // SNMP
-      $hop['snmp'] = $data['snmp'][$hop['hop_ip']];
-
-      // Calculate netblock
-      if ($hop['netblock'] != 'src' && $hop['netblock'] != 'dst') {
-        $mask = (!empty($hop['netmask'])) ? $hop['netmask'] : 24;
-        $hop['netblock'] = long2ip(ip2long($hop['hop_ip']) & ~((1 << (32 - $mask)) - 1));
-      }
-      $parsed[$hop['hop_num'] - 1] = $hop;
-    }
-
-    ksort($parsed);
-    $direction_label = ($direction == 'reverse_traceroute') ? 'reverse' : 'forward';
-    $parsed_data['traceroute'][$direction_label] = $parsed;
-  }
+  foreach (array('direct_traceroute', 'reverse_traceroute') as $direction) {}
 
   // Iterate through fwd/reverse + src/dst
-  foreach (array('forward' => 'src', 'reverse' => 'dst') as $direction => $end_type) {
+  foreach (array('forward' => 'src', 'reverse' => 'dst') 
+    as $direction => $end_type) {
+
+    // Process end-to-end -----------------------------------------------------
 
     // Cache source netblock for later comparison
     if ($params[$end_type]['type'] == 'ip') {
-      $src_netblock = long2ip(ip2long($params[$end_type]['value']) & ~((1 << 8) - 1));
+      $src_netblock = long2ip(ip2long($params[$end_type]['value']) 
+        & ~((1 << 8) - 1));
     }
 
     // @TODO Consider registering data types somehow
@@ -690,10 +661,12 @@ function ecenter_network_parse_response($response) {
         ) {
           foreach ($destinations as $dst => $row) {
             foreach ($row as $timestamp => $measurements) {
-              drupal_alter('ecenter_network_end_to_end_measurements', $processed_data, $timestamp, $measurements);    
+              drupal_alter('ecenter_network_end_to_end_measurements', 
+                $processed_data, $timestamp, $measurements);    
             }
             //dpm($processed_data);
-            drupal_alter('ecenter_network_end_to_end_measurements_statistics', $processed_data); 
+            drupal_alter('ecenter_network_end_to_end_measurements_statistics',
+              $processed_data); 
           }
         }  
         if (!empty($processed_data)) {
@@ -701,28 +674,61 @@ function ecenter_network_parse_response($response) {
         }
       }
     }
+
+    // Process traceroute -----------------------------------------------------
+
+    $traceroute = array();
+    $traceroute_direction = ($direction == 'forward') ? 'direct' : 'reverse';
+    if (is_array($data[$traceroute_direction .'_traceroute'])) {
+      foreach ($data[$traceroute_direction .'_traceroute'] as $series) {
+        // @TODO is this a safe way to get series?
+        $hop = array_shift($series);
+
+        $hop += $data['traceroute_nodes'][$hop['hop_ip']];
+
+        // Geolocate IP if no geo data available
+        if (!$hop['longitude'] || !$hop['latitude']) {
+          $geo = geoip_city($hop['hop_ip']);
+          $hop['longitude'] = $geo->longitude;
+          $hop['latitude'] = $geo->latitude;
+          $hop['geolocated'] = TRUE;
+        }
+
+        // Calculate netblock
+        if ($hop['netblock'] != 'src' && $hop['netblock'] != 'dst') {
+          $mask = (!empty($hop['netmask'])) ? $hop['netmask'] : 24;
+          $hop['netblock'] = long2ip(ip2long($hop['hop_ip']) &
+            ~((1 << (32 - $mask)) - 1));
+        }
+        $traceroute[$hop['hop_num'] - 1] = $hop;
+      }
+
+      ksort($traceroute);
+      $parsed_data['traceroute'][$direction] = $traceroute;
+    }
   }
 
-  /*
   // Calculate diff
-  if (!empty($parsed_data['forward']) && !empty($parsed_data['reverse'])) {
-    $forward = $parsed_data['forward'];
-    $reverse = array_reverse($parsed_data['reverse']);
+  if (!empty($parsed_data['traceroute']['forward']) 
+    && !empty($parsed_data['traceroute']['reverse'])) {
+    $forward = $parsed_data['traceroute']['forward'];
+    $reverse = array_reverse($parsed_data['traceroute']['reverse']);
 
     $parsed_data['diff'] = ecenter_network_traceroute_diff($forward, $reverse);
-    $parsed_data['traceroute_max'] = (count($forward) > count($reverse)) ? count($forward) : count($reverse);
+    $parsed_data['traceroute_max'] = (count($forward) > count($reverse)) ? 
+      count($forward) : count($reverse);
   }
-  elseif (!empty($parsed_data['forward'])) {
+  elseif (!empty($parsed_data['traceroute']['forward'])) {
     $diff = array();
-    $forward = $parsed_data['forward'];
+    $forward = $parsed_data['traceroute']['forward'];
     foreach ($forward as $row) {
       $diff[] = array('match' => array('forward' => array($row)));
     }
     $parsed_data['diff'] = $diff;
   }
-  elseif (!empty($parsed_data['reverse'])) {
+  elseif (!empty($parsed_data['traceroute']['reverse'])) {
     $diff = array();
-    $reverse = $parsed_data['reverse'];
+    $reverse = $parsed_data['traceroute']['reverse'];
     foreach ($reverse as $row) {
       $diff[] = array('match' => array('reverse' => array($row)));
     }
@@ -730,7 +736,7 @@ function ecenter_network_parse_response($response) {
   }
 
   // Recreate diff without hop data
-  if (!empty($parsed_data['forward']) && !empty($parsed_data['reverse'])) {
+  /*if (!empty($parsed_data['traceroute']) && !empty($parsed_data['reverse'])) {
     $js_diff = array();
     foreach ($parsed_data['diff'] as $row) {
       foreach ($row as $type => $directions) {
@@ -813,10 +819,13 @@ function ecenter_network_parse_response($response) {
     $parsed_data['series_lookup'] = array('id' => $series_by_id, 'idx' => $series_by_idx);
   }*/
 
-  dpm($parsed_data); 
+  dpm($parsed_data, 'parsed'); 
   return $parsed_data;
 }
 
+/**
+ * Implementation of ecenter_network_end_to_end_measurements_alter().
+ */
 function ecenter_network_ecenter_network_end_to_end_measurements_alter(&$data, $timestamp, $measurements) {
   unset($measurements['metaid'], $measurements['timestamp']);
   $timeseries = array();
@@ -828,6 +837,9 @@ function ecenter_network_ecenter_network_end_to_end_measurements_alter(&$data, $
   ksort($data[$measurement]['timeseries']);
 }
 
+/**
+ * Implementation of ecenter_network_end_to_end_measurements_statistics_alter().
+ */
 function ecenter_network_ecenter_network_end_to_end_measurements_statistics_alter(&$data) {
   foreach ($data as $measurement => $measurements) {
     $values = $measurements['timeseries'];

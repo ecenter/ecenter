@@ -12,13 +12,16 @@ a sane default configuration for WYSIWYG, and filters to handle embedded media
 
 ## Requirements
 
-* exportables module versions AFTER 6.x-2.0-beta1, currently only dev
-* A patch to wYSIWYG filter: http://drupal.org/files/issues/wysiwyg_filter-form-alter.patch
-(see http://drupal.org/node/887532)
+* exportables module versions AFTER 6.x-2.0-beta1, currently only the -dev version
+will work
+* [A patch to WYSIWYG filter][2] (see http://drupal.org/node/887532)
 * There is a features patch (http://drupal.org/node/981248) that doesn't work, but
 would be the preferable solution.
 
 ## Install
+
+You may include or copy the makefile snippet bundled with this module to build using
+the correct versions.
 
 1. Enable the feature. 
 1. You **MUST** visit admin/settings/filters/{X}/configure where
@@ -30,8 +33,12 @@ Markdown' and save the configuration. Sorry!
 You'll likely want to configure wysiwyg_filter's configuration settings for the
 "Markdown WYSIWYG" input format (admin/settings/filter), as well as the the
 WYSIWYG profile associated with the input format (admin/settings/wysiwyg).
-You may also wish to install Better Formats module and/or additional Linkit
-module plugins and Oembed providers.
+
+Configuration checklist:
+
+* 
+* (Optional) Install and configure [Better Formats][3] module
+module plugins and oembed providers.
 
 ## Features
 
@@ -65,3 +72,5 @@ to convert from HTML to Markdown when the editor is disabled by the user or
 unloaded prior to saving content.
 
  [1]: https://cdcvs.fnal.gov/redmine/projects/ecenter/
+ [2]: http://drupal.org/files/issues/wysiwyg_filter-form-alter.patch
+ [3]: http://drupal.org/project/better_formats

@@ -123,12 +123,6 @@ function editor_tinymce_markdown_init() {
     drupal_add_css(drupal_get_path('module', 'editor_tinymce_markdown') 
       .'/css/linkit.css');
   }
-  
-  // @TODO Hack alert: this should not be necessary -- post_install should be
-  // used instead -- see below.
-  if (!variable_get('editor_tinymce_markdown_profile_installed', FALSE)) {
-    _editor_tinymce_markdown_install_profile();
-  }
 }
 
 /**

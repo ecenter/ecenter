@@ -107,6 +107,14 @@ The core functionality of the module works by providing a TinyMCE plugin that ma
 AJAX calls to the Markdownify module to convert from HTML to Markdown when the editor
 is disabled by the user or unloaded prior to saving content.
 
+## Screenshots
+
+![TinyMCE](http://img.skitch.com/20110304-n51u6xsc86ibg17a7qa93swga7.png)
+
+![Markdown](http://img.skitch.com/20110304-nbdr2atxbqtq287xjmcst4hmgw.png)
+
+![Rendered](http://img.skitch.com/20110304-gb3icxjm747k8287cg38ya87dp.png)
+
  [1]: https://cdcvs.fnal.gov/redmine/projects/ecenter/
  [2]: http://drupal.org/project/exportables
  [3]: http://drupal.org/files/issues/wysiwyg_filter-form-alter.patch

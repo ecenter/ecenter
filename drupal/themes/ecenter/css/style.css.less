@@ -1032,6 +1032,9 @@ body.page-network { // Network diagnostic display {{{
     } // }}}
     #results { // {{{
       .page_padding;
+      position: relative;
+      z-index: 10;
+      background-color: @color_white;
     } // }}}
     #recent-queries { // {{{
       .page_padding;
@@ -1042,38 +1045,37 @@ body.page-network { // Network diagnostic display {{{
         font-size: .825em;
       }
     } // }}}
-    #results-toolbar { // {{{
-      position: relative;
-      z-index: 10;
-      .vertical_gradient(@color_white; @color_grey_87;);
-      border-bottom: 1px solid @color_grey_60;
-      padding: 8px;
+    #results-title { // {{{
+      margin-bottom: 1.5em;
+      border-bottom: 2px solid @color_grey_80;
       h2 {
-        .box;
-        border-right: 1px solid @color_grey_67;
-        padding-right: 15px;
-        margin: 0 15px 0 0;
-        font-size: 1.25em;
+        font-weight: bold;
+        font-size: @font_size_24;
+        margin-bottom: .25em;
+        color: @color_black;
         span {
-          display: block;
           line-height: 1;
-          &.separator { .hide; }
-          &.date-range { font-size: .75em; font-weight: normal; line-height: 1.6;}
+          &.date-range { font-size: @font_size_14; font-weight: normal; line-height: 1.6;}
         }
       }
-      .links {
-        a { 
-          .box; 
-          .button; 
-          margin-right: 12px;
-          font-size: 14px;
-        };
+      .permalink {
+        margin-bottom: 1.25em;
         .form-item {
-          .box;
-          margin: 3px 0 0 0;
-          label { font-size: 14px;}
-          label, input { display: inline; }
-          input { font-size: 12px; padding: 3px 6px; }
+          display: inline;
+          input {
+            font-family: @font_liberation;
+            color: @color_black;
+            background-color: @color_grey_93;
+            font-size: 11px;
+            line-height: 13px;
+            padding-top: 2px;
+            padding-bottom: 2px;
+          }
+        }
+        a {
+          .button;
+          margin-left: 2px;
+          font-size: @font_size_13;
         }
       }
     } // }}}
@@ -1097,18 +1099,17 @@ body.page-network { // Network diagnostic display {{{
           h4 {
             font-size: .8em;
           }
-        }
-        .data-tables {
-          //display: none;
-          margin-bottom: 55px;
-          .data-table {
-            float: left;
-            margin-right: 15px;
-            font-size: .825em;
-          }
-        }
+        } 
       }
     } // }}}
+    .data-tables {
+      margin-bottom: 55px;
+      .data-table {
+        float: left;
+        margin-right: 15px;
+        font-size: .825em;
+      }
+    }
     .toggle-data { // {{{
       .button_link;
       .box;

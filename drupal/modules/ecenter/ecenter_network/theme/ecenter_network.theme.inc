@@ -63,6 +63,17 @@ function template_preprocess_ecenter_network_data(&$vars) {
     'absolute' => TRUE, 
     'attributes' => array('title' => $vars['title']),
   ));
+  // Generate permalink
+  $permalink_field['permalink'] = array(
+    '#id' => 'ecenter-permalink',
+    '#type' => 'textfield',
+    '#size' => 115,
+    '#disabled' => TRUE,
+    '#value' => url('network', 
+      array('query' => $vars['params'], 'absolute' => TRUE,)
+    ),
+  );
+  $vars['permalink_field'] = drupal_render($permalink_field);
 
   // End to end measurements
   $vars['end_to_end'] = theme('ecenter_network_end_to_end', 

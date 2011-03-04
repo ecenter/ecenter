@@ -13,10 +13,10 @@ UI in Drupal.
 
 ## Requirements
 
-* exportables module versions **after** 6.x-2.0-beta1; currently only the `-dev` 
+* [Exportables][2] module versions **after** 6.x-2.0-beta1; currently only the `-dev` 
 version will work.
-* [A patch to WYSIWYG filter][2] (see http://drupal.org/node/887532).
-* [A patch to features][3] (see http://drupal.org/node/981248) that should allow
+* [A patch to WYSIWYG filter][3] (see http://drupal.org/node/887532).
+* [A patch to features][4] (see http://drupal.org/node/981248) that should allow
 the WYSIWYG profile to be installed, but requires a manual revert.
 
 ## Install
@@ -54,13 +54,13 @@ and allowed tags and styles.
 * **Configure oembed providers** (`admin/build/oembed/provider`): Enable your
 desired oembed providers.
 * (Optional) **Enable additional Linkit modules**
-* (Optional) **Install and configure [Better Formats][4] module**
+* (Optional) **Install and configure [Better Formats][5] module**
 
 ## Features
 
 ### LinkIt
 
-This module uses the [LinkIt][5] TinyMCE plugin, which provides a smart UI for
+This module uses the [LinkIt][6] TinyMCE plugin, which provides a smart UI for
 linking to internal and external content.
 
 ### Default content classes
@@ -108,7 +108,8 @@ AJAX calls to the Markdownify module to convert from HTML to Markdown when the e
 is disabled by the user or unloaded prior to saving content.
 
  [1]: https://cdcvs.fnal.gov/redmine/projects/ecenter/
- [2]: http://drupal.org/files/issues/wysiwyg_filter-form-alter.patch
- [3]: http://drupal.org/files/issues/features-981248.patch
- [4]: http://drupal.org/project/better_formats
- [5]: http://drupal.org/project/linkit
+ [2]: http://drupal.org/project/exportables
+ [3]: http://drupal.org/files/issues/wysiwyg_filter-form-alter.patch
+ [4]: http://drupal.org/files/issues/features-981248.patch
+ [5]: http://drupal.org/project/better_formats
+ [6]: http://drupal.org/project/linkit

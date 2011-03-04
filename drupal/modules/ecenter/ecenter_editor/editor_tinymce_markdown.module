@@ -75,7 +75,6 @@ function editor_tinymce_markdown_form_alter(&$form, $form_state, $form_id) {
       drupal_set_message(t('This input format is for use with the TinyMCE
         Markdown module. Changing the filter order may have undesirable 
         results.'));
-      unset($form['names'], $form['submit'], $form['weights']);  
     }
   }
 
@@ -84,8 +83,8 @@ function editor_tinymce_markdown_form_alter(&$form, $form_state, $form_id) {
       && $form['format']['#value'] == $format) {
 
       drupal_set_message(t('This WYSWYG profile is managed by the TinyMCE
-        Markdown module. Output settings and some plugins may not
-        be changed.'));
+        Markdown module. Output settings and some plugins may not be changed.')
+      );
 
       // Some plugins may not be removed: linkit and unlink because they are
       // required for wysiwyg icon reordering, markdown because the editor will

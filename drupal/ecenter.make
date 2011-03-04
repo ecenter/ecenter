@@ -51,7 +51,7 @@ projects[filefield][subdir] = "contrib"
 projects[filefield][version] = "3.9"
 
 projects[geoip][subdir] = "contrib"
-projects[geoip][version] = "1.2"
+projects[geoip][version] = "1.3"
 
 projects[homebox][subdir] = "contrib"
 projects[homebox][version] = "2.1"
@@ -64,6 +64,41 @@ projects[imageapi][version] = "1.9"
 
 projects[imagecache][subdir] = "contrib"
 projects[imagecache][version] = "2.0-beta10"
+
+projects[mapbox][subdir] = "contrib"
+projects[mapbox][version] = "1.0-alpha3"
+
+projects[exportables][subdir] = "contrib"
+projects[exportables][version] = "2.x-dev"
+
+projects[input_formats][subdir] = "contrib"
+projects[input_formats][version] = "1.0-beta6"
+projects[input_formats][patch][] = "http://drupal.org/files/issues/wysiwyg_filter-form-alter.patch"
+
+projects[linkit][subdir] = "contrib"
+projects[linkit][version] = "1.9"
+
+projects[oembed][subdir] = "contrib"
+projects[oembed][version] = "0.8"
+
+projects[markdown][subdir] = "contrib"
+projects[markdown][version] = "1.2"
+
+projects[pathologic][subdir] = "contrib"
+projects[pathologic][version] = "3.4"
+
+projects[wysiwyg_filter][subdir] = "contrib"
+projects[wysiwyg_filter][version] = "1.5"
+
+projects[editor_tinymce_markdown][subdir] = "ecenter-contrib"
+projects[editor_tinymce_markdown][download][type] = "get"
+projects[editor_tinymce_markdown][download][url] = "https://github.com/ecenter/editor_tinymce_markdown/tarball/alpha-1"
+projects[editor_tinymce_markdown][type] = "module"
+
+projects[markdownify][subdir] = "ecenter-contrib"
+projects[markdownify][download][type] = "get"
+projects[markdownify][download][url] = "https://github.com/ecenter/markdownify/tarball/alpha-1"
+projects[markdownify][type] = "module"
 
 projects[jquery_ui][subdir] = "contrib"
 projects[jquery_ui][version] = "1.4"
@@ -134,7 +169,6 @@ libraries[openlayers][directory_name] = "openlayers"
 libraries[jqplot][download][type] = "get"
 libraries[jqplot][download][url] = "http://bitbucket.org/cleonello/jqplot/downloads/jquery.jqplot.0.9.7r635.zip"
 libraries[jqplot][directory_name] = "jqplot"
-libraries[jqplot][destination] = "modules/contrib/jqplot"
 
 ; Markdownify
 ; @TODO Add Markdownify library once module work is further along

@@ -71,10 +71,9 @@ function ecenter_network_theme() {
         'query' => NULL,
       ),
     ) + $options,
-    'ecenter_network_snmp' => array(
+    'ecenter_network_hops' => array(
       'arguments' => array(
-        'data' => NULL,
-        'nodes' => NULL,
+        'hops' => array(),
       ),
     ) + $options,
     'ecenter_network_end_to_end' => array(
@@ -381,8 +380,8 @@ function ecenter_network_select_form(&$form_state) {
 
     // If we've got the data (at bare minimum, a traceroute), delegate to rendering function
     if ($data) {
-      drupal_add_js(array('ecenterNetwork' => array('tracerouteData' => $data['diff'])), 'setting');
-      drupal_add_js(array('ecenterNetwork' => array('tracerouteMaxLength' => $data['traceroute_max'])), 'setting');
+      drupal_add_js(array('ecenterNetwork' => array('tracerouteData' => $data['traceroute']['diff'])), 'setting');
+      drupal_add_js(array('ecenterNetwork' => array('tracerouteMaxLength' => $data['traceroute']['traceroute_max'])), 'setting');
       drupal_add_js(array('ecenterNetwork' => array('seriesLookup' => $data['series_lookup'])), 'setting');
       $form['results_wrapper']['results']['#value'] = theme('ecenter_network_data', $data, $params);
     }
@@ -632,7 +631,7 @@ function ecenter_network_parse_response($response) {
   foreach (array('forward' => 'src', 'reverse' => 'dst') 
     as $direction => $end_type) {
 
-    // Process end-to-end -----------------------------------------------------
+    // -- Process end-to-end -- //
 
     // Cache source netblock for later comparison
     if ($params[$end_type]['type'] == 'ip') {
@@ -662,7 +661,6 @@ function ecenter_network_parse_response($response) {
               drupal_alter('ecenter_network_end_to_end_measurements', 
                 $processed_data, $timestamp, $measurements);    
             }
-            //dpm($processed_data);
             drupal_alter('ecenter_network_end_to_end_measurements_statistics',
               $processed_data); 
           }
@@ -673,7 +671,7 @@ function ecenter_network_parse_response($response) {
       }
     }
 
-    // Process traceroute -----------------------------------------------------
+    // -- Process traceroute -- //
 
     $traceroute = array();
     $traceroute_direction = ($direction == 'forward') ? 'direct' : 'reverse';
@@ -706,14 +704,16 @@ function ecenter_network_parse_response($response) {
     }
   }
 
-  // Pre-calculate "id"
+  // Create hop-by-hop structure out of nodes
   foreach ($data['traceroute_nodes'] as $node_ip => $node) {
-    $node['id'] = str_replace('.', '-', $node_ip);
-    $parsed_data['nodes'][$node_ip] = $node;
+    // Create 
+    $node['id'] = str_replace('.', '_', $node_ip);
+    $parsed_data['hops'][$node_ip] = $node + array('data' => 
+      array(
+        'snmp' => $data['snmp'][$node_ip],
+      ),
+    );
   }
-
-  // Copy SNMP
-  $parsed_data['snmp'] = $data['snmp'];
 
   // Calculate diff
   if (!empty($parsed_data['traceroute']['forward']) 
@@ -721,8 +721,8 @@ function ecenter_network_parse_response($response) {
     $forward = $parsed_data['traceroute']['forward'];
     $reverse = array_reverse($parsed_data['traceroute']['reverse']);
 
-    $parsed_data['diff'] = ecenter_network_traceroute_diff($forward, $reverse);
-    $parsed_data['traceroute_max'] = (count($forward) > count($reverse)) ? 
+    $parsed_data['traceroute']['diff'] = ecenter_network_traceroute_diff($forward, $reverse);
+    $parsed_data['traceroute']['traceroute_max'] = (count($forward) > count($reverse)) ? 
       count($forward) : count($reverse);
   }
   elseif (!empty($parsed_data['traceroute']['forward'])) {
@@ -731,7 +731,8 @@ function ecenter_network_parse_response($response) {
     foreach ($forward as $row) {
       $diff[] = array('match' => array('forward' => array($row)));
     }
-    $parsed_data['diff'] = $diff;
+    $parsed_data['traceroute']['diff'] = $diff;
+    $parsed_data['traceroute']['traceroute_max'] = count($diff);
   }
   elseif (!empty($parsed_data['traceroute']['reverse'])) {
     $diff = array();
@@ -739,94 +740,10 @@ function ecenter_network_parse_response($response) {
     foreach ($reverse as $row) {
       $diff[] = array('match' => array('reverse' => array($row)));
     }
-    $parsed_data['diff'] = $diff;
+    $parsed_data['traceroute']['diff'] = $diff;
+    $parsed_data['traceroute']['traceroute_max'] = count($diff);
   }
-
-  // Recreate diff without hop data
-  /*if (!empty($parsed_data['traceroute']) && !empty($parsed_data['reverse'])) {
-    $js_diff = array();
-    foreach ($parsed_data['diff'] as $row) {
-      foreach ($row as $type => $directions) {
-        $new_row = array();
-        foreach ($directions as $direction => $hops) {
-          $new_hops = array();
-          foreach ($hops as $hop) {
-            $has_data = FALSE;
-            foreach ($hop['data'] as $hop_data) {
-              if (!empty($hop_data)) {
-                $has_data = TRUE;
-                $j++;
-              }
-            }
-            $new_hops[] = array(
-              'hop' => $hop['hop'],
-              'data' => $has_data,
-            );
-          }k
-
-
-          $new_row[$direction] = $new_hops;
-        }
-        $js_diff[] = array(
-          $type => $new_row,
-        );
-      }
-    }
-    $parsed_data['js_diff'] = $js_diff;
-
-    // Finally, parse JS Diff to create a structure linking hop IDs to series
-    $series_by_id = array();
-    $series_by_idx = array();
-
-    $i = 0;
-    foreach ($js_diff as $row) {
-      if (!empty($row['match'])) {
-        if ($row['match']['forward'][0]['data']) {
-          $series_by_id[$row['match']['forward'][0]['hop']['hop_id']] = array(
-            'idx' => $i,
-            'corresponding_id' => $row['match']['reverse'][0]['hop']['hop_id'],
-            'corresponding_idx' => $i + 1,
-          );
-          $series_by_idx[] = array(
-            'id' => $row['match']['forward'][0]['hop']['hop_id'],
-            'corresponding_id' => $row['match']['reverse'][0]['hop']['hop_id'],
-            'corresponding_idx' => $i + 1,
-          );
-          $i++;
-        }
-        if ($row['match']['reverse'][0]['data']) {
-          $series_by_id[$row['match']['reverse'][0]['hop']['hop_id']] = array(
-            'idx' => $i,
-            'corresponding_id' => $row['match']['forward'][0]['hop']['hop_id'],
-            'corresponding_idx' => $i - 1,
-          );
-          $series_by_idx[] = array(
-            'id' => $row['match']['reverse'][0]['hop']['hop_id'],
-            'corresponding' => $row['match']['forward'][0]['hop']['hop_id'],
-            'corresponding_idx' => $i + 1,
-          );
-          $i++;
-        }
-      }
-      if (!empty($row['diff'])) {
-        foreach (array('forward', 'reverse') as $direction) {
-          foreach ($row['diff'][$direction] as $hop) {
-            if ($hop['data']) {
-              $series_by_id[$hop['hop']['hop_id']] = array(
-                'idx' => $i,
-              );
-              $series_by_idx[] = array(
-                'id' => $hop['hop']['hop_id'],
-              );
-              $i++;
-            }
-          }
-        }
-      }
-    }
-    $parsed_data['series_lookup'] = array('id' => $series_by_id, 'idx' => $series_by_idx);
-  }*/
-
+  
   //dpm($parsed_data, 'parsed'); 
   return $parsed_data;
 }

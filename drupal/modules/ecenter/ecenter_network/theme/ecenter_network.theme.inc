@@ -10,20 +10,6 @@
  * Theme main data display
  */
 function template_preprocess_ecenter_network_data(&$vars) {
-  // Generate permalink
-  $permalink['permalink'] = array(
-    '#id' => 'ecenter-permalink',
-    '#type' => 'textfield',
-    '#size' => 45,
-    '#disabled' => TRUE,
-    '#title' => l(t('Permalink'), 'network',
-      array('query' => $vars['params'], 'absolute' => TRUE,)
-    ),
-    '#value' => url('network', 
-      array('query' => $vars['params'], 'absolute' => TRUE,)
-    ),
-  );
-  $vars['permalink'] = drupal_render($permalink);
   
   // Generate issue link -- encode params for use with custom ecenter_issues
   // module
@@ -71,25 +57,19 @@ function template_preprocess_ecenter_network_data(&$vars) {
   // Set title
   drupal_set_title(t('E-Center Network Query | ') . $vars['title']);
 
-  // End to end statistics
-  if (!empty($vars['data']['end_to_end'])) {
-    $vars['end_to_end'] = theme('ecenter_network_end_to_end', 
-      $vars['data']['end_to_end']);
-  }
-  else {
-    $vars['end_to_end'] = '<p class="missing">'. 
-      t('No end to end data available') .'</p>';
-  }
+  // Generate permalink
+  $vars['permalink'] = l(t('Permalink'), 'network', array(
+    'query' => $vars['params'], 
+    'absolute' => TRUE, 
+    'attributes' => array('title' => $vars['title']),
+  ));
 
-  // Generate SNMP charts
-  if (!empty($vars['data']['snmp'])) {
-    $vars['snmp'] = theme('ecenter_network_snmp', $vars['data']['snmp'], 
-      $vars['data']['nodes']);
-  }
-  else {
-    $vars['snmp'] = '<p class="missing">'. 
-      t('No per-hop utilization data available.') .'</p>';
-  }
+  // End to end measurements
+  $vars['end_to_end'] = theme('ecenter_network_end_to_end', 
+    $vars['data']['end_to_end']);
+
+  // Per-hop measurements
+  $vars['hops'] = theme('ecenter_network_hops', $vars['data']['hops']);
 
 }
 
@@ -140,60 +120,69 @@ function theme_ecenter_network_recent_query($query, $time) {
 }
 
 /**
- * Theme SNMP data
+ * Theme per-hop data
+ *
+ * @TODO We might want to make this more flexible. However, this data isn't
+ * likely to change soon.
  */
-function theme_ecenter_network_snmp($data, $nodes) {
-  // @TODO Determine how to set colors...  MESSY!
-  $critical = variable_get('ecenter_network_threshold_critical_snmp_utilization', 60);
-  $marginal = variable_get('ecenter_network_threshold_marginal_snmp_utilization', 40);
-
+function theme_ecenter_network_hops($hops = array()) {
   $tables = array();
 
   // Create tables for scraping
-  foreach ($data as $hop_ip => $timeseries) {
+  foreach ($hops as $hop) {
+    // @TODO Iterate over all types, use measurement / type callbacks
     $table = array();
-    if (!empty($timeseries)) {
-      foreach ($timeseries as $row) {
-        $table[] = array(
-            'label' => array(
-              'data' => $row[0] * 1000,
-              'header' => TRUE,
-            ),
-            'utilization' => array(
-              'data' => sprintf('%01.4f', 
-                100 * ($row[1]['utilization'] / $row[1]['capacity'])),
-              'class' => $class,
-            ),
-        );
+    foreach ($hop['data']['snmp'] as $timeseries) {
+      if (!empty($timeseries)) {
+          $table[] = array(
+              'label' => array(
+                'data' => $timeseries[0] * 1000,
+                'header' => TRUE,
+              ),
+              'utilization' => array(
+                'data' => sprintf('%01.4f', 
+                  100 * ($timeseries[1]['utilization'] / $timeseries[1]['capacity'])),
+                'class' => $class,
+              ),
+          );
       }
-      $tables[] = theme('ecenter_network_utilization_table', $table, $nodes[$hop_ip]);
+    }
+    if (!empty($table)) {
+      $tables[] = theme('ecenter_network_utilization_table', $table, $hop);
     }
   }
 
-  $plot_options = _ecenter_network_plot_options_template();
-  $plot_options['seriesDefaults']['markerOptions']['show'] = FALSE;
-  $plot_options['seriesDefaults']['lineWidth'] = 1.2;
-  $plot_options['seriesDefaults']['color'] = '#555555';
-  $plot_options['axes']['xaxis']['pad'] = 0;
-  $plot_options['axes']['xaxis']['numberTicks'] = 10;
-  $plot_options['axes']['yaxis']['min'] = 0;
-  $plot_options['axes']['yaxis']['max'] = 100;
-  $plot_options['axes']['yaxis']['numberTicks'] = 5;
-  $plot_options['linehighlighter'] = array(
-    'show' => TRUE,
-    'sizeAdjust' => 1.5,
-    'threshold' => 2,
-  );
-  drupal_alter('ecenter_network_plot_options', $plot_options, 'utilization', 'snmp');
-  $options = array(
-    'height' => 200,
-    'width' => 600,
-    'hideTables' => FALSE,
-    'dependencies' => array('canvasTextRenderer'),
-    'plotOptions' => $plot_options,
-  );
-  jqplot_register_tablechart('#utilization-tables', $options);
-  return '<div id="utilization-tables" class="wrapper"><div class="chart-title"><h3>'. t('Per hop utilization').'</h3></div><div class="data-tables">'. implode("\n", $tables) .'</div></div>';
+  if (!empty($tables)) {
+    $plot_options = _ecenter_network_plot_options_template();
+    $plot_options['seriesDefaults']['markerOptions']['show'] = FALSE;
+    $plot_options['seriesDefaults']['lineWidth'] = 1.2;
+    $plot_options['seriesDefaults']['color'] = '#555555';
+    $plot_options['axes']['xaxis']['pad'] = 0;
+    $plot_options['axes']['xaxis']['numberTicks'] = 10;
+    $plot_options['axes']['yaxis']['min'] = 0;
+    $plot_options['axes']['yaxis']['max'] = 100;
+    $plot_options['axes']['yaxis']['numberTicks'] = 5;
+    $plot_options['linehighlighter'] = array(
+      'show' => TRUE,
+      'sizeAdjust' => 1.5,
+      'threshold' => 2,
+    );
+    drupal_alter('ecenter_network_plot_options', $plot_options, 'utilization', 'snmp');
+    $options = array(
+      'height' => 200,
+      'width' => 600,
+      'hideTables' => FALSE,
+      'dependencies' => array('canvasTextRenderer'),
+      'plotOptions' => $plot_options,
+    );
+    jqplot_register_tablechart('#utilization-tables', $options);
+    return '<div id="utilization-tables" class="wrapper"><div class="chart-title"><h3>'. 
+      t('Per hop utilization').'</h3></div><div class="data-tables">'. implode("\n", $tables) .
+      '</div></div>';
+  }
+  else {
+    return t('No per-hop data available.');
+  }
 }
 
 /**

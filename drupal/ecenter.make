@@ -46,6 +46,7 @@ projects[devel][version] = "1.23"
 
 projects[features][subdir] = "contrib"
 projects[features][version] = "1.0"
+projects[features][patch][] = "http://drupal.org/files/issues/features-981248.patch"
 
 projects[filefield][subdir] = "contrib"
 projects[filefield][version] = "3.9"
@@ -73,7 +74,6 @@ projects[exportables][version] = "2.x-dev"
 
 projects[input_formats][subdir] = "contrib"
 projects[input_formats][version] = "1.0-beta6"
-projects[input_formats][patch][] = "http://drupal.org/files/issues/wysiwyg_filter-form-alter.patch"
 
 projects[linkit][subdir] = "contrib"
 projects[linkit][version] = "1.9"
@@ -87,17 +87,23 @@ projects[markdown][version] = "1.2"
 projects[pathologic][subdir] = "contrib"
 projects[pathologic][version] = "3.4"
 
+projects[syntaxhighlighter][subdir] = "contrib"
+projects[syntaxhighlighter][version] = "1.26"
+
 projects[wysiwyg_filter][subdir] = "contrib"
-projects[wysiwyg_filter][version] = "1.5"
+projects[wysiwyg_filter][version] = "1.x-dev"
+projects[wysiwyg_filter][patch][] = "http://drupal.org/files/issues/wysiwyg_filter-form-alter.patch"
 
 projects[editor_tinymce_markdown][subdir] = "ecenter-contrib"
-projects[editor_tinymce_markdown][download][type] = "get"
-projects[editor_tinymce_markdown][download][url] = "https://github.com/ecenter/editor_tinymce_markdown/tarball/alpha-1"
+projects[editor_tinymce_markdown][download][type] = "git"
+projects[editor_tinymce_markdown][download][url] = "git://github.com/ecenter/editor_tinymce_markdown"
+projects[editor_tinymce_markdown][download][branch] = "master"
 projects[editor_tinymce_markdown][type] = "module"
 
 projects[markdownify][subdir] = "ecenter-contrib"
-projects[markdownify][download][type] = "get"
-projects[markdownify][download][url] = "https://github.com/ecenter/markdownify/tarball/alpha-1"
+projects[markdownify][download][type] = "git"
+projects[markdownify][download][url] = "git://github.com/ecenter/markdownify"
+projects[markdownify][branch] = "master"
 projects[markdownify][type] = "module"
 
 projects[jquery_ui][subdir] = "contrib"
@@ -141,6 +147,7 @@ projects[wysiwyg][version] = "2.2"
 
 ; Themes
 projects[tao][version] = "3.2"
+projects[seven][version] ="1.0-beta13"
 
 ; Libraries
 
@@ -170,15 +177,17 @@ libraries[jqplot][download][type] = "get"
 libraries[jqplot][download][url] = "http://bitbucket.org/cleonello/jqplot/downloads/jquery.jqplot.0.9.7r635.zip"
 libraries[jqplot][directory_name] = "jqplot"
 
-; Markdownify
-; @TODO Add Markdownify library once module work is further along
-
 ; TinyMCE
 libraries[tinymce][download][type] = "get"
 libraries[tinymce][download][url] = "http://github.com/downloads/tinymce/tinymce/tinymce_3_3_9_3.zip"
 libraries[tinymce][directory_name] = "tinymce"
 
+; SyntaxHighlighter, probably won't work because of download url
+;libraries[syntaxhighlighter][download][type] = "get"
+;libraries[syntaxhighlighter][download][url] = "http://alexgorbatchev.com/SyntaxHighlighter/download/download.php?sh_current"
+;libraries[syntaxhighlighter][directory_name] = "syntaxhighlighter"
+
 ; GeoIP
 libraries[geoip][download][type] = "get"
-libraries[geoip][download][url] = "http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz"
+libraries[geoip][download][url] = "http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz"
 libraries[geoip][directory_name] = "geoip"

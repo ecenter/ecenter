@@ -69,6 +69,7 @@ function _ecenter_core_modules() {
   return array(
     'vertical_tabs',
     'less',
+    'libraries',
     'adminrole',
     'beautytips',
     'beautytips_ui',
@@ -90,8 +91,6 @@ function _ecenter_core_modules() {
     'ecenter_network',
     'ecenter_test',
     'wysiwyyg',
-    //'tinymce_markdown',
-    //'ecenter_issues',
   );
 }
 

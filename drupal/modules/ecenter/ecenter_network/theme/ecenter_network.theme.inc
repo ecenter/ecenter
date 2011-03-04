@@ -10,19 +10,6 @@
  * Theme main data display
  */
 function template_preprocess_ecenter_network_data(&$vars) {
-  // Generate permalink
-  $permalink['permalink'] = array(
-    '#id' => 'ecenter-permalink',
-    '#type' => 'textfield',
-    '#size' => 45,
-    '#title' => l(t('Permalink'), 'network',
-      array('query' => $vars['params'], 'absolute' => TRUE,)
-    ),
-    '#value' => url('network', 
-      array('query' => $vars['params'], 'absolute' => TRUE,)
-    ),
-  );
-  $vars['permalink'] = drupal_render($permalink);
   
   // Generate issue link -- encode params for use with custom ecenter_issues
   // module
@@ -70,21 +57,30 @@ function template_preprocess_ecenter_network_data(&$vars) {
   // Set title
   drupal_set_title(t('E-Center Network Query | ') . $vars['title']);
 
-  // End to end statistics
-  if (!empty($vars['data']['end_to_end'])) {
-    $vars['end_to_end'] = theme('ecenter_network_end_to_end', $vars['data']['end_to_end']);
-  }
-  else {
-    $vars['end_to_end'] = '<p class="missing">'. t('No end to end data available') .'</p>';
-  }
+  // Generate permalink
+  $vars['permalink'] = l(t('Permalink'), 'network', array(
+    'query' => $vars['params'], 
+    'absolute' => TRUE, 
+    'attributes' => array('title' => $vars['title']),
+  ));
+  // Generate permalink
+  $permalink_field['permalink'] = array(
+    '#id' => 'ecenter-permalink',
+    '#type' => 'textfield',
+    '#size' => 115,
+    '#disabled' => TRUE,
+    '#value' => url('network', 
+      array('query' => $vars['params'], 'absolute' => TRUE,)
+    ),
+  );
+  $vars['permalink_field'] = drupal_render($permalink_field);
 
-  // Generate SNMP charts
-  if (!empty($vars['data']['diff'])) {
-    $vars['hops'] = theme('ecenter_network_hops', $vars['data']['diff']);
-  }
-  else {
-    $vars['hops'] = '<p class="missing">'. t('No path or utilization data available.') .'</p>';
-  }
+  // End to end measurements
+  $vars['end_to_end'] = theme('ecenter_network_end_to_end', 
+    $vars['data']['end_to_end']);
+
+  // Per-hop measurements
+  $vars['hops'] = theme('ecenter_network_hops', $vars['data']['hops']);
 
 }
 
@@ -135,140 +131,127 @@ function theme_ecenter_network_recent_query($query, $time) {
 }
 
 /**
- * Theme SNMP data
+ * Theme per-hop data
+ *
+ * @TODO We might want to make this more flexible. However, this data isn't
+ * likely to change soon.
  */
-function theme_ecenter_network_hops($data) {
-
-  // @TODO Determine how to set colors...  MESSY!
-  $critical = variable_get('ecenter_network_threshold_critical_snmp_utilization', 60);
-  $marginal = variable_get('ecenter_network_threshold_marginal_snmp_utilization', 40);
-
-  //$tables = array('forward', 'reverse');
+function theme_ecenter_network_hops($hops = array()) {
   $tables = array();
 
-  // Create tables for scrapin'
-  foreach ($data as $row) {
-    $match = (!empty($row['match'])) ? TRUE : FALSE;
-    $all_hops = array_shift(array_values($row));
-
-    foreach (array('forward', 'reverse') as $direction) {
-
-      $hops = $all_hops[$direction];
-
-      if (!empty($hops) && is_array($hops)) {
-        foreach ($hops as $hop) {
-          if (!empty($hop['data']['snmp']) && is_array($hop['data']['snmp'])) {
-            $table = array();
-            foreach ($hop['data']['snmp'] as $item) {
-              $table[] = array(
-                'label' => array(
-                  'data' => $item[0] * 1000,
-                  'header' => TRUE,
-                ),
-                'utilization' => array(
-                  'data' => sprintf('%01.4f', 100 * ($item[1]['utilization'] / $item[1]['capacity'])),
-                  'class' => $class,
-                ),
-              );
-            }
-            $tables[] = theme('ecenter_network_utilization_table', $hop['hop'], $direction, $table);
-          }
-        }
+  // Create tables for scraping
+  foreach ($hops as $hop) {
+    // @TODO Iterate over all types, use measurement / type callbacks
+    $table = array();
+    foreach ($hop['data']['snmp'] as $timeseries) {
+      if (!empty($timeseries)) {
+          $table[] = array(
+              'label' => array(
+                'data' => $timeseries[0] * 1000,
+                'header' => TRUE,
+              ),
+              'utilization' => array(
+                'data' => sprintf('%01.4f', 
+                  100 * ($timeseries[1]['utilization'] / $timeseries[1]['capacity'])),
+                'class' => $class,
+              ),
+          );
       }
+    }
+    if (!empty($table)) {
+      $tables[] = theme('ecenter_network_utilization_table', $table, $hop);
     }
   }
 
-  $plot_options = _ecenter_network_plot_options_template();
-  $plot_options['seriesDefaults']['markerOptions']['show'] = FALSE;
-  $plot_options['seriesDefaults']['lineWidth'] = 1.2;
-  $plot_options['seriesDefaults']['color'] = '#555555';
-  $plot_options['axes']['xaxis']['pad'] = 0;
-  $plot_options['axes']['xaxis']['numberTicks'] = 10;
-  $plot_options['axes']['yaxis']['min'] = 0;
-  $plot_options['axes']['yaxis']['max'] = 100;
-  $plot_options['axes']['yaxis']['numberTicks'] = 5;
-  $plot_options['linehighlighter'] = array(
-    'show' => TRUE,
-    'sizeAdjust' => 1.5,
-    'threshold' => 2,
-  );
-  drupal_alter('ecenter_network_plot_options', $plot_options, 'utilization', 'snmp');  
-  $options = array(
-    'height' => 200,
-    'width' => 600,
-    'hideTables' => FALSE,
-    'dependencies' => array('canvasTextRenderer'),
-    'plotOptions' => $plot_options,
-  );
-  jqplot_register_tablechart('#utilization-tables', $options);
-  return '<div id="utilization-tables" class="wrapper"><div class="chart-title"><h3>'. t('Per hop utilization').'</h3></div><div class="data-tables">'. implode("\n", $tables) .'</div></div>';
+  if (!empty($tables)) {
+    $plot_options = _ecenter_network_plot_options_template();
+    $plot_options['seriesDefaults']['markerOptions']['show'] = FALSE;
+    $plot_options['seriesDefaults']['lineWidth'] = 1.2;
+    $plot_options['seriesDefaults']['color'] = '#555555';
+    $plot_options['axes']['xaxis']['pad'] = 0;
+    $plot_options['axes']['xaxis']['numberTicks'] = 10;
+    $plot_options['axes']['yaxis']['min'] = 0;
+    $plot_options['axes']['yaxis']['max'] = 100;
+    $plot_options['axes']['yaxis']['numberTicks'] = 5;
+    $plot_options['linehighlighter'] = array(
+      'show' => TRUE,
+      'sizeAdjust' => 1.5,
+      'threshold' => 2,
+    );
+    drupal_alter('ecenter_network_plot_options', $plot_options, 'utilization', 'snmp');
+    $options = array(
+      'height' => 200,
+      'width' => 600,
+      'hideTables' => FALSE,
+      'dependencies' => array('canvasTextRenderer'),
+      'plotOptions' => $plot_options,
+    );
+    jqplot_register_tablechart('#utilization-tables', $options);
+    return '<div id="utilization-tables" class="wrapper"><div class="chart-title"><h3>'. 
+      t('Per hop utilization').'</h3></div><div class="data-tables">'. implode("\n", $tables) .
+      '</div></div>';
+  }
+  else {
+    return t('No per-hop data available.');
+  }
 }
 
 /**
  * Theme end to end data table
  */
 function template_preprocess_ecenter_network_end_to_end(&$vars) {
-  $raw_data = $vars['data'];
+  $data = $vars['data'];
   $statistics_table = array();
   $data_tables = array();
 
-  foreach ($raw_data as $type => $measurements) {
-    foreach ($measurements as $direction=>$data) {
-      if (($statistics = $data['statistics']) && is_array($statistics)) {
-        foreach ($statistics as $measurement => $row) {
-          // Suggestion array to format values
-          $suggestions = array(
-            'ecenter_network_format_'. $type .'_'. $measurement,
-            'ecenter_network_format_'. $type,
-            'ecenter_network_format_default',
-          );
-          // Theme each statistic
-          foreach ($row as $key => $value) {
-            $row[$key] = array('data' => theme($suggestions, $value, $type, $measurement), 'class' => $key);
-          }
+  foreach ($data as $test => $directions) {
+    foreach ($directions as $direction => $measurements) {
+      foreach ($measurements as $measurement => $values) {
+        // Suggestion array to format values
+        $value_suggestions = array(
+          'ecenter_network_format_'. $test .'_'. $measurement,
+          'ecenter_network_format_'. $test,
+          'ecenter_network_format_default',
+        );
 
-          // Suggestion array to format label
-          $suggestions = array(
-            'ecenter_network_format_'. $type .'_'. $measurement .'_label',
-            'ecenter_network_format_'. $type .'_label',
+        // Process stats table
+        if (($statistics = $values['statistics']) && is_array($statistics)) {
+          // Suggestion array to format value labels
+          $label_suggestions = array(
+            'ecenter_network_format_'. $test .'_'. $measurement .'_label',
+            'ecenter_network_format_'. $test .'_label',
             'ecenter_network_format_default_label',
           );
 
-          // Create table row for theming
+          $row = array();
+          foreach ($statistics as $key => $value) {
+            $row[$key] = array('data' => theme($value_suggestions, $value,
+              $test, $measurement), 'class' => $key);
+          }
           $header = array(
             'header' => TRUE,
-            'data' => theme($suggestions, $measurement, $type, $direction, TRUE),
+            'data' => theme($label_suggestions, $measurement, $test,
+              $direction, TRUE),
           );
-          $table[$type .'_'. $measurement .'_'. $direction] = array(
+          // Create table row for theming
+          $table[$test .'_'. $measurement .'_'. $direction] = array(
             'data' => array($header) + $row,
-            'class' => $type .'_'. $measurement .' '. $type .'_'. $measurement .'_'. $direction,
-          ); 
+            'class' => $test .'_'. $measurement .' '. $test .'_'. $measurement
+              .'_'. $direction,
+          );
+
+        }
+
+        if (($timeseries = $values['timeseries']) && is_array($timeseries)
+          && $values['statistics']['max'] > 0) {
+          $data_table = array();
+          foreach ($timeseries as $timestamp => $value) {
+            // Note we multiple x 1000 because Javascript uses microseconds!
+            $data_table[] = array(array('data' => $timestamp * 1000, 'header' => TRUE), theme($value_suggestions, $value, $test, $measurement, FALSE));
+          }
+          $data_tables[$test][$measurement][$direction] = $data_table;
         }
       }
-
-      if (($timeseries = $data['timeseries']) && is_array($timeseries)) {
-        foreach ($timeseries as $measurement => $series) {
-
-          if (!in_array($measurement, array('throughput', 'max_delay', 'loss'))) {
-            continue;
-          }
-
-          // Suggestion array to format values
-          $suggestions = array(
-            'ecenter_network_format_'. $type .'_'. $measurement,
-            'ecenter_network_format_'. $type,
-            'ecenter_network_format_default',
-          );
-
-          $data_table = array();
-          foreach ($series as $timestamp => $value) {
-            // Note we multiple x 1000 because Javascript uses microseconds!
-            $data_table[] = array(array('data' => $timestamp * 1000, 'header' => TRUE), theme($suggestions, $value, $type, $measurement, FALSE));
-          }
-
-          $data_tables[$type][$measurement][$direction] = $data_table;
-        }
-      }  
     }
   }
 
@@ -278,13 +261,15 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
 
     $headers = array(
       array('data' => t('End-to-end results'), 'class' => 'result-header',),
-      t('Average'), t('Max'), t('Min'),
+      t('Average'), t('Median'), t('Max'), t('Min'),
     );
-    $vars['table'] = theme('jqplot_table', $headers, $table, array('class' => 'end-to-end-table'));
-    $vars['data_tables'] = theme('ecenter_network_end_to_end_tables', $data_tables);
+    $vars['table'] = theme('jqplot_table', $headers, $table,
+      array('class' => 'end-to-end-table'));
+    $vars['data_tables'] = theme('ecenter_network_end_to_end_tables',
+      $data_tables);
   }
   else {
-    $vars['table'] = '<p>'. t('No end-to-end results are available at this time.') .'</p>';
+    $vars['table'] = '<p>'. t('No end-to-end results available.') .'</p>';
   }
 }
 
@@ -300,23 +285,25 @@ function theme_ecenter_network_end_to_end_tables($tables) {
         'ecenter_network_format_'. $type .'_label',
         'ecenter_network_format_default_label',
       );
-      $output .= '<div class="wrapper" id="'. $type .'-'. $measurement .'-data-tables">';
-      $output .= '<div class="chart-title"><h3>'. 
-        theme($suggestions, $measurement, $type) .'</h3></div>'; 
-      
+      $output .= '<div class="wrapper" id="'. $type .'-'. $measurement
+        .'-data-tables">';
+      $output .= '<div class="chart-title"><h3>'.
+        theme($suggestions, $measurement, $type) .'</h3></div>';
+
       $output .= '<div class="data-tables">';
       foreach ($directions as $direction => $data) {
         $output .= '<div class="data-table">';
         $output .= '<h4>'. t(ucfirst($direction)) .'</h4>';
         $output .= theme('jqplot_table', array(), $data);
-        $output .= '</div>'; 
+        $output .= '</div>';
       }
-      $output .= '</div>'; 
-      $output .= '</div>'; 
-    
+      $output .= '</div>';
+      $output .= '</div>';
+
       $plot_options = _ecenter_network_plot_options_template();
       $plot_options['legend']['show'] = TRUE;
-      drupal_alter('ecenter_network_plot_options', $plot_options, $measurement, $type);  
+      drupal_alter('ecenter_network_plot_options', $plot_options, $measurement,
+        $type);
       $options = array(
         'height' => 150,
         'width' => 400,
@@ -324,7 +311,8 @@ function theme_ecenter_network_end_to_end_tables($tables) {
         'dependencies' => array('canvasTextRenderer'),
         'plotOptions' => $plot_options,
       );
-      jqplot_register_tablechart('#'. $type .'-'. $measurement .'-data-tables', $options);
+      jqplot_register_tablechart('#'. $type .'-'. $measurement .'-data-tables',
+        $options);
     }
   }
   return $output;
@@ -363,6 +351,15 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
       );
       return;
     case 'max_delay':
+    case 'min_delay':
+    case 'maxRtt':
+    case 'minRtt':
+    case 'medianRtt':
+    case 'meanRtt':
+    case 'maxIpd':
+    case 'minIpd':
+    case 'medianIpd':
+    case 'meanIpd':
       $options += $line_options;
       $options['axes']['yaxis']['label'] = t('milliseconds');
       $options['axes']['yaxis']['min'] = 0;
@@ -450,12 +447,15 @@ function theme_ecenter_network_format_default($value, $type = NULL, $measurement
     case 'minRtt':
     case 'medianRtt':
     case 'meanRtt':
+    case 'maxIpd':
+    case 'meanIpd':
+    case 'minIpd':
     case 'iqrIpd':
       $format = ($format) ? $format : '%1.0f';
       $measurement_units = ($units) ? t('ms') : NULL;
       return theme('ecenter_network_format_value', sprintf($format, $value), $measurement_units);
-    case 'loss': 
-    case 'lossPercent': 
+    case 'loss':
+    case 'lossPercent':
       $format = ($format) ? $format : '%1.1f';
       $measurement_units = ($units) ? t('%') : NULL;
       return theme('ecenter_network_format_value', sprintf($format, $value), $measurement_units);
@@ -468,7 +468,7 @@ function theme_ecenter_network_format_default($value, $type = NULL, $measurement
 /**
  * Theme label
  */
-function theme_ecenter_network_format_default_label($measurement, $type = NULL, $direction = NULL, $help = NULL) {
+function theme_ecenter_network_format_default_label($measurement, $test, $direction = NULL, $help = NULL) {
   if ($help) {
     switch ($measurement) {
       case 'throughput':
@@ -484,6 +484,11 @@ function theme_ecenter_network_format_default_label($measurement, $type = NULL, 
       case 'meanRtt':
         $help = theme('advanced_help_topic', 'ecenter_network', 'rtt');
         break;
+      case 'maxIpd':
+      case 'minIpd':
+      case 'meanIpd':
+        $help = theme('advanced_help_topic', 'ecenter_network', 'iqripd');
+        break;
       default:
         $help = theme('advanced_help_topic', 'ecenter_network', strtolower($measurement));
     }
@@ -497,8 +502,9 @@ function theme_ecenter_network_format_default_label($measurement, $type = NULL, 
       $measurement = 'packets per test';
   }
 
-  $type = ($type) ? t('(@type)', array('@type' => $type)) : '';
-  return $help . t(ucfirst($direction)) .' '. t(ucfirst(str_replace('_', ' ', $measurement))) .' '. $type; 
+  $direction = ($test != 'pinger') ? t(ucfirst($direction)) .' ' : NULL;
+
+  return $help . $direction . t(str_replace('_', ' ', ucfirst($measurement))); 
 }
 
 /**
@@ -513,14 +519,14 @@ function theme_ecenter_network_format_value($value, $units = NULL) {
 /**
  * Theme utilization table
  */
-function theme_ecenter_network_utilization_table($hop, $direction, $table) {
+function theme_ecenter_network_utilization_table($table, $hop) {
   $attributes = array();
   $attributes['class'] = $direction;
   $attributes['class'] .= ($direction == 'forward') ? "{lineWidth : 1}" : "{lineWidth : 0, sizeAdjust: 0}";
 
   $headers = array(t('Time'), t('Percent utilization'));
   $output = '<div class="data-table">';
-  $output .= '<h3>'. $hop['nodename'] .' ('. t(ucfirst($direction)) .')</h3>';
+  $output .= '<h3>'. $hop['nodename'] .' ('. $hop['ip_noted'] .')</h3>';
   $output .= theme('jqplot_table', $headers, $table, $attributes);
   $output .= '</div>';
   return $output;

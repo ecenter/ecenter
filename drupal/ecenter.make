@@ -183,9 +183,9 @@ libraries[tinymce][download][url] = "http://github.com/downloads/tinymce/tinymce
 libraries[tinymce][directory_name] = "tinymce"
 
 ; SyntaxHighlighter, probably won't work because of download url
-libraries[syntaxhighlighter][download][type] = "get"
-libraries[syntaxhighlighter][download][url] = "http://alexgorbatchev.com/SyntaxHighlighter/download/download.php?sh_current"
-libraries[syntaxhighlighter][directory_name] = "syntaxhighlighter"
+;libraries[syntaxhighlighter][download][type] = "get"
+;libraries[syntaxhighlighter][download][url] = "http://alexgorbatchev.com/SyntaxHighlighter/download/download.php?sh_current"
+;libraries[syntaxhighlighter][directory_name] = "syntaxhighlighter"
 
 ; GeoIP
 libraries[geoip][download][type] = "get"

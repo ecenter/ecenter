@@ -63,17 +63,9 @@ function editor_tinymce_markdown_form_alter(&$form, $form_state, $form_id) {
   if ($form_id == 'filter_admin_format_form') {
     if (($format = _editor_tinymce_markdown_format())
       && $form['format']['#value'] == $format) {
-   
       drupal_set_message(t('This input format is for use with the TinyMCE
-        Markdown module. The name and filter order may not be changed.'));
-    
-      $form['name']['#disabled'] = TRUE;  
-      $form['name']['#value'] = $form['name']['#default_value'];  
-
-      foreach (element_children($form['filters']) as $child) {
-        $form['filters'][$child]['#disabled'] = TRUE;
-        $form['filters'][$child]['#value'] = $form['filters'][$child]['#default_value'];  
-      }
+        Markdown module. Changing the enabled filters have may undesireable
+        results.'));
     }
   }
   
@@ -81,7 +73,8 @@ function editor_tinymce_markdown_form_alter(&$form, $form_state, $form_id) {
     if (($format = _editor_tinymce_markdown_format())
       && $form['format']['#value'] == $format) {
       drupal_set_message(t('This input format is for use with the TinyMCE
-        Markdown module. The name and filter order may not be changed.'));
+        Markdown module. Changing the filter order may have undesirable 
+        results.'));
       unset($form['names'], $form['submit'], $form['weights']);  
     }
   }
@@ -90,12 +83,12 @@ function editor_tinymce_markdown_form_alter(&$form, $form_state, $form_id) {
     if (($format = _editor_tinymce_markdown_format())
       && $form['format']['#value'] == $format) {
 
-      drupal_set_message(t('This WYSWYG profile is managed by the Editor: 
-        Tinymce Markdown module. Output settings and some plugins may not
+      drupal_set_message(t('This WYSWYG profile is managed by the TinyMCE
+        Markdown module. Output settings and some plugins may not
         be changed.'));
 
       // Some plugins may not be removed: linkit and unlink because they are
-      // required by wysiwyg icon-reordering, markdown because the editor will
+      // required for wysiwyg icon reordering, markdown because the editor will
       // break without it.
       $form['buttons']['default']['unlink']['#value'] = TRUE;
       $form['buttons']['default']['unlink']['#disabled'] = TRUE;

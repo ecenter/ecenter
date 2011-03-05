@@ -96,7 +96,7 @@ function template_preprocess_ecenter_network_recent_queries(&$vars) {
     $queries = unserialize(sess_read('ecenter_network_queries'));
   }
 
-  if (count($queries)) {
+  if (!empty($queries)) {
     $links = array();
     foreach ($queries as $query) {
       $tz = date_default_timezone_name(TRUE);
@@ -123,7 +123,7 @@ function theme_ecenter_network_recent_query($query, $time) {
       '<span class="value">'. $value .'</span>';
   }
 
-  $date = '<span class="date"><a href="'. check_plain(url('network') .'?'. $query) .'">'. 
+  $date = '<span class="date"><a href="'. url('network') .'?'. $query .'">'. 
     date_format($time, 'n-j-Y g:ia') .'</a></span>';
   $query = '<span class="query">'. implode(' | ', $query_text) .'</span>';
   
@@ -362,7 +362,6 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
     case 'meanIpd':
       $options += $line_options;
       $options['axes']['yaxis']['label'] = t('milliseconds');
-      $options['axes']['yaxis']['min'] = 0;
       $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%dms</span>';
       return;
     case 'loss':

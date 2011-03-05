@@ -830,14 +830,6 @@ a {
   margin: 0;
 } // }}}
 #node-form { // Node editing form {{{
-  /*table {
-    td {
-      background: none;
-      .form-item {
-        margin: 0;
-      }
-    }
-  }*/
   .content-add-more {
     margin-bottom: 1.5em;
   }
@@ -848,12 +840,25 @@ a {
       display: inline;
       margin-right: .5em;
     }
-    .description {
-      font-size: .8em;
-    }
     &#edit-body-wrapper {
       margin-bottom: 0;
     }
+  }
+  .tips {
+    margin: 0;
+    line-height: 1.3;
+    li {
+      margin-top: .75em;
+      margin-bottom: .75em;
+      margin-left: 2em;
+    }
+  }
+  .wysiwyg .tips {
+    font-size: .75em;
+    padding: 0;
+    border: 1px solid @color_grey_60;
+    background-color: @color_grey_87;
+    margin: .5em 0 1.5em 0;
   }
 } // }}}
 .ui-datepicker { // jQuery UI Datepicker {{{

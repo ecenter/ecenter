@@ -425,6 +425,7 @@ a {
   background-color: @color_white;
   width: 930px;
   .shadow(2px; 5px; 7px; @color_grey_20;);
+  a { :hover { text-decoration: underline; }; }
   /* Headers {{{ */
   h1,h2,h3,h4,h5,h6 {
     font-family: @font_droid;
@@ -1224,6 +1225,20 @@ body.page-network { // Network diagnostic display {{{
         font-size: 1.15em;
       }
     }
+  }
+}
+/* }}} */
+/* Page search {{{ */
+body.page-search {
+  #content-body {
+     .box {
+      float: none;
+     }
+     .box-title {
+       font-size: 1.5em;
+       margin-bottom: 1.5em;
+       font-weight: bold;
+     }
   }
 }
 /* }}} */

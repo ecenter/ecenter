@@ -184,38 +184,40 @@
 } // }}}
 /* }}} */
 
-/* --- E-Center Mixins --- */
-.ecenter-introduction { // {{{
-  .font_size_14;
-  color: @color_grey_40;
+/* --- Content Mixins --- */
+.content-introduction {
+  font-size: .875em;
   font-style: italic;
-} // }}}
-.ecenter-highlight { // {{{
-  background-color: @color_yellow;
-} // }}}
-.ecenter-pad { // {{{
-  padding: .75em;
-} // }}}
-.ecenter-clearfix:after { // {{{
-  content: ".";
-  display: block;
-  height: 0;
-  clear: both;
-  visibility: hidden;
-} // }}}
-.ecenter-column { // {{{
-  .box;
-  margin-right: 10px;
-  width: 230px;
-} // }}}
-.ecenter-float-left { // {{{
-  .box;
-} // }}}
-.ecenter-float-right { // {{{
-  .box;
-  float: right;
-} // }}}
-
+  line-height: 1.3125em;
+  margin-bottom: 1.3125em;
+}
+.content-highlight { background-color:#ffffaa; }
+.content-pad { padding:.75em; }
+.content-clearfix:after {
+  content:".";
+  display:block;
+  height:0;
+  clear:both;
+  visibility:hidden;
+}
+.content-column {
+  float:left;
+  display:block;
+  margin-right:10px;
+  width:230px;
+}
+.content-float-left {
+  float:left;
+  display:block;
+}
+.content-float-right {
+  float:left;
+  float:right;
+  display:block;
+}
+.content-align-center {
+  text-align: center;
+}
 /* --- Structure and element defaults --- */
 /* Un-resets {{{ */
 /* Some styles are clobbered by reset.css that we want to work */
@@ -667,12 +669,12 @@ a {
 /* }}} */
 /* oEmbed {{{ */
 .oembed {
-  float: none;
+  float: none !important;
   margin-bottom: 1.5em;
-  background-color: transparent;
-  border: none;
+  background-color: transparent !important;
+  border: none !important;
   .oembed-title {
-    .hide;
+    display: none !important;
   }
 }
 /* }}} */

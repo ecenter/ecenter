@@ -40,16 +40,16 @@ function ecenter_help_strongarm() {
   $strongarm->api_version = 1;
   $strongarm->name = 'beautytips_custom_style';
   $strongarm->value = array(
-    'fill' => '',
+    'fill' => '#ffffaa',
     'strokeWidth' => '',
-    'strokeStyle' => '999999',
+    'strokeStyle' => '#666666',
     'width' => '',
     'padding' => '',
     'cornerRadius' => '',
     'spikeGirth' => '',
     'spikeLength' => '',
-    'shadowBlur' => 3,
-    'shadowColor' => '363636',
+    'shadowBlur' => 4,
+    'shadowColor' => '#444444',
     'shadow' => 'shadow',
   );
 
@@ -66,16 +66,16 @@ function ecenter_help_strongarm() {
   $strongarm->api_version = 1;
   $strongarm->name = 'beautytips_defaults';
   $strongarm->value = array(
-    'fill' => '#F7F7F7',
+    'fill' => '#ffffaa',
     'padding' => 8,
-    'strokeStyle' => 999999,
+    'strokeStyle' => '#666666',
     'cornerRadius' => 0,
     'cssStyles' => array(
       'fontFamily' => '"lucida grande",tahoma,verdana,arial,sans-serif',
       'fontSize' => '11px',
     ),
-    'shadowBlur' => 3,
-    'shadowColor' => 363636,
+    'shadowBlur' => 4,
+    'shadowColor' => '#444444',
     'shadow' => TRUE,
   );
 
@@ -126,7 +126,7 @@ function ecenter_help_strongarm() {
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
   $strongarm->name = 'bt-options-box-fill';
-  $strongarm->value = '';
+  $strongarm->value = '#ffffaa';
 
   $export['bt-options-box-fill'] = $strongarm;
   $strongarm = new stdClass;
@@ -147,14 +147,14 @@ function ecenter_help_strongarm() {
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
   $strongarm->name = 'bt-options-box-shadowBlur';
-  $strongarm->value = 3;
+  $strongarm->value = 4;
 
   $export['bt-options-box-shadowBlur'] = $strongarm;
   $strongarm = new stdClass;
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
   $strongarm->name = 'bt-options-box-shadowColor';
-  $strongarm->value = '363636';
+  $strongarm->value = '#444444';
 
   $export['bt-options-box-shadowColor'] = $strongarm;
   $strongarm = new stdClass;
@@ -175,7 +175,7 @@ function ecenter_help_strongarm() {
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
   $strongarm->name = 'bt-options-box-strokeStyle';
-  $strongarm->value = '999999';
+  $strongarm->value = '#666666';
 
   $export['bt-options-box-strokeStyle'] = $strongarm;
   $strongarm = new stdClass;

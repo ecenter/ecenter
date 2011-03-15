@@ -44,6 +44,9 @@ projects[date][version] = "2.7"
 projects[devel][subdir] = "contrib"
 projects[devel][version] = "1.23"
 
+projects[diff][subdir] = "contrib"
+projects[diff][version] = "2.1"
+
 projects[features][subdir] = "contrib"
 projects[features][version] = "1.0"
 projects[features][patch][] = "http://drupal.org/files/issues/features-981248.patch"
@@ -145,7 +148,7 @@ projects[views][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repo
 projects[wysiwyg][subdir] = "contrib"
 projects[wysiwyg][version] = "2.2"
 
-; Login...
+; Login
 projects[autoload][subdir] = "contrib"
 projects[autoload][version] = "2.0"
 
@@ -164,11 +167,14 @@ projects[linkedin][version] = "1.x-dev"
 projects[openid_selector][subdir] = "contrib"
 projects[openid_selector][version] = "1.5"
 
-projects[oauth][subdir] = "contrib"
-projects[oauth][version] = "2.02"
+;projects[oauth][subdir] = "contrib"
+;projects[oauth][version] = "2.02"
 
 ; Themes
+projects[tao][type] = "theme"
 projects[tao][version] = "3.2"
+
+projects[seven][type] = "theme"
 projects[seven][version] ="1.0-beta13"
 
 ; Libraries

@@ -401,31 +401,6 @@ a {
     line-height: 1;
   }
 } // }}}
-#page-wrapper #tasks { // Tasks {{{
-  padding-top: .75em;
-  padding-left: .25em;
-  width: 970px;
-  font-size: @font_size_14;
-  ul {
-    float: right;
-    a {
-      padding: .1em .5em;
-      font-weight: bold;
-      background-color: @color_grey_33;
-      color: @color_white;
-      .round_corner(5px; 5px; 0; 0);
-      margin-right: 3px;
-      :hover {
-        background-color: @color_grey_60;
-        color: @color_black;
-      }
-      &.active {
-        background-color: @color_white;
-        color: @color_black;
-      }
-    } 
-  }
-} // }}}
 #page-wrapper { // Page wrapper {{{
   .shadow(0; 5px; 3px; @color_grey_20;);
   background-color: @color_grey_87;
@@ -564,6 +539,36 @@ a {
   }
 }
 // }}}
+/* Tasks {{{ */
+#page-wrapper #tasks {
+  padding-top: .75em;
+  padding-left: .25em;
+  width: 970px;
+  font-size: @font_size_14;
+  ul {
+    float: right;
+    a {
+      padding: .1em .5em;
+      font-weight: bold;
+      background-color: @color_grey_33;
+      color: @color_white;
+      .round_corner(5px; 5px; 0; 0);
+      margin-right: 3px;
+      :hover {
+        background-color: @color_grey_60;
+        color: @color_black;
+      }
+      &.active {
+        background-color: @color_white;
+        color: @color_black;
+      }
+    } 
+  }
+}
+.sidebar-right #page-wrapper #tasks {
+  width: 699px;
+} 
+/* }}} */
 
 /* --- Content styling --- */
 /* Nodes {{{ */

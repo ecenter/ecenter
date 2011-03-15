@@ -268,6 +268,14 @@ body.sidebar-right #content {
 body.sidebar-right #sidebar-right {
   float: left;
   width: 250px;
+  .page_top_padding;
+
+  h2 {
+    font-size: 1.25em;
+    margin-bottom: .75em;
+    line-height: 1.5;
+    border-bottom: 1px solid #bbb;
+  }
 }
 /* }}} */
 /* Links {{{ */
@@ -1272,13 +1280,6 @@ body.page-dashboard h1#page-title {
     margin-bottom: 1em;
   }
 
-  .views-row {
-    margin-bottom: 1.5em;
-  }
-  .views-row-last, form {
-    margin-bottom: .75em;
-  }
-
   .homebox-column-wrapper {
     .box;
     width: 310px;
@@ -1333,9 +1334,12 @@ body.page-dashboard h1#page-title {
     border: 2px dashed #bbb;
     margin: 0 0 1.5em 0;
   }
-
+}
+/* }}} */
+/* News block {{{ */
+#block-views-ecenter_blog-block_news {
   h3 {
-    border-top: 1px solid #ccc;
+    border-top: 1px solid #aaa;
     padding-top: .5em;
     margin-bottom: .4em;
     line-height: 1.3;
@@ -1346,6 +1350,12 @@ body.page-dashboard h1#page-title {
     color: #555;
     margin-right: .6em;
     margin-bottom: 1.25em;
+  }
+  .views-row {
+    margin-bottom: 1.5em;
+  }
+  .views-row-last, form {
+    margin-bottom: .75em;
   }
 }
 /* }}} */

@@ -5,9 +5,10 @@
  * @file
  * E-Center network query interface.
  */
+include_once('ecenter_network.features.inc');
 
 // Load traceroute diff (to keep licensing issues clear)
-require_once(dirname(__FILE__) . '/ecenter_network_traceroute_diff.inc');
+require_once('ecenter_network_traceroute_diff.inc');
 
 /**
  * Implementation of hook_menu().
@@ -840,21 +841,6 @@ function ecenter_network_jqplot_plugins() {
   return array(
     'linehighlighter' => $path .'/jqplot.linehighlighter.js',
   );
-}
-
-/**
- * Implementation of hook_ctools_plugin_api().
- * Required to provide layers
- */
-function ecenter_network_ctools_plugin_api($module, $api) {
-  if ($module == "openlayers") {
-    switch ($api) {
-      case 'openlayers_layers':
-      case 'openlayers_styles':
-      case 'openlayers_presets':
-        return array('version' => 1);
-    }
-  }
 }
 
 /**

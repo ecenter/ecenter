@@ -100,7 +100,7 @@ function ecenter_blog_views_default_views() {
   $handler->display->display_options['fields']['field_blog_post_authors_uid']['id'] = 'field_blog_post_authors_uid';
   $handler->display->display_options['fields']['field_blog_post_authors_uid']['table'] = 'node_data_field_blog_post_authors';
   $handler->display->display_options['fields']['field_blog_post_authors_uid']['field'] = 'field_blog_post_authors_uid';
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['label'] = 'Authors';
+  $handler->display->display_options['fields']['field_blog_post_authors_uid']['label'] = 'by';
   $handler->display->display_options['fields']['field_blog_post_authors_uid']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['field_blog_post_authors_uid']['alter']['make_link'] = 0;
   $handler->display->display_options['fields']['field_blog_post_authors_uid']['alter']['absolute'] = 0;
@@ -113,7 +113,7 @@ function ecenter_blog_views_default_views() {
   $handler->display->display_options['fields']['field_blog_post_authors_uid']['alter']['html'] = 0;
   $handler->display->display_options['fields']['field_blog_post_authors_uid']['element_type'] = 'span';
   $handler->display->display_options['fields']['field_blog_post_authors_uid']['element_label_type'] = 'span';
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['element_label_colon'] = 1;
+  $handler->display->display_options['fields']['field_blog_post_authors_uid']['element_label_colon'] = 0;
   $handler->display->display_options['fields']['field_blog_post_authors_uid']['element_wrapper_type'] = 'span';
   $handler->display->display_options['fields']['field_blog_post_authors_uid']['element_default_classes'] = 1;
   $handler->display->display_options['fields']['field_blog_post_authors_uid']['hide_empty'] = 0;

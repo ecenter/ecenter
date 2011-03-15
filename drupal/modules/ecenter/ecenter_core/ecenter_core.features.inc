@@ -20,7 +20,7 @@ function ecenter_core_homebox() {
   $homeboxes = array();
 
   $homeboxes['dashboard'] = array (
-    'regions' => 2,
+    'regions' => 3,
     'cache' => 0,
     'color' => 0,
     'colors' => 
@@ -38,13 +38,25 @@ function ecenter_core_homebox() {
       array (
         'module' => 'comment',
         'delta' => '0',
+        'region' => 2,
+        'movable' => 1,
+        'status' => 1,
+        'open' => 1,
+        'closable' => 1,
+        'title' => '',
+        'weight' => -11,
+      ),
+      'views_ecenter_blog-block_news' => 
+      array (
+        'module' => 'views',
+        'delta' => 'ecenter_blog-block_news',
         'region' => 1,
         'movable' => 1,
         'status' => 1,
         'open' => 1,
         'closable' => 1,
         'title' => '',
-        'weight' => -1,
+        'weight' => -11,
       ),
       'search_0' => 
       array (
@@ -56,7 +68,7 @@ function ecenter_core_homebox() {
         'open' => 1,
         'closable' => 1,
         'title' => '',
-        'weight' => -8,
+        'weight' => -10,
       ),
     ),
     'widths' => 

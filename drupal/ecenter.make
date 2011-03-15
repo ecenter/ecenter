@@ -145,6 +145,28 @@ projects[views][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repo
 projects[wysiwyg][subdir] = "contrib"
 projects[wysiwyg][version] = "2.2"
 
+; Login...
+projects[autoload][subdir] = "contrib"
+projects[autoload][version] = "2.0"
+
+projects[curl][subdir] = "contrib"
+projects[curl][version] = "2.0-rc1"
+
+projects[twitter][subdir] = "contrib"
+projects[twitter][version] = "3.0-beta3"
+
+projects[fbconnect][subdir] = "contrib"
+projects[fbconnect][version] = "2.0-beta1"
+
+projects[linkedin][subdir] = "contrib"
+projects[linkedin][version] = "1.x-dev"
+
+projects[openid_selector][subdir] = "contrib"
+projects[openid_selector][version] = "1.5"
+
+projects[oauth][subdir] = "contrib"
+projects[oauth][version] = "2.02"
+
 ; Themes
 projects[tao][version] = "3.2"
 projects[seven][version] ="1.0-beta13"
@@ -168,6 +190,7 @@ libraries[jquery_ui_1_8][download][url] = "http://jquery-ui.googlecode.com/files
 libraries[jquery_ui_1_8][directory_name] = "jquery.ui-1.8"
 libraries[jquery_ui_1_8][destination] = "modules/contrib/jquery_ui"
 
+; OpenLayers
 libraries[openlayers][download][type] = "get"
 libraries[openlayers][download][url] = "http://openlayers.org/download/OpenLayers-2.10.tar.gz"
 libraries[openlayers][directory_name] = "openlayers"
@@ -191,3 +214,8 @@ libraries[tinymce][directory_name] = "tinymce"
 libraries[geoip][download][type] = "get"
 libraries[geoip][download][url] = "http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz"
 libraries[geoip][directory_name] = "geoip"
+
+; OpenID Selector
+libraries[openid_selector][download][type] = "get"
+libraries[openid_selector][download][url] = "http://openid-selector.googlecode.com/files/openid-selector-1.3.zip"
+libraries[openid_selector][directory_name] = "openid-selector"

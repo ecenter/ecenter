@@ -69,9 +69,9 @@ function template_preprocess_ecenter_network_data(&$vars) {
     '#type' => 'textfield',
     '#size' => 115,
     '#disabled' => TRUE,
-    '#value' => url('network', 
+    '#value' => urldecode(url('network', 
       array('query' => $vars['params'], 'absolute' => TRUE,)
-    ),
+    )),
   );
   $vars['permalink_field'] = drupal_render($permalink_field);
 
@@ -123,7 +123,7 @@ function theme_ecenter_network_recent_query($query, $time) {
       '<span class="value">'. $value .'</span>';
   }
 
-  $date = '<span class="date"><a href="'. url('network') .'?'. $query .'">'. 
+  $date = '<span class="date"><a href="'. urldecode(url('network') .'?'. $query) .'">'. 
     date_format($time, 'n-j-Y g:ia') .'</a></span>';
   $query = '<span class="query">'. implode(' | ', $query_text) .'</span>';
   

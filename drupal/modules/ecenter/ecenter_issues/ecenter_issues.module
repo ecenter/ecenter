@@ -54,7 +54,7 @@ function ecenter_issues_init() {
 function ecenter_issues_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
   if ($node->type == 'issue' && $op == 'load') {
     $query = ecenter_issues_get_node_query($node);
-    $node->ecenter_weathermap_link = theme('ecenter_issues_data_link', 'weathermap', 
+    $node->ecenter_network_link = theme('ecenter_issues_data_link', 'weathermap', 
       array('query' => $query, 'attributes' => array('class' => 'button')),
       'View query results');
   }
@@ -98,7 +98,7 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
       }
 
       $params = ecenter_issues_parse_params($_REQUEST['query']);
-      $data = ecenter_weathermap_get_data($params['src'], $params['dst'],
+      $data = ecenter_network_get_data($params['src'], $params['dst'],
         $params['start'], $params['end']);
 
       // Query provided, but malformed or no data
@@ -167,10 +167,10 @@ function ecenter_issues_issue_add_data($form, &$form_state) {
   $src_field_name = 'field_query_src_'. $src_type;
   $dst_field_name = 'field_query_dst_'. $dst_type;
 
-  $start = _ecenter_weathermap_date_to_utc($params['start'], 'Y-m-d H:i:s');
-  $end = _ecenter_weathermap_date_to_utc($params['end'], 'Y-m-d H:i:s');
-  $start_query = _ecenter_weathermap_date_to_utc($params['start'], 'Y-m-d\TH:i:s');
-  $end_query = _ecenter_weathermap_date_to_utc($params['end'], 'Y-m-d\TH:i:s');
+  $start = _ecenter_network_date_to_utc($params['start'], 'Y-m-d H:i:s');
+  $end = _ecenter_network_date_to_utc($params['end'], 'Y-m-d H:i:s');
+  $start_query = _ecenter_network_date_to_utc($params['start'], 'Y-m-d\TH:i:s');
+  $end_query = _ecenter_network_date_to_utc($params['end'], 'Y-m-d\TH:i:s');
 
   // @TODO Parse dates and times into proper format...
 
@@ -220,7 +220,7 @@ function ecenter_issues_issue_add_data($form, &$form_state) {
     $queryNode->$dst_field_name = array(array('value' => $dst_value));
 
     // @TODO this should go in the network_query save routine somehow...
-    $data = ecenter_weathermap_get_data($params['src'], $params['dst'], $params['start'], $params['end']);
+    $data = ecenter_network_get_data($params['src'], $params['dst'], $params['start'], $params['end']);
     $queryNode->field_query_data = array(array('value' => serialize($data)));
 
     // Dates need to be converted to UTC

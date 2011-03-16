@@ -1,5 +1,10 @@
 <div id="results">
   <div id="results-title" class="clearfix">
+    <?php if ($issuelink): ?>
+    <div class="issuelink">
+      <?php print $issuelink; ?>
+    </div>
+    <?php endif; ?>
     <h2><?php print $title; ?></h2>
     <?php if ($permalink): ?>
     <div class="permalink">

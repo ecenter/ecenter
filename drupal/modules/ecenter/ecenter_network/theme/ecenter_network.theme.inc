@@ -10,10 +10,9 @@
  * Theme main data display
  */
 function template_preprocess_ecenter_network_data(&$vars) {
-  
+
   // Generate issue link -- encode params for use with custom ecenter_issues
   // module
-  // @TODO Move into menu for features export?
   if (module_exists('ecenter_issues') && user_access('create ecenter issue content')) {
     $issue_params = array();
     foreach ($vars['params'] as $key=>$param) {
@@ -41,15 +40,15 @@ function template_preprocess_ecenter_network_data(&$vars) {
     $dates[$val] = date_format($date, 'M j, Y H:i');
   }
 
-  $vars['title'] = t('<span class="src-dst">@src_hub_name (@src_hub) to 
+  $vars['title'] = t('<span class="src-dst">@src_hub_name (@src_hub) to
     @dst_hub_name (@dst_hub)</span><span class="separator">, </span>
     <span class="date-range">@start - @end</span>',
-    array( 
+    array(
       '@src_hub_name' => $src_hop['hub_name'],
       '@src_hub' => $src_hop['hub'],
       '@dst_hub_name' => $dst_hop['hub_name'],
       '@dst_hub' => $dst_hop['hub'],
-      '@start' => $dates['start'], 
+      '@start' => $dates['start'],
       '@end' => $dates['end']
     )
   );
@@ -59,8 +58,8 @@ function template_preprocess_ecenter_network_data(&$vars) {
 
   // Generate permalink
   $vars['permalink'] = l(t('Permalink'), 'network', array(
-    'query' => $vars['params'], 
-    'absolute' => TRUE, 
+    'query' => $vars['params'],
+    'absolute' => TRUE,
     'attributes' => array('title' => $vars['title']),
   ));
   // Generate permalink
@@ -69,14 +68,14 @@ function template_preprocess_ecenter_network_data(&$vars) {
     '#type' => 'textfield',
     '#size' => 115,
     '#disabled' => TRUE,
-    '#value' => urldecode(url('network', 
+    '#value' => urldecode(url('network',
       array('query' => $vars['params'], 'absolute' => TRUE,)
     )),
   );
   $vars['permalink_field'] = drupal_render($permalink_field);
 
   // End to end measurements
-  $vars['end_to_end'] = theme('ecenter_network_end_to_end', 
+  $vars['end_to_end'] = theme('ecenter_network_end_to_end',
     $vars['data']['end_to_end']);
 
   // Per-hop measurements
@@ -90,7 +89,7 @@ function template_preprocess_ecenter_network_data(&$vars) {
 function template_preprocess_ecenter_network_recent_queries(&$vars) {
   global $user;
   if ($user->uid > 0) {
-    $queries = $user->ecenter_network_queries; 
+    $queries = $user->ecenter_network_queries;
   }
   else if (isset($_COOKIE[session_name()])) {
     $queries = unserialize(sess_read('ecenter_network_queries'));
@@ -102,7 +101,7 @@ function template_preprocess_ecenter_network_recent_queries(&$vars) {
       $tz = date_default_timezone_name(TRUE);
       $time = date_make_date($query['time'], timezone_open('UTC'), DATE_UNIX);
       date_timezone_set($time, timezone_open($tz));
-      $links[] = theme('ecenter_network_recent_query', $query['query'], $time); 
+      $links[] = theme('ecenter_network_recent_query', $query['query'], $time);
     }
     $vars['queries'] = array_reverse($links);
   }
@@ -119,14 +118,14 @@ function theme_ecenter_network_recent_query($query, $time) {
   $query_parts = explode('&amp;', urldecode($query));
   foreach ($query_parts as $part) {
     list($key, $value) = explode('=', $part);
-    $query_text[] = '<span class="key '. $key .'">'. strtoupper($key) .':</span> '. 
+    $query_text[] = '<span class="key '. $key .'">'. strtoupper($key) .':</span> '.
       '<span class="value">'. $value .'</span>';
   }
 
-  $date = '<span class="date"><a href="'. urldecode(url('network') .'?'. $query) .'">'. 
+  $date = '<span class="date"><a href="'. urldecode(url('network') .'?'. $query) .'">'.
     date_format($time, 'n-j-Y g:ia') .'</a></span>';
   $query = '<span class="query">'. implode(' | ', $query_text) .'</span>';
-  
+
   return $date .' '. $query;
 }
 
@@ -151,7 +150,7 @@ function theme_ecenter_network_hops($hops = array()) {
                 'header' => TRUE,
               ),
               'utilization' => array(
-                'data' => sprintf('%01.4f', 
+                'data' => sprintf('%01.4f',
                   100 * ($timeseries[1]['utilization'] / $timeseries[1]['capacity'])),
                 'class' => $class,
               ),

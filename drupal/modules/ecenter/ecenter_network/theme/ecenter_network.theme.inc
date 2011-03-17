@@ -168,11 +168,27 @@ function theme_ecenter_network_hops($hops = array()) {
     }
   }
 
+  foreach ($settings['ecenterNetwork']['seriesLookupByIndex'] as $sidx => $hop) {
+    $settings['ecenterNetwork']['seriesLookupByID'][$hop['id']] = array(
+      'sidx' => $sidx,
+      'hub' => $hop['hub'],
+    );
+    if (!is_array($settings['ecenterNetwork']['seriesLookupByHub'][$hop['hub']])) {
+      $settings['ecenterNetwork']['seriesLookupByHub'][$hop['hub']] = array();
+    }
+    $settings['ecenterNetwork']['seriesLookupByHub'][$hop['hub']] += array(
+      'sidx' => array($sidx),
+      'id' => array($hop['id']),
+    );
+  }
+
   if (!empty($tables)) {
+    drupal_add_js($settings, 'setting');
+
     $plot_options = _ecenter_network_plot_options_template();
     $plot_options['seriesDefaults']['markerOptions']['show'] = FALSE;
-    $plot_options['seriesDefaults']['lineWidth'] = 1.2;
-    $plot_options['seriesDefaults']['color'] = '#555555';
+    $plot_options['seriesDefaults']['lineWidth'] = 1;
+    $plot_options['seriesDefaults']['color'] = '#999999';
     $plot_options['axes']['xaxis']['pad'] = 0;
     $plot_options['axes']['xaxis']['numberTicks'] = 10;
     $plot_options['axes']['yaxis']['min'] = 0;
@@ -180,7 +196,7 @@ function theme_ecenter_network_hops($hops = array()) {
     $plot_options['axes']['yaxis']['numberTicks'] = 5;
     $plot_options['linehighlighter'] = array(
       'show' => TRUE,
-      'sizeAdjust' => 1.5,
+      'sizeAdjust' => 2.5,
       'threshold' => 2,
     );
     drupal_alter('ecenter_network_plot_options', $plot_options, 'utilization', 'snmp');
@@ -402,6 +418,7 @@ function _ecenter_network_plot_options_template() {
       'xoffset' => 1,
       'yoffset' => 1,
     ),
+    'seriesColors' => array('#000000'),
     'axes' => array(
       'xaxis' => array(
         'autoscale' => TRUE,
@@ -427,8 +444,8 @@ function _ecenter_network_plot_options_template() {
     'grid' => array(
       'shadow' => FALSE,
       'borderWidth' => 0,
-      'background' => '#ffffff',
-      'gridLineColor' => '#cccccc',
+      'background' => '#dddddd',
+      'gridLineColor' => '#ffffff',
     ),
   );
 }
@@ -526,7 +543,7 @@ function theme_ecenter_network_format_value($value, $units = NULL) {
 function theme_ecenter_network_utilization_table($table, $hop) {
   $attributes = array();
   $attributes['class'] = $direction;
-  $attributes['class'] .= ($direction == 'forward') ? "{lineWidth : 1}" : "{lineWidth : 0, sizeAdjust: 0}";
+  //$attributes['class'] .= ($direction == 'forward') ? "{lineWidth : 1}" : "{lineWidth : 0, sizeAdjust: 0}";
 
   $headers = array(t('Time'), t('Percent utilization'));
   $output = '<div class="data-table">';

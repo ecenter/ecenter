@@ -42,18 +42,18 @@ Drupal.ecenterSelect = {};
 
 Drupal.ecenterSelect.click = function(feature) {
   var layer = feature.layer;
-  var map = this.map.div;
-  $(map).trigger('featureClick', [feature, layer, this]);
+  var control = this;
+  $(control.map.div).trigger('featureClick', [feature, layer, control]);
 }
 
 Drupal.ecenterSelect.over = function(feature) {
   var layer = feature.layer;
-  var map = this.map.div;
-  $(map).trigger('featureOver', [feature, layer]);
+  var control = this;
+  $(control.map.div).trigger('featureOver', [feature, layer, control]);
 }
 
 Drupal.ecenterSelect.out = function(feature) {
   var layer = feature.layer;
-  var map = this.map.div;
-  $(map).trigger('featureOut', [feature, layer]);
+  var control = this;
+  $(control.map.div).trigger('featureOut', [feature, layer, control]);
 }

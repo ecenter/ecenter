@@ -139,23 +139,28 @@ function theme_ecenter_network_recent_query($query, $time) {
 function theme_ecenter_network_hops($hops = array()) {
   $tables = array();
 
+  $settings = array();
+
   // Create tables for scraping
   foreach ($hops as $hop) {
     // @TODO Iterate over all types, use measurement / type callbacks
     $table = array();
+
+    $settings['ecenterNetwork']['seriesLookupByIndex'][] = array('id' => $hop['id'], 'hub' => $hop['hub']);
+
     foreach ($hop['data']['snmp'] as $timeseries) {
       if (!empty($timeseries)) {
-          $table[] = array(
-              'label' => array(
-                'data' => $timeseries[0] * 1000,
-                'header' => TRUE,
-              ),
-              'utilization' => array(
-                'data' => sprintf('%01.4f', 
-                  100 * ($timeseries[1]['utilization'] / $timeseries[1]['capacity'])),
-                'class' => $class,
-              ),
-          );
+        $table[] = array(
+          'label' => array(
+            'data' => $timeseries[0] * 1000,
+            'header' => TRUE,
+          ),
+          'utilization' => array(
+            'data' => sprintf('%01.4f', 
+              100 * ($timeseries[1]['utilization'] / $timeseries[1]['capacity'])),
+            'class' => $class,
+          ),
+        );
       }
     }
     if (!empty($table)) {

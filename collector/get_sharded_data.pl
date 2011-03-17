@@ -177,7 +177,7 @@ foreach my $e2e (@E2E) {
 #
 # now collect topology and SNMP data from ESnet
 # 
-foreach my $service ( qw/ps3/ ) {
+foreach my $service ( qw/ps2/ ) {
     my $ts_instance =  "http://$service.es.net:8012/perfSONAR_PS/services/topology";
     try {  
         $logger->debug("\t\t Service at:\t$ts_instance ");
@@ -317,15 +317,16 @@ sub set_end_sites {
    my ($dbh, $pm ) = @_;
    my $dbi =  db_connect(\%OPTIONS); 
    my $now_time = strftime('%Y-%m-%d %H:%M:%S', localtime());
-   foreach my $hub_name (qw/FNAL   LBL   ORNL   SLAC    BNL  ANL/) {
-      my $hub = Ecenter::Data::Hub->new({hub_name => $hub_name});
+   my $hub = Ecenter::Data::Hub->new;
+   foreach my $hub_name ( $hub->get_hub_blocks ) {
+      $hub->hub_name($hub_name);
       my %subnets =  %{$hub->get_ips()};
       my ($l2_port) =   $dbh->resultset('L2Port')->search({'hub.hub_name' => $hub_name}, {join => 'hub', limit => 1});
       unless($l2_port && $l2_port->l2_urn) {
           $logger->error("NO ports available - check topology info or hub_name:$hub_name");
           next;
       }
-       $logger->debug(" LT_urn;;;;;" . $l2_port->l2_urn);
+       $logger->debug(" LT_urn: " . $l2_port->l2_urn);
       foreach my $subnet (keys %subnets) {
          my $sql = qq|select n.ip_noted, n.ip_addr 
 	              from 
@@ -413,9 +414,10 @@ sub get_e2e {
 #   get SNMP data from ESnet SNMP 
 #
 sub get_snmp { 
-    my ($dbh, $pm ) = @_; 
+    my ($dbh, $pm ) = @_;
+    my $SERVICE_ES = 'ps6';
     my ($service) = $dbh->resultset('Service')->search({'eventtypes.service_type' => 'snmp', 
-                                                      'me.service' => {like => '%es.net%'}}, 
+                                                      'me.service' => {like => "\%$SERVICE_ES.es.net\%"}}, 
                                                      { 'join' => 'eventtypes',
 						       '+select' => ['eventtypes.ref_id'],
 						     
@@ -425,13 +427,13 @@ sub get_snmp {
     # harcoded fix for miserable  ESnet service
     my $eventtype_obj; 
     unless($service) {
-        my $ps3_node =   $dbh->resultset('Node')->find({nodename => 'ps3.es.net'});
+        my $ps3_node =   $dbh->resultset('Node')->find({nodename => "$SERVICE_ES.es.net"});
         my $service_obj = $dbh->resultset('Service')->update_or_create({ name => 'ESnet SNMP MA',
 	                                				 ip_addr  => $ps3_node->ip_addr, 
 									 comments => 'ESnet SNMP MA',
 									 is_alive => 1,
 									 updated  => \"NOW()",
-									 service  => 'http://ps3.es.net:8080/perfSONAR_PS/services/snmpMA'});
+									 service  => "http://$SERVICE_ES.es.net:8080/perfSONAR_PS/services/snmpMA"});
 	$eventtype_obj = $dbh->resultset('Eventtype')->update_or_create( { eventtype =>  'http://ggf.org/ns/nmwg/characteristic/utilization/2.0',
 								           service =>  $service_obj->service,
 								           service_type =>  'snmp',
@@ -439,7 +441,7 @@ sub get_snmp {
 								         { key => 'eventtype_service_type' }
 							      );				    
 	$service = $dbh->resultset('Service')->find({ 'eventtypes.service_type' => 'snmp', 
-	                                                'me.service' => {like => '%es.net%'}}, 
+	                                                'me.service' => {like => "\%$SERVICE_ES.es.net\%"}}, 
                                                        {join => 'eventtypes', '+select' => ['eventtypes.ref_id'] } );
     }
     my $eventtype_id =  $service->eventtypes->first->ref_id;
@@ -455,6 +457,7 @@ sub get_snmp {
     my $num_ports = @ports;
     $logger->info("PORTS::" . @ports);
     my $counter = 1;
+    my %addressess = ();
     foreach my  $port (@ports) {
         $logger->info(sprintf("Progressed ... %5.2f %% out of %d", ($counter/$num_ports)*100., $num_ports));
     	my @ifAddresses = $dbh->resultset('L2L3Map')->search( { l2_urn => $port->l2_urn }, 
@@ -464,8 +467,17 @@ sub get_snmp {
     	    $logger->error(" !!! NO Addresses !!! ");
     	    next;
     	}
-    	foreach my  $l3 (@ifAddresses) {
-    	    $logger->debug("=====---------------===== \n ifAddress::" . $l3->ip_addr->ip_noted . " URN:" . $port->l2_urn );
+	foreach my  $l3 (@ifAddresses) {
+	    $addressess{$l3->ip_addr->ip_noted}{port} = $port;
+	    $addressess{$l3->ip_addr->ip_noted}{l3} =  $l3;
+	}
+	$counter++;
+   }
+   foreach my $addr (keys %addressess) {
+            my $l3 = $addressess{$addr}{l3};
+	    my $port = $addressess{$addr}{port};
+	    
+	    $logger->debug("=====---------------===== \n ifAddress:: $addr URN:" . $port->l2_urn );
 	
     	    ### my $pid = $pm->start and next;
 	    pool_control($MAX_THREADS, undef);
@@ -489,7 +501,7 @@ sub get_snmp {
         	my $secs_past = $last_time && ($last_time->timestamp >  $PAST_START)?$last_time->timestamp:$PAST_START;
 		
     		$snmp_ma->get_data({ direction => 'out',
-    	    			     ifAddress => $l3->ip_addr->ip_noted, 
+    	    			     ifAddress => $addr, 
     	    			     start     => DateTime->from_epoch( epoch =>  $secs_past),
     	    			     end       => DateTime->now()	
 	    			  });
@@ -504,11 +516,15 @@ sub get_snmp {
     		if($snmp_ma->data && @{$snmp_ma->data}) {
     		    foreach my $data (@{ $snmp_ma->data}) { 
     	    	       eval {
-		        $dbh->resultset("SnmpData$now_table")->find_or_create({ metaid =>  $meta->metaid,
-    	    								       timestamp => $data->[0],
-    	    								       utilization => $data->[1],
+		       
+		        my ($got_snmp) = $dbh->resultset("SnmpData$now_table")->search({ metaid =>  $meta->metaid,
+    	    								                 timestamp => $data->[0]  },
+										      { limit => 1} );
+		         $dbh->resultset("SnmpData$now_table")->create({ metaid =>  $meta->metaid,
+    	    								        timestamp => $data->[0],
+    	    								        utilization => $data->[1],
     	    								     },
-    	    								     { key => 'meta_time'});
+    	    								     { key => 'meta_time'}) unless $got_snmp;
 		      };
 		      if($EVAL_ERROR) {
 		         $logger->error($meta->metaid . " metaid failed due some error $EVAL_ERROR skipping ...  ");
@@ -519,7 +535,6 @@ sub get_snmp {
 		return;
 	    });
     	    #$pm->finish;
-    	}
     }
 }
 __END__

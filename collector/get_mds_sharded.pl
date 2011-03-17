@@ -222,12 +222,12 @@ unless(@hlses) {
 my %e2e_threads= (); 
 foreach my $hls (@hlses) {
     $logger->debug("LSS INDEX BEFORE:	$hls"); 
-    $logger->debug("For... $hls");  
+    $logger->info("CHECKING HLS: $hls");  
     #  if($hls !~ /(anl|ornl|lbl|lbnl|jlab|bnl)\.gov|es\.net|\w+.edu|dmz\.net|[\w\-]+\.org/) { 
     next unless(  $hls =~ $HOST_MATCH );
     
     ### run query/echo/ping async
-    $logger->info("LSS INDEX PASSED: $hls");
+    $logger->info("HLS ACCEPTED: $hls");
     #my $pid = $pm->start and next; 
     #chomp $hls;
     #remote_ls( $hls, 'hLS service', 'hLS', 'http://ggf.org/ns/nmwg/tools/org/perfsonar/service/1.0/');

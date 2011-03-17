@@ -4,7 +4,7 @@ warnings: 0
 debug: 1
 show_errors: 1
 auto_reload: 0
-time_slice_secs: 3600
+time_slice_secs: 20000
 port: 8098
 gearman:
    server: localhost

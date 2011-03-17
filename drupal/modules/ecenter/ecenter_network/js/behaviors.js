@@ -68,15 +68,21 @@ EcenterNetwork.selectFeature = function(select) {
     for (key in maps) {
       var ol = $('#' + maps[key].id).data('openlayers');
       var layer = ol.openlayers.getLayersBy('drupalID', 'ecenter_network_sites').pop();
-      var control = ol.openlayers.getControlsBy('ecenterID', 'ecenter_network_select').pop();
+      var control = ol.openlayers.getControlsBy('drupalID', 'ecenterSelect').pop();
       var feature = layer.getFeatureBy('ecenterID', query_value);
+
+      console.log(query_value);
+      console.log(control);
+      console.log(feature);
 
       // If this is called while loading, we have a problem
       if (control && feature) { 
-        control.callbacks.over.call(control, feature);
-        if (select) {
-          control.select.call(control, feature);
-        }
+        //control.callbacks.over.call(control, feature);
+        console.log('oh hm');
+        Drupal.ecenterSelect.over.call(ol, feature);
+        //if (select) {
+        //control.select.call(control, feature);
+        //}
       }
     }
   }
@@ -101,10 +107,10 @@ $(document).ready(function() {
   }
 
   // If a src/dst changes, change the map, too.
-  $('#ecenter-network-select-form #src-wrapper select, #ecenter-network-select-form #dst-wrapper select')
+  /*$('#ecenter-network-select-form #src-wrapper select, #ecenter-network-select-form #dst-wrapper select')
   .change(function(e) { 
     EcenterNetwork.selectFeature.call(this, true);
-  });
+  });*/
 
   // Bind to ajaxSend event
   $('#ecenter-network-select-form').bind('ajaxSend', function(ajax, xhr) {
@@ -181,23 +187,9 @@ $(document).ready(function() {
     .removeClass('highlight')
     .css({'background-color' : 'transparent' });
   });
-
-  // Bind to feature select: Set value, then call autocomplete's change function
-  $('#network-map').bind('ecenterfeatureselect', function(e, feature, layer) {
-    if (layer.selectedFeatures.length == 1) {
-      var input = $('#edit-network-wrapper-query-src-wrapper-src-wrapper input');
-      input.val(feature.ecenterID);
-      input.data('autocomplete')._trigger('change');
-    }
-    else if (layer.selectedFeatures.length > 1) {
-      var input = $('#edit-network-wrapper-query-dst-wrapper-dst-wrapper input');
-      input.val(feature.ecenterID);
-      input.data('autocomplete')._trigger('change');
-    }
-  });
-
+ 
   // Bind to feature select
-  $('#network-map').bind('ecenterfeatureunselect', function(e, feature, layer) {
+  /*$('#network-map').bind('ecenterfeatureunselect', function(e, feature, layer) {
     // No selected features
     if (!layer.selectedFeatures.length) {
       var input = $('#edit-network-wrapper-query-src-wrapper-src-wrapper input');
@@ -207,6 +199,59 @@ $(document).ready(function() {
     else if (layer.selectedFeatures.length) {
       var input = $('#edit-network-wrapper-query-dst-wrapper-dst-wrapper input');
       input.val('');
+      input.data('autocomplete')._trigger('change');
+    }
+  });*/
+
+  $('body').bind('featureOver', function(e, feature, layer) {
+    feature._prevHighlighter = feature._lastHighlighter;
+    feature._lastHighlighter = this.id;
+    var selectStyle = {
+      strokeColor: '#0000aa',
+      pointRadius: 7,
+      strokeWidth: 3,
+      fontColor: '#0000aa',
+      zIndex: 1000
+    };
+    var style = $.extend({}, feature.style, selectStyle);
+    layer.drawFeature(feature, style);
+  });
+
+
+  $('body').bind('featureOut', function(e, feature, layer) {
+    var selected = (OpenLayers.Util.indexOf(
+      feature.layer.selectedFeatures, feature) > -1);
+    if (!selected) {
+      feature._lastHighlighter = feature._prevHighlighter;
+      delete feature._prevHighlighter;
+      layer.drawFeature(feature, feature.style || feature.layer.style ||
+          "default");
+    }
+  });
+  
+  $('body').bind('featureClick', function(e, feature, layer, map) {
+    // Toggle click state
+    var selected = (OpenLayers.Util.indexOf(
+      feature.layer.selectedFeatures, feature) > -1);
+    if (selected) {
+      map.unselect(feature);
+      Drupal.ecenterSelect.out.call(map, feature); // Unhighlight
+    } else {
+      map.select(feature);
+      Drupal.ecenterSelect.over.call(map, feature); // Highlight
+    }
+  });
+
+  // Bind to feature select: Set value, then call autocomplete's change function
+  $('body').bind('featureClick', function(e, feature, layer) {
+    if (layer.selectedFeatures.length == 1) {
+      var input = $('#edit-network-wrapper-query-src-wrapper-src-wrapper input');
+      input.val(feature.ecenterID);
+      input.data('autocomplete')._trigger('change');
+    }
+    else if (layer.selectedFeatures.length > 1) {
+      var input = $('#edit-network-wrapper-query-dst-wrapper-dst-wrapper input');
+      input.val(feature.ecenterID);
       input.data('autocomplete')._trigger('change');
     }
   });

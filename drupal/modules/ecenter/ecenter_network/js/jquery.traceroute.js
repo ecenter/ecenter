@@ -410,7 +410,7 @@ TraceRoute.prototype.drawSegment = function(x1, y1, x2, y2, options, arrow_optio
 TraceRoute.prototype.drawHopLabel = function(hop, x, y, align) {
   var o = this.options;
 
-  label = '<div class="trace-label" id="trace-hop-label-' + hop.hop_id + '" hopid="' + hop.hop_id + '">';
+  label = '<div class="trace-label" id="trace-hop-label-' + hop.id + '" hopid="' + hop.id + '">';
   label += hop.hub;
   label += '</div>';
   label = $(label);
@@ -421,11 +421,12 @@ TraceRoute.prototype.drawHopLabel = function(hop, x, y, align) {
 
   label_width = o.label.width;
   css = {
+    'z-index' : 50,
     'width' : label_width + 'px',
     'position' : 'absolute',
     'left' : x,
     'top' : y,
-    'text-align' : 'center'
+    'text-align' : 'center',
   };
   label.css(css);
   $(this.el).append(label);
@@ -436,7 +437,28 @@ TraceRoute.prototype.drawHopLabel = function(hop, x, y, align) {
 
 // @TODO Provide generic behavior and override elsewhere
 TraceRoute.prototype.hopBehavior = function(el) {
-  // @TODO yeesh!
+  $(el).hover(function() {
+    var hopid = $(this).attr('hopid');
+    var hop = Drupal.settings.ecenterNetwork.seriesLookupByID[hopid];
+    var tc = $('#utilization-tables').data('tablechart');
+    var lh = tc['default'].chart.plugins.linehighlighter;
+    lh.highlightSeries(hop.sidx, tc['default'].chart);
+
+    var background_color = (lh.colors && lh.colors[hop.sidx] != undefined) ? lh.colors[hop.sidx] : tc['default'].chart.seriesColors[hop.sidx];
+    $(this)
+    .addClass('highlight')
+    .css({'background-color' : background_color });
+  }, function() {
+    var hopid = $(this).attr('hopid');
+    var hop = Drupal.settings.ecenterNetwork.seriesLookupByID[hopid];
+    var tc = $('#utilization-tables').data('tablechart');
+    var lh = tc['default'].chart.plugins.linehighlighter;
+    lh.unhighlightSeries(hop.sidx, tc['default'].chart);
+
+    $(this)
+    .removeClass('highlight')
+    .css({'background-color' : 'transparent'});
+  });
 }
 
 // @TODO: DRY violation

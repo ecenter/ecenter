@@ -382,7 +382,6 @@ function ecenter_network_select_form(&$form_state) {
     if ($data) {
       drupal_add_js(array('ecenterNetwork' => array('tracerouteData' => $data['traceroute']['diff'])), 'setting');
       drupal_add_js(array('ecenterNetwork' => array('tracerouteMaxLength' => $data['traceroute']['traceroute_max'])), 'setting');
-      drupal_add_js(array('ecenterNetwork' => array('seriesLookup' => $data['series_lookup'])), 'setting');
       $form['results_wrapper']['results']['#value'] = theme('ecenter_network_data', $data, $params);
     }
     else {
@@ -678,7 +677,6 @@ function ecenter_network_parse_response($response) {
     }
 
     // -- Process traceroute -- //
-
     $traceroute = array();
     $traceroute_direction = ($direction == 'forward') ? 'direct' : 'reverse';
     if (is_array($data[$traceroute_direction .'_traceroute'])) {

@@ -875,6 +875,7 @@ function ecenter_network_openlayers_presets() {
       'ecenter_network_behavior_select' => array(
         'layers' => array(
           'ecenter_network_sites' => 'ecenter_network_sites',
+          'ecenter_network_traceroute' => 'ecenter_network_traceroute',
         ),
       ),
       'ecenter_network_behavior_dynamicload' => array(),

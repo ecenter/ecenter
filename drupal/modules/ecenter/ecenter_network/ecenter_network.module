@@ -623,9 +623,15 @@ function ecenter_network_parse_response($response) {
   $data = $response['response'];
   $params = $response['parameters'];
 
-  //dpm($response, 'response');
-
-  foreach (array('direct_traceroute', 'reverse_traceroute') as $direction) {}
+  // Add hops to data structure
+  foreach ($data['traceroute_nodes'] as $node_ip => $node) {
+    $node['id'] = str_replace('.', '_', $node_ip);
+    $parsed_data['hops'][$node_ip] = $node + array('data' => 
+      array(
+        'snmp' => $data['snmp'][$node_ip],
+      ),
+    );
+  }
 
   // Iterate through fwd/reverse + src/dst
   foreach (array('forward' => 'src', 'reverse' => 'dst') 
@@ -680,7 +686,7 @@ function ecenter_network_parse_response($response) {
         // @TODO is this a safe way to get series?
         $hop = array_shift($series);
 
-        $hop += $data['traceroute_nodes'][$hop['hop_ip']];
+        $hop += $parsed_data['hops'][$hop['hop_ip']];
 
         // Geolocate IP if no geo data available
         if (!$hop['longitude'] || !$hop['latitude']) {
@@ -703,18 +709,7 @@ function ecenter_network_parse_response($response) {
       $parsed_data['traceroute'][$direction] = $traceroute;
     }
   }
-
-  // Create hop-by-hop structure out of nodes
-  foreach ($data['traceroute_nodes'] as $node_ip => $node) {
-    // Create 
-    $node['id'] = str_replace('.', '_', $node_ip);
-    $parsed_data['hops'][$node_ip] = $node + array('data' => 
-      array(
-        'snmp' => $data['snmp'][$node_ip],
-      ),
-    );
-  }
-
+  
   // Calculate diff
   if (!empty($parsed_data['traceroute']['forward']) 
     && !empty($parsed_data['traceroute']['reverse'])) {

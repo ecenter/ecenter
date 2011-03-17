@@ -15,7 +15,6 @@ require_once('ecenter_network_traceroute_diff.inc');
  */
 function ecenter_network_menu() {
   $items['network'] = array(
-    //'title' => 'E-Center Weather Map',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('ecenter_network_select_form'),
     'access arguments' => array('access ecenter network'),

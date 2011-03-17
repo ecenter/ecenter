@@ -888,7 +888,6 @@ function ecenter_network_openlayers_presets() {
     ),
     'default_layer' => 'world_glass',
     'layers' => array(
-      //'osm_mapnik' => 'osm_mapnik',
       'world_glass' => 'world_glass',
       'ecenter_network_sites' => 'ecenter_network_sites',
       'ecenter_network_traceroute' => 'ecenter_network_traceroute',
@@ -898,7 +897,6 @@ function ecenter_network_openlayers_presets() {
       'ecenter_network_traceroute' => 'ecenter_network_traceroute',
     ),
     'projection' => '900913',
-    //'displayProjection' => '4326',
     'styles' => array(
       'default' => 'ecenter_default',
       'select' => 'ecenter_selected',
@@ -1029,7 +1027,19 @@ function ecenter_network_openlayers_layers() {
     'baselayer' => 1,
     'type' => 'png',
     'projection' => array('900913'),
-    'resolutions' => openlayers_get_resolutions('900913'),
+    //'resolutions' => openlayers_get_resolutions('900913'),
+    'resolutions' => array(
+      0 => 156543.0339,
+      1 => 78271.51695,
+      2 => 39135.758475,
+      3 => 19567.8792375,
+      4 => 9783.93961875,
+      5 => 4891.969809375,
+      6 => 2445.9849046875,
+      7 => 1222.9924523438,
+      8 => 611.49622617188,
+      9 => 305.74811308594,
+    ),
     'maxExtent' => openlayers_get_extent('900913'), 
   );
   $layers['world_dark'] = $mapbox_layer;

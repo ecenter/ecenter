@@ -274,8 +274,8 @@ sub process_data {
      %params = validate(@_, { data       => {type => SCALAR, regex => qr/^(snmp|bwctl|owamp|pinger)$/, optional => 1}, 
                                 id         => {type => SCALAR, regex => qr/^\d+$/, optional => 1}, 
                                 src_ip     => {type => SCALAR, regex => $REG_IP,   optional => 1}, 
-				src_hub    => {type => SCALAR, regex => qr/^bnl|anl|ornl|lbl|fnal|slac$/i,   optional => 1}, 
-                                dst_hub    => {type => SCALAR, regex => qr/^bnl|anl|ornl|lbl|fnal|slac$/i,    optional => 1}, 
+				src_hub    => {type => SCALAR, regex => qr/^bnl|anl|ornl|lbl|fnal|slac|pnnl|pnl$/i,   optional => 1}, 
+                                dst_hub    => {type => SCALAR, regex => qr/^bnl|anl|ornl|lbl|fnal|slac|pnnl|pnl$/i,    optional => 1}, 
                                 dst_ip     => {type => SCALAR, regex => $REG_IP,   optional => 1}, 
 		                start      => {type => SCALAR, regex => $REG_DATE, optional => 1},
 		                end        => {type => SCALAR, regex => $REG_DATE, optional => 1},
@@ -396,7 +396,7 @@ sub process_data {
       error "data call  failed - $EVAL_ERROR";
       GeneralException->throw(error => $EVAL_ERROR ); 
   }
-  $task_set->wait(timeout => 30);
+  $task_set->wait(timeout => 120);
   foreach my $ip_noted (keys %{$data->{snmp}}) { 
         my @result =(); 
         foreach my $time  (sort {$a<=>$b} grep {$_} keys %{$data->{snmp}{$ip_noted}}) { 

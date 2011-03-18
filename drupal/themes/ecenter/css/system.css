@@ -35,7 +35,8 @@ html.js fieldset.collapsed {
 html.js fieldset.collapsed * {
   display: none;
 }
-html.js fieldset.collapsed legend {
+html.js fieldset.collapsed legend, 
+html.js fieldset.collapsed legend * {
   display: block;
 }
 html.js fieldset.collapsible legend a {

@@ -1,0 +1,109 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * E-Center core module and features
+ */
+include_once('ecenter_core.features.inc');
+
+/**
+ * Implementation of hook_theme().
+ */
+function ecenter_core_theme() {
+  $path = array('path' => drupal_get_path('module', 'ecenter_core') .'/tpl');
+  $blocks = ecenter_core_block();
+
+  $theme = array();
+  foreach ($blocks as $block => $info) {
+    $theme['ecenter_core_'. $block .'_block'] = array(
+      'arguments' => array(),
+      'template' => 'ecenter-'. $block .'-block',
+    ) + $path;
+  }
+  return $theme;
+}
+
+/**
+ * Implementation of hook_init().
+ */
+function ecenter_core_init() {
+  // Force load AHAH
+  drupal_add_js('misc/ahah.js');
+  drupal_add_js(drupal_get_path('module', 'ecenter_core') .'/js/ahah.js');
+}
+
+/**
+ * Implementation of hook_block().
+ */
+function ecenter_core_block($op = 'list', $delta = 0, $edit = array()) {
+  switch ($op) {
+    case 'list':
+      $blocks['login'] = array(
+        'info' => t('E-Center: Login block'),
+      );
+      $blocks['sponsors'] = array(
+        'info' => t('E-Center: Sponsors block'),
+      );
+      $blocks['site_info'] = array(
+        'info' => t('E-Center: Site info'),
+      );
+      return $blocks;
+    case 'view': default:
+      return array(
+        'content' => theme('ecenter_core_'. $delta .'_block'),
+      );
+  }
+}
+
+/**
+ * Implementation of hook_form_alter().
+ */
+function ecenter_core_form_alter(&$form, &$form_state, $form_id) {
+  $form['#attributes']['class'] .= $form['#attributes']['class'] ? ' ' : NULL;
+  $form['#attributes']['class'] .= 'form-id-'. $form_id;
+
+  switch ($form_id) {
+    case 'search_block_form':
+      unset($form['search_block_form']['#title']);
+  }
+}
+
+/**
+ * Theme login block
+ */
+function template_preprocess_ecenter_core_login_block(&$vars) {
+  global $user;
+  if ($user->uid > 0) {
+    $links[] = t('Logged in as <span class="bold">@user</span>', array('@user' => $user->name));
+    $links[] = l('Settings', 'user');
+    $links[] = l(t('Logout'), 'logout');
+  }
+  else {
+    $links[] = l(t('Login to E-center'), 'user');
+  }
+  $vars['links'] = $links;
+  $vars['content'] = theme('item_list', $links);
+}
+
+/**
+ * Theme sponsor list 
+ */
+function template_preprocess_ecenter_core_sponsors_block(&$vars) {
+  $vars['sponsors'] = array(
+    l(t('Fermi National Accelerator Lab'), 'http://wwww.fnal.gov', 
+      array('attributes' => array('class' => 'fnal replace'))), 
+    l(t('U.S. Department of Energy Office of Science'), 'http://www.science.doe.gov', 
+      array('attributes' => array('class' => 'doe replace'))), 
+    l(t('Energy Science Net'), 'http://es.net', 
+      array('attributes' => array('class' => 'esnet replace'))), 
+    l(t('Bucknell University'), 'http://bucknell.edu', 
+      array('attributes' => array('class' => 'bucknell replace'))), 
+  );
+}
+
+/**
+ * Theme site info block
+ */
+function template_preprocess_ecenter_core_site_info_block(&$vars) {
+}

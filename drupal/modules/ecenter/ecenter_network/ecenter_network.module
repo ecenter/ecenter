@@ -1187,7 +1187,7 @@ function ecenter_network_layers_traceroute() {
               'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',
               'fontColor' => '#222222',
             ),
-            'extra' => array('ecenterID' => $hop['id']),
+            'extra' => array('ecenterID' => $hop['hub']),
           );
         }
         $old_hop = $hop;

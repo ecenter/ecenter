@@ -89,7 +89,16 @@
 
     // Handle options: 
     var sizeAdjust = (s.sizeAdjust !== false) ? s.sizeAdjust : lh.sizeAdjust;
-    var series_color = (lh.colors && lh.colors[sidx] != undefined) ? lh.colors[sidx] : s.seriesColors[sidx];
+    
+    if (lh.colors) {
+      // @TODO account for and test...
+    }
+    else {
+      var length = s.seriesColors.length;
+      sidx = sidx % length;
+      var series_color = s.seriesColors[sidx];
+    }
+
     var opts = $.extend(true, {}, {color: series_color, lineWidth: s.lineWidth + sizeAdjust}, o);
 
     // Render line

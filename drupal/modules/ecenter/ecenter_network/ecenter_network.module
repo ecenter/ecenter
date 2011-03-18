@@ -856,13 +856,9 @@ function ecenter_network_openlayers_presets() {
     'hide_empty_map' => 0,
     'center' => array(
       'initial' => array(
-        'centerpoint' => '-10770975.995875, 4691969.809375',
+        'centerpoint' => '-99.528515621067, 39.112468787821',
         'zoom' => '4',
       ),
-      /*'restrict' => array(
-        'restrictextent' => 0,
-        'restrictedExtent' => '',
-      ),*/
     ),
     'behaviors' => array(
       'openlayers_behavior_navigation' => array(

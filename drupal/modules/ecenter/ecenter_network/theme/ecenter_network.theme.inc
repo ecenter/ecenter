@@ -263,7 +263,7 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
     ksort($table);
 
     $headers = array(
-      array('data' => t('End-to-end results'), 'class' => 'result-header',),
+      array('data' => 'Measurement', 'class' => 'result-header',),
       t('Average'), t('Median'), t('Max'), t('Min'),
     );
     $vars['table'] = theme('jqplot_table', $headers, $table,

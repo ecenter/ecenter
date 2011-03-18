@@ -44,14 +44,18 @@ projects[date][version] = "2.7"
 projects[devel][subdir] = "contrib"
 projects[devel][version] = "1.23"
 
+projects[diff][subdir] = "contrib"
+projects[diff][version] = "2.1"
+
 projects[features][subdir] = "contrib"
 projects[features][version] = "1.0"
+projects[features][patch][] = "http://drupal.org/files/issues/features-981248.patch"
 
 projects[filefield][subdir] = "contrib"
 projects[filefield][version] = "3.9"
 
 projects[geoip][subdir] = "contrib"
-projects[geoip][version] = "1.2"
+projects[geoip][version] = "1.3"
 
 projects[homebox][subdir] = "contrib"
 projects[homebox][version] = "2.1"
@@ -64,6 +68,46 @@ projects[imageapi][version] = "1.9"
 
 projects[imagecache][subdir] = "contrib"
 projects[imagecache][version] = "2.0-beta10"
+
+projects[mapbox][subdir] = "contrib"
+projects[mapbox][version] = "1.0-alpha3"
+
+projects[exportables][subdir] = "contrib"
+projects[exportables][version] = "2.x-dev"
+
+projects[input_formats][subdir] = "contrib"
+projects[input_formats][version] = "1.0-beta6"
+
+projects[linkit][subdir] = "contrib"
+projects[linkit][version] = "1.9"
+
+projects[oembed][subdir] = "contrib"
+projects[oembed][version] = "0.8"
+
+projects[markdown][subdir] = "contrib"
+projects[markdown][version] = "1.2"
+
+projects[pathologic][subdir] = "contrib"
+projects[pathologic][version] = "3.4"
+
+projects[syntaxhighlighter][subdir] = "contrib"
+projects[syntaxhighlighter][version] = "1.26"
+
+projects[wysiwyg_filter][subdir] = "contrib"
+projects[wysiwyg_filter][version] = "1.x-dev"
+projects[wysiwyg_filter][patch][] = "http://drupal.org/files/issues/wysiwyg_filter-form-alter.patch"
+
+projects[editor_tinymce_markdown][subdir] = "ecenter-contrib"
+projects[editor_tinymce_markdown][download][type] = "git"
+projects[editor_tinymce_markdown][download][url] = "git://github.com/ecenter/editor_tinymce_markdown"
+projects[editor_tinymce_markdown][download][branch] = "master"
+projects[editor_tinymce_markdown][type] = "module"
+
+projects[markdownify][subdir] = "ecenter-contrib"
+projects[markdownify][download][type] = "git"
+projects[markdownify][download][url] = "git://github.com/ecenter/markdownify"
+projects[markdownify][branch] = "master"
+projects[markdownify][type] = "module"
 
 projects[jquery_ui][subdir] = "contrib"
 projects[jquery_ui][version] = "1.4"
@@ -104,8 +148,34 @@ projects[views][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repo
 projects[wysiwyg][subdir] = "contrib"
 projects[wysiwyg][version] = "2.2"
 
+; Login
+projects[autoload][subdir] = "contrib"
+projects[autoload][version] = "2.0"
+
+projects[curl][subdir] = "contrib"
+projects[curl][version] = "2.0-rc1"
+
+projects[twitter][subdir] = "contrib"
+projects[twitter][version] = "3.0-beta3"
+
+projects[fbconnect][subdir] = "contrib"
+projects[fbconnect][version] = "2.0-beta1"
+
+projects[linkedin][subdir] = "contrib"
+projects[linkedin][version] = "1.x-dev"
+
+projects[openid_selector][subdir] = "contrib"
+projects[openid_selector][version] = "1.5"
+
+;projects[oauth][subdir] = "contrib"
+;projects[oauth][version] = "2.02"
+
 ; Themes
+projects[tao][type] = "theme"
 projects[tao][version] = "3.2"
+
+projects[seven][type] = "theme"
+projects[seven][version] ="1.0-beta13"
 
 ; Libraries
 
@@ -126,6 +196,7 @@ libraries[jquery_ui_1_8][download][url] = "http://jquery-ui.googlecode.com/files
 libraries[jquery_ui_1_8][directory_name] = "jquery.ui-1.8"
 libraries[jquery_ui_1_8][destination] = "modules/contrib/jquery_ui"
 
+; OpenLayers
 libraries[openlayers][download][type] = "get"
 libraries[openlayers][download][url] = "http://openlayers.org/download/OpenLayers-2.10.tar.gz"
 libraries[openlayers][directory_name] = "openlayers"
@@ -134,17 +205,23 @@ libraries[openlayers][directory_name] = "openlayers"
 libraries[jqplot][download][type] = "get"
 libraries[jqplot][download][url] = "http://bitbucket.org/cleonello/jqplot/downloads/jquery.jqplot.0.9.7r635.zip"
 libraries[jqplot][directory_name] = "jqplot"
-libraries[jqplot][destination] = "modules/contrib/jqplot"
-
-; Markdownify
-; @TODO Add Markdownify library once module work is further along
 
 ; TinyMCE
 libraries[tinymce][download][type] = "get"
 libraries[tinymce][download][url] = "http://github.com/downloads/tinymce/tinymce/tinymce_3_3_9_3.zip"
 libraries[tinymce][directory_name] = "tinymce"
 
+; SyntaxHighlighter, probably won't work because of download url
+libraries[syntaxhighlighter][download][type] = "get"
+libraries[syntaxhighlighter][download][url] = "http://alexgorbatchev.com/SyntaxHighlighter/download/syntaxhighlighter_3.0.83.zip"
+libraries[syntaxhighlighter][directory_name] = "syntaxhighlighter"
+
 ; GeoIP
 libraries[geoip][download][type] = "get"
-libraries[geoip][download][url] = "http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz"
+libraries[geoip][download][url] = "http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz"
 libraries[geoip][directory_name] = "geoip"
+
+; OpenID Selector
+libraries[openid_selector][download][type] = "get"
+libraries[openid_selector][download][url] = "http://openid-selector.googlecode.com/files/openid-selector-1.3.zip"
+libraries[openid_selector][directory_name] = "openid-selector"

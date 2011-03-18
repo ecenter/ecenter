@@ -60,7 +60,10 @@ class Ecenter_Data_Service_Client {
    * @param $path
    *   The path to the web service resource.
    * @param $parameters
-   *   An array of search/filter parameters, if required.
+   *   An array of search/filter parameters, if required. May contain key/value
+   *   to pass in the query string, or an array with an array of key/value pairs
+   *   belonging to an element named 'query'. The array invocation allows 
+   *   additional metadata to be maintained with the query parameters.
    * @param $timeout
    *   (optional) Request timeout to use (overrides timeout set in constructor).
    * @param $assoc
@@ -72,16 +75,29 @@ class Ecenter_Data_Service_Client {
    */
   protected function query($path, $parameters = NULL, $timeout = NULL, $assoc = TRUE) {
     $timeout = ($timeout) ? $timeout : $this->_timeout;
-
     $url = $this->_url .'/'. $path .'.'. $this->data_type;
-    $querystring = ($parameters) ? http_build_query($parameters) : FALSE;
 
-    if (!empty($querystring)) {
-      $url .= '?'. $querystring;
+    if (!empty($parameters)) {
+      $query = array();
+      foreach ($parameters as $key => $value) {
+        if (is_array($value)) {
+          foreach ($value['query'] as $query_key => $query_value) {
+            $query[$query_key] = $query_value;
+          }
+        }
+        else {
+          $query[$key] = $value;
+        }
+      }
+      $querystring = http_build_query($query);
+
+      if (!empty($querystring)) {
+        $url .= '?'. $querystring;
+      }
+      // @TODO Fix... somewhere: Dancer does not support encoded ampersands in the querystring
+      $url = str_replace('&amp;', '&', $url);
     }
 
-    // @TODO Fix... somewhere: Dancer does not support encoded ampersands in the querystring
-    $url = str_replace('&amp;', '&', $url);
 
     $handle = curl_init();
 
@@ -179,8 +195,8 @@ class Ecenter_Data_Service_Client {
   public function getData($src, $dst, $start, $end, $resolution = 50) {
 
     // Parse out query type
-    list($src_type, $src) = explode(':', $src, 2);
-    list($dst_type, $dst) = explode(':', $dst, 2);
+    list($src_type, $src_value) = explode(':', $src, 2);
+    list($dst_type, $dst_value) = explode(':', $dst, 2);
 
     if (array_search($src_type, $this->query_types) === FALSE && array_search($dst_type, $this->query_types) !== FALSE) {
       throw new Exception('Invalid source query type.');
@@ -193,8 +209,16 @@ class Ecenter_Data_Service_Client {
     }
 
     $params = array(
-      'src_'. $src_type => $src,
-      'dst_'. $dst_type => $dst,
+      'src' => array(
+        'query' => array('src_'. $src_type => $src_value),
+        'type' => $src_type,
+        'value' => $src_value,
+      ),  
+      'dst' => array(
+        'query' => array('dst_'. $dst_type => $dst_value),
+        'type' => $dst_type,
+        'value' => $dst_value,
+      ),  
       'start' => $start,
       'end' => $end,
       'resolution' => $resolution,

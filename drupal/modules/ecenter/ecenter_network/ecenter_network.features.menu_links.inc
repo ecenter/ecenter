@@ -26,7 +26,7 @@ function ecenter_network_menu_default_menu_links() {
   );
   // Translatables
   // Included for use with string extractors like potx.
-  t('Network');
+  t('Explore network data');
 
 
   return $menu_links;

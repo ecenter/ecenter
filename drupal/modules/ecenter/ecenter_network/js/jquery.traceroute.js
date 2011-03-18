@@ -62,7 +62,7 @@ $.fn.traceroute.defaults = {
     }
   },
   'label' : {
-    'width' : 50,
+    'width' : 63,
     'top_margin' : 4,
   }
 };
@@ -407,24 +407,26 @@ TraceRoute.prototype.drawSegment = function(x1, y1, x2, y2, options, arrow_optio
   ctx.restore();
 }
 
-TraceRoute.prototype.drawHopLabel = function(hop_data, x, y, align) {
+TraceRoute.prototype.drawHopLabel = function(hop, x, y, align) {
   var o = this.options;
 
-  label = '<div class="trace-label" id="trace-hop-label-' + hop_data.hop.hop_id + '" hopid="' + hop_data.hop.hop_id + '">';
-  label += hop_data.hop.hub;
+  label = '<div class="trace-label" id="trace-hop-label-' + hop.id + '" hopid="' + hop.id + '">';
+  label += hop.hub;
   label += '</div>';
   label = $(label);
 
-  if (hop_data.data) {
-    label.addClass('has-chart');
-  }
+  //if (hop_data.data) {
+  //  label.addClass('has-chart');
+  //}
+
   label_width = o.label.width;
   css = {
+    'z-index' : 50,
     'width' : label_width + 'px',
     'position' : 'absolute',
     'left' : x,
     'top' : y,
-    'text-align' : 'center'
+    'text-align' : 'center',
   };
   label.css(css);
   $(this.el).append(label);
@@ -435,7 +437,48 @@ TraceRoute.prototype.drawHopLabel = function(hop_data, x, y, align) {
 
 // @TODO Provide generic behavior and override elsewhere
 TraceRoute.prototype.hopBehavior = function(el) {
-  // @TODO yeesh!
+  $(el).hover(function() {
+    var hopid = $(this).attr('hopid');
+    var hop = Drupal.settings.ecenterNetwork.seriesLookupByID[hopid];
+    var tc = $('#utilization-tables').data('tablechart');
+    var lh = tc['default'].chart.plugins.linehighlighter;
+    lh.highlightSeries(hop.sidx, tc['default'].chart);
+
+    var length = tc['default'].chart.seriesColors.length;
+    var sidx = hop.sidx % length;
+    var background_color = tc['default'].chart.seriesColors[sidx];
+
+    $(this)
+      .addClass('highlight')
+      .css({'background-color' : background_color });
+
+    var ol = $('#openlayers-map-auto-id-0').data('openlayers');
+    var map = ol.openlayers;
+    var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop(); 
+    var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
+    var feature = layer.getFeatureBy('ecenterID', hop.hub);
+    
+    control.callbacks.over.call(control, feature);
+
+  }, function() {
+    var hopid = $(this).attr('hopid');
+    var hop = Drupal.settings.ecenterNetwork.seriesLookupByID[hopid];
+    var tc = $('#utilization-tables').data('tablechart');
+    var lh = tc['default'].chart.plugins.linehighlighter;
+    lh.unhighlightSeries(hop.sidx, tc['default'].chart);
+
+    $(this)
+      .removeClass('highlight')
+      .css({'background-color' : 'transparent'});
+    
+    var ol = $('#openlayers-map-auto-id-0').data('openlayers');
+    var map = ol.openlayers;
+    var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop(); 
+    var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
+    var feature = layer.getFeatureBy('ecenterID', hop.hub);
+    
+    control.callbacks.out.call(control, feature);
+  });
 }
 
 // @TODO: DRY violation

@@ -201,7 +201,7 @@ function theme_ecenter_network_hops($hops = array()) {
     );
     drupal_alter('ecenter_network_plot_options', $plot_options, 'utilization', 'snmp');
     $options = array(
-      'height' => 200,
+      'height' => 175,
       'width' => 600,
       'hideTables' => FALSE,
       'dependencies' => array('canvasTextRenderer'),
@@ -350,7 +350,7 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
   $line_options = array(
     'highlighter' => array(
       'show' => TRUE,
-      'sizeAdjust' => 2,
+      'sizeAdjust' => 1,
       'lineWidthAdjust' => 2,
       'tooltipLocation' => 'n',
       'tooltipOffset' => 10,

@@ -1,17 +1,19 @@
 <div id="results">
-  <div id="results-title" class="clearfix">
+  <?php /* <div id="results-title" class="clearfix">
     <h2><?php print $title; ?></h2>
-    <?php if ($permalink): ?>
-    <div class="permalink">
-      <?php print $permalink_field; ?>
-      <?php print $permalink; ?>
-    </div>
-    <?php endif; ?>
-  </div>
+    </div> */ ?>
   <div id="hop-wrapper" class="clearfix">
     <?php print $hops; ?>
   </div>
   <div id="end-to-end-wrapper" class="clearfix">
     <?php print $end_to_end; ?>
   </div>
+
+  <?php if ($permalink): ?>
+  <div class="permalink">
+    <?php print $permalink_field; ?>
+    <?php print $permalink; ?>
+  </div>
+  <?php endif; ?>
+
 </div>

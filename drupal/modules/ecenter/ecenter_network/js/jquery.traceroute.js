@@ -444,10 +444,22 @@ TraceRoute.prototype.hopBehavior = function(el) {
     var lh = tc['default'].chart.plugins.linehighlighter;
     lh.highlightSeries(hop.sidx, tc['default'].chart);
 
-    var background_color = (lh.colors && lh.colors[hop.sidx] != undefined) ? lh.colors[hop.sidx] : tc['default'].chart.seriesColors[hop.sidx];
+    var length = tc['default'].chart.seriesColors.length;
+    var sidx = hop.sidx % length;
+    var background_color = tc['default'].chart.seriesColors[sidx];
+
     $(this)
-    .addClass('highlight')
-    .css({'background-color' : background_color });
+      .addClass('highlight')
+      .css({'background-color' : background_color });
+
+    var ol = $('#openlayers-map-auto-id-0').data('openlayers');
+    var map = ol.openlayers;
+    var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop(); 
+    var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
+    var feature = layer.getFeatureBy('ecenterID', hop.hub);
+    
+    control.callbacks.over.call(control, feature);
+
   }, function() {
     var hopid = $(this).attr('hopid');
     var hop = Drupal.settings.ecenterNetwork.seriesLookupByID[hopid];
@@ -456,8 +468,16 @@ TraceRoute.prototype.hopBehavior = function(el) {
     lh.unhighlightSeries(hop.sidx, tc['default'].chart);
 
     $(this)
-    .removeClass('highlight')
-    .css({'background-color' : 'transparent'});
+      .removeClass('highlight')
+      .css({'background-color' : 'transparent'});
+    
+    var ol = $('#openlayers-map-auto-id-0').data('openlayers');
+    var map = ol.openlayers;
+    var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop(); 
+    var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
+    var feature = layer.getFeatureBy('ecenterID', hop.hub);
+    
+    control.callbacks.out.call(control, feature);
   });
 }
 

@@ -62,7 +62,7 @@ $.fn.traceroute.defaults = {
     }
   },
   'label' : {
-    'width' : 50,
+    'width' : 63,
     'top_margin' : 4,
   }
 };

@@ -34,18 +34,19 @@ Drupal.behaviors.ecenter_network_behavior_dynamicload = function(context) {
             openlayers.addLayer(layer);
           }
 
+          if (layer.drupalID == 'ecenter_network_traceroute') {
+            // Zoom to extent
+            layerextent = layer.getDataExtent();
 
-          // Zoom to extent
-          layerextent = layer.getDataExtent();
+            // Check for valid layer extent
+            if (layerextent != null) {
+              openlayers.zoomToExtent(layerextent);
 
-          // Check for valid layer extent
-          if (layerextent != null) {
-            openlayers.zoomToExtent(layerextent);
-
-            // If unable to find width due to single point,
-            // zoom in with point_zoom_level option.
-            if (layerextent.getWidth() == 0.0) {
-              openlayers.zoomTo(data.map.behaviors['openlayers_behavior_zoomtolayer'].point_zoom_level);
+              // If unable to find width due to single point,
+              // zoom in with point_zoom_level option.
+              if (layerextent.getWidth() == 0.0) {
+                openlayers.zoomTo(data.map.behaviors['openlayers_behavior_zoomtolayer'].point_zoom_level);
+              }
             }
           }
 

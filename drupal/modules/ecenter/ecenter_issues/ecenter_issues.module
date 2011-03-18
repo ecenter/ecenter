@@ -1,6 +1,4 @@
 <?php
-// $Id$
-
 /**
  * @file ecenter_issues.module
  *
@@ -20,6 +18,7 @@
  * for now -- all queries and issues must be created through the issue node
  * editing form.
  */
+include_once('ecenter_issues.features.inc');
 
 /**
  * Implementation of hook_theme().
@@ -38,6 +37,13 @@ function ecenter_issues_theme() {
 }
 
 /**
+ * Implementation of hook_perm().
+ */
+function ecenter_issues_perm() {
+  return array('access ecenter issue query values');
+}
+
+/**
  * Implementation of hook_init().
  */
 function ecenter_issues_init() {
@@ -49,14 +55,14 @@ function ecenter_issues_init() {
   }
 }
 
-/** 
+/**
  * Implementation of hook_nodeapi().
  */
 function ecenter_issues_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
   if ($node->type == 'issue' && $op == 'load') {
     $query = ecenter_issues_get_node_query($node);
-    $node->ecenter_weathermap_link = theme('ecenter_issues_data_link', 'weathermap', 
-      array('query' => $query, 'attributes' => array('class' => 'button')),
+    $node->ecenter_network_link = theme('ecenter_issues_data_link', 'network', 
+      array('query' => $query, 'attributes' => array('class' => 'issue-modal-frame')),
       'View query results');
   }
 }
@@ -90,8 +96,8 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
           'error' => array(
             '#value' => t('At this time, issues may only be created after
               running a traceroute. Please visit the
-              <a href="@weathermap">weathermap</a> and try again.', array(
-                '@weathermap' => url('weathermap'))
+              <a href="@network">weathermap</a> and try again.', array(
+                '@network' => url('weathermap'))
               )
             ),
         );
@@ -99,7 +105,7 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
       }
 
       $params = ecenter_issues_parse_params($_REQUEST['query']);
-      $data = ecenter_weathermap_get_data($params['src'], $params['dst'],
+      $data = ecenter_network_get_data($params['src'], $params['dst'],
         $params['start'], $params['end']);
 
       // Query provided, but malformed or no data
@@ -107,8 +113,8 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
         $form = array(
           'error' => array(
             '#value' => t('The query provided did not return any data. Please
-              visit the <a href="@weathermap">weathermap</a> and try again.', array(
-                '@weathermap' => url('weathermap'),
+              visit the <a href="@network">weathermap</a> and try again.', array(
+                '@network' => url('weathermap'),
               )),
           ),
         );
@@ -129,15 +135,15 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
         )
       );
 
-      $data_link = theme('ecenter_issues_data_link', 'weathermap',
-        array('query' => $params, 'attributes' => array('class' => 'button')), 
+      $data_link = theme('ecenter_issues_data_link', 'network',
+        array('query' => $params, 'attributes' => array('class' => 'issue-modalframe')), 
         t('View query details'));
     }
     // Editing
     else {
       $query = ecenter_issues_get_node_query($form['#node']);
-      $data_link = theme('ecenter_issues_data_link', 'weathermap', 
-        array('query' => $query, 'attributes' => array('class' => 'button')),
+      $data_link = theme('ecenter_issues_data_link', 'network', 
+        array('query' => $query, 'attributes' => array('class' => 'issue-modalframe')),
         t('View query details'));
     }
 
@@ -148,10 +154,10 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
       '#value' => $data_link,
       '#weight' => -100,
     );
-
   }
 
-  if ($form_id == 'network_query_node_form') {
+  if (!user_access('access ecenter issue query values') 
+    && $form_id == 'network_query_node_form') {
     $form['field_query_data']['#access'] = FALSE;
   }
 }
@@ -168,10 +174,10 @@ function ecenter_issues_issue_add_data($form, &$form_state) {
   $src_field_name = 'field_query_src_'. $src_type;
   $dst_field_name = 'field_query_dst_'. $dst_type;
 
-  $start = _ecenter_weathermap_date_to_utc($params['start'], 'Y-m-d H:i:s');
-  $end = _ecenter_weathermap_date_to_utc($params['end'], 'Y-m-d H:i:s');
-  $start_query = _ecenter_weathermap_date_to_utc($params['start'], 'Y-m-d\TH:i:s');
-  $end_query = _ecenter_weathermap_date_to_utc($params['end'], 'Y-m-d\TH:i:s');
+  $start = _ecenter_network_date_to_utc($params['start'], 'Y-m-d H:i:s');
+  $end = _ecenter_network_date_to_utc($params['end'], 'Y-m-d H:i:s');
+  $start_query = _ecenter_network_date_to_utc($params['start'], 'Y-m-d\TH:i:s');
+  $end_query = _ecenter_network_date_to_utc($params['end'], 'Y-m-d\TH:i:s');
 
   // @TODO Parse dates and times into proper format...
 
@@ -221,7 +227,7 @@ function ecenter_issues_issue_add_data($form, &$form_state) {
     $queryNode->$dst_field_name = array(array('value' => $dst_value));
 
     // @TODO this should go in the network_query save routine somehow...
-    $data = ecenter_weathermap_get_data($params['src'], $params['dst'], $params['start'], $params['end']);
+    $data = ecenter_network_get_data($params['src'], $params['dst'], $params['start'], $params['end']);
     $queryNode->field_query_data = array(array('value' => serialize($data)));
 
     // Dates need to be converted to UTC

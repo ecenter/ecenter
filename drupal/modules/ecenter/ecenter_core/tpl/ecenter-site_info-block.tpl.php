@@ -2,12 +2,12 @@
 
 <p><?php print t('
   E-Center provides diagnostic and social tools for network experts
-  and users across the U.S. Department of Energy\'s data networks, and 
+  and users across the U.S. Department of Energy\'s data networks, and
   beyond.
 '); ?></p>
 
 <p><?php print t('
-  Copyright &copy; Fermi National Accelerator Laboratory & partner 
+  Copyright &copy; Fermi National Accelerator Laboratory &amp; partner
   institutions, @start - @end
 ', array(
   '@start' => '2010',

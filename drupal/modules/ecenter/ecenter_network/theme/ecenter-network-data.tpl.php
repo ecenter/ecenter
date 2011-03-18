@@ -1,25 +1,30 @@
-<div id="results-toolbar" class="clear-block">
-  <h2><?php print $title; ?></h2>
-  <?php if ($issuelink || $permalink): ?>
-  <div class="links">
-    <?php if ($issuelink): ?>
-    <?php print $issuelink; ?>
-    <?php endif; ?>
+<div id="results">
+  <?php /* <div id="results-title" class="clearfix">
+    <h2><?php print $title; ?></h2>
+    </div> */ ?>
+  <div id="hop-wrapper" class="clearfix">
+    <?php print $hops; ?>
 
-    <?php if ($permalink): ?>
-    <?php print $permalink; ?>
-    <?php endif; ?>
-  </div>
-  <?php endif; ?>
-</div>
+    <div id="result-links-wrapper"
+      <?php if ($issuelink): ?>
+      <div class="issuelink">
+        <?php print $issuelink; ?>
+      </div>
+      <?php endif; ?>
 
-<div id="results"> 
-  <div id="hop-wrapper" class="clear-block">
-    <div id="snmp-results">
-      <?php print $hops; ?>
+      <?php if ($permalink): ?>
+      <div class="permalink">
+        <?php print $permalink; ?>
+        <?php print $permalink_field; ?>
+      </div>
+      <?php endif; ?>
     </div>
+
   </div>
-  <div id="end-to-end-wrapper" class="clear-block">
+    
+  <div id="end-to-end-wrapper" class="clearfix">
     <?php print $end_to_end; ?>
   </div>
-<div>
+
+
+</div>

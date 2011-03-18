@@ -91,7 +91,7 @@ function template_preprocess_ecenter_core_login_block(&$vars) {
  */
 function template_preprocess_ecenter_core_sponsors_block(&$vars) {
   $vars['sponsors'] = array(
-    l(t('Fermi National Accelerator Lab'), 'http://wwww.fnal.gov', 
+    l(t('Fermi National Accelerator Lab'), 'http://www.fnal.gov', 
       array('attributes' => array('class' => 'fnal replace'))), 
     l(t('U.S. Department of Energy Office of Science'), 'http://www.science.doe.gov', 
       array('attributes' => array('class' => 'doe replace'))), 

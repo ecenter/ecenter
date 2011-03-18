@@ -1,6 +1,7 @@
 core = 6.x
 api = 2
 
+projects[drupal][type] = "core"
 projects[drupal][version] = "6.20"
 
 ; Patch Drupal to use jQuery 1.4 (see http://drupal.org/node/479368)

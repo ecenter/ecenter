@@ -1,122 +1,134 @@
-/* $Id$ */
-/* vim:set fdm=marker: */
-
-/**
- * E-center Project: Editor styles
- */
-
-/* --- Structure --- */
-/* Typography {{{ */
-/*
- * The absolute base font size, just like Blueprint, is 16px. The effective
- * base font size is 14px (87.5% of 16px).
- */
-@font-face {
-  font-family:'Raleway';
-  src:url(../font/raleway_thin.otf) format('opentype');
+.ecenter-introduction {
+  font-size: .875em;
+  color: @color_grey_40;
+  font-style: italic;
+  line-height: 1.3125em;
+  margin-bottom: 1.3125em;
 }
-@font-face {
-  font-family: "Droid Sans";
-  src: local("Droid Sans"),
-       local("DroidSans"),
-       url(../font/DroidSans.ttf) format("truetype");
+.ecenter-highlight { background-color:#ffffaa; }
+.ecenter-pad { padding:.75em; }
+.ecenter-clearfix:after {
+  content:".";
+  display:block;
+  height:0;
+  clear:both;
+  visibility:hidden;
 }
-@font-face {
-  font-family: "Droid Sans";
-  font-weight: bold;
-  src: local("Droid Sans Bold"),
-       local("DroidSans-Bold"),
-       url(../font/DroidSans-Bold.ttf) format("truetype");
+.ecenter-column {
+  float:left;
+  display:block;
+  margin-right:10px;
+  width:230px;
 }
-
-/* }}} */
-/* Document level elements {{{ */
-html {
-  font-size:100.01%;
+.ecenter-float-left {
+  float:left;
+  display:block;
 }
+.ecenter-float-right {
+  float:left;
+  float:right;
+  display:block;
+}
+html { font-size:100.01%; }
 body {
-  font-size: 87.5%; /* 14px */
-  color: #222;
-  background: #fff;
-  font-family: "Helvetica Neue", Helvetica, Verdana, sans-serif;
+  font-size:85%;
+  color:#333333;
+  font-family:"Droid Sans", Arial, sans-serif;
+  margin:0;
+  padding: 10px;
 }
-/* }}} */
-/* Clearing {{{ */
-/**
- * Based on How To Clear Floats Without Structural Markup
- * http://www.positioniseverything.net/easyclearing.html
- */
-.clearfix:after {
-  content: "\0020";
-  display: block;
-  height: 0;
-  clear: both;
-  visibility: hidden;
-  overflow: hidden;
-}
-.clearfix {
-  display: block;
-}
-/* }}} */
-
-/* --- Markup --- */
-/* Links {{{ */
 a {
-  color: #b00;
-  text-decoration: none;
+  color:#0e3dc4;
+  text-decoration:none;
 }
-a:hover {
-  color: #555;
+a:hover, a:active { color:#000000; }
+h1 {
+  font-family:"Droid Sans", Arial, sans-serif;
+  font-weight:bold;
+  margin:0;
+  font-size:1.8em;
+  line-height:1.6;
+  margin-bottom:0.83em;
 }
-/* }}} */
-/* Headers {{{ */
-h1,h2,h3,h4,h5,h6 {
-  color: #333;
-  font-weight: bold;
-  font-family: "Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif;
+h2 {
+  font-family:"Droid Sans", Arial, sans-serif;
+  font-weight:bold;
+  margin:0;
+  font-size:1.5em;
+  line-height:1;
+  margin-bottom:1em;
 }
-
-h1 { font-size: 3em; line-height: 1; margin-bottom: 0.5em; }
-h2 { font-size: 2em; margin-bottom: 0.75em; }
-h3 { font-size: 1.5em; line-height: 1; margin-bottom: 1em; }
-h4 { font-size: 1.2em; line-height: 1.25; margin-bottom: 1.25em; }
-h5 { font-size: 1em; font-weight: bold; margin-bottom: 1.5em; }
-h6 { font-size: 1em; font-weight: bold; }
-/* }}} */
-
-/* --- Content markup --- */
-/* Tables {{{ */
-#content-body table tr.odd {
-  background-color: #fafafa;
+h3 {
+  font-family:"Droid Sans", Arial, sans-serif;
+  font-weight:bold;
+  margin:0;
+  font-size:1.2em;
+  line-height:1.25;
+  margin-bottom:1.25em;
 }
-#content-body table tr.even {
-  background-color: #eee;
+h4 {
+  font-family:"Droid Sans", Arial, sans-serif;
+  font-weight:bold;
+  font-weight:bold;
+  margin:0;
+  font-size:1em;
+  margin-bottom:1.5em;
 }
-#content-body table thead th {
-  text-align: center;
-  background-color: #999;
-  color: #fff;
-  font-weight: bold;
-  font-size: 0.875em;
+h5, h6 {
+  font-family:"Droid Sans", Arial, sans-serif;
+  font-weight:bold;
+  font-weight:bold;
+  margin:0;
+  font-size:1em;
+  margin-bottom:1.5em;
 }
-#content-body table td {
-  padding: .2em 1em .2em .2em;
+table { border-collapse:collapse; }
+table thead th {
+  font-weight:bold;
+  font-size:0.875em;
+  color:#666666;
 }
-/* }}} */
-/* Lists {{{ */
-#content-body li {
-  margin: 0 0 1.5em 1.5em;
+table thead th.empty { border-bottom:1px solid #ffffff; }
+table tbody th {
+  font-weight:normal;
+  background-color:#eeeeee;
+  color:#555555;
 }
-/* }}} */
-/* Paragraph and text {{{ */
-.help p,
-#content-body p,
-#content-body blockquote {
-  margin-bottom: 1.5em;
+table td {
+  text-align:left;
+  padding:2px 11px 2px 11px;
+  border:2px solid #ffffff;
+  font-weight:bold;
+  background-color:#dddddd;
+  color:#444444;
+  line-height:1.5;
 }
-/* }}} */
-/* Text-like entities {{{ */
-.messages {
-  margin-bottom: 1.5em;
+table th {
+  text-align:left;
+  padding:2px 11px 2px 11px;
+  border:2px solid #ffffff;
 }
-/* }}} */
+table tr:hover td, table tbody tr:hover th {
+  background-color:#dddddd;
+  color:#000000;
+}
+ul, ol { margin:0 0 1.5em 1.875em; }
+ul li, ol li { margin:0 0 .75em 0; }
+ul ul, ul ol, ol ul, ol ol { margin:.75em 0 .75em 1.5em; }
+ul li { list-style-type:disc; }
+ol li { list-style-type:decimal; }
+ul.inline { display:inline; }
+ul.inline li {
+  display:inline;
+  margin:0 0 0 .75em;
+}
+p, pre { margin-bottom:1.5em; }
+blockquote {
+  margin-bottom:1.5em;
+  margin-bottom:1.3125em;
+  padding:.25em .75em;
+  font-size:.875em;
+  line-height:1.3125em;
+  background-color:#dddddd;
+}
+blockquote p { margin:.25em 0; }

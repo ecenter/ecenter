@@ -1,0 +1,9 @@
+.form-combobox .ui-icon {
+  background: url(combobox-arrow.png) no-repeat 0 0;
+  display: block;
+  width: 6px;
+  height: 5px;
+}
+.form-combobox .ui-button-text {
+  display: none;
+}

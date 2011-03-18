@@ -3,3 +3,5 @@ name = jqPlot
 package = Utilities
 description = API for interacting with the jqPlot library. This is only an API.
 core = 6.x
+
+dependencies[] = jquery_update

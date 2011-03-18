@@ -8,4 +8,4 @@ dependencies[] = content
 dependencies[] = text
 dependencies[] = nodereference
 dependencies[] = date
-dependencies[] = ecenter_weathermap
+dependencies[] = ecenter_network

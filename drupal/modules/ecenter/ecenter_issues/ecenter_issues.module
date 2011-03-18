@@ -37,6 +37,13 @@ function ecenter_issues_theme() {
 }
 
 /**
+ * Implementation of hook_perm().
+ */
+function ecenter_issues_perm() {
+  return array('access ecenter issue query values');
+}
+
+/**
  * Implementation of hook_init().
  */
 function ecenter_issues_init() {
@@ -54,8 +61,8 @@ function ecenter_issues_init() {
 function ecenter_issues_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
   if ($node->type == 'issue' && $op == 'load') {
     $query = ecenter_issues_get_node_query($node);
-    $node->ecenter_network_link = theme('ecenter_issues_data_link', 'weathermap', 
-      array('query' => $query, 'attributes' => array('class' => 'button')),
+    $node->ecenter_network_link = theme('ecenter_issues_data_link', 'network', 
+      array('query' => $query, 'attributes' => array('class' => 'issue-modal-frame')),
       'View query results');
   }
 }
@@ -89,8 +96,8 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
           'error' => array(
             '#value' => t('At this time, issues may only be created after
               running a traceroute. Please visit the
-              <a href="@weathermap">weathermap</a> and try again.', array(
-                '@weathermap' => url('weathermap'))
+              <a href="@network">weathermap</a> and try again.', array(
+                '@network' => url('weathermap'))
               )
             ),
         );
@@ -106,8 +113,8 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
         $form = array(
           'error' => array(
             '#value' => t('The query provided did not return any data. Please
-              visit the <a href="@weathermap">weathermap</a> and try again.', array(
-                '@weathermap' => url('weathermap'),
+              visit the <a href="@network">weathermap</a> and try again.', array(
+                '@network' => url('weathermap'),
               )),
           ),
         );
@@ -128,15 +135,15 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
         )
       );
 
-      $data_link = theme('ecenter_issues_data_link', 'weathermap',
-        array('query' => $params, 'attributes' => array('class' => 'button')), 
+      $data_link = theme('ecenter_issues_data_link', 'network',
+        array('query' => $params, 'attributes' => array('class' => 'issue-modalframe')), 
         t('View query details'));
     }
     // Editing
     else {
       $query = ecenter_issues_get_node_query($form['#node']);
-      $data_link = theme('ecenter_issues_data_link', 'weathermap', 
-        array('query' => $query, 'attributes' => array('class' => 'button')),
+      $data_link = theme('ecenter_issues_data_link', 'network', 
+        array('query' => $query, 'attributes' => array('class' => 'issue-modalframe')),
         t('View query details'));
     }
 
@@ -147,10 +154,10 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
       '#value' => $data_link,
       '#weight' => -100,
     );
-
   }
 
-  if ($form_id == 'network_query_node_form') {
+  if (!user_access('access ecenter issue query values') 
+    && $form_id == 'network_query_node_form') {
     $form['field_query_data']['#access'] = FALSE;
   }
 }

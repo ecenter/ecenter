@@ -414,11 +414,11 @@ function _ecenter_network_plot_options_template() {
       ),
     ),
     'legend' => array(
-      'location' => 'se',
+      'location' => 'ne',
       'xoffset' => 1,
       'yoffset' => 1,
     ),
-    'seriesColors' => array('#000000'),
+    'seriesColors' => array('#035dc5', '#e34605', '#a71932', '#133f52', '#672b18', '#049e33',  '#650fc2',),
     'axes' => array(
       'xaxis' => array(
         'autoscale' => TRUE,
@@ -444,8 +444,8 @@ function _ecenter_network_plot_options_template() {
     'grid' => array(
       'shadow' => FALSE,
       'borderWidth' => 0,
-      'background' => '#dddddd',
-      'gridLineColor' => '#ffffff',
+      'background' => '#ffffff',
+      'gridLineColor' => '#dddddd',
     ),
   );
 }

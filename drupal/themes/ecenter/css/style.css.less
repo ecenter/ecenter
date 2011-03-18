@@ -922,12 +922,12 @@ body.page-network { // Network diagnostic display {{{
     #network-map { // {{{
       float: left;
       width: 660px;
-      background-color: #869aad;
+      background-color: #b4c7d9;
       .shadow(2px; 5px; 7px; @color_grey_43;);
       position: relative;
     } // }}}
     #traceroute-wrapper { // {{{
-      margin-bottom: 2.5em;
+      margin-bottom: .75em;
       #traceroute {
         margin-left: 15px;
         .trace-label {
@@ -1087,27 +1087,7 @@ body.page-network { // Network diagnostic display {{{
           line-height: 1;
           &.date-range { font-size: @font_size_14; font-weight: normal; line-height: 1.6;}
         }
-      }
-      .permalink {
-        margin-bottom: 1.25em;
-        .form-item {
-          display: inline;
-          input {
-            font-family: @font_liberation;
-            color: @color_black;
-            background-color: @color_grey_93;
-            font-size: 11px;
-            line-height: 13px;
-            padding-top: 2px;
-            padding-bottom: 2px;
-          }
-        }
-        a {
-          .button;
-          margin-left: 2px;
-          font-size: @font_size_13;
-        }
-      }
+      } 
     } // }}}
     #end-to-end-charts { // {{{
       margin-top: 25px;
@@ -1191,7 +1171,7 @@ body.page-network { // Network diagnostic display {{{
           color: #111;
         }
         tbody th {
-          width: 215px;
+          width: 240px;
           .advanced-help-link {
             margin-top: 4px;
             float: right;
@@ -1360,6 +1340,8 @@ body.page-dashboard h1#page-title {
 }
 /* }}} */
 
+/* --- @TODO sort and arrange --- */
+
 .jqplot-highlighter-tooltip {
   background-color: rgba(15, 15, 15, 0.75) !important;
   padding: 3px 5px !important;
@@ -1379,5 +1361,47 @@ body.page-dashboard h1#page-title {
     background-color: transparent;
     border: none !important;
     padding: 2px 3px !important;
+  }
+}
+
+#utilization-tables {
+  float: left;
+  width: 600px;
+  margin-right: 30px;
+}
+
+#result-links-wrapper {
+  float: left;
+  width: 300px;
+  a {
+    .button;
+    display: block;
+    text-align: center;
+    :hover {
+      text-decoration: none;
+    }
+  }
+  .issuelink, .permalink {
+    margin-bottom: 1em;
+  }
+  .issuelink {
+    a { font-size: @font_size_17 };
+  }
+  .permalink {
+    a { 
+      font-size: @font_size_13; 
+    };
+    .form-item {
+      input {
+        font-family: @font_liberation;
+        color: @color_black;
+        background-color: @color_grey_93;
+        font-size: 11px;
+        line-height: 13px;
+        padding-top: 2px;
+        padding-bottom: 2px;
+        width: 290px;
+      }
+    }
   }
 }

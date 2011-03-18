@@ -20,7 +20,7 @@ function template_preprocess_ecenter_network_data(&$vars) {
     }
     $issue_query = urlencode(implode('&', $issue_params));
 
-    $vars['issuelink'] = l('Create issue from this query', 'node/add/issue',
+    $vars['issuelink'] = l('Create issue from these results', 'node/add/issue',
       array(
         'query' => array('query' => $issue_query),
       )
@@ -57,7 +57,7 @@ function template_preprocess_ecenter_network_data(&$vars) {
   drupal_set_title(t('E-Center Network Query | ') . $vars['title']);
 
   // Generate permalink
-  $vars['permalink'] = l(t('Permalink'), 'network', array(
+  $vars['permalink'] = l(t('Permanent link (bookmark and share results)'), 'network', array(
     'query' => $vars['params'],
     'absolute' => TRUE,
     'attributes' => array('title' => $vars['title']),

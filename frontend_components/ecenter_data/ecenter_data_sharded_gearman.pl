@@ -27,7 +27,7 @@ use JSON::XS qw(encode_json decode_json);
 
 my $REG_IP = qr/^[\d\.]+|[a-f\d\:]+$/i;
 my $REG_DATE = qr/^\d{4}\-\d{2}\-\d{2}\s+\d{2}\:\d{2}\:\d{2}$/;
-my @HEALTH_NAMES = qw/anl.gov lbl.gov bnl.gov dmz.net nersc.gov ornl.gov slac.stanford.edu es.net/;
+my @HEALTH_NAMES = qw/nasa.gov pnl.gov llnl.gov pnnl.gov pppl.gov anl.gov lbl.gov bnl.gov dmz.net nersc.gov ornl.gov slac.stanford.edu es.net/;
 my $TABLEMAP = { bwctl      => {table => 'BwctlData',  class => 'Bwctl',      data => [qw/throughput/]},
    		 owamp      => {table => 'OwampData',  class => 'Owamp',      data => [qw/sent loss min_delay max_delay duplicates/]},
     		 pinger     => {table => 'PingerData', class => 'PingER',     data => [qw/meanRtt maxRtt medianRtt minRtt iqrIpd lossPercent/]},
@@ -274,8 +274,8 @@ sub process_data {
      %params = validate(@_, { data       => {type => SCALAR, regex => qr/^(snmp|bwctl|owamp|pinger)$/, optional => 1}, 
                                 id         => {type => SCALAR, regex => qr/^\d+$/, optional => 1}, 
                                 src_ip     => {type => SCALAR, regex => $REG_IP,   optional => 1}, 
-				src_hub    => {type => SCALAR, regex => qr/^bnl|anl|ornl|lbl|fnal|slac|pnnl|pnl$/i,   optional => 1}, 
-                                dst_hub    => {type => SCALAR, regex => qr/^bnl|anl|ornl|lbl|fnal|slac|pnnl|pnl$/i,    optional => 1}, 
+				src_hub    => {type => SCALAR, regex => qr/^\w+$/i,   optional => 1}, 
+                                dst_hub    => {type => SCALAR, regex => qr/^\w+$/i,    optional => 1}, 
                                 dst_ip     => {type => SCALAR, regex => $REG_IP,   optional => 1}, 
 		                start      => {type => SCALAR, regex => $REG_DATE, optional => 1},
 		                end        => {type => SCALAR, regex => $REG_DATE, optional => 1},

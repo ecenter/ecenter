@@ -1080,7 +1080,10 @@ function ecenter_network_layers_sites() {
           'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',
           'fontColor' => '#4682B4',
         ),
-        'extra' => array('ecenterID' => $hub['hub_name']),
+        'extra' => array(
+          'ecenterID' => $hub['hub_name'], 
+          'coords' => array('lat' => $hub['latitude'], 'lon' => $hub['longitude']),
+        ),
       );
     }
     // @TODO remove when unclustering works
@@ -1097,11 +1100,37 @@ function ecenter_network_layers_sites() {
 function _ecenter_network_layers_sites_rejigger(&$features) {
   foreach ($features as $k => $feature) {
     switch ($feature['extra']['ecenterID']) {
-      case 'ANL':
-        $features[$k]['style']['labelYOffset'] = -18;
-        break;
       case 'SLAC':
-        $features[$k]['style']['labelYOffset'] = -18;
+      case 'PPPL':
+        $features[$k]['style']['labelYOffset'] = -20;
+        $features[$k]['style']['labelXOffset'] = -5;
+        break;
+      case 'ANL':
+        $features[$k]['style']['labelYOffset'] = -20;
+        $features[$k]['style']['labelXOffset'] = 4;
+        $lat = $features[$k]['extra']['coords']['lat'] - 0.4;
+        $lon = $features[$k]['extra']['coords']['lon'];
+        $features[$k]['wkt'] = "POINT({$lon} {$lat})";
+        break;
+      case 'NERSC':
+        $lat = $features[$k]['extra']['coords']['lat'] + 0.4;
+        $lon = $features[$k]['extra']['coords']['lon'] - 0.4;
+        $features[$k]['style']['labelXOffset'] = -5;
+        $features[$k]['wkt'] = "POINT({$lon} {$lat})";
+        break;
+      case 'LBL':
+        $features[$k]['style']['labelXOffset'] = 24;
+        $features[$k]['style']['labelYOffset'] = 5;
+        $lat = $features[$k]['extra']['coords']['lat'] + .25;
+        $lon = $features[$k]['extra']['coords']['lon'] + .5;
+        $features[$k]['wkt'] = "POINT({$lon} {$lat})";
+        break;
+      case 'LLNL':
+        $features[$k]['style']['labelXOffset'] = 27;
+        $features[$k]['style']['labelYOffset'] = -5;
+        $lat = $features[$k]['extra']['coords']['lat'] - .25;
+        $lon = $features[$k]['extra']['coords']['lon'] + .35;
+        $features[$k]['wkt'] = "POINT({$lon} {$lat})";
         break;
       default:
         break;

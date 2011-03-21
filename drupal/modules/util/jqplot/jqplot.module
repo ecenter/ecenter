@@ -2,15 +2,79 @@
 // $Id$
 
 /**
- * @file
+ * @file jqplot.module
  *
- * Integrates jqPlot library with Drupal with help of "tablechart" plugin.
+ * Integrates jqPlot library with Drupal with help of Tablechart jQuery plugin.
+ * Tablechart takes scrapes HTML tables to be charted with the help of the
+ * wonderful jqPlot charting library. 
+ *
+ * This module inplements a simple hook system for registering jqPlot plugins:
+ * 
+ * function hook_jqplot_plugins() {
+ *   return array(
+ *     'plugin_name' => '/path/to/plugin',
+ *   );
+ * }
+ *
+ * If a plugin's options are specified in the chart's plot options (passed
+ * to the chart registration function), the plugin will be loaded with 
+ * drupal_add_js.
+ *
+ * This module depends on jquery_update module, preferably patched to 
+ * support jQuery 1.4.x, and uses jquery_update's specified compression
+ * type when loading files. Plugins are not cached, and may do whatever
+ * they wish when constructing the inclusion path.
+ *
  */
+
+/**
+ * Implementation of hook_theme().
+ */
+function jqplot_theme() {
+  return array(
+    // A table without sticky headers
+    'jqplot_table' => array(
+      'arguments' => array(
+        'header' => NULL,
+        'rows' => NULL,
+        'attributes' => NULL,
+        'caption' => NULL,
+      ),
+    ),
+  );
+}
 
 /**
  * Register a "tablechart"
  *
- * ONLY the first call's settings for a given selector will be respected.
+ * Beware: Only the first callers settings for a given selector will be respected.
+ *
+ * @param $selector
+ *   A jQuery selector (e.g. '#my-id div > .chart')
+ *
+ * @param $settings
+ *   An array of settings, defined as:
+ *
+ *   array(
+ *     'height' => INT (height in pixels),
+ *
+ *     'width' => INT (width in pixels),
+ *
+ *     'hideTables' => TRUE/FALSE (if FALSE, don't use tablechart table hiding),
+ *
+ *     'dependencies' => ARRAY (array of additional jqPlot files to include
+ *                       from plugins directory as needed),
+ *
+ *     'plotOptions' => ARRAY (array of jqPlot plotting options; the module
+ *                      will try to intelligently include plugins and renderers
+ *                      as needed)
+ *  )
+ *
+ * Special attention should be given to the dependency array: most plugins and
+ * renderers are detected and loaded from the options array, but some entities
+ * have other dependencies (CanvasAxisLabelRenderer depends on
+ * CanvasTextRenderer, for example).
+ *
  */
 function jqplot_register_tablechart($selector, $settings = array()) {
   static $selectors = array();
@@ -18,43 +82,218 @@ function jqplot_register_tablechart($selector, $settings = array()) {
   $plugins = module_invoke_all('jqplot_plugins');
 
   if (empty($selectors[$selector])) {
-    $path = drupal_get_path('module', 'jqplot');
-
+    $compression = variable_get('jquery_update_compression_type', 'none');
+    $min = ($compression != 'none') ? '.'. $compression : '';
+    $path = _jqplot_get_path();
+      
     // Core library
-    drupal_add_js($path .'/jqplot/excanvas.min.js');
-    drupal_add_js($path .'/jqplot/jquery.jqplot.js');
+    drupal_add_js($path .'/excanvas.min.js');
+    drupal_add_js($path .'/jquery.jqplot'. $min .'.js');
+    drupal_add_css($path .'/jquery.jqplot.css');
 
-    // Our libraries and behaviors
-    drupal_add_js($path .'/js/jquery.uuid.js');
-    drupal_add_js($path .'/js/jquery.tablechart.js');
-    drupal_add_js($path .'/js/jqplot-behaviors.js');
-
-    // @TODO:  Support ALL plugins, with more intelligence!
-    drupal_add_js($path .'/jqplot/plugins/jqplot.dateAxisRenderer.js');
-    drupal_add_js($path .'/jqplot/plugins/jqplot.canvasTextRenderer.js');
-    drupal_add_js($path .'/jqplot/plugins/jqplot.canvasAxisLabelRenderer.js');
-
-    // Get plugins
-    $chart_plugins = array_intersect_key($plugins, $settings['plotOptions']);
-
-    foreach ($chart_plugins as $plugin_path) {
-      drupal_add_js($plugin_path);
+    // Include dependencies
+    if (is_array($settings['dependencies'])) {
+      foreach($settings['dependencies'] as $dependency) {
+        drupal_add_js($path .'/plugins/jqplot.'. $dependency . $min .'.js');
+      }
     }
 
+    // Get plugins and renderers
+    if (!empty($settings['plotOptions'])) {
+      // Load renderers
+      array_walk_recursive($settings['plotOptions'], '_jqplot_add_renderers', $path);
+
+      // Add plugins 
+      $chart_plugins = array_intersect_key($plugins, $settings['plotOptions']);
+      foreach ($chart_plugins as $plugin_path) {
+        drupal_add_js($plugin_path);
+      }
+    }
+
+    // Add jqPlot settings
     $behavior = array();
     $behavior['jqPlot'][$selector] = $settings;
     drupal_add_js($behavior, 'setting');
     $selectors[$selector] = $behavior;
+    
+    // Our libraries and behaviors
+    drupal_add_js(drupal_get_path('module', 'jqplot') .'/tablechart/jquery.tablechart.js');
+    drupal_add_js(drupal_get_path('module', 'jqplot') .'/js/jqplot-behaviors.js');
   }
+}
+
+/**
+ * array_walk_recursive() callback to include renderers
+ */
+function _jqplot_add_renderers($item, $key, $path) {
+  switch ($key) {
+    case 'renderer':
+    case 'labelRenderer':
+    case 'markerRenderer':
+      $compression = variable_get('jquery_update_compression_type', 'none');
+      $min = ($compression != 'none') ? '.'. $compression : '';
+      $file = '/plugins/jqplot.'. strtolower(substr($item, 9, 1)) . substr($item, 10) . $min .'.js';
+      drupal_add_js($path . $file);
+      return;
+    default:
+      return;
+  }
+}
+
+/**
+ * Get jqPlot library path
+ */
+function _jqplot_get_path() {
+  static $path;
+
+  if (!$path) {
+    $module_path = drupal_get_path('module', 'jqplot') .'/jqplot';
+    
+    if (module_exists('libraries')) {
+      $library_path = libraries_get_path('jqplot');
+    }
+
+    if ($library_path && file_exists($library_path .'/jquery.jqplot.js')) {
+      $path = $library_path;
+    }
+    else if (file_exists($module_path .'/jquery.jqplot.js')) {
+      $path = $module_path;
+    }
+
+    if (!$path) {
+      drupal_set_message(t('jqPlot library is not available. Please 
+        <a href="https://bitbucket.org/cleonello/jqplot/downloads/">download 
+        jqPlot</a> and install in @path', 
+        array('@path' => ($library_path) ? $library_path : $module_path)), 
+        'error');
+    }
+  }
+
+  return $path;
+}
+
+/**
+ * Get jqPlot library path
+ */
+function _jqplot_get_tablechart_path() {
+  static $path;
+
+  if (!$path) {
+    $module_path = drupal_get_path('module', 'jqplot') .'/tablechart';
+    
+    if (module_exists('libraries')) {
+      $library_path = libraries_get_path('tablechart');
+    }
+
+    if ($library_path && file_exists($library_path .'/jquery.tablechart.js')) {
+      $path = $library_path;
+    }
+    else if (file_exists($module_path .'/jquery.tablechart.js')) {
+      $path = $module_path;
+    }
+
+    if (!$path) {
+      drupal_set_message(t('Tablechart library is not available. Please 
+        <a href="https://bitbucket.org/eads/tablechart/downloads/">download 
+        tablechart</a> and install in @path', 
+        array('@path' => ($library_path) ? $library_path : $module_path)), 
+        'error');
+    }
+  }
+
+  return $path;
 }
 
 /**
  * Implementation of hook_jqplot_plugins().
  */
 function jqplot_jqplot_plugins() {
-  $path = drupal_get_path('module', 'jqplot');
+  $path = _jqplot_get_path() .'/plugins/';
+  $compression = variable_get('jquery_update_compression_type', 'none');
+  $min = ($compression != 'none') ? '.'. $compression : '';
   return array(
-      'highlighter' => $path .'/jqplot/plugins/jqplot.highlighter.js',
-      'cursor' => $path .'/jqplot/plugins/jqplot.cursor.js',
+    'highlighter' => $path .'jqplot.highlighter'. $min .'.js',
+    'cursor'      => $path .'jqplot.cursor'. $min . '.js',
+    'dragable'    => $path .'jqplot.dragable'. $min .'.js',
+    'pointLabels' => $path .'jqplot.pointLabels'. $min .'.js',
+    'trendLine'   => $path .'jqplot.trendLine'. $min .'.js',
   );
+}
+
+/**
+ * Theme a table for jqPlot
+ *
+ * Similar to regular theme_table, minus the stupid sticky headers.
+ */
+function theme_jqplot_table($header, $rows, $attributes = array(), $caption = NULL) {
+  $output = '<table'. drupal_attributes($attributes) .">\n";
+
+  if (isset($caption)) {
+    $output .= '<caption>'. $caption ."</caption>\n";
+  }
+
+  // Format the table header:
+  if (count($header)) {
+    $ts = tablesort_init($header);
+    // HTML requires that the thead tag has tr tags in it followed by tbody
+    // tags. Using ternary operator to check and see if we have any rows.
+    $output .= (count($rows) ? ' <thead><tr>' : ' <tr>');
+    foreach ($header as $cell) {
+      $cell = tablesort_header($cell, $header, $ts);
+      $output .= _theme_table_cell($cell, TRUE);
+    }
+    // Using ternary operator to close the tags based on whether or not there are rows
+    $output .= (count($rows) ? " </tr></thead>\n" : "</tr>\n");
+  }
+  else {
+    $ts = array();
+  }
+
+  // Format the table rows:
+  if (count($rows)) {
+    $output .= "<tbody>\n";
+    $flip = array('even' => 'odd', 'odd' => 'even');
+    $class = 'even';
+    foreach ($rows as $number => $row) {
+      $attributes = array();
+
+      // Check if we're dealing with a simple or complex row
+      if (isset($row['data'])) {
+        foreach ($row as $key => $value) {
+          if ($key == 'data') {
+            $cells = $value;
+          }
+          else {
+            $attributes[$key] = $value;
+          }
+        }
+      }
+      else {
+        $cells = $row;
+      }
+      if (count($cells)) {
+        // Add odd/even class
+        $class = $flip[$class];
+        if (isset($attributes['class'])) {
+          $attributes['class'] .= ' '. $class;
+        }
+        else {
+          $attributes['class'] = $class;
+        }
+
+        // Build row
+        $output .= ' <tr'. drupal_attributes($attributes) .'>';
+        $i = 0;
+        foreach ($cells as $cell) {
+          $cell = tablesort_cell($cell, $header, $ts, $i++);
+          $output .= _theme_table_cell($cell);
+        }
+        $output .= " </tr>\n";
+      }
+    }
+    $output .= "</tbody>\n";
+  }
+
+  $output .= "</table>\n";
+  return $output;
 }

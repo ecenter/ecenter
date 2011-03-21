@@ -1,0 +1,48 @@
+<?php
+// $Id$
+
+/**
+ * @file ecenter_network.install
+ */
+
+function ecenter_network_schema() {
+  $schema['cache_ecenter_data'] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_ecenter_data']['description'] = 'Cache table for storing saved results.';
+  $schema['cache_ecenter_hops'] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_ecenter_hops']['description'] = 'Cache table for storing hops';
+
+  $schema['ecenter_result_archive'] = array(
+    'description' => 'E-Center data result archive',
+    'fields' => array(
+      'query' => array(
+        'description' => 'Primary key: Query string',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'data' => array(
+        'description' => 'Serialized data',
+        'type' => 'blob',
+        'not null' => FALSE,
+        'size' => 'big',
+      ),
+    ),
+    'primary key' => array('query'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implementation of hook_install().
+ */
+function ecenter_network_install() {
+  drupal_install_schema('ecenter_network');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function ecenter_network_uninstall() {
+  drupal_uninstall_schema('ecenter_network');
+}

@@ -1,8 +1,10 @@
+// Use per-plot plugin settings always
+$.jqplot.config.enablePlugins = false;
+
 Drupal.behaviors.jqPlot = function(context) {
   if (Drupal.settings.jqPlot) {
     var replace = ['renderer', 'markerRenderer', 'labelRenderer', 'parseX',
       'parseY', 'scrapeSingle', 'scrapeMultiple', 'processSeries'];
-
     $.each(Drupal.settings.jqPlot, function(selector, settings) {
       settings = Drupal.jqPlot.replaceFunctions(settings, replace);
       $(selector).tablechart(settings);
@@ -13,6 +15,9 @@ Drupal.behaviors.jqPlot = function(context) {
 Drupal.jqPlot = {};
 
 Drupal.jqPlot.replaceFunctions = function(obj, replace) {
+  if (!obj) {
+    return obj;
+  }
   $.each(obj, function(key, val) {
     if (typeof val == 'object') {
       obj[key] = Drupal.jqPlot.replaceFunctions(val, replace);

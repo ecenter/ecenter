@@ -27,14 +27,8 @@
 <div id="header-wrapper" class="clearfix">
   <div class="logo">
     <h1 id="site-name">
-      <a href="<?php print $front_page; ?>" title="<?php print t('Home'); ?>" rel="home"><?php print $site_name; ?></a>
+      <?php print $site_name; ?>
     </h1>
-
-    <?php if ($site_slogan): ?>
-    <div class="site-slogan">
-      <?php print $site_slogan; ?>
-    </div>
-    <?php endif; ?>
   </div>
 
   <?php if (!empty($header)): ?>
@@ -50,39 +44,44 @@
 </div>
 <?php endif; ?>
 
-<?php if (!empty($tabs)): ?>
-  <div id="tasks" class="clearfix">
-    <?php print $tabs; ?>
-  </div>
-<?php endif; ?>
+<?php if (!empty($messages)): print $messages; endif; ?>
 
-<div id="content-wrapper" class="clearfix">
+<div id="page-wrapper">
 
-  <?php if (!empty($left)): ?>
-  <div id="sidebar-left" class="column sidebar">
-    <?php print $left; ?>
-  </div>
-  <?php endif; ?>
-
-  <div id="content">
-    <?php if (!empty($messages)): print $messages; endif; ?>
-    <?php if (!empty($help)): print $help; endif; ?>
-    <?php if (!empty($title)): ?><h1 class="title" id="page-title"><?php print $title; ?></h1><?php endif; ?>
-    <div id="content-body">
-      <?php print $content; ?>
+  <?php if (!empty($tabs)): ?>
+    <div id="tasks" class="clearfix">
+      <?php print $tabs; ?>
     </div>
-    <?php print $feed_icons; ?>
-  </div>
-
-  <?php if (!empty($right)): ?>
-  <div id="sidebar-right" class="column sidebar">
-    <?php print $right; ?>
-  </div>
   <?php endif; ?>
+
+  <div id="content-wrapper" class="clearfix">
+
+    <?php if (!empty($left)): ?>
+    <div id="sidebar-left" class="column sidebar">
+      <?php print $left; ?>
+    </div>
+    <?php endif; ?>
+
+    <div id="content">
+      <?php if (!empty($help)): print $help; endif; ?>
+      <?php if (!empty($title)): ?><h1 class="title" id="page-title"><?php print $title; ?></h1><?php endif; ?>
+      <div id="content-body">
+        <?php print $content; ?>
+      </div>
+      <?php print $feed_icons; ?>
+    </div>
+
+    <?php if (!empty($right)): ?>
+    <div id="sidebar-right" class="column sidebar">
+      <?php print $right; ?>
+    </div>
+    <?php endif; ?>
+
+  </div>
 
 </div>
 
-<div id="footer">
+<div id="footer" class="clearfix">
   <?php print $footer_message; ?>
   <?php if (!empty($footer)): print $footer; endif; ?>
 </div>

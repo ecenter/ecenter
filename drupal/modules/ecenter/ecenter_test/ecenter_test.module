@@ -1,0 +1,130 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * E-Center testing
+ *
+ * Uses a silly testing method (and we may add simpletests later). For all
+ * defined functions returned by ecenter_test_theme() of the form
+ * ecenter_test_TESTNAME create a menu callback at ecenter-tests/TESTNAME
+ * that calls said theme function. Then it is up to the test module
+ * developer to provide said theme functions.
+ */
+
+/**
+ * Implementation of hook_perm().
+ */
+function ecenter_test_perm() {
+  return array('view ecenter tests',);
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function ecenter_test_theme() {
+  return array(
+    'ecenter_test_html' => array(
+      'arguments' => array(),
+    ),
+    'ecenter_test_markdown' => array(
+      'arguments' => array(),
+    ),
+    'ecenter_test_combobox' => array(
+      'arguments' => array(),
+    ),
+    'ecenter_test_jqplot' => array(
+      'arguments' => array(),  
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function ecenter_test_menu() {
+  $items = array();
+  $items['ecenter-tests'] = array(
+    'title' => 'E-Center Tests',
+    'page callback' => 'menu_tree',
+    'page arguments' => array('navigation'),
+    'access arguments' => array('view ecenter tests'),
+    'weight' => 10,
+  );
+  foreach (ecenter_test_theme() as $key=>$item) {
+    $arg = str_replace('ecenter_test_', '', $key);  
+    $items['ecenter-tests/'. str_replace('_', '-', $arg)] = array(
+      'title' => ucfirst(str_replace('_', ' ', $arg)),
+      'page callback' => 'theme',
+      'page arguments' => array($key),
+      'access arguments' => array('view ecenter tests'),
+    );
+  }
+  return $items;
+}
+
+function theme_ecenter_test_html() {
+  return file_get_contents(dirname(__FILE__) . '/markup/html-markup.html');
+}
+
+function theme_ecenter_test_markdown() {
+  return t('Hello world');
+}
+
+function theme_ecenter_test_combobox() {
+  $form = array(
+    'options' => array(
+      '#id' => 'options',
+      '#type' => 'combobox',
+      '#options' => array(0 => '---', t('First option'), t('Second option'), t('Third option')),
+      '#default_value' => 0,
+    ),
+  );
+  return drupal_render($form);
+}
+
+function theme_ecenter_test_jqplot() {
+ $plot_options = array(
+    'width' => 700,
+    'height' => 200,
+    'hideTables' => FALSE,
+    'dependencies' => array('canvasTextRenderer'),
+    'plotOptions' => array(
+      'seriesDefaults' => array(
+        'shadow' => FALSE,
+        'pointLabels' => array(
+          'show' => TRUE,
+          'edgeTolerance' => 3,
+        ),
+      ),
+      'legend' => array(
+        'show' => TRUE,
+      ),
+      'axes' => array(
+        'xaxis' => array(
+          'autoscale' => TRUE,
+          'label' => 'x axis',
+          'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
+          'renderer' => '$.jqplot.CategoryAxisRenderer',          
+        ),
+        'yaxis' => array(
+          'autoscale' => TRUE,
+          'label' => 'y axis',
+          'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
+        ),
+      ),
+      'pointLabels' => array('show' => TRUE,),
+      'linehighlighter' => array(
+        'show' => TRUE,
+      ),
+    ),
+  );
+  jqplot_register_tablechart('#chart', $plot_options);
+
+  $header = array(t('X val'), t('Series 1'), t('Series 2'));
+  for ($i = 0; $i < 10; $i++) {
+    $rows[] = array(array('data' => $i, 'header' => TRUE), rand(0, 100), rand(20, 100));
+  }
+  return theme('jqplot_table', $header, $rows, array('id' => 'chart'));
+}
+

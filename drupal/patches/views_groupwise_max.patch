@@ -1,0 +1,658 @@
+diff -r 26f34c6af47d handlers/views_handler_relationship_groupwise_max.inc
+--- /dev/null	Thu Jan 01 00:00:00 1970 +0000
++++ handlers/views_handler_relationship_groupwise_max.inc	Thu Jul 08 11:38:03 2010 -0500
+@@ -0,0 +1,304 @@
++<?php
++// $Id$
++/*
++ * @file
++ * Relationship for groupwise maximum handler.
++ */
++
++/**
++ * Relationship handler that allows a groupwise maximum of the linked in table. 
++ * For a definition, see: 
++ * http://dev.mysql.com/doc/refman/5.0/en/example-maximum-column-group-row.html
++ * In lay terms, instead of joining to get all matching records in the linked 
++ * table, we get only one record, a 'representative record' picked according
++ * to a given criterion.
++ * 
++ * Example:
++ * Suppose we have a term view that gives us the terms: Horse, Cat, Aardvark.
++ * We wish to show for each term the most recent node of that term.
++ * What we want is some kind of relationship from term to node.
++ * But a regular relationship will give us all the nodes for each term, 
++ * giving the view multiple rows per term. What we want is just one 
++ * representative node per term, the node that is the 'best' in some way:
++ * eg, the most recent, the most commented on, the first in alphabetical order.
++ * 
++ * This handler gives us that kind of relationship from term to node.
++ * The method of choosing the 'best' implemented with a sort
++ * that the user selects in the relationship settings. 
++ * 
++ * So if we want our term view to show the most commented node for each term, 
++ * add the relationship and in its options, pick the 'Comment count' sort.
++ * 
++ * Relationship definition
++ *  - 'outer field': The outer field to substitute into the correlated subquery.
++ *       This must be the full field name, not the alias. 
++ *       Eg: 'term_data.tid'.
++ *  - 'argument table',
++ *    'argument field': These options define a views argument that the subquery
++ *     must add to itself to filter by the main view.
++ *     Example: the main view shows terms, this handler is being used to get to
++ *     the nodes base table. Your argument must be 'term_node', 'tid', as this 
++ *     is the argument that should be added to a node view to filter on terms.
++ * 
++ * A note on performance:
++ * This relationship uses a correlated subquery, which is expensive.
++ * Subsequent versions of this handler could also implement the alternative way 
++ * of doing this, with a join -- though this looks like it could be pretty messy
++ * to implement. This is also an expensive method, so providing both methods and
++ * allowing the user to choose which one works fastest for their data might be 
++ * the best way.
++ * If your use of this relationship handler is likely to result in large 
++ * data sets, you might want to consider storing statistics in a separate table,
++ * in the same way as node_comment_statistics.
++ */
++class views_handler_relationship_groupwise_max extends views_handler_relationship {
++
++  /**
++   * Defines default values for options.
++   */
++  function option_definition() {
++    $options = parent::option_definition();
++
++    $options['subquery_sort'] = array('default' => array(NULL)); // TODO: Correct structure?
++    $options['subquery_order'] = array('default' => 'DESC'); // Descending more useful.
++    $options['subquery_regenerate'] = array('default' => FALSE);
++    $options['subquery_view'] = array('default' => FALSE);
++    $options['subquery_namespace'] = array('default' => FALSE);
++
++    return $options;
++  }
++
++  /**
++   * Extends the relationship's basic options, allowing the user to pick
++   * a sort and an order for it.
++   */
++  function options_form(&$form, &$form_state) {
++    parent::options_form($form, $form_state);
++
++    // Get the sorts that apply to our base.
++    $sorts = views_fetch_fields($this->definition['base'], 'sort');    
++    foreach ($sorts as $sort_id => $sort) {
++      $options[$sort_id] = "$sort[group]: $sort[title]";
++    }
++
++    $form['subquery_sort'] = array(
++      '#type' => 'select',
++      '#title' => t('Representative sort criterion'),
++      '#default_value' => $this->options['subquery_sort'],
++      '#options' => $options,
++      '#description' => theme('advanced_help_topic', 'views', 'relationship-representative') .
++      t('This sort determines how the representative item is chosen. Eg, to show the most recent node for each term in a term view, select "Node: Post date".'),
++    );
++
++    $form['subquery_order'] = array(
++      '#type' => 'radios',
++      '#title' => t('Representative sort order'),
++      '#options' => array('ASC' => t('Ascending'), 'DESC' => t('Descending')),
++      '#default_value' => $this->options['subquery_order'],
++    ); 
++
++    $form['subquery_namespace'] = array(
++      '#type' => 'textfield',
++      '#title' => t('Subquery namespace'),
++      '#default_value' => $this->options['subquery_namespace'],
++    ); 
++
++    
++    // WIP: This stuff doens't work yet: namespacing issues.
++    // A list of suitable views to pick one as the subview.   
++    $views = array('' => '<none>');
++    $all_views = views_get_all_views();   
++    foreach ($all_views as $view) {
++      // Only get views that are suitable:
++      // - base must the base that our relationship joins towards
++      // - must have fields.
++      if ($view->base_table == $this->definition['base'] && !empty($view->display['default']->display_options['fields'])) {
++        // TODO: check the field is the correct sort?
++        // or let users hang themselves at this stage and check later?
++        if ($view->type == 'Default') {
++          $views[t('Default Views')][$view->name] = $view->name;
++        }
++        else {
++          $views[t('Existing Views')][$view->name] = $view->name;
++        }
++      }
++    }
++
++    $form['subquery_view'] = array(
++      '#type' => 'select',
++      '#title' => t('Representative view'),
++      '#default_value' => $this->options['subquery_view'],
++      '#options' => $views,
++      '#description' => t('Advanced. Use another view to generate the relationship subquery. This allows you to use filtering and more than one sort. If you pick a view here, the sort options above are ignored. Your view must have the ID of its base as its only field, and should have some kind of sorting.'),
++    ); 
++
++    $form['subquery_regenerate'] = array(
++      '#type' => 'checkbox',
++      '#title' => t('Generate subquery each time view is run.'),
++      '#default_value' => $this->options['subquery_regenerate'],
++      '#description' => t('Will re-generate the subquery for this relationship every time the view is run, instead of only when these options are saved. Use for testing if you are making changes elsewhere. WARNING: seriously impairs performance.'),
++    );
++  } 
++
++  /**
++   * Perform any necessary changes to the form values prior to storage.
++   * There is no need for this function to actually store the data.
++   *
++   * Generate the subquery string when the user submits the options, and store 
++   * it. This saves the expense of generating it when the view is run.
++   */
++  function options_submit($form, &$form_state) { 
++    // Get the new user options from the form values.
++    $new_options = $form_state['values']['options'];   
++    $subquery = $this->left_query($new_options);
++    // Add the subquery string to the options we're about to store.
++    $this->options['subquery_string'] = $subquery;
++  }
++
++  /**
++   * Helper function to create a pseudo view with a namespace added.
++   */
++  function view_aliased() {
++    views_include('view');
++    $view = new view();
++    $view->vid = 'new'; // @todo: what's this?
++    $view->base_table = $this->definition['base'];
++    $view->add_display('default');
++    return $view;
++  }
++  /**
++   * Generate a subquery given the user options, as set in the options. 
++   * These are passed in rather than picked up from the object because we 
++   * generate the subquery when the options are saved, rather than when the view
++   * is run. This saves considerable time.
++   *
++   * @param $options
++   *   An array of options:
++   *    - subquery_sort: the id of a views sort.
++   *    - subquery_order: either ASC or DESC.
++   * @return
++   *    The subquery SQL string, ready for use in the main query.
++   */
++  function left_query($options) {
++
++    // Either load another view, or create one on the fly.
++    if ($options['subquery_view']) {
++      // We don't use views_get_view because we want our own class of view.
++      views_include('view');      
++      $temp_view = view::load($options['subquery_view']);
++
++      // Remove all fields from default display
++      unset($temp_view->display['default']->display_options['fields']);
++    }
++    else {
++      // Create a new view object on the fly.
++      // We use this to generate a query from the chosen sort.
++      $temp_view = $this->view_aliased();
++      
++      // Add the sort from the options to the default display.
++      $sort = $options['subquery_sort'];
++      list($sort_table, $sort_field) = explode('.', $sort);
++      $sort_options = array('order' => $options['subquery_order']);
++      $temp_view->add_item('default', 'sort', $sort_table, $sort_field, $sort_options);
++    }
++    $temp_view->namespace = (!empty($options['subquery_namespace'])) ? '_'. $options['subquery_namespace'] : '_INNER';
++   
++    // The value we add here does nothing, but doing this adds the right tables 
++    // and puts in a WHERE clause with a placeholder we can grab later.
++    $temp_view->args[] = '**CORRELATED**';
++
++    // Add the base table ID field.
++    $views_data = views_fetch_data($this->definition['base']);
++    $base_field = $views_data['table']['base']['field'];
++    $temp_view->add_item('default', 'field', $this->definition['base'], $this->definition['field']);
++
++    // Add the correct argument for our relationship's base
++    // ie ehe 'how to get back to base' argument.
++    // The relationship definition tells us which one to use.
++    $temp_view->add_item(
++      'default', 
++      'argument', 
++      $this->definition['argument table'], // eg 'term_node', 
++      $this->definition['argument field'] //  eg 'tid'
++    );
++
++    // Build the view. The creates the query object and produces the query 
++    // string but does not run any queries.
++    $temp_view->build();
++    
++    // Now collect the query SQL string..
++
++    $subquery = $temp_view->build_info['query'];
++
++    // We need to prevent the last %d placeholder from getting replaced with an
++    // argument value, because it's the one that needs to get the outer
++    // reference field.
++    // Replacing the %d with %dd protects it.
++    $subquery = preg_replace('/%d(?!.*%d.*)/', '%%d', $subquery);
++
++    // Get the arguments from the view build info.
++    $args = $temp_view->build_info['query_args'];  
++ 
++    // Replace the placeholders with the arguments.
++    _db_query_callback($args, TRUE);
++
++    $subquery = preg_replace_callback(DB_QUERY_REGEXP, '_db_query_callback', $subquery);
++
++    // Add in the outer field.
++    $subquery = preg_replace('/%d/', $this->definition['outer field'], $subquery);
++
++    // The query we get doesn't include the LIMIT.
++    // TODO: Is there a better way than adding it by hand?
++    $subquery .= ' LIMIT 1';
++        
++    return $subquery;
++  }
++
++  /**
++   * Called to implement a relationship in a query.
++   * This is mostly a copy of our parent's query() except for this bit with
++   * the join class.
++   */
++  function query() {
++    // Figure out what base table this relationship brings to the party.
++    $table_data = views_fetch_data($this->definition['base']);
++    $base_field = empty($this->definition['base field']) ? $table_data['table']['base']['field'] : $this->definition['base field'];
++
++    $this->ensure_my_table();
++
++    $def = $this->definition;
++    $def['table'] = $this->definition['base'];
++    $def['field'] = $base_field;
++    $def['left_table'] = $this->table_alias;
++    $def['left_field'] = $this->field;
++    if (!empty($this->options['required'])) {
++      $def['type'] = 'INNER';
++    }
++    
++    if ($this->options['subquery_regenerate']) {
++      // For testing only, regenerate the subquery each time.
++      $def['left_query'] = $this->left_query($this->options);     
++    }
++    else {
++      // Get the stored subquery SQL string.
++      $def['left_query'] = $this->options['subquery_string'];
++    }
++
++    if (!empty($def['join_handler']) && class_exists($def['join_handler'])) {
++      $join = new $def['join_handler'];
++    }
++    else {
++      $join = new views_join_subquery();
++    }
++
++    $join->definition = $def;
++    $join->construct();
++    $join->adjusted = TRUE;
++
++    // use a short alias for this:
++    $alias = $def['table'] . '_' . $this->table;
++
++    $this->alias = $this->query->add_relationship($alias, $join, $this->definition['base'], $this->relationship);
++  }
++}
++
+diff -r 26f34c6af47d help/views.help.ini
+--- help/views.help.ini	Thu Jul 08 09:10:05 2010 -0500
++++ help/views.help.ini	Thu Jul 08 11:38:03 2010 -0500
+@@ -80,6 +80,10 @@
+ title = "Relationships"
+ parent = about
+ 
++[relationship-representative]
++title = "Representative relationships"
++parent = relationship
++
+ [style]
+ title = "Output styles (View styles)"
+ weight = -20 
+diff -r 26f34c6af47d includes/handlers.inc
+--- includes/handlers.inc	Thu Jul 08 09:10:05 2010 -0500
++++ includes/handlers.inc	Thu Jul 08 11:38:03 2010 -0500
+@@ -84,8 +84,19 @@
+     }
+   }
+ 
++  if ($handler == 'views_handler_field_comment_cid_plain') {
++    dpm($handler);
++    dpm($definition);
++    dpm(views_fetch_handler_data($handler));
++    dpm(views_fetch_plugin_data($type, $handler));
++  }
+   if (isset($definition['path']) && $definition['file']) {
+     $filename = './' . $definition['path'] . '/' . $definition['file'];
++
++    if ($handler == 'views_handler_field_comment_cid_plain') {
++      dpm($handler);
++      dpm($definition);
++    }
+     if (file_exists($filename)) {
+       require_once $filename;
+     }
+@@ -1281,6 +1292,9 @@
+       'views_handler_relationship' => array(
+         'parent' => 'views_handler',
+       ),
++      'views_handler_relationship_groupwise_max' => array(
++        'parent' => 'views_handler_relationship',
++      ),
+ 
+ 
+       // sort handlers
+@@ -1518,6 +1532,87 @@
+ }
+ 
+ /**
++ * Join handler for relationships that join with a subquery as the left field.
++ * eg:
++ *  LEFT JOIN node node_term_data ON ([YOUR SUBQUERY HERE]) = node_term_data.nid 
++ *
++ * join definition
++ *   same as views_join class above, except:
++ *   - left_query: The subquery to use in the left side of the join clause.
++ */
++class views_join_subquery extends views_join {
++  // PHP 4 doesn't call constructors of the base class automatically from a
++  // constructor of a derived class. It is your responsibility to propagate
++  // the call to constructors upstream where appropriate.
++  function construct($table = NULL, $left_table = NULL, $left_field = NULL, $field = NULL, $extra = array(), $type = 'LEFT') {
++    parent::construct($table, $left_table, $left_field, $field, $extra, $type);
++    $this->left_query = $this->definition['left_query'];
++  }
++
++  /**
++   * Build the SQL for the join this object represents.
++   */
++  function join($table, &$query) {
++    $output = " $this->type JOIN {" . $this->table . "} $table[alias] ON ($this->left_query) = $table[alias].$this->field";
++
++    // Tack on the extra.
++    if (isset($this->extra)) {
++      if (is_array($this->extra)) {
++        $extras = array();
++        foreach ($this->extra as $info) {
++          $extra = '';
++          // Figure out the table name. Remember, only use aliases provided
++          // if at all possible.
++          $join_table = '';
++          if (!array_key_exists('table', $info)) {
++            $join_table = $table['alias'] . '.';
++          }
++          elseif (isset($info['table'])) {
++            $join_table = $info['table'] . '.';
++          }
++
++          // And now deal with the value and the operator.  Set $q to
++          // a single-quote for non-numeric values and the
++          // empty-string for numeric values, then wrap all values in $q.
++          $raw_value = $this->db_safe($info['value']);
++          $q = (empty($info['numeric']) ? "'" : '');
++
++          if (is_array($raw_value)) {
++            $operator = !empty($info['operator']) ? $info['operator'] : 'IN';
++            // Transform from IN() notation to = notation if just one value.
++            if (count($raw_value) == 1) {
++              $value = $q . array_shift($raw_value) . $q;
++              $operator = $operator == 'NOT IN' ? '!=' : '=';
++            }
++            else {
++              $value = "($q" . implode("$q, $q", $raw_value) . "$q)";
++            }
++          }
++          else {
++            $operator = !empty($info['operator']) ? $info['operator'] : '=';
++            $value = "$q$raw_value$q";
++          }
++          $extras[] = "$join_table$info[field] $operator $value";
++        }
++
++        if ($extras) {
++          if (count($extras) == 1) {
++            $output .= ' AND ' . array_shift($extras);
++          }
++          else {
++            $output .= ' AND (' . implode(' ' . $this->extra_type . ' ', $extras) . ')';
++          }
++        }
++      }
++      else if ($this->extra && is_string($this->extra)) {
++        $output .= " AND ($this->extra)";
++      }
++    }
++    return $output;
++  }
++}
++
++/**
+  * @}
+  */
+ 
+diff -r 26f34c6af47d includes/view.inc
+--- includes/view.inc	Thu Jul 08 09:10:05 2010 -0500
++++ includes/view.inc	Thu Jul 08 11:38:03 2010 -0500
+@@ -1878,7 +1878,7 @@
+     }
+ 
+     $handler = views_get_handler($table, $field, $handler_type);
+-
++    
+     $fields[$id] = $new_item;
+     $this->display[$display_id]->handler->set_option($types[$type]['plural'], $fields);
+ 
+diff -r 26f34c6af47d modules/comment.views.inc
+--- modules/comment.views.inc	Thu Jul 08 09:10:05 2010 -0500
++++ modules/comment.views.inc	Thu Jul 08 11:38:03 2010 -0500
+@@ -90,6 +90,25 @@
+     ),
+   );
+ 
++  $data['comments']['cid_plain'] = array(
++    'title' => t('CID - Plain'),
++    'help' => t('The comment ID of the field. Does not add additional fields.'),
++    'real field' => 'cid',
++    'field' => array(
++      'handler' => 'views_handler_field',
++    ),
++    'filter' => array(
++      'handler' => 'views_handler_filter_numeric',
++    ),
++    'sort' => array(
++      'handler' => 'views_handler_sort',
++    ),
++    'argument' => array(
++      'handler' => 'views_handler_argument',
++    ),
++  );
++
++
+   // name (of comment author)
+   $data['comments']['name'] = array(
+     'title' => t('Author'),
+@@ -312,6 +331,9 @@
+       'handler' => 'views_handler_relationship',
+       'label' => t('Node'),
+     ),
++    'argument' => array(
++      'handler' => 'views_handler_argument_numeric',
++    ),
+   );
+ 
+   $data['comments']['uid'] = array(
+diff -r 26f34c6af47d modules/node.views.inc
+--- modules/node.views.inc	Thu Jul 08 09:10:05 2010 -0500
++++ modules/node.views.inc	Thu Jul 08 11:38:03 2010 -0500
+@@ -648,6 +648,24 @@
+       'handler' => 'views_handler_filter_history_user_timestamp',
+     ),
+   );
++
++  // ----------------------------------------------------------------------
++  // Representative relationships
++  $data['node']['cid_representative'] = array(
++    'relationship' => array(
++      'real field' => 'cid',
++      'title' => t('Representative comment'),
++      'label'  => t('Representative comment'),
++      'help' => t('Obtains a single representative comment for each node, acccording to a chosen sort criterion, or by embedding a comment view.'),
++      'handler' => 'views_handler_relationship_groupwise_max',
++      'base'   => 'comments',
++      'field'  => 'cid_plain',
++      'outer field' => 'node.nid',
++      'argument table' => 'comments',
++      'argument field' =>  'nid',
++    ),
++  );
++
+   return $data;
+ }
+ 
+diff -r 26f34c6af47d modules/taxonomy.views.inc
+--- modules/taxonomy.views.inc	Thu Jul 08 09:10:05 2010 -0500
++++ modules/taxonomy.views.inc	Thu Jul 08 11:38:03 2010 -0500
+@@ -123,6 +123,17 @@
+       'numeric' => TRUE,
+       'skip base' => array('node', 'node_revision'),
+     ),
++    'relationship' => array(
++      'title' => t('Representative node'),
++      'label'  => t('Representative node'),
++      'help' => t('Obtains a single representative node for each term, acccording to a chosen sort criterion.'),
++      'handler' => 'views_handler_relationship_groupwise_max',
++      'base'   => 'node',
++      'field'  => 'nid',
++      'outer field' => 'term_data.tid',
++      'argument table' => 'term_node',
++      'argument field' =>  'tid',
++    ),
+   );
+ 
+   // Term name field
+diff -r 26f34c6af47d modules/user.views.inc
+--- modules/user.views.inc	Thu Jul 08 09:10:05 2010 -0500
++++ modules/user.views.inc	Thu Jul 08 11:38:03 2010 -0500
+@@ -73,6 +73,22 @@
+   );
+ 
+   // uid
++  $data['users']['uid_representative'] = array(
++    'relationship' => array(
++      'real field' => 'uid',
++      'title' => t('Representative node'),
++      'label'  => t('Representative node'),
++      'help' => t('Obtains a single representative node for each user, acccording to a chosen sort criterion.'),
++      'handler' => 'views_handler_relationship_groupwise_max',
++      'base'   => 'node',
++      'field'  => 'nid',
++      'outer field' => 'users.uid',
++      'argument table' => 'users',
++      'argument field' =>  'uid',
++    ),
++  );
++
++  // uid
+   $data['users']['uid_current'] = array(
+     'real field' => 'uid',
+     'title' => t('Current'),
+diff -r 26f34c6af47d plugins/views_plugin_query_default.inc
+--- plugins/views_plugin_query_default.inc	Thu Jul 08 09:10:05 2010 -0500
++++ plugins/views_plugin_query_default.inc	Thu Jul 08 11:38:03 2010 -0500
+@@ -69,22 +69,28 @@
+   var $has_aggregate = FALSE;
+ 
+   /**
++   * The namespace used by groupwise maximum.
++   */
++  var $namespace = "";
++
++  /**
+    * Constructor; Create the basic query object and fill with default values.
+    */
+   function init($base_table = 'node', $base_field = 'nid', $options) {
+     parent::init($base_table, $base_field, $options);
+     $this->base_table = $base_table;  // Predefine these above, for clarity.
+     $this->base_field = $base_field;
++    $this->namespace = $options['namespace'];
+     $this->relationships[$base_table] = array(
+       'link' => NULL,
+       'table' => $base_table,
+-      'alias' => $base_table,
++      'alias' => $base_table . $options['namespace'],
+       'base' => $base_table
+     );
+ 
+     // init the table queue with our primary table.
+-    $this->table_queue[$base_table] = array(
+-      'alias' => $base_table,
++    $this->table_queue[$base_table . $options['namespace']] = array(
++      'alias' => $base_table . $options['namespace'],
+       'table' => $base_table,
+       'relationship' => $base_table,
+       'join' => NULL,
+@@ -92,7 +98,7 @@
+     // init the tables with our primary table
+     $this->tables[$base_table][$base_table] = array(
+       'count' => 1,
+-      'alias' => $base_table,
++      'alias' => $base_table . $options['namespace'],
+     );
+ 
+ /**
+@@ -109,7 +115,7 @@
+     $this->count_field = array(
+       'table' => $base_table,
+       'field' => $base_field,
+-      'alias' => $base_field,
++      'alias' => $base_field . $this->namespace,
+       'count' => TRUE,
+     );
+   }
+@@ -149,6 +155,14 @@
+     $this->header = $header;
+   }
+ 
++  /**
++   * Set the namespace.
++   * @todo: Should this be set dynamically and safely in the event a crazy user nests these?
++   */
++  function set_namespace($namespace) {
++    $this->namespace = strtoupper($namespace);
++  }
++
+   // ----------------------------------------------------------------
+   // Table/join adding
+ 
+@@ -325,6 +339,9 @@
+       $alias = $this->tables[$relationship][$table]['alias'] . $this->tables[$relationship][$table]['count'];
+     }
+ 
++    // Groupwise: this is the only bit of work we do here.
++    $alias .= $this->namespace;
++
+     // If this is a relationship based table, add a marker with
+     // the relationship as a primary table for the alias.
+     if ($table != $alias) {
+@@ -1000,7 +1017,9 @@
+ 
+     $where = $this->condition_sql();
+ 
+-    $query = "SELECT " . implode(",\n", array_merge($distinct, $fields)) . "\n FROM {" . $this->base_table . "} $this->base_table \n$joins $where $groupby $having $orderby";
++    $this->base_table_alias = $this->base_table . $this->namespace;
++
++    $query = "SELECT " . implode(",\n", array_merge($distinct, $fields)) . "\n FROM {" . $this->base_table . "} $this->base_table_alias \n$joins $where $groupby $having $orderby";
+ 
+     $replace = array('&gt;' => '>', '&lt;' => '<');
+     $query = strtr($query, $replace);

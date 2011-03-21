@@ -5,6 +5,8 @@ version = 0.1
 core = 6.x
 engine = phptemplate
 
+base theme = tao
+
 ; Regions
 regions[header] = Header
 regions[navigation] = Navigation bar
@@ -13,10 +15,20 @@ regions[left] = Sidebar left
 regions[right] = Sidebar right
 regions[footer] = Footer
 
-; Styles
-stylesheets[all][] = css/blueprint/reset.css
-stylesheets[all][] = css/style.css
-conditional-stylesheets[if IE][all][] = css/ie.css
+; Styles ----------------
+
+; Unset custom modules
+stylesheets[all][] = "themes/datepicker.css"
+stylesheets[all][] = date.css
+stylesheets[all][] = "jquery.ui.all.css"
+stylesheets[all][] = "homebox.css"
+
+; System styles
+stylesheets[screen][] = css/system.css
+stylesheets[screen][] = css/system-menus.css
+
+stylesheets[screen][] = css/style.css.less
+conditional-stylesheets[if IE][screen][] = css/ie.css
 
 ; Scripts
 scripts[] = js/behaviors.js

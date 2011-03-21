@@ -1,0 +1,131 @@
+<p class="ecenter-introduction">
+This page documents and tests E-Center's CSS and styling.
+</p>
+
+<h2 id="headings">Headings</h2>
+
+<h2>Heading 2</h2>
+<h3>Heading 3</h3>
+<h4>Heading 4</h4>
+<h5>Heading 5</h5>
+<h6>Heading 6</h6>
+
+<h2 id="lists">Lists</h2>
+
+<h3>Unordered lists</h3>
+
+<ul>
+  <li>List item 1</li>
+  <li>List item 2</li>
+  <li>List item 3</li>
+  <li>List item 4
+    <ul>
+      <li>List item 4.1</li>
+      <li>List item 4.2</li>
+    </ul>
+  </li>
+  <li>List item 5
+    <ul>
+      <li>List item 5.1
+        <ul>
+          <li>List item 5.1.1</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>List item 6</li>
+</ul>
+
+<h3>Ordered lists</h3>
+
+<ol>
+  <li>List item 1</li>
+  <li>List item 2</li>
+  <li>List item 3</li>
+  <li>List item 4
+    <ol>
+      <li>List item 4.1</li>
+      <li>List item 4.2</li>
+    </ol>
+  </li>
+  <li>List item 5
+    <ol>
+      <li>List item 5.1
+        <ol>
+          <li>List item 5.1.1</li>
+        </ol>
+      </li>
+    </ol>
+  </li>
+  <li>List item 6</li>
+</ol>
+
+<h2 id="tables">Tables</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Column 1</th>
+      <th>Column 2</th>
+      <th>Column 3</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Header</th>
+      <td>Value</td>
+      <td>Value</td>
+    </tr>
+    <tr>
+      <th>Header</th>
+      <td>Value</td>
+      <td>Value</td>
+    </tr>
+    <tr>
+      <th>Header</th>
+      <td>Value</td>
+      <td>Value</td>
+    </tr>
+    <tr>
+      <th>Header</th>
+      <td>Value</td>
+      <td>Value</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="preformatted-text">Preformatted text</h2>
+
+<pre>
+// Invoke tablechart plugin
+$('#my-id').tablechart({
+  hideTables: false
+});
+</pre>
+
+<h2 id="blockquote">Blockquote</h2>
+
+<blockquote>
+  <p>Some blockquote text.</p>
+  <p>More blockquote text.</p>
+</blockquote>
+
+<h2 id="ecenter-classes">E-Center classes</h2>
+
+<p>
+  WYSIWYG filter asks us to restrict the classes available to regular users.
+  The theme provides several <code>ecenter-</code> prefixed helper classes
+  so users can compose pages using the normal editing mechanisms.
+</p>
+
+<h3 id="ecenter-introduction"><code>.ecenter-introduction</code></h3>
+
+<p class="ecenter-introduction">E-Center introduction text: To be used to preface pages.</p>
+
+<h3 id="ecenter-highlight"><code>.ecenter-highlight</code></h3>
+
+<p class="ecenter-highlight">A class for highlighting things.</p>
+
+<h3 id="ecenter-pad"><code>.ecenter-pad</code></h3>
+
+<p class="ecenter-pad ecenter-highlight">Pad an element, like a highlighted paragraph.</p>

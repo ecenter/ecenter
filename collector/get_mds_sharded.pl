@@ -422,7 +422,7 @@ sub get_fromHLS {
 						       ip_noted => $ip_noted,
 						      }); 
 						      
-	my   $ip_addr = $dbh->resultset('Node')->find({ip_noted => $ip_noted  });
+	my   ($ip_addr) = $dbh->resultset('Node')->search({ip_noted => $ip_noted  });
 	$param_exist{ip_addr} = $ip_addr->ip_addr;						   
 	my $service_obj =$dbh->resultset('Service')->find_or_create( \%param_exist ); 
         ## my $service_obj =  $dbh->resultset('Service')->find({url => $param_exist{url}});
@@ -471,7 +471,7 @@ sub get_fromHLS {
 		if($SERVICE_LOOKUP{$value}) {
 		    $type_of_service = $SERVICE_LOOKUP{$value};
 		    eval {
-		          $eventtype_obj = $dbh->resultset('Eventtype')->update_or_create( { eventtype =>  $value,
+		          $eventtype_obj ||= $dbh->resultset('Eventtype')->update_or_create( { eventtype =>  $value,
 								  service =>  $service_obj->service,
 								  service_type => $type_of_service,
 								},
@@ -484,7 +484,8 @@ sub get_fromHLS {
 	            $snmp ||= $SERVICE_LOOKUP{$value} if $SERVICE_LOOKUP{$value} && $SERVICE_LOOKUP{$value} eq 'snmp';
 		}
 	    }
-	    next if $snmp;  ## skip snmp ma   
+	    next if $snmp;  ## skip snmp ma
+	    next unless $eventtype_obj; # skip it
 	    my $subj_md =  find($d1_el, "./nmwg:metadata/*[local-name()='subject']", 1);
 	    $logger->debug("TID=proc=$$====DATA $id  MD element:::" . $subj_md->toString) if $subj_md;
    	  

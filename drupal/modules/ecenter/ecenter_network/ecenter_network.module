@@ -1061,7 +1061,13 @@ function ecenter_network_layers_sites() {
   );
 
   extract(_ecenter_network_extract_query());
-  if (empty($src) || empty($dst) || empty($start) || empty($end)) {
+
+  if (!empty($src) && !empty($dst) && !empty($start) && !empty($end)) {
+    $data = ecenter_network_get_data($src, $dst, $start, $end);
+  }
+
+  if (($data && empty($data['traceroute']['forward']))
+    || (empty($src) || empty($dst) || empty($start) || empty($end))) {
     foreach ($hops['hubs'] as $hub) {
       $features[] = array(
         'wkt' => "POINT({$hub['longitude']} {$hub['latitude']})",

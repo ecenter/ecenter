@@ -210,7 +210,7 @@ function theme_ecenter_network_hops($hops = array()) {
     drupal_alter('ecenter_network_plot_options', $plot_options, 'utilization', 'snmp');
     $options = array(
       'height' => 175,
-      'width' => 600,
+      'width' => 550,
       'hideTables' => FALSE,
       'parseX' => '$.tablechart.parseText',
       'dependencies' => array('canvasTextRenderer'),

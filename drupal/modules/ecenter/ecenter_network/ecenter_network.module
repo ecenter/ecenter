@@ -464,8 +464,8 @@ function ecenter_network_get_data($src, $dst, $start, $end, $debug_url = FALSE) 
   global $user;
   static $results = array();
 
-  $start = _ecenter_network_date_to_utc($start);
-  $end = _ecenter_network_date_to_utc($end);
+  $start = _ecenter_network_local_to_utc($start);
+  $end = _ecenter_network_local_to_utc($end);
 
   $query = http_build_query(array(
     'src' => $src,
@@ -1287,7 +1287,7 @@ function ecenter_network_refresh_map($preset, $id = NULL) {
 }
 
 /**
- * Adjust local date to UTC
+ * Convert formatted local date string to formatted UTC date string
  *
  * @param $date
  *   A date string
@@ -1296,12 +1296,47 @@ function ecenter_network_refresh_map($preset, $id = NULL) {
  * @return string
  *   Formatted, converted date
  */
-function _ecenter_network_date_to_utc($date, $format = 'Y-m-d H:i:s') {
+function _ecenter_network_local_to_utc($date, $format = 'Y-m-d H:i:s') {
   $tz = date_default_timezone_name(TRUE);
   $adjusted = date_create($date, timezone_open($tz));
   date_timezone_set($adjusted, timezone_open('UTC'));
   return date_format($adjusted, $format);
 }
+
+/**
+ * Adjust formatted UTC date string to formatted local date string
+ *
+ * @param $date
+ *   A date string
+ * @param $format
+ *   Format to use for return value.
+ * @return string
+ *   Formatted, converted date
+ */
+function _ecenter_network_utc_to_local($date, $format = 'Y-m-d H:i:s') {
+  $tz = date_default_timezone_name(TRUE);
+  $adjusted = date_create($date, timezone_open('UTC'));
+  date_timezone_set($adjusted, timezone_open($tz));
+  return date_format($adjusted, $format);
+}
+
+/**
+ * Convert Unix timestamp to formatted local date string 
+ *
+ * @param $date
+ *   A date string
+ * @param $format
+ *   Format to use for return value.
+ * @return string
+ *   Formatted, converted date
+ */
+function _ecenter_network_timestamp_to_local($date, $format = 'Y-m-d H:i:s') {
+  $tz = date_default_timezone_name(TRUE);
+  $adjusted = date_make_date($date, timezone_open('UTC'), DATE_UNIX);
+  date_timezone_set($adjusted, timezone_open($tz));
+  return date_format($adjusted, $format);
+}
+
 
 /**
  * Package query variables as an array
@@ -1327,9 +1362,9 @@ function _ecenter_network_extract_query() {
   else {
     $tz = date_default_timezone_name(TRUE);
     $start = ($_REQUEST['start']) ? 
-      date_format(date_create($_REQUEST['start']), 'Y-m-d H:i') : NULL;
+      _ecenter_network_utc_to_local($_REQUEST['start'], 'Y-m-d H:i') : NULL;
     $end = ($_REQUEST['end']) ? 
-      date_format(date_create($_REQUEST['end']), 'Y-m-d H:i') : NULL;
+      _ecenter_network_utc_to_local($_REQUEST['end'], 'Y-m-d H:i') : NULL;
     $vars = array(
       'src' => $_REQUEST['src'],
       'dst' => $_REQUEST['dst'],

@@ -155,10 +155,12 @@ function theme_ecenter_network_hops($hops = array()) {
     $settings['ecenterNetwork']['seriesLookupByIndex'][] = array('id' => $hop['id'], 'hub' => $hop['hub']);
 
     foreach ($hop['data']['snmp'] as $timeseries) {
+
       if (!empty($timeseries)) {
+        $time = _ecenter_network_timestamp_to_local($timeseries[0]);
         $table[] = array(
           'label' => array(
-            'data' => $timeseries[0] * 1000,
+            'data' => $time,
             'header' => TRUE,
           ),
           'utilization' => array(
@@ -210,6 +212,7 @@ function theme_ecenter_network_hops($hops = array()) {
       'height' => 175,
       'width' => 600,
       'hideTables' => FALSE,
+      'parseX' => '$.tablechart.parseText',
       'dependencies' => array('canvasTextRenderer'),
       'plotOptions' => $plot_options,
     );

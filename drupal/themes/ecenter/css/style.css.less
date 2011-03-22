@@ -1112,14 +1112,14 @@ body.page-network { // Network diagnostic display {{{
         } 
       }
     } // }}}
-    .data-tables {
+    .data-tables { // {{{
       margin-bottom: 55px;
       .data-table {
         float: left;
         margin-right: 15px;
         font-size: .825em;
       }
-    }
+    } // }}} 
     .toggle-data { // {{{
       .button_link;
       .box;
@@ -1128,6 +1128,9 @@ body.page-network { // Network diagnostic display {{{
       text-align: right;
     } // }}}
     #utilization-tables { // {{{
+      float: left;
+      width: 550px;
+      margin-right: 30px;
       margin-top: 25px;
       margin-bottom: 1.5em;
       .data-tables {
@@ -1144,7 +1147,7 @@ body.page-network { // Network diagnostic display {{{
         margin-top: -25px;
         h3 {
           .box;
-          width: 474px;
+          width: 424px;
           font-size: .875em;
           margin: 0;
         }
@@ -1180,6 +1183,56 @@ body.page-network { // Network diagnostic display {{{
         td { 
           text-align: left;
           vertical-align: bottom;
+        }
+      }
+    } // }}}
+    #result-links-wrapper { // {{{
+      float: left;
+      width: 350px;
+      h2 {
+        .src-dst { 
+          font-size: .825em;
+          display: block;
+          margin-bottom: .3em;
+        }
+        .date-range {
+          font-size: .65em;
+          font-weight: normal;
+          display: block;
+        }
+        .separator {
+          display: none;
+        }
+      }
+      a {
+        .button;
+        display: block;
+        text-align: center;
+        :hover {
+          text-decoration: none;
+        }
+      }
+      .issuelink, .permalink {
+        margin-bottom: 1em;
+      }
+      .issuelink {
+        a { font-size: @font_size_17 };
+      }
+      .permalink {
+        a { 
+          font-size: @font_size_13; 
+        };
+        .form-item {
+          input {
+            font-family: @font_liberation;
+            color: @color_black;
+            background-color: @color_grey_93;
+            font-size: 11px;
+            line-height: 13px;
+            padding-top: 2px;
+            padding-bottom: 2px;
+            width: 340px;
+          }
         }
       }
     } // }}}
@@ -1341,7 +1394,6 @@ body.page-dashboard h1#page-title {
 /* }}} */
 
 /* --- @TODO sort and arrange --- */
-
 .jqplot-highlighter-tooltip {
   background-color: rgba(15, 15, 15, 0.75) !important;
   padding: 3px 5px !important;
@@ -1361,47 +1413,5 @@ body.page-dashboard h1#page-title {
     background-color: transparent;
     border: none !important;
     padding: 2px 3px !important;
-  }
-}
-
-#utilization-tables {
-  float: left;
-  width: 600px;
-  margin-right: 30px;
-}
-
-#result-links-wrapper {
-  float: left;
-  width: 300px;
-  a {
-    .button;
-    display: block;
-    text-align: center;
-    :hover {
-      text-decoration: none;
-    }
-  }
-  .issuelink, .permalink {
-    margin-bottom: 1em;
-  }
-  .issuelink {
-    a { font-size: @font_size_17 };
-  }
-  .permalink {
-    a { 
-      font-size: @font_size_13; 
-    };
-    .form-item {
-      input {
-        font-family: @font_liberation;
-        color: @color_black;
-        background-color: @color_grey_93;
-        font-size: 11px;
-        line-height: 13px;
-        padding-top: 2px;
-        padding-bottom: 2px;
-        width: 290px;
-      }
-    }
   }
 }

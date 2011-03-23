@@ -18,8 +18,8 @@
  <nmwg:metadata id="metadata.5674757.chain" xmlns:nmwg="http://ggf.org/ns/nmwg/base/2.0/">
    <select:subject id="subject.4472944" metadataIdRef="metadata.5674757" xmlns:select="http://ggf.org/ns/nmwg/ops/select/2.0/"/>
         <select:parameters id="parameters.8042919" xmlns:select="http://ggf.org/ns/nmwg/ops/select/2.0/">
-            <nmwg:parameter name="startTime">1299691674</nmwg:parameter>
-            <nmwg:parameter name="endTime">1299708074</nmwg:parameter>
+            <nmwg:parameter name="startTime">1299691650</nmwg:parameter>
+            <nmwg:parameter name="endTime">1299691710</nmwg:parameter>
             <nmwg:parameter name="resolution">300</nmwg:parameter>
             <nmwg:parameter name="consolidationFunction">AVERAGE</nmwg:parameter>
         </select:parameters>

@@ -296,18 +296,22 @@ sub _get_remote_snmp {
         $result->{data} = " Remote MA -- $request->{service} failed $EVAL_ERROR";
 	return encode_json  $result;
     }
-    $logger->info("SNMP Data Entries=" . scalar @{$snmp_ma->data});
+    #$logger->info("$request->{service} :: SNMP Data=", sub {Dumper($snmp_ma->data)});
+    $logger->info("$request->{service} :: SNMP DataN=" . scalar @{$snmp_ma->data});
+    
     if($snmp_ma->data && @{$snmp_ma->data}) {
-	 foreach my $data (@{$snmp_ma->data}) { 
+	 foreach my $data (@{$snmp_ma->data}) {
 	     eval {
 	          my $datum = {  metaid => $request->{metaid},
 			         timestamp => $data->[0],
-			         utilization => $data->[1] 
+			         utilization => $data->[1],
+				 errors => $data->[2],
+				 drops => $data->[3]
 			      };
 		  $dbh->resultset($request->{table})->find_or_create( $datum,
 							                {key => 'meta_time'}
 							               );
-		  $datum->{capacity} = $data->[2];
+		  $datum->{capacity} = $data->[4];
 	          $result->{data}{$data->[0]} = $datum;
 		
 	     };
@@ -342,7 +346,7 @@ sub _get_snmp_from_db{
     return  {data => {}, md => $md_href, start_time => $start_time, end_time => $end_time} unless $md_href && %{$md_href};	
     my $mds = join(",", map {$dbh->quote($_)}  keys %{$md_href});
     $cmd = qq|select   distinct  m.metaid,  sd.timestamp as timestamp,  
-                                              sd.utilization as utilization  
+                                              sd.utilization as utilization , sd.errors as errors, sd.drops as drops
 	                              from 
 			  	        metadata m
                         	       join $request->{table} sd on(sd.metaid = m.metaid)

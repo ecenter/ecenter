@@ -74,7 +74,10 @@ sub  pack_snmp_data {
     foreach my $time (sort {$a<=>$b} grep {$_} keys %{$data_ref->{data}}) { 
 	push @result,   
 	            [ $time, { capacity => $data_ref ->{md}{$data_ref->{data}{$time}{metaid}}{capacity},  
-		               utilization => $data_ref ->{data}{$time}{utilization} }];
+		               utilization => $data_ref ->{data}{$time}{utilization},
+			       errors => $data_ref ->{data}{$time}{errors},
+			       drops => $data_ref ->{data}{$time}{drops},
+			          }];
 	$end_time = $time if $time > $end_time;
 	$start_time = $time if $time < $start_time;
     }
@@ -126,12 +129,25 @@ sub refactor_result {
 	my $count_j = 0;
 	for(my $i = 0; $i < $count ; $i++) {
 	    $j = int($i/$bin);
-	    $result->[$j][0] += $data_raw->[$i][0];
-	    map {$result->[$j][1]{$_} += $data_raw->[$i][1]{$_}} keys %{$data_raw->[$i][1]};
+	    $result->[$j][0] +=   $data_raw->[$i][0];
+	    #map {$result->[$j][1]{$_}  = $data_raw->[$i][1]{$_}?
+	     #                                ($result->[$j][1]{$_}?
+	     #                                   ($result->[$j][1]{$_}+$data_raw->[$i][1]{$_}):
+		#				     $data_raw->[$i][1]{$_}):
+		#			                  $result->[$j][1]{$_};} 
+		#			 keys %{$data_raw->[$i][1]};
+	    $result->[$j][1]{utilization}  += $data_raw->[$i][1]{utilization}?$data_raw->[$i][1]{utilization}:0;
+	    $result->[$j][1]{capacity} =  $data_raw->[$i][1]{capacity};
+	    map {$result->[$j][1]{$_} += $data_raw->[$i][1]{$_}?$data_raw->[$i][1]{$_}:0 }   qw/errors drops/;
+		
 	    if( $j > $old_j || $i == ($count-1) ) {
 	        $count_j++ if $i == ($count-1); 
-	        map {$result->[$old_j][1]{$_} /= $count_j if $result->[$old_j][1]{$_} &&  $count_j } keys %{$data_raw->[$i][1]};
-	        $result->[$old_j][0] = int($result->[$old_j][0]/$count_j) if   $result->[$old_j][0] &&  $count_j ;
+	        #map {$result->[$old_j][1]{$_} = ($result->[$old_j][1]{$_} &&  $count_j)?
+		#                                  ($result->[$old_j][1]{$_}/$count_j):
+		#				     $result->[$old_j][1]{$_}; } 
+		#			        keys %{$data_raw->[$i][1]};
+		$result->[$old_j][1]{utilization} /=    $count_j  if $result->[$old_j][1]{utilization} &&  $count_j;
+	        $result->[$old_j][0] = ($result->[$old_j][0] &&  $count_j)?int($result->[$old_j][0]/$count_j):$result->[$old_j][0];
 	        $count_j = 0; 
 	        $old_j = $j; 
 	    }

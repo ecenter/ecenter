@@ -434,7 +434,7 @@ sub get_snmp {
 									 is_alive => 1,
 									 updated  => \"NOW()",
 									 service  => "http://$SERVICE_ES.es.net:8080/perfSONAR_PS/services/snmpMA"});
-	$eventtype_obj = $dbh->resultset('Eventtype')->update_or_create( { eventtype =>  'http://ggf.org/ns/nmwg/characteristic/utilization/2.0',
+	$eventtype_obj = $dbh->resultset('Eventtype')->update_or_create( { eventtype =>  'http://ggf.org/ns/nmwg/tools/snmp/2.0',
 								           service =>  $service_obj->service,
 								           service_type =>  'snmp',
 								         },
@@ -523,6 +523,8 @@ sub get_snmp {
 		         $dbh->resultset("SnmpData$now_table")->create({ metaid =>  $meta->metaid,
     	    								        timestamp => $data->[0],
     	    								        utilization => $data->[1],
+										errors => $data->[2],
+										drops => $data->[3]
     	    								     },
     	    								     { key => 'meta_time'}) unless $got_snmp;
 		      };

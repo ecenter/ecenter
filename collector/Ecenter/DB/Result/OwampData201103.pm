@@ -42,35 +42,30 @@ __PACKAGE__->table("owamp_data_201103");
 =head2 min_delay
 
   data_type: 'float'
-  default_value: 0
-  is_nullable: 0
+  is_nullable: 1
 
 =head2 max_delay
 
   data_type: 'float'
-  default_value: 0
-  is_nullable: 0
+  is_nullable: 1
 
 =head2 sent
 
-  data_type: 'integer'
-  default_value: 0
+  data_type: 'smallint'
   extra: {unsigned => 1}
-  is_nullable: 0
+  is_nullable: 1
 
 =head2 loss
 
-  data_type: 'integer'
-  default_value: 0
+  data_type: 'smallint'
   extra: {unsigned => 1}
-  is_nullable: 0
+  is_nullable: 1
 
 =head2 duplicates
 
-  data_type: 'integer'
-  default_value: 0
+  data_type: 'smallint'
   extra: {unsigned => 1}
-  is_nullable: 0
+  is_nullable: 1
 
 =cut
 
@@ -92,30 +87,15 @@ __PACKAGE__->add_columns(
   "timestamp",
   { data_type => "bigint", extra => { unsigned => 1 }, is_nullable => 0 },
   "min_delay",
-  { data_type => "float", default_value => 0, is_nullable => 0 },
+  { data_type => "float", is_nullable => 1 },
   "max_delay",
-  { data_type => "float", default_value => 0, is_nullable => 0 },
+  { data_type => "float", is_nullable => 1 },
   "sent",
-  {
-    data_type => "integer",
-    default_value => 0,
-    extra => { unsigned => 1 },
-    is_nullable => 0,
-  },
+  { data_type => "smallint", extra => { unsigned => 1 }, is_nullable => 1 },
   "loss",
-  {
-    data_type => "integer",
-    default_value => 0,
-    extra => { unsigned => 1 },
-    is_nullable => 0,
-  },
+  { data_type => "smallint", extra => { unsigned => 1 }, is_nullable => 1 },
   "duplicates",
-  {
-    data_type => "integer",
-    default_value => 0,
-    extra => { unsigned => 1 },
-    is_nullable => 0,
-  },
+  { data_type => "smallint", extra => { unsigned => 1 }, is_nullable => 1 },
 );
 __PACKAGE__->set_primary_key("owamp_data");
 __PACKAGE__->add_unique_constraint("meta_time", ["metaid", "timestamp"]);
@@ -138,8 +118,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07002 @ 2011-02-18 15:34:10
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:u5vvYs87jHopjw42PVJzLQ
+# Created by DBIx::Class::Schema::Loader v0.07002 @ 2011-03-23 13:52:23
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:G8VhWIZNXyP43ute6fNRhw
 
 
 # You can replace this text with custom content, and it will be preserved on regeneration

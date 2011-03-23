@@ -1139,21 +1139,6 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 hop_data_201512s
-
-Type: has_many
-
-Related object: L<Ecenter::DB::Result::HopData201512>
-
-=cut
-
-__PACKAGE__->has_many(
-  "hop_data_201512s",
-  "Ecenter::DB::Result::HopData201512",
-  { "foreign.hop_ip" => "self.ip_addr" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 l2_l3_maps
 
 Type: has_many
@@ -1185,8 +1170,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07002 @ 2011-02-18 15:43:17
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:bStEx6msh+SiIQDl4KDtVg
+# Created by DBIx::Class::Schema::Loader v0.07002 @ 2011-03-23 14:03:48
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:OSkADf7ELyxemIfXTPOnPg
 
 
 # You can replace this text with custom content, and it will be preserved on regeneration

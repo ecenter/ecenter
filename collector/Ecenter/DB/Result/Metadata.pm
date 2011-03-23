@@ -1208,21 +1208,6 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 bwctl_data_201512s
-
-Type: has_many
-
-Related object: L<Ecenter::DB::Result::BwctlData201512>
-
-=cut
-
-__PACKAGE__->has_many(
-  "bwctl_data_201512s",
-  "Ecenter::DB::Result::BwctlData201512",
-  { "foreign.metaid" => "self.metaid" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 hop_data_200912s
 
 Type: has_many
@@ -2299,21 +2284,6 @@ Related object: L<Ecenter::DB::Result::HopData201511>
 __PACKAGE__->has_many(
   "hop_data_201511s",
   "Ecenter::DB::Result::HopData201511",
-  { "foreign.metaid" => "self.metaid" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 hop_data_201512s
-
-Type: has_many
-
-Related object: L<Ecenter::DB::Result::HopData201512>
-
-=cut
-
-__PACKAGE__->has_many(
-  "hop_data_201512s",
-  "Ecenter::DB::Result::HopData201512",
   { "foreign.metaid" => "self.metaid" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
@@ -3413,21 +3383,6 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 owamp_data_201512s
-
-Type: has_many
-
-Related object: L<Ecenter::DB::Result::OwampData201512>
-
-=cut
-
-__PACKAGE__->has_many(
-  "owamp_data_201512s",
-  "Ecenter::DB::Result::OwampData201512",
-  { "foreign.metaid" => "self.metaid" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 pinger_data_200912s
 
 Type: has_many
@@ -4504,21 +4459,6 @@ Related object: L<Ecenter::DB::Result::PingerData201511>
 __PACKAGE__->has_many(
   "pinger_data_201511s",
   "Ecenter::DB::Result::PingerData201511",
-  { "foreign.metaid" => "self.metaid" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 pinger_data_201512s
-
-Type: has_many
-
-Related object: L<Ecenter::DB::Result::PingerData201512>
-
-=cut
-
-__PACKAGE__->has_many(
-  "pinger_data_201512s",
-  "Ecenter::DB::Result::PingerData201512",
   { "foreign.metaid" => "self.metaid" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
@@ -5603,24 +5543,9 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 snmp_data_201512s
 
-Type: has_many
-
-Related object: L<Ecenter::DB::Result::SnmpData201512>
-
-=cut
-
-__PACKAGE__->has_many(
-  "snmp_data_201512s",
-  "Ecenter::DB::Result::SnmpData201512",
-  { "foreign.metaid" => "self.metaid" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-
-# Created by DBIx::Class::Schema::Loader v0.07002 @ 2011-02-18 15:43:17
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:5D7EWpd1UIJ/EXefnlRWBA
+# Created by DBIx::Class::Schema::Loader v0.07002 @ 2011-03-23 14:03:48
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:k/LBOMDAOR2mVAm0oNV8Hg
 
 
 # You can replace this text with custom content, and it will be preserved on regeneration

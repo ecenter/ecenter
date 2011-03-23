@@ -49,8 +49,7 @@ __PACKAGE__->table("hop_data_201208");
 =head2 hop_delay
 
   data_type: 'float'
-  default_value: 0
-  is_nullable: 0
+  is_nullable: 1
 
 =head2 timestamp
 
@@ -80,7 +79,7 @@ __PACKAGE__->add_columns(
   "hop_num",
   { data_type => "tinyint", default_value => 1, is_nullable => 0 },
   "hop_delay",
-  { data_type => "float", default_value => 0, is_nullable => 0 },
+  { data_type => "float", is_nullable => 1 },
   "timestamp",
   { data_type => "bigint", extra => { unsigned => 1 }, is_nullable => 0 },
 );
@@ -120,8 +119,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07002 @ 2011-02-18 15:34:08
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:S8qqaDTn9gohbiSsD2recg
+# Created by DBIx::Class::Schema::Loader v0.07002 @ 2011-03-23 13:52:21
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:dNqCwDet/imliCSCeWiA1g
 
 
 # You can replace this text with custom content, and it will be preserved on regeneration

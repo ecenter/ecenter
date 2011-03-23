@@ -36,26 +36,22 @@ __PACKAGE__->table("pinger_data_201010");
 =head2 minrtt
 
   data_type: 'float'
-  default_value: 0
-  is_nullable: 0
+  is_nullable: 1
 
 =head2 meanrtt
 
   data_type: 'float'
-  default_value: 0
-  is_nullable: 0
+  is_nullable: 1
 
 =head2 medianrtt
 
   data_type: 'float'
-  default_value: 0
-  is_nullable: 0
+  is_nullable: 1
 
 =head2 maxrtt
 
   data_type: 'float'
-  default_value: 0
-  is_nullable: 0
+  is_nullable: 1
 
 =head2 timestamp
 
@@ -66,50 +62,44 @@ __PACKAGE__->table("pinger_data_201010");
 =head2 minipd
 
   data_type: 'float'
-  default_value: 0
-  is_nullable: 0
+  is_nullable: 1
 
 =head2 meanipd
 
   data_type: 'float'
-  default_value: 0
-  is_nullable: 0
+  is_nullable: 1
 
 =head2 maxipd
 
   data_type: 'float'
-  default_value: 0
-  is_nullable: 0
+  is_nullable: 1
 
 =head2 duplicates
 
-  data_type: 'tinyint'
-  default_value: 0
-  is_nullable: 0
+  data_type: 'smallint'
+  extra: {unsigned => 1}
+  is_nullable: 1
 
 =head2 outoforder
 
-  data_type: 'tinyint'
-  default_value: 0
-  is_nullable: 0
+  data_type: 'smallint'
+  extra: {unsigned => 1}
+  is_nullable: 1
 
 =head2 clp
 
   data_type: 'float'
-  default_value: 0
-  is_nullable: 0
+  is_nullable: 1
 
 =head2 iqripd
 
   data_type: 'float'
-  default_value: 0
-  is_nullable: 0
+  is_nullable: 1
 
 =head2 losspercent
 
   data_type: 'float'
-  default_value: 0
-  is_nullable: 0
+  is_nullable: 1
 
 =cut
 
@@ -129,31 +119,31 @@ __PACKAGE__->add_columns(
     is_nullable => 0,
   },
   "minrtt",
-  { data_type => "float", default_value => 0, is_nullable => 0 },
+  { data_type => "float", is_nullable => 1 },
   "meanrtt",
-  { data_type => "float", default_value => 0, is_nullable => 0 },
+  { data_type => "float", is_nullable => 1 },
   "medianrtt",
-  { data_type => "float", default_value => 0, is_nullable => 0 },
+  { data_type => "float", is_nullable => 1 },
   "maxrtt",
-  { data_type => "float", default_value => 0, is_nullable => 0 },
+  { data_type => "float", is_nullable => 1 },
   "timestamp",
   { data_type => "bigint", extra => { unsigned => 1 }, is_nullable => 0 },
   "minipd",
-  { data_type => "float", default_value => 0, is_nullable => 0 },
+  { data_type => "float", is_nullable => 1 },
   "meanipd",
-  { data_type => "float", default_value => 0, is_nullable => 0 },
+  { data_type => "float", is_nullable => 1 },
   "maxipd",
-  { data_type => "float", default_value => 0, is_nullable => 0 },
+  { data_type => "float", is_nullable => 1 },
   "duplicates",
-  { data_type => "tinyint", default_value => 0, is_nullable => 0 },
+  { data_type => "smallint", extra => { unsigned => 1 }, is_nullable => 1 },
   "outoforder",
-  { data_type => "tinyint", default_value => 0, is_nullable => 0 },
+  { data_type => "smallint", extra => { unsigned => 1 }, is_nullable => 1 },
   "clp",
-  { data_type => "float", default_value => 0, is_nullable => 0 },
+  { data_type => "float", is_nullable => 1 },
   "iqripd",
-  { data_type => "float", default_value => 0, is_nullable => 0 },
+  { data_type => "float", is_nullable => 1 },
   "losspercent",
-  { data_type => "float", default_value => 0, is_nullable => 0 },
+  { data_type => "float", is_nullable => 1 },
 );
 __PACKAGE__->set_primary_key("pinger_data");
 __PACKAGE__->add_unique_constraint("meta_time", ["metaid", "timestamp"]);
@@ -176,8 +166,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07002 @ 2011-02-18 15:43:03
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:B6tLR5O1ypQdHTMWMYJq8Q
+# Created by DBIx::Class::Schema::Loader v0.07002 @ 2011-03-23 13:54:18
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:CXQAaRxSqJu7SGV2oRnTQQ
 
 
 # You can replace this text with custom content, and it will be preserved on regeneration

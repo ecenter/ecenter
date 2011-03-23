@@ -74,7 +74,7 @@ sub BUILD {
       my $args = shift;
       $self->resolution(5);
       $self->logger(get_logger(__PACKAGE__));
-      $self->eventtypes([("http://ggf.org/ns/nmwg/characteristic/utilization/2.0")]);
+      $self->eventtypes([("http://ggf.org/ns/nmwg/tools/snmp/2.0")]);
       return  $self->url($args->{url}) if $args->{url};
       
 };
@@ -124,6 +124,7 @@ after 'get_data' => sub  {
     return unless $ma_result;
     my $parser = XML::LibXML->new();
     my @datum = ();
+    my %data_response=();
     my $metadata = $self->metadata;
     $self->logger->debug("SNMP MDS::", sub{Dumper($metadata)});
     foreach my $d ( @{ $ma_result->{"data"} } ) {
@@ -139,18 +140,25 @@ after 'get_data' => sub  {
                 if ( $dt->getAttribute("value") and $dt->getAttribute("value") ne "nan" ) {
 		    $self->logger->debug("Data value: ".$dt->getAttribute("value"));
                     my $data_value = eval { $dt->getAttribute("value")  };
-		    push @datum, [$dt->getAttribute("timeValue"), $data_value, $metadata->{$idref}{capacity}];
-		    $self->logger->debug("Post-mod data value: ".$data_value);
+		    $data_response{$dt->getAttribute("timeValue")}{data}{$metadata->{$idref}{eventtype}} =  $data_value;
+		    $data_response{$dt->getAttribute("timeValue")}{capacity} = $metadata->{$idref}{capacity};
+		      $self->logger->debug("Post-mod data value: ".$data_value);
                 }
                 else {
-
-                    # these are usually 'NaN' values
-                     push @datum, [$dt->getAttribute("timeValue"),$dt->getAttribute("value"), $metadata->{$idref}{capacity}];
+                    $data_response{$dt->getAttribute("timeValue")}{data}{$metadata->{$idref}{eventtype}}=  0;
+		    $data_response{$dt->getAttribute("timeValue")}{capacity}  = $metadata->{$idref}{capacity};
+                   ## push @datum, [$dt->getAttribute("timeValue"), 0, 0, 0, $metadata->{$idref}{capacity}];
                 }
             }
         }
 	
     }
+   foreach my $tm ( sort {$a <=> $b} keys %data_response) {
+       push @datum, [$tm, $data_response{$tm}{data}{'http://ggf.org/ns/nmwg/characteristic/utilization/2.0/'},
+                          $data_response{$tm}{data}{'http://ggf.org/ns/nmwg/characteristic/errors/2.0/'},
+			  $data_response{$tm}{data}{'http://ggf.org/ns/nmwg/characteristic/discards/2.0/'},
+			  $data_response{$tm}{capacity} ];
+   }
    return $self->data(\@datum);
 };
 
@@ -167,7 +175,9 @@ sub parse_metadata {
  	my $name      =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='hostName']",  1), 0);
  	my $direction =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='direction']", 1), 0);
  	my $capacity  =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='capacity']",  1), 0);
- 	$mds->{$id} = {port => $port, ip => $ip, name => $name, direction => $direction, capacity => $capacity};
+	my $eventtype  =  extract( find($metadata->getDocumentElement, "./*[local-name()='subject']/*[local-name()='eventType']",  1), 0);
+	
+ 	$mds->{$id} = {port => $port, ip => $ip, name => $name, direction => $direction, capacity => $capacity, eventtype=>$eventtype};
     }
     $self->metadata($mds); 
 }

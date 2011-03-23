@@ -38,12 +38,6 @@ __PACKAGE__->table("service");
   is_nullable: 0
   size: 16
 
-=head2 url
-
-  data_type: 'varchar'
-  is_nullable: 0
-  size: 255
-
 =head2 comments
 
   data_type: 'varchar'
@@ -76,8 +70,6 @@ __PACKAGE__->add_columns(
   { data_type => "varchar", is_nullable => 0, size => 255 },
   "ip_addr",
   { data_type => "varbinary", is_foreign_key => 1, is_nullable => 0, size => 16 },
-  "url",
-  { data_type => "varchar", is_nullable => 0, size => 255 },
   "comments",
   { data_type => "varchar", is_nullable => 1, size => 255 },
   "is_alive",
@@ -145,8 +137,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07002 @ 2011-01-28 16:15:19
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:kuawKw9RY0qMQrcymgltVQ
+# Created by DBIx::Class::Schema::Loader v0.07002 @ 2011-03-23 13:54:20
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:4ZW2hjzttpiZWtaUVJDftQ
 
 
 # You can replace this text with custom content, and it will be preserved on regeneration

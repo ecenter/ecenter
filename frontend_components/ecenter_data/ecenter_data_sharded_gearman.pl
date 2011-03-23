@@ -5,7 +5,7 @@ use Dancer::Plugin::REST;
 our $VERSION = '';  
 use English;
 use Data::Dumper;
-use lib "/home/netadmin/ecenter/trunk/frontend_components/ecenter_data/lib";
+use lib "/home/netadmin/ecenter_git/ecenter/frontend_components/ecenter_data/lib";
 use DateTime;
 use DateTime::Format::MySQL;
 use Ecenter::Exception;
@@ -401,12 +401,15 @@ sub process_data {
         my @result =(); 
         foreach my $time  (sort {$a<=>$b} grep {$_} keys %{$data->{snmp}{$ip_noted}}) { 
 	    push @result,[ $time,  { capacity =>  $data->{snmp}{$ip_noted}{$time}{capacity},  
-		                     utilization => $data->{snmp}{$ip_noted}{$time}{utilization}
+		                     utilization => $data->{snmp}{$ip_noted}{$time}{utilization},
+				     errors => $data->{snmp}{$ip_noted}{$time}{errors},
+				     drops => $data->{snmp}{$ip_noted}{$time}{drops},
 		   	           }
 		         ];
         }
         ### debug "Data for ip=$hop_ip hop_id=$hops_ref->{$hop_ip}:: " . Dumper( $snmp{$hops_ref->{$hop_ip}});
-        $data->{snmp}{$ip_noted} = refactor_result(\@result, $params{resolution});
+       $data->{snmp}{$ip_noted} = refactor_result(\@result, $params{resolution});
+	 ##$data->{snmp}{$ip_noted} = \@result;
   }
   return $data; 
 }
@@ -584,6 +587,7 @@ sub get_snmp {
 			       on_complete => sub { 
 			    	   my $returned = decode_json  ${$_[0]};  
 			    	   if($returned->{status} eq 'ok' && $returned->{data} && ref $returned->{data} eq ref {}) {
+				       ####debug "request is not OK:::" . Dumper($returned);
 			    	       %{$snmp->{$ip_noted}} =  (%{$snmp->{$ip_noted}},  %{$returned->{data}});
 			    	    } else {
 				       error "request is not OK:::" . Dumper($returned);

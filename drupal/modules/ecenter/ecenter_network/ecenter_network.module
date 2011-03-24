@@ -258,13 +258,13 @@ function _ecenter_network_select_form() {
     '#type' => 'date_popup',
     '#title' => t('Start date'),
     '#date_increment' => $inc,
-    '#default_value' => date_format($start, 'Y-m-d H:i'),
+    '#default_value' => $start,
   );
   $form['network_wrapper']['query']['end'] = array(
     '#type' => 'date_popup',
     '#title' => t('End date'),
     '#date_increment' => $inc,
-    '#default_value' => date_format($end, 'Y-m-d H:i'),
+    '#default_value' => $end,
   );
 
   $form['network_wrapper']['query']['date_description'] = array(

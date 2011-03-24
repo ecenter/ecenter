@@ -1348,25 +1348,20 @@ function _ecenter_network_timestamp_to_local($date, $format = 'Y-m-d H:i:s') {
 function _ecenter_network_extract_query() {
   if ($_REQUEST['form_id'] == 'ecenter_network_select_form') {
     $vars = array(
-      'src' => $_REQUEST['network_wrapper']['query']['src_wrapper']['src'],
-      'dst' => $_REQUEST['network_wrapper']['query']['dst_wrapper']['dst'],
+      'src'   => $_REQUEST['network_wrapper']['query']['src_wrapper']['src'],
+      'dst'   => $_REQUEST['network_wrapper']['query']['dst_wrapper']['dst'],
       'start' => $_REQUEST['network_wrapper']['query']['start']['date'] 
         .' '. $_REQUEST['network_wrapper']['query']['start']['time'],
-      'end' => $_REQUEST['network_wrapper']['query']['end']['date']
+      'end'   => $_REQUEST['network_wrapper']['query']['end']['date']
         .' '. $_REQUEST['network_wrapper']['query']['end']['time'],
     );
   }
   else {
-    $tz = date_default_timezone_name(TRUE);
-    $start = ($_REQUEST['start']) ? 
-      _ecenter_network_utc_to_local($_REQUEST['start'], 'Y-m-d H:i') : NULL;
-    $end = ($_REQUEST['end']) ? 
-      _ecenter_network_utc_to_local($_REQUEST['end'], 'Y-m-d H:i') : NULL;
     $vars = array(
-      'src' => $_REQUEST['src'],
-      'dst' => $_REQUEST['dst'],
-      'start' => $start,
-      'end' => $end,
+      'src'   => $_REQUEST['src'],
+      'dst'   => $_REQUEST['dst'],
+      'start' => $_REQUEST['start'],
+      'end'   => $_REQUEST['end'],
     );
   }
   return $vars;

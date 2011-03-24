@@ -20,8 +20,7 @@ function template_preprocess_ecenter_network_data(&$vars) {
   // Generate date range -- internal date is stored as UTC
   $dates = array();
   foreach (array('start', 'end') as $val) {
-    $date = date_create($vars['params'][$val]);
-    $dates[$val] = date_format($date, 'M j, Y H:i');
+    $dates[$val] = _ecenter_network_utc_to_local($vars['params'][$val], 'M j, Y H:i');
   }
 
   $vars['title'] = t('<span class="src-dst">@src_hub_name (@src_hub) to
@@ -39,9 +38,6 @@ function template_preprocess_ecenter_network_data(&$vars) {
 
   // Set title
   drupal_set_title(t('E-Center Network Query | ') . $vars['title']);
-
-  $vars['params']['start'] = _ecenter_network_local_to_utc($vars['params']['start']);
-  $vars['params']['end'] = _ecenter_network_local_to_utc($vars['params']['end']);
 
   // Generate permalink
   $vars['permalink'] = l(t('Permanent link (bookmark and share results)'), 'network', array(

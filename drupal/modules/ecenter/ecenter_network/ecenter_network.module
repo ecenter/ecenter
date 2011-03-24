@@ -454,18 +454,15 @@ function ecenter_network_get_client($status_check = '503') {
  * @param $dst
  *   Destination IP address
  * @param $start
- *   Start time
+ *   Start time, expressed in UTC, formatted as Y-m-d H:i:s
  * @param $end
- *   End time
+ *   End time, expressed in UTC, formatted as Y-m-d H:i:s
  * @return
  *   An array of parsed data
  */
 function ecenter_network_get_data($src, $dst, $start, $end, $debug_url = FALSE) {
   global $user;
   static $results = array();
-
-  $start = _ecenter_network_local_to_utc($start);
-  $end = _ecenter_network_local_to_utc($end);
 
   $query = http_build_query(array(
     'src' => $src,

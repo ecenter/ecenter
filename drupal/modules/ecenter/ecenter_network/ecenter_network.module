@@ -191,12 +191,6 @@ function _ecenter_network_select_form() {
   $end = date_make_date($now - $offset, $tz, DATE_UNIX);
   $start = date_make_date($now - $offset - $default_start, $tz, DATE_UNIX);
 
-  if (user_access('debug ecenter network')) {
-    $form['debug'] = array(
-      '#value' => '<div id="network-debug"></div>',
-    );
-  }
-
   // Map
   $preset = openlayers_preset_load('ecenter_network');
   $map = openlayers_render_map($preset->data, $preset->name);

@@ -1343,10 +1343,14 @@ function _ecenter_network_extract_query() {
     $vars = array(
       'src'   => $_REQUEST['network_wrapper']['query']['src_wrapper']['src'],
       'dst'   => $_REQUEST['network_wrapper']['query']['dst_wrapper']['dst'],
-      'start' => $_REQUEST['network_wrapper']['query']['start']['date'] 
-        .' '. $_REQUEST['network_wrapper']['query']['start']['time'],
-      'end'   => $_REQUEST['network_wrapper']['query']['end']['date']
-        .' '. $_REQUEST['network_wrapper']['query']['end']['time'],
+      'start' => _ecenter_network_local_to_utc(
+        $_REQUEST['network_wrapper']['query']['start']['date'] 
+        .' '. $_REQUEST['network_wrapper']['query']['start']['time']
+      ),
+      'end'   => _ecenter_network_local_to_utc(
+        $_REQUEST['network_wrapper']['query']['end']['date']
+        .' '. $_REQUEST['network_wrapper']['query']['end']['time']
+      ),
     );
   }
   else {

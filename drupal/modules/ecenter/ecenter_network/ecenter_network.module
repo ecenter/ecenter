@@ -1028,16 +1028,25 @@ function ecenter_network_openlayers_layers() {
  */
 function ecenter_network_layers_sites() {
   extract(_ecenter_network_extract_query());
-  $hops = ecenter_network_get_hops();
+  $sources = ecenter_network_get_hops();
 
   if (!empty($src)) {
     list($src_type, $src_value) = explode(':', $src, 2);
     if ($src_type == 'hub') {
-      $hop = $hops['hubs'][$src_value];
-      $src_ip = $hops['hubs'][$src_value]['ip_noted'];
+      $hop = $sources['hubs'][$src_value];
+      $src_ip = $sources['hubs'][$src_value]['ip_noted'];
       $hops = ecenter_network_get_hops($src_ip);
       $hops['hubs'][$src_value] = $hop; 
     }
+    else {
+      $hop = $sources['hubs'][$sources['hops'][$src_value]['hub_name']];
+      $hops = ecenter_network_get_hops($src_value);
+      dpm($src_value);
+      $hops['hubs'][$src_value] = $hop; 
+    }
+  }
+  else {
+    $hops = $sources;
   }
 
   // Create layer object

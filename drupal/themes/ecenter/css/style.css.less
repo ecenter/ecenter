@@ -13,8 +13,10 @@
 @page_padding_vertical: .75em;
 /* }}} */
 /* Variables: Color keywords {{{ */
-@color_blue:    #0e3dc4;
-@color_yellow: #ffffaa;
+@color_blue:      #0e3dc4;
+@color_yellow:    #ffffaa;
+@color_dark_red:  #700707;
+@color_light_red: #ffa4a4;
 
 @color_white:   #ffffff;
 @color_grey_93: #eeeeee;
@@ -32,6 +34,7 @@
 @color_grey_13: #222222;
 @color_grey_7:  #111111;
 @color_black:   #000000;
+
 /* }}} */
 /* Variables: Fonts {{{ */
 @font_helvetica: "Helvetica Neue", Helvetica, Verdana, sans-serif;
@@ -912,6 +915,15 @@ body.page-network { // Network diagnostic display {{{
   #content { // Content {{{
     padding: 0;
     width: 975px;
+
+    .ecenter-fatal { // {{{
+      .box;
+      margin: .75em 20px;
+      padding: .75em 20px;
+      background-color: @color_light_red;
+      border: 1px solid @color_dark_red;
+      color: @color_dark_red;
+    } // }}}
     #page-title { // {{{
       .hide;
     } // }}}

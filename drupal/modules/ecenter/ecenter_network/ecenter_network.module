@@ -322,6 +322,9 @@ function _ecenter_network_select_form() {
  */
 function ecenter_network_select_form(&$form_state) {
 
+  // Bail if the service is down
+  ecenter_network_get_client('503');
+  
   // Get base form and register with ahah_helper
   $form = _ecenter_network_select_form();
   ahah_helper_register($form, $form_state);
@@ -402,13 +405,14 @@ function ecenter_network_select_form_submit($form, &$form_state) {
   $form_state['rebuild'] = TRUE;
 }
 
-/**send
+/**
  * Get the E-Center weather map client
  *
  * @param $status_check
- *  '503', 'message', or FALSE.  What to do if status_check fails.
+ * If '503', return HTTP 503 page or redirect. If 'message', set message and 
+ * continue. If FALSE, just return the client.
  */
-function ecenter_network_get_client($status_check = '503') {
+function ecenter_network_get_client($status_check = FALSE) {
   static $client = FALSE;
   if (!$client) {
     require_once(dirname(__FILE__) . '/client.php');
@@ -420,22 +424,22 @@ function ecenter_network_get_client($status_check = '503') {
     $client = new Ecenter_Data_Service_Client($host, $port, $dir, $timeout, $status_timeout);
   }
 
-  // Check status
+  // Client is not available
   if ($status_check && !$client->checkStatus()) {
     $message = t('E-Center web service is not available.');
     watchdog('ecenter', $message, array(), WATCHDOG_ERROR);
 
-    if ($status_check == '503') {
-      drupal_set_header('HTTP/1.1 503 Service unavailable');
-      // Keep old path for reference, and to allow forms to redirect to it.
-      if (!isset($_REQUEST['destination'])) {
-        $_REQUEST['destination'] = $_GET['q'];
-      }
-      print theme('page', $message);
-      exit();
-    }
-    else {
-      drupal_set_message($message);
+    switch ($status_check) {
+      case '503':
+        drupal_set_header('HTTP/1.1 503 Service unavailable');
+        // Keep old path for reference, and to allow forms to redirect to it.
+        if (!isset($_REQUEST['destination'])) {
+          $_REQUEST['destination'] = $_GET['q'];
+        }
+        print theme('page', '<div class="ecenter-fatal">'. $message .'</div>');
+        exit();
+      default:
+        drupal_set_message($message);
     }
   }
   return $client;
@@ -494,7 +498,7 @@ function ecenter_network_get_data($src, $dst, $start, $end, $debug_url = FALSE) 
       $results[$query] = $result->data;
     }
     else {
-      $client = ecenter_network_get_client('message');
+      $client = ecenter_network_get_client();
       $result = $client->getData($src, $dst, $start, $end);
       if ($result['code'] == 200) {
         $data = ecenter_network_parse_response($result);
@@ -533,9 +537,8 @@ function ecenter_network_get_hops($src = NULL) {
       $hops[$src_key] = $result->data;
     }
     else {
-      $client = ecenter_network_get_client('message');
-      $result = $client->getHops();
-      //$result = _ecenter_network_sources();
+      $client = ecenter_network_get_client();
+      $result = $client->getHops($src);
       if ($result['code'] == 200) {
         $data = ecenter_network_parse_hops($result['response']);
         $hops[$src_key] = $data;
@@ -553,33 +556,13 @@ function ecenter_network_get_hops($src = NULL) {
   return $hops[$src_key];
 }
 
-/**
- * Get hops
- *
- * @TODO Is this needed?  Currently, not called
- *
- * @return
- *   An array of hop objects.
- */
-function ecenter_network_get_hubs() {
-  $client = ecenter_network_get_client('message');
-  $result = $client->getHubs();
-  if ($result['code'] == 200) {
-    return $result['response'];
-  }
-  else {
-    drupal_set_message(t('Request failed with code @code.',
-      array('@code' => $result['code'])));
-  }
-}
-
 /** 
  * Get node
  */
 function ecenter_network_get_node($ip) {
   static $nodes = array();
   if (empty($nodes[$ip])) {
-    $client = ecenter_network_get_client('message');
+    $client = ecenter_network_get_client();
     $result = $client->getNode($ip);
     if ($result['code'] == 200) {
       $data = $result['response'];

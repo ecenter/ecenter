@@ -183,13 +183,14 @@ function _ecenter_network_select_form() {
   global $user;
 
   // Initialize time-related variables
-  $inc = variable_get('ecenter_network_time_increment', 10);
   $default_start = variable_get('ecenter_network_default_end', 7200);
   $offset = variable_get('ecenter_network_default_offset', 600);
   $now = time();
-  $tz = date_default_timezone_name(TRUE);
-  $end = date_make_date($now - $offset, $tz, DATE_UNIX);
-  $start = date_make_date($now - $offset - $default_start, $tz, DATE_UNIX);
+  
+  $start = _ecenter_network_timestamp_to_local($now - $offset - $default_start, 'Y-m-d H:i');
+  $end = _ecenter_network_timestamp_to_local($now - $offset, 'Y-m-d H:i');
+
+  $inc = variable_get('ecenter_network_time_increment', 10);
 
   // Map
   $preset = openlayers_preset_load('ecenter_network');

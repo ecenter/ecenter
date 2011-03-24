@@ -337,24 +337,30 @@ function ecenter_network_select_form(&$form_state) {
 
   // Set dates
   if (!empty($start)) {
-    $form['network_wrapper']['query']['start']['#default_value'] = $start;
+    $form['network_wrapper']['query']['start']['#default_value'] = 
+      _ecenter_network_utc_to_local($start);
   }
   if (!empty($end)) {
-    $form['network_wrapper']['query']['end']['#default_value'] = $end;
+    $form['network_wrapper']['query']['end']['#default_value'] = 
+      _ecenter_network_utc_to_local($end);
   }
 
-  $hops = ecenter_network_get_hops();
+  $sources = ecenter_network_get_hops();
   $src_options[0] = '';
-  foreach ($hops['combined'] as $key => $hop) {
+  foreach ($sources['combined'] as $key => $hop) {
     $src_options[$key] = theme('ecenter_network_hop_option', $hop);
   }
   $form['network_wrapper']['query']['src_wrapper']['src']['#options'] += $src_options;
-
-  if ($src) {
+  if (!empty($src)) {
     $form['network_wrapper']['query']['src_wrapper']['src']['#default_value'] = $src;
-
+    $form['network_wrapper']['query']['src_wrapper']['src']['#disabled'] = TRUE;
+    list($src_type, $src_value) = explode(':', $src, 2);
+    if ($src_type == 'hub') {
+      $src_value = $sources['hubs'][$src_value]['ip_noted'];
+    }
+    $destinations = ecenter_network_get_hops($src_value);
     $dst_options[0] = '';
-    foreach ($hops['combined'] as $key => $hop) {
+    foreach ($destinations['combined'] as $key => $hop) {
       $dst_options[$key] = theme('ecenter_network_hop_option', $hop);
     }
     $form['network_wrapper']['query']['dst_wrapper']['dst']['#options'] += $dst_options;
@@ -366,7 +372,6 @@ function ecenter_network_select_form(&$form_state) {
   }
 
   if ($src && $dst && $start && $end) {
-
     $data = ecenter_network_get_data($src, $dst, $start, $end);
 
     $params = array(
@@ -658,7 +663,6 @@ function ecenter_network_parse_response($response) {
       foreach ($data[$traceroute_direction .'_traceroute'] as $series) {
         // @TODO is this a safe way to get series?
         $hop = array_shift($series);
-
         $hop += $parsed_data['hops'][$hop['hop_ip']];
 
         // Geolocate IP if no geo data available
@@ -778,6 +782,7 @@ function _ecenter_network_sort_traceroute($a, $b) {
 function ecenter_network_parse_hops($hops) {
   $combined = array();
   $hubs = array();
+  $ip_hops = array();
 
   usort($hops, '_ecenter_network_sort_hopname');
 
@@ -787,10 +792,10 @@ function ecenter_network_parse_hops($hops) {
       $hubs[$hop['hub_name']] = $hop;
       $combined['hub:'. $hop['hub_name']] = $hop + array('type' => 'hub');
     }
-
+    $ip_hops[$hop['ip_noted']] = $hop;
     $combined['ip:'. $hop['ip_noted']] = $hop + array('type' => 'ip');
   }
-  return array('combined' => $combined, 'hops' => $hops, 'hubs' => $hubs);
+  return array('combined' => $combined, 'hops' => $ip_hops, 'hubs' => $hubs);
 }
 
 /**
@@ -1022,7 +1027,18 @@ function ecenter_network_openlayers_layers() {
  * Generate site map
  */
 function ecenter_network_layers_sites() {
+  extract(_ecenter_network_extract_query());
   $hops = ecenter_network_get_hops();
+
+  if (!empty($src)) {
+    list($src_type, $src_value) = explode(':', $src, 2);
+    if ($src_type == 'hub') {
+      $hop = $hops['hubs'][$src_value];
+      $src_ip = $hops['hubs'][$src_value]['ip_noted'];
+      $hops = ecenter_network_get_hops($src_ip);
+      $hops['hubs'][$src_value] = $hop; 
+    }
+  }
 
   // Create layer object
   $layer = new stdClass();
@@ -1035,7 +1051,6 @@ function ecenter_network_layers_sites() {
     'projection' => array('900913'),
   );
 
-  extract(_ecenter_network_extract_query());
 
   if (!empty($src) && !empty($dst) && !empty($start) && !empty($end)) {
     $data = ecenter_network_get_data($src, $dst, $start, $end);

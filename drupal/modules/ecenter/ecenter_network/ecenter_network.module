@@ -529,8 +529,9 @@ function ecenter_network_get_data($src, $dst, $start, $end, $debug_url = FALSE) 
       $results[$query] = $result->data;
     }
     else {
+      $resolution = variable_get('ecenter_network_query_resolution', 50);
       $client = ecenter_network_get_client();
-      $result = $client->getData($src, $dst, $start, $end);
+      $result = $client->getData($src, $dst, $start, $end, $resolution);
       if ($result['code'] == 200) {
         $data = ecenter_network_parse_response($result);
         if ($caching) {

@@ -1041,7 +1041,6 @@ function ecenter_network_openlayers_layers() {
     'baselayer' => 1,
     'type' => 'png',
     'projection' => array('900913'),
-    //'resolutions' => openlayers_get_resolutions('900913'),
     'resolutions' => array(
       0 => 156543.0339,
       1 => 78271.51695,
@@ -1372,7 +1371,6 @@ function _ecenter_network_timestamp_to_local($date, $format = 'Y-m-d H:i:s') {
   date_timezone_set($adjusted, timezone_open($tz));
   return date_format($adjusted, $format);
 }
-
 
 /**
  * Package query variables as an array

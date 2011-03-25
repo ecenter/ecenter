@@ -20,6 +20,14 @@ function ecenter_network_menu() {
     'access arguments' => array('access ecenter network'),
     'type' => MENU_CALLBACK,
   );
+
+  $items['network/health'] = array(
+    'page callback' => 'ecenter_network_health',
+    'page arguments' => array(),
+    'access arguments' => array('access ecenter network'),
+    'type' => MENU_CALLBACK,
+  );
+
   $items['admin/settings/ecenter'] = array(
     'title' => 'E-Center Network',
     'page callback' => 'drupal_get_form',
@@ -174,6 +182,24 @@ function ecenter_network_init() {
     );
     inline_css_add_css($inline_css);
   }
+}
+
+/**
+ * E-center network health
+ */
+function ecenter_network_health() {
+  $client = ecenter_network_get_client('503');
+  
+  extract(_ecenter_network_extract_query());
+  
+  if (!$start) {
+    $start = '2011-03-05 01:00:00';
+  }
+  if (!$end) {
+    $end = '2011-03-06 01:00:00';
+  }
+  dpm($client->getHealth($start, $end));
+  return 'testing stub';
 }
 
 /**

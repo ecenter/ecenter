@@ -10,6 +10,51 @@
  * Theme main data display
  */
 function template_preprocess_ecenter_network_data(&$vars) {
+ 
+  // Source / dst table
+  $hops = ecenter_network_get_hops();
+
+  $src_hop = $hops['combined'][$vars['params']['src']];
+  $dst_hop = $hops['combined'][$vars['params']['dst']];
+
+  // Generate date range -- internal date is stored as UTC
+  $dates = array();
+  foreach (array('start', 'end') as $val) {
+    $dates[$val] = _ecenter_network_utc_to_local($vars['params'][$val], 'M j, Y H:i');
+  }
+
+  $vars['title'] = t('<span class="src-dst">@src_hub_name (@src_hub) to
+@dst_hub_name (@dst_hub)</span><span class="separator">, </span>
+<span class="date-range">@start - @end</span>',
+    array(
+      '@src_hub_name' => $src_hop['hub_name'],
+      '@src_hub' => $src_hop['hub'],
+      '@dst_hub_name' => $dst_hop['hub_name'],
+      '@dst_hub' => $dst_hop['hub'],
+      '@start' => $dates['start'],
+      '@end' => $dates['end'],
+    )
+  );
+
+  // Set title
+  drupal_set_title(t('E-Center Network Query | ') . $vars['title']);
+
+  // Generate permalink
+  $vars['permalink'] = l(t('Permanent link (bookmark and share results)'), 'network', array(
+    'query' => $vars['params'],
+    'absolute' => TRUE,
+    'attributes' => array('title' => $vars['title']),
+  ));
+  $permalink_field['permalink'] = array(
+    '#id' => 'ecenter-permalink',
+    '#type' => 'textfield',
+    '#size' => 115,
+    '#disabled' => TRUE,
+    '#value' => urldecode(url('network',
+      array('query' => $vars['params'], 'absolute' => TRUE,)
+    )),
+  );
+  $vars['permalink_field'] = drupal_render($permalink_field);
 
   // Generate issue link -- encode params for use with custom ecenter_issues
   // module
@@ -27,52 +72,6 @@ function template_preprocess_ecenter_network_data(&$vars) {
     );
   }
 
-  // Source / dst table
-  $hops = ecenter_network_get_hops();
-
-  $src_hop = $hops['combined'][$vars['params']['src']];
-  $dst_hop = $hops['combined'][$vars['params']['dst']];
-
-  // Generate date range -- internal date is stored as UTC
-  $dates = array();
-  foreach (array('start', 'end') as $val) {
-    $date = date_create($vars['params'][$val]);
-    $dates[$val] = date_format($date, 'M j, Y H:i');
-  }
-
-  $vars['title'] = t('<span class="src-dst">@src_hub_name (@src_hub) to
-    @dst_hub_name (@dst_hub)</span><span class="separator">, </span>
-    <span class="date-range">@start - @end</span>',
-    array(
-      '@src_hub_name' => $src_hop['hub_name'],
-      '@src_hub' => $src_hop['hub'],
-      '@dst_hub_name' => $dst_hop['hub_name'],
-      '@dst_hub' => $dst_hop['hub'],
-      '@start' => $dates['start'],
-      '@end' => $dates['end']
-    )
-  );
-
-  // Set title
-  drupal_set_title(t('E-Center Network Query | ') . $vars['title']);
-
-  // Generate permalink
-  $vars['permalink'] = l(t('Permanent link (bookmark and share results)'), 'network', array(
-    'query' => $vars['params'],
-    'absolute' => TRUE,
-    'attributes' => array('title' => $vars['title']),
-  ));
-  // Generate permalink
-  $permalink_field['permalink'] = array(
-    '#id' => 'ecenter-permalink',
-    '#type' => 'textfield',
-    '#size' => 115,
-    '#disabled' => TRUE,
-    '#value' => urldecode(url('network',
-      array('query' => $vars['params'], 'absolute' => TRUE,)
-    )),
-  );
-  $vars['permalink_field'] = drupal_render($permalink_field);
 
   // End to end measurements
   $vars['end_to_end'] = theme('ecenter_network_end_to_end',
@@ -98,10 +97,7 @@ function template_preprocess_ecenter_network_recent_queries(&$vars) {
   if (!empty($queries)) {
     $links = array();
     foreach ($queries as $query) {
-      $tz = date_default_timezone_name(TRUE);
-      $time = date_make_date($query['time'], timezone_open('UTC'), DATE_UNIX);
-      date_timezone_set($time, timezone_open($tz));
-      $links[] = theme('ecenter_network_recent_query', $query['query'], $time);
+      $links[] = theme('ecenter_network_recent_query', $query['query'], $query['time']);
     }
     $vars['queries'] = array_reverse($links);
   }
@@ -114,19 +110,37 @@ function template_preprocess_ecenter_network_recent_queries(&$vars) {
  * Theme a single query link
  */
 function theme_ecenter_network_recent_query($query, $time) {
-  $query_text = array();
+  $time = _ecenter_network_timestamp_to_local($time, 'M d, Y - H:i');
+
   $query_parts = explode('&amp;', urldecode($query));
   foreach ($query_parts as $part) {
     list($key, $value) = explode('=', $part);
-    $query_text[] = '<span class="key '. $key .'">'. strtoupper($key) .':</span> '.
-      '<span class="value">'. $value .'</span>';
+
+    if ($key == 'start' || $key == 'end') {
+      $value = _ecenter_network_utc_to_local($value, 'M d, Y - H:i');
+    }
+
+    if ($key == 'src' || $key == 'dst') {
+      list($temp, $value) = explode(':', $value, 2);
+    }
+
+    $values[$key] = $value;
   }
 
-  $date = '<span class="date"><a href="'. urldecode(url('network') .'?'. $query) .'">'.
-    date_format($time, 'n-j-Y g:ia') .'</a></span>';
-  $query = '<span class="query">'. implode(' | ', $query_text) .'</span>';
+  $query_text = t('<span class="path">@src to @dst</span> from
+    <span class="date-range">@start to @end</span>',
+    array(
+      '@src' => $values['src'], '@dst' => $values['dst'],
+      '@start' => $values['start'], '@end' => $values['end']
+    )
+  );
 
-  return $date .' '. $query;
+  $query_time = t('Last queried: @time', array('@time' => $time));
+
+  $output = '<div class="link"><a href="'. urldecode(url('network') .'?'. $query) .'">'.
+    $query_text .'</a></div>';
+  $output .= '<div class="query-date">'. $query_time .'</div>';
+  return $output;
 }
 
 /**
@@ -152,10 +166,12 @@ function theme_ecenter_network_hops($hops = array()) {
     $settings['ecenterNetwork']['seriesLookupByIndex'][] = array('id' => $hop['id'], 'hub' => $hop['hub']);
 
     foreach ($hop['data']['snmp'] as $timeseries) {
+
       if (!empty($timeseries)) {
+        $time = _ecenter_network_timestamp_to_local($timeseries[0]);
         $table[] = array(
           'label' => array(
-            'data' => $timeseries[0] * 1000,
+            'data' => $time,
             'header' => TRUE,
           ),
           'utilization' => array(
@@ -205,8 +221,9 @@ function theme_ecenter_network_hops($hops = array()) {
     drupal_alter('ecenter_network_plot_options', $plot_options, 'utilization', 'snmp');
     $options = array(
       'height' => 175,
-      'width' => 600,
+      'width' => 550,
       'hideTables' => FALSE,
+      'parseX' => '$.tablechart.parseText',
       'dependencies' => array('canvasTextRenderer'),
       'plotOptions' => $plot_options,
     );
@@ -269,9 +286,14 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
         if (($timeseries = $values['timeseries']) && is_array($timeseries)
           && $values['statistics']['max'] > 0) {
           $data_table = array();
+          $i = 1;
+          ksort($timeseries);
           foreach ($timeseries as $timestamp => $value) {
-            // Note we multiple x 1000 because Javascript uses microseconds!
-            $data_table[] = array(array('data' => $timestamp * 1000, 'header' => TRUE), theme($value_suggestions, $value, $test, $measurement, FALSE));
+            $time = _ecenter_network_timestamp_to_local($timestamp);
+            $data_table[] = array(
+              array('data' => $time, 'header' => TRUE),
+              theme($value_suggestions, $value, $test, $measurement, FALSE)
+            );
           }
           $data_tables[$test][$measurement][$direction] = $data_table;
         }
@@ -332,6 +354,7 @@ function theme_ecenter_network_end_to_end_tables($tables) {
         'height' => 150,
         'width' => 400,
         'hideTables' => FALSE,
+        'parseX' => '$.tablechart.parseText',
         'dependencies' => array('canvasTextRenderer'),
         'plotOptions' => $plot_options,
       );
@@ -354,7 +377,7 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
     'highlighter' => array(
       'show' => TRUE,
       'sizeAdjust' => 1,
-      'lineWidthAdjust' => 2,
+      'lineWidthAdjust' => 1,
       'tooltipLocation' => 'n',
       'tooltipOffset' => 10,
       'tooltipSeparator' => ': ',
@@ -385,7 +408,9 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
     case 'medianIpd':
     case 'meanIpd':
       $options += $line_options;
+      $options['axes']['yaxis']['min'] = 0;
       $options['axes']['yaxis']['label'] = t('milliseconds');
+      $options['axes']['yaxis']['tickOptions']['formatString'] = '%01.1f';
       $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%dms</span>';
       return;
     case 'loss':
@@ -412,7 +437,7 @@ function _ecenter_network_plot_options_template() {
       'shadow' => FALSE,
       'fill' => FALSE,
       'markerOptions' => array(
-        'size' => 5,
+        'size' => 3,
         'shadow' => FALSE,
       ),
     ),

@@ -10,6 +10,8 @@ function ecenter_network_schema() {
   $schema['cache_ecenter_data']['description'] = 'Cache table for storing saved results.';
   $schema['cache_ecenter_hops'] = drupal_get_schema_unprocessed('system', 'cache');
   $schema['cache_ecenter_hops']['description'] = 'Cache table for storing hops';
+  $schema['cache_ecenter_nodes'] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_ecenter_nodes']['description'] = 'Cache table for storing nodes';
 
   $schema['ecenter_result_archive'] = array(
     'description' => 'E-Center data result archive',

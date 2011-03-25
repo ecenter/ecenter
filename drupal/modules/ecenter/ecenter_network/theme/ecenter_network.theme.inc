@@ -97,10 +97,7 @@ function template_preprocess_ecenter_network_recent_queries(&$vars) {
   if (!empty($queries)) {
     $links = array();
     foreach ($queries as $query) {
-      $tz = date_default_timezone_name(TRUE);
-      $time = date_make_date($query['time'], timezone_open('UTC'), DATE_UNIX);
-      date_timezone_set($time, timezone_open($tz));
-      $links[] = theme('ecenter_network_recent_query', $query['query'], $time);
+      $links[] = theme('ecenter_network_recent_query', $query['query'], $query['time']);
     }
     $vars['queries'] = array_reverse($links);
   }
@@ -113,19 +110,37 @@ function template_preprocess_ecenter_network_recent_queries(&$vars) {
  * Theme a single query link
  */
 function theme_ecenter_network_recent_query($query, $time) {
-  $query_text = array();
+  $time = _ecenter_network_timestamp_to_local($time, 'M d, Y - H:i');
+
   $query_parts = explode('&amp;', urldecode($query));
   foreach ($query_parts as $part) {
     list($key, $value) = explode('=', $part);
-    $query_text[] = '<span class="key '. $key .'">'. strtoupper($key) .':</span> '.
-      '<span class="value">'. $value .'</span>';
+
+    if ($key == 'start' || $key == 'end') {
+      $value = _ecenter_network_utc_to_local($value, 'M d, Y - H:i');
+    }
+
+    if ($key == 'src' || $key == 'dst') {
+      list($temp, $value) = explode(':', $value, 2);
+    }
+
+    $values[$key] = $value;
   }
 
-  $date = '<span class="date"><a href="'. urldecode(url('network') .'?'. $query) .'">'.
-    date_format($time, 'n-j-Y g:ia') .'</a></span>';
-  $query = '<span class="query">'. implode(' | ', $query_text) .'</span>';
+  $query_text = t('<span class="path">@src to @dst</span> from
+    <span class="date-range">@start to @end</span>',
+    array(
+      '@src' => $values['src'], '@dst' => $values['dst'],
+      '@start' => $values['start'], '@end' => $values['end']
+    )
+  );
 
-  return $date .' '. $query;
+  $query_time = t('Last queried: @time', array('@time' => $time));
+
+  $output = '<div class="link"><a href="'. urldecode(url('network') .'?'. $query) .'">'.
+    $query_text .'</a></div>';
+  $output .= '<div class="query-date">'. $query_time .'</div>';
+  return $output;
 }
 
 /**

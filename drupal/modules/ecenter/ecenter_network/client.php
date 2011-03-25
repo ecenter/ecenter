@@ -239,4 +239,21 @@ class Ecenter_Data_Service_Client {
     return $this->query('node/'. $ip);
   }
 
+  /**
+   * Get service health over a given time frame
+   *
+   * @param $start
+   *   Start time.
+   * @param $end
+   *   End time.
+   * @return
+   *   Result for this query.
+   */
+  public function getHealth($start, $end) {
+    $params = array(
+      'start' => $start,
+      'end' => $end,
+    );
+    return $this->query('health', $params);
+  }
 }

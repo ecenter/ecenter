@@ -53,6 +53,13 @@ function ecenter_network_admin_form() {
     '#description' => t('Specify default window of time to query over, in seconds (i.e. 1 hour is 3600 seconds).'),
     '#default_value' => variable_get('ecenter_network_time_window', 7200),
   );
+  $form['service']['ecenter_network_query_resolution'] = array(
+    '#title' => t('Query resolution'),
+    '#type' => 'textfield',
+    '#description' => t('The default query resolution.'),
+    '#default_value' => variable_get('ecenter_network_time_window', 50),
+  );
+
 
   $form['performance'] = array(
     '#title' => t('Performance'),

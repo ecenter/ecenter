@@ -118,8 +118,9 @@ function ecenter_blog_views_default_views() {
   $handler->display->display_options['fields']['field_blog_post_authors_uid']['element_default_classes'] = 1;
   $handler->display->display_options['fields']['field_blog_post_authors_uid']['hide_empty'] = 0;
   $handler->display->display_options['fields']['field_blog_post_authors_uid']['empty_zero'] = 0;
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['link_to_node'] = 1;
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['multiple']['group'] = 1;
+  $handler->display->display_options['fields']['field_blog_post_authors_uid']['link_to_node'] = 0;
+  $handler->display->display_options['fields']['field_blog_post_authors_uid']['label_type'] = 'custom';
+  $handler->display->display_options['fields']['field_blog_post_authors_uid']['multiple']['group'] = 0;
   $handler->display->display_options['fields']['field_blog_post_authors_uid']['multiple']['multiple_reversed'] = 0;
   /* Field: Node: New comments */
   $handler->display->display_options['fields']['new_comments']['id'] = 'new_comments';
@@ -259,7 +260,7 @@ function ecenter_blog_views_default_views() {
     t('more'),
     t('Apply'),
     t('Reset'),
-    t('Sort By'),
+    t('Sort by'),
     t('Asc'),
     t('Desc'),
     t('Items per page'),
@@ -270,7 +271,7 @@ function ecenter_blog_views_default_views() {
     t('Main archive'),
     t('News block'),
     t('E-Center News'),
-    t('Authors'),
+    t('by'),
     t('[new_comments] new comment(s)'),
     t('.'),
     t(','),

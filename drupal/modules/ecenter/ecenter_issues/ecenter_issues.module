@@ -128,10 +128,10 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
       // Create title from parameters
       list($src_type, $src_value) = explode(':', $params['src'], 2);
       list($dst_type, $dst_value) = explode(':', $params['dst'], 2);
-      $form['title']['#default_value'] = t('@src to @dst, @start - @end (@tz)',
-        array('@src' => $src_value, '@dst' => $dst_value,
+      $form['title']['#default_value'] = t('@src to @dst, @start - @end (UTC)',
+        array(
+          '@src' => $src_value, '@dst' => $dst_value,
           '@start' => $params['start'], '@end' => $params['end'],
-          '@tz' => str_replace('_', ' ', date_default_timezone_name(TRUE)),
         )
       );
 
@@ -174,12 +174,10 @@ function ecenter_issues_issue_add_data($form, &$form_state) {
   $src_field_name = 'field_query_src_'. $src_type;
   $dst_field_name = 'field_query_dst_'. $dst_type;
 
-  $start = _ecenter_network_date_to_utc($params['start'], 'Y-m-d H:i:s');
-  $end = _ecenter_network_date_to_utc($params['end'], 'Y-m-d H:i:s');
-  $start_query = _ecenter_network_date_to_utc($params['start'], 'Y-m-d\TH:i:s');
-  $end_query = _ecenter_network_date_to_utc($params['end'], 'Y-m-d\TH:i:s');
-
-  // @TODO Parse dates and times into proper format...
+  $start = $params['start'];
+  $end = $params['end'];
+  $start_query = date_format(date_create($start, timezone_open('UTC')), 'Y-m-d\TH:i:s');
+  $end_query = date_format(date_create($end, timezone_open('UTC')), 'Y-m-d\TH:i:s');
 
   // Get all field definitions
   $start_field = content_fields('field_query_start');
@@ -230,7 +228,6 @@ function ecenter_issues_issue_add_data($form, &$form_state) {
     $data = ecenter_network_get_data($params['src'], $params['dst'], $params['start'], $params['end']);
     $queryNode->field_query_data = array(array('value' => serialize($data)));
 
-    // Dates need to be converted to UTC
     $queryNode->field_query_start = array(array(
       'value' => $start,
     ));

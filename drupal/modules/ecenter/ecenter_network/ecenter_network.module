@@ -567,20 +567,30 @@ function ecenter_network_get_hops($src = NULL) {
 function ecenter_network_get_node($ip) {
   static $nodes = array();
   if (empty($nodes[$ip])) {
-    $client = ecenter_network_get_client();
-    $result = $client->getNode($ip);
-    if ($result['code'] == 200) {
-      $data = $result['response'];
-      // Calculate netblock -- @TODO may not be necessary
-      $data['netblock'] = long2ip(ip2long($data['ip_noted']) & 
-        ~((1 << (32 - $data['netmask'])) - 1));
-      $nodes[$ip] = $data;
+    $caching = variable_get('ecenter_network_node_cache_enabled', 0);
+    if ($caching && $result = cache_get($ip, 'cache_ecenter_nodes')) {
+      $nodes[$ip] = $result->data;
     }
     else {
-      drupal_set_message(t('Request (@url) failed with code @code (@response).', 
-        array('@url' => $result['url'], '@code' => $result['code'], 
-          '@response' => $result['response'])));
-      return FALSE;
+      $client = ecenter_network_get_client();
+      $result = $client->getNode($ip);
+      if ($result['code'] == 200) {
+        $data = $result['response'];
+        // Calculate netblock -- @TODO may not be necessary
+        $data['netblock'] = long2ip(ip2long($data['ip_noted']) & 
+          ~((1 << (32 - $data['netmask'])) - 1));
+        $nodes[$ip] = $data;
+        if ($caching) {
+          $expires = time() + variable_get('ecenter_network_node_cache_ttl', 300);
+          cache_set($ip, $data, 'cache_ecenter_nodes', $expires);
+        }
+      }
+      else {
+        drupal_set_message(t('Request (@url) failed with code @code (@response).', 
+          array('@url' => $result['url'], '@code' => $result['code'], 
+            '@response' => $result['response'])));
+        return FALSE;
+      }
     }
   }
   return $nodes[$ip];

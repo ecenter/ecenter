@@ -57,7 +57,7 @@ function ecenter_network_admin_form() {
     '#title' => t('Query resolution'),
     '#type' => 'textfield',
     '#description' => t('The default query resolution.'),
-    '#default_value' => variable_get('ecenter_network_time_window', 50),
+    '#default_value' => variable_get('ecenter_network_query_resolution', 50),
   );
 
 

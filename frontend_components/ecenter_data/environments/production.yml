@@ -2,19 +2,19 @@ logger: "console"
 log: "error"
 warnings: 0
 debug: 0
-time_slice_secs: 3600
+time_slice_secs: 36000
 show_errors: 1
 route_cache: 1
 auto_reload: 0
 port: 8055
 gearman:
    server: localhost
-   port: 10111
+   port: 10221
 plugins:
    DBIC:
      dbix:
-       schema_class: Ecenter::Schema
-       dsn: dbi:mysql:localhost:dbname=ecenter_test
+       schema_class: Ecenter::DB
+       dsn: dbi:mysql:localhost:dbname=ecenter_data
        user: ecenter
        pass: ecenter2010
        debug: 0
@@ -27,7 +27,7 @@ plugins:
      connections:
        ecenter:
           driver: mysql
-          database: ecenter_test
+          database: ecenter_data
           host: localhost
           username: ecenter
           password: ecenter2010

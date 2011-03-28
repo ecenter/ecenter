@@ -184,7 +184,7 @@ sub get_health {
 		foreach my $shard (sort  { $a <=> $b } keys %$shards) {
 		    my $sql = qq|select count(*) from  $shards->{$shard}{table}{dbi}  
 		                 where metaid in  ('$md_ins') and  timestamp >=  $shards->{$shard}{start} and  timestamp <= $shards->{$shard}{end} |;
-		    debug "Data::sql::$sql";
+		   #debug "Data::sql::$sql";
 	           $health{metadata}{$site}{$type}{$shard}{cached_data_count} = database('ecenter')->selectrow_array($sql);
 		}
 	    }
@@ -408,7 +408,7 @@ sub process_data {
 		         ];
         }
         ### debug "Data for ip=$hop_ip hop_id=$hops_ref->{$hop_ip}:: " . Dumper( $snmp{$hops_ref->{$hop_ip}});
-       $data->{snmp}{$ip_noted} = refactor_result(\@result, $params{resolution});
+       $data->{snmp}{$ip_noted} = refactor_result(\@result, 'snmp', $params{resolution});
 	 ##$data->{snmp}{$ip_noted} = \@result;
   }
   return $data; 
@@ -454,11 +454,11 @@ sub get_e2e{
 					                     my $returned = decode_json  ${$_[0]};  
 							     if($returned->{status} eq 'ok' && $returned->{data} && ref $returned->{data} eq ref []) {
                                                                  foreach my $datum ( @{$returned->{data}} ) {
-							             unless($datum && ref $datum eq ref {}) {
+							             unless($datum && ref $datum eq ref []) {
 								         $logger->error("FAILED: datum malformed", sub{Dumper($datum)});
 									 next;
 								     }
-				                                     $data_hr->{$md_row->{src_ip}}{$md_row->{dst_ip}}{$datum->{timestamp}} = $datum;
+				                                     $data_hr->{$md_row->{src_ip}}{$md_row->{dst_ip}}{$datum->[0]} = $datum->[1];
 								 }
 								 $logger->debug("DATA for $type: md=$metaid times=$st_time - $end_time :::" . scalar(@{$returned->{data}})); 
 			    	                                 

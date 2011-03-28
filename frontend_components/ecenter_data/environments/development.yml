@@ -1,6 +1,6 @@
 logger: "console"
 log: "debug"
-warnings: 0
+warnings: 1
 debug: 1
 show_errors: 1
 auto_reload: 0
@@ -8,7 +8,7 @@ time_slice_secs: 20000
 port: 8098
 gearman:
    server: localhost
-   port: 10221
+   port: 10131
 plugins:
    DBIC:
      dbix:

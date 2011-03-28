@@ -34,6 +34,11 @@ Default: localhost
 
 port to connect to gearmand
 Default: 10221
+
+=item --period=<time period in seconds>
+
+time period to check if we have complete data cached in the DB
+Default: 1800 seconds from the start and 1800 from the end of the request time slice
    
 =item --help
 
@@ -88,7 +93,7 @@ my $DATA = { bwctl	=> {table => 'BwctlData',   class => 'Bwctl',      data => [q
      	     traceroute => {table => 'HopData',    callback  => \&process_trace, class => 'Traceroute', data => [qw/hop_ip   hop_num  hop_delay/]},
      	   };
 my %OPTIONS;
-my @string_option_keys = qw/port host pass user db /;
+my @string_option_keys = qw/port host pass user db period/;
 GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
             qw/debug help/,
@@ -108,6 +113,7 @@ my $worker = new Gearman::Worker;
 $OPTIONS{host} ||= 'localhost';
 $OPTIONS{port} ||= 10221;
 $OPTIONS{user} ||= 'ecenter';
+$OPTIONS{period} ||= 1800;
 $OPTIONS{db} ||= 'ecenter_data';
 my $ready = 0;
 my $pid;
@@ -254,7 +260,7 @@ sub _get_remote_data  {
 		 	ref $DATA->{$request->{type}}{callback} eq ref sub{}) {
 		    $DATA->{$request->{type}}{callback}->($dbh, $sql_datum, $result);
 		} else {
-		    push @{$result->{data}}, $sql_datum;
+		    push @{$result->{data}}, [$ma_data->[0], $sql_datum];
 		}         
                 eval {
 		   $dbh->resultset($request->{table})->find_or_create( $sql_datum, { key => 'meta_time'} );
@@ -435,17 +441,18 @@ sub dispatch_data {
 								          }
 						          });
     my ($start_time, $end_time) = get_datums(\@datas,  $result->{data},
-                                             $DATA->{$request->{type}}{data}, $request->{resolution});
-    $logger->debug(" Times: start_dif=" . 
+                                             $DATA->{$request->{type}}{data}, $request->{type}, $request->{resolution});
+    $logger->debug("$request->{type} ---  Times: start_dif=" . 
                      abs($start_time - $request->{start}) .  
 		   "... end_dif=" . abs( $request->{end} -  $end_time ));
      
     if(  abs($end_time   -  $request->{end})	> 1800 ||
      	  abs($start_time -  $request->{start}) > 1800  ) {
      	  @{$result->{data}} = () if    $result->{data};
-     	  $logger->info(" params to ma: ip=  $request->{md_row}{service} start= $request->{start} end= $request->{end} ");
+     	  $logger->info("$request->{type} --- params to ma: ip=  $request->{md_row}{service} start= $request->{start} end= $request->{end} ");
      	  return _get_remote_data($request, $dbh);
-    } 
+    }
+    
     return encode_json $result;
 }
 

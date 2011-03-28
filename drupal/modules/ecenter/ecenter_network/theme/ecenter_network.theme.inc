@@ -85,7 +85,7 @@ function template_preprocess_ecenter_network_data(&$vars) {
 /**
  * Theme recent user queries
  */
-function template_preprocess_ecenter_network_recent_queries(&$vars) {
+function theme_ecenter_network_recent_queries($collapse = FALSE) {
   global $user;
   if ($user->uid > 0) {
     $queries = $user->ecenter_network_queries;
@@ -94,16 +94,32 @@ function template_preprocess_ecenter_network_recent_queries(&$vars) {
     $queries = unserialize(sess_read('ecenter_network_queries'));
   }
 
+  $element['queries'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Your recent E-Center Network queries'),
+  );
+
   if (!empty($queries)) {
     $links = array();
     foreach ($queries as $query) {
       $links[] = theme('ecenter_network_recent_query', $query['query'], $query['time']);
     }
-    $vars['queries'] = array_reverse($links);
+    $element['queries'] += array(
+      '#collapsible' => $collapse,
+      '#collapsed' => $collapse,
+      'links' => array(
+        '#value' => theme('item_list', array_reverse($links)),
+      ),
+    );
   }
   else {
-    $vars['queries'] = array(t('No recent queries available.'));
+    $element['queries'] = array(
+      'no_queries' => array(
+        '#value' => t('No recent queries available.'),
+      ),
+    );
   }
+  return drupal_render($element);
 }
 
 /**

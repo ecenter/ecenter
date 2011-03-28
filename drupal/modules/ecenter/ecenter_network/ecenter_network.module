@@ -70,8 +70,7 @@ function ecenter_network_theme() {
       )
     ) + $options,
    'ecenter_network_recent_queries' => array(
-      'template' => 'ecenter-network-recent-queries',
-      'arguments' => array(),
+      'arguments' => array('collapse' => NULL),
     ) + $options,
     'ecenter_network_recent_query' => array(
       'arguments' => array(
@@ -412,6 +411,7 @@ function ecenter_network_select_form(&$form_state) {
       drupal_add_js(array('ecenterNetwork' => array('tracerouteData' => $data['traceroute']['diff'])), 'setting');
       drupal_add_js(array('ecenterNetwork' => array('tracerouteMaxLength' => $data['traceroute']['traceroute_max'])), 'setting');
       $form['results_wrapper']['results']['#value'] = theme('ecenter_network_data', $data, $params);
+      $form['results_wrapper']['recent']['#value'] = theme('ecenter_network_recent_queries', TRUE);
     }
     else {
       watchdog('ecenter', 'Query returned no results: <code>@query</code>', array('@query' => $query), WATCHDOG_INFO);

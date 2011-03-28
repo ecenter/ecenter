@@ -20,6 +20,14 @@ function ecenter_network_menu() {
     'access arguments' => array('access ecenter network'),
     'type' => MENU_CALLBACK,
   );
+
+  $items['network/health'] = array(
+    'page callback' => 'ecenter_network_health',
+    'page arguments' => array(),
+    'access arguments' => array('access ecenter network'),
+    'type' => MENU_CALLBACK,
+  );
+
   $items['admin/settings/ecenter'] = array(
     'title' => 'E-Center Network',
     'page callback' => 'drupal_get_form',
@@ -177,25 +185,38 @@ function ecenter_network_init() {
 }
 
 /**
+ * E-center network health
+ */
+function ecenter_network_health() {
+  $client = ecenter_network_get_client('503');
+  
+  extract(_ecenter_network_extract_query());
+  
+  if (!$start) {
+    $start = '2011-03-05 01:00:00';
+  }
+  if (!$end) {
+    $end = '2011-03-06 01:00:00';
+  }
+  dpm($client->getHealth($start, $end));
+  return 'testing stub';
+}
+
+/**
  * Primary selection form definition.
  */
 function _ecenter_network_select_form() {
   global $user;
 
   // Initialize time-related variables
-  $inc = variable_get('ecenter_network_time_increment', 10);
   $default_start = variable_get('ecenter_network_default_end', 7200);
   $offset = variable_get('ecenter_network_default_offset', 600);
   $now = time();
-  $tz = date_default_timezone_name(TRUE);
-  $end = date_make_date($now - $offset, $tz, DATE_UNIX);
-  $start = date_make_date($now - $offset - $default_start, $tz, DATE_UNIX);
+  
+  $start = _ecenter_network_timestamp_to_local($now - $offset - $default_start, 'Y-m-d H:i');
+  $end = _ecenter_network_timestamp_to_local($now - $offset, 'Y-m-d H:i');
 
-  if (user_access('debug ecenter network')) {
-    $form['debug'] = array(
-      '#value' => '<div id="network-debug"></div>',
-    );
-  }
+  $inc = variable_get('ecenter_network_time_increment', 10);
 
   // Map
   $preset = openlayers_preset_load('ecenter_network');
@@ -263,13 +284,13 @@ function _ecenter_network_select_form() {
     '#type' => 'date_popup',
     '#title' => t('Start date'),
     '#date_increment' => $inc,
-    '#default_value' => date_format($start, 'Y-m-d H:i'),
+    '#default_value' => $start,
   );
   $form['network_wrapper']['query']['end'] = array(
     '#type' => 'date_popup',
     '#title' => t('End date'),
     '#date_increment' => $inc,
-    '#default_value' => date_format($end, 'Y-m-d H:i'),
+    '#default_value' => $end,
   );
 
   $form['network_wrapper']['query']['date_description'] = array(
@@ -327,6 +348,9 @@ function _ecenter_network_select_form() {
  */
 function ecenter_network_select_form(&$form_state) {
 
+  // Bail if the service is down
+  ecenter_network_get_client('503');
+  
   // Get base form and register with ahah_helper
   $form = _ecenter_network_select_form();
   ahah_helper_register($form, $form_state);
@@ -339,24 +363,30 @@ function ecenter_network_select_form(&$form_state) {
 
   // Set dates
   if (!empty($start)) {
-    $form['network_wrapper']['query']['start']['#default_value'] = $start;
+    $form['network_wrapper']['query']['start']['#default_value'] = 
+      _ecenter_network_utc_to_local($start);
   }
   if (!empty($end)) {
-    $form['network_wrapper']['query']['end']['#default_value'] = $end;
+    $form['network_wrapper']['query']['end']['#default_value'] = 
+      _ecenter_network_utc_to_local($end);
   }
 
-  $hops = ecenter_network_get_hops();
+  $sources = ecenter_network_get_hops();
   $src_options[0] = '';
-  foreach ($hops['combined'] as $key => $hop) {
+  foreach ($sources['combined'] as $key => $hop) {
     $src_options[$key] = theme('ecenter_network_hop_option', $hop);
   }
   $form['network_wrapper']['query']['src_wrapper']['src']['#options'] += $src_options;
-
-  if ($src) {
+  if (!empty($src)) {
     $form['network_wrapper']['query']['src_wrapper']['src']['#default_value'] = $src;
-
+    $form['network_wrapper']['query']['src_wrapper']['src']['#disabled'] = TRUE;
+    list($src_type, $src_value) = explode(':', $src, 2);
+    if ($src_type == 'hub') {
+      $src_value = $sources['hubs'][$src_value]['ip_noted'];
+    }
+    $destinations = ecenter_network_get_hops($src_value);
     $dst_options[0] = '';
-    foreach ($hops['combined'] as $key => $hop) {
+    foreach ($destinations['combined'] as $key => $hop) {
       $dst_options[$key] = theme('ecenter_network_hop_option', $hop);
     }
     $form['network_wrapper']['query']['dst_wrapper']['dst']['#options'] += $dst_options;
@@ -368,7 +398,6 @@ function ecenter_network_select_form(&$form_state) {
   }
 
   if ($src && $dst && $start && $end) {
-
     $data = ecenter_network_get_data($src, $dst, $start, $end);
 
     $params = array(
@@ -407,13 +436,14 @@ function ecenter_network_select_form_submit($form, &$form_state) {
   $form_state['rebuild'] = TRUE;
 }
 
-/**send
+/**
  * Get the E-Center weather map client
  *
  * @param $status_check
- *  '503', 'message', or FALSE.  What to do if status_check fails.
+ * If '503', return HTTP 503 page or redirect. If 'message', set message and 
+ * continue. If FALSE, just return the client.
  */
-function ecenter_network_get_client($status_check = '503') {
+function ecenter_network_get_client($status_check = FALSE) {
   static $client = FALSE;
   if (!$client) {
     require_once(dirname(__FILE__) . '/client.php');
@@ -425,22 +455,22 @@ function ecenter_network_get_client($status_check = '503') {
     $client = new Ecenter_Data_Service_Client($host, $port, $dir, $timeout, $status_timeout);
   }
 
-  // Check status
+  // Client is not available
   if ($status_check && !$client->checkStatus()) {
     $message = t('E-Center web service is not available.');
     watchdog('ecenter', $message, array(), WATCHDOG_ERROR);
 
-    if ($status_check == '503') {
-      drupal_set_header('HTTP/1.1 503 Service unavailable');
-      // Keep old path for reference, and to allow forms to redirect to it.
-      if (!isset($_REQUEST['destination'])) {
-        $_REQUEST['destination'] = $_GET['q'];
-      }
-      print theme('page', $message);
-      exit();
-    }
-    else {
-      drupal_set_message($message);
+    switch ($status_check) {
+      case '503':
+        drupal_set_header('HTTP/1.1 503 Service unavailable');
+        // Keep old path for reference, and to allow forms to redirect to it.
+        if (!isset($_REQUEST['destination'])) {
+          $_REQUEST['destination'] = $_GET['q'];
+        }
+        print theme('page', '<div class="ecenter-fatal">'. $message .'</div>');
+        exit();
+      default:
+        drupal_set_message($message);
     }
   }
   return $client;
@@ -454,18 +484,15 @@ function ecenter_network_get_client($status_check = '503') {
  * @param $dst
  *   Destination IP address
  * @param $start
- *   Start time
+ *   Start time, expressed in UTC, formatted as Y-m-d H:i:s
  * @param $end
- *   End time
+ *   End time, expressed in UTC, formatted as Y-m-d H:i:s
  * @return
  *   An array of parsed data
  */
 function ecenter_network_get_data($src, $dst, $start, $end, $debug_url = FALSE) {
   global $user;
   static $results = array();
-
-  $start = _ecenter_network_date_to_utc($start);
-  $end = _ecenter_network_date_to_utc($end);
 
   $query = http_build_query(array(
     'src' => $src,
@@ -502,8 +529,9 @@ function ecenter_network_get_data($src, $dst, $start, $end, $debug_url = FALSE) 
       $results[$query] = $result->data;
     }
     else {
-      $client = ecenter_network_get_client('message');
-      $result = $client->getData($src, $dst, $start, $end);
+      $resolution = variable_get('ecenter_network_query_resolution', 50);
+      $client = ecenter_network_get_client();
+      $result = $client->getData($src, $dst, $start, $end, $resolution);
       if ($result['code'] == 200) {
         $data = ecenter_network_parse_response($result);
         if ($caching) {
@@ -541,9 +569,8 @@ function ecenter_network_get_hops($src = NULL) {
       $hops[$src_key] = $result->data;
     }
     else {
-      $client = ecenter_network_get_client('message');
-      $result = $client->getHops();
-      //$result = _ecenter_network_sources();
+      $client = ecenter_network_get_client();
+      $result = $client->getHops($src);
       if ($result['code'] == 200) {
         $data = ecenter_network_parse_hops($result['response']);
         $hops[$src_key] = $data;
@@ -561,46 +588,36 @@ function ecenter_network_get_hops($src = NULL) {
   return $hops[$src_key];
 }
 
-/**
- * Get hops
- *
- * @TODO Is this needed?  Currently, not called
- *
- * @return
- *   An array of hop objects.
- */
-function ecenter_network_get_hubs() {
-  $client = ecenter_network_get_client('message');
-  $result = $client->getHubs();
-  if ($result['code'] == 200) {
-    return $result['response'];
-  }
-  else {
-    drupal_set_message(t('Request failed with code @code.',
-      array('@code' => $result['code'])));
-  }
-}
-
 /** 
  * Get node
  */
 function ecenter_network_get_node($ip) {
   static $nodes = array();
   if (empty($nodes[$ip])) {
-    $client = ecenter_network_get_client('message');
-    $result = $client->getNode($ip);
-    if ($result['code'] == 200) {
-      $data = $result['response'];
-      // Calculate netblock -- @TODO may not be necessary
-      $data['netblock'] = long2ip(ip2long($data['ip_noted']) & 
-        ~((1 << (32 - $data['netmask'])) - 1));
-      $nodes[$ip] = $data;
+    $caching = variable_get('ecenter_network_node_cache_enabled', 0);
+    if ($caching && $result = cache_get($ip, 'cache_ecenter_nodes')) {
+      $nodes[$ip] = $result->data;
     }
     else {
-      drupal_set_message(t('Request (@url) failed with code @code (@response).', 
-        array('@url' => $result['url'], '@code' => $result['code'], 
-          '@response' => $result['response'])));
-      return FALSE;
+      $client = ecenter_network_get_client();
+      $result = $client->getNode($ip);
+      if ($result['code'] == 200) {
+        $data = $result['response'];
+        // Calculate netblock -- @TODO may not be necessary
+        $data['netblock'] = long2ip(ip2long($data['ip_noted']) & 
+          ~((1 << (32 - $data['netmask'])) - 1));
+        $nodes[$ip] = $data;
+        if ($caching) {
+          $expires = time() + variable_get('ecenter_network_node_cache_ttl', 300);
+          cache_set($ip, $data, 'cache_ecenter_nodes', $expires);
+        }
+      }
+      else {
+        drupal_set_message(t('Request (@url) failed with code @code (@response).', 
+          array('@url' => $result['url'], '@code' => $result['code'], 
+            '@response' => $result['response'])));
+        return FALSE;
+      }
     }
   }
   return $nodes[$ip];
@@ -624,6 +641,7 @@ function ecenter_network_parse_response($response) {
 
   // Add hops to data structure
   foreach ($data['traceroute_nodes'] as $node_ip => $node) {
+    $node = ecenter_network_get_node($node_ip);
     $node['id'] = str_replace('.', '_', $node_ip);
     $parsed_data['hops'][$node_ip] = $node + array('data' => 
       array(
@@ -683,7 +701,6 @@ function ecenter_network_parse_response($response) {
       foreach ($data[$traceroute_direction .'_traceroute'] as $series) {
         // @TODO is this a safe way to get series?
         $hop = array_shift($series);
-
         $hop += $parsed_data['hops'][$hop['hop_ip']];
 
         // Geolocate IP if no geo data available
@@ -803,6 +820,7 @@ function _ecenter_network_sort_traceroute($a, $b) {
 function ecenter_network_parse_hops($hops) {
   $combined = array();
   $hubs = array();
+  $ip_hops = array();
 
   usort($hops, '_ecenter_network_sort_hopname');
 
@@ -812,10 +830,10 @@ function ecenter_network_parse_hops($hops) {
       $hubs[$hop['hub_name']] = $hop;
       $combined['hub:'. $hop['hub_name']] = $hop + array('type' => 'hub');
     }
-
+    $ip_hops[$hop['ip_noted']] = $hop;
     $combined['ip:'. $hop['ip_noted']] = $hop + array('type' => 'ip');
   }
-  return array('combined' => $combined, 'hops' => $hops, 'hubs' => $hubs);
+  return array('combined' => $combined, 'hops' => $ip_hops, 'hubs' => $hubs);
 }
 
 /**
@@ -1023,7 +1041,6 @@ function ecenter_network_openlayers_layers() {
     'baselayer' => 1,
     'type' => 'png',
     'projection' => array('900913'),
-    //'resolutions' => openlayers_get_resolutions('900913'),
     'resolutions' => array(
       0 => 156543.0339,
       1 => 78271.51695,
@@ -1047,7 +1064,26 @@ function ecenter_network_openlayers_layers() {
  * Generate site map
  */
 function ecenter_network_layers_sites() {
-  $hops = ecenter_network_get_hops();
+  extract(_ecenter_network_extract_query());
+  $sources = ecenter_network_get_hops();
+
+  if (!empty($src)) {
+    list($src_type, $src_value) = explode(':', $src, 2);
+    if ($src_type == 'hub') {
+      $hop = $sources['hubs'][$src_value];
+      $src_ip = $sources['hubs'][$src_value]['ip_noted'];
+      $hops = ecenter_network_get_hops($src_ip);
+      $hops['hubs'][$src_value] = $hop; 
+    }
+    else {
+      $hop = $sources['hubs'][$sources['hops'][$src_value]['hub_name']];
+      $hops = ecenter_network_get_hops($src_value);
+      $hops['hubs'][$src_value] = $hop; 
+    }
+  }
+  else {
+    $hops = $sources;
+  }
 
   // Create layer object
   $layer = new stdClass();
@@ -1060,8 +1096,13 @@ function ecenter_network_layers_sites() {
     'projection' => array('900913'),
   );
 
-  extract(_ecenter_network_extract_query());
-  if (empty($src) || empty($dst) || empty($start) || empty($end)) {
+
+  if (!empty($src) && !empty($dst) && !empty($start) && !empty($end)) {
+    $data = ecenter_network_get_data($src, $dst, $start, $end);
+  }
+
+  if (($data && empty($data['traceroute']['forward']))
+    || (empty($src) || empty($dst) || empty($start) || empty($end))) {
     foreach ($hops['hubs'] as $hub) {
       $features[] = array(
         'wkt' => "POINT({$hub['longitude']} {$hub['latitude']})",
@@ -1281,7 +1322,7 @@ function ecenter_network_refresh_map($preset, $id = NULL) {
 }
 
 /**
- * Adjust local date to UTC
+ * Convert formatted local date string to formatted UTC date string
  *
  * @param $date
  *   A date string
@@ -1290,10 +1331,44 @@ function ecenter_network_refresh_map($preset, $id = NULL) {
  * @return string
  *   Formatted, converted date
  */
-function _ecenter_network_date_to_utc($date, $format = 'Y-m-d H:i:s') {
+function _ecenter_network_local_to_utc($date, $format = 'Y-m-d H:i:s') {
   $tz = date_default_timezone_name(TRUE);
   $adjusted = date_create($date, timezone_open($tz));
   date_timezone_set($adjusted, timezone_open('UTC'));
+  return date_format($adjusted, $format);
+}
+
+/**
+ * Adjust formatted UTC date string to formatted local date string
+ *
+ * @param $date
+ *   A date string
+ * @param $format
+ *   Format to use for return value.
+ * @return string
+ *   Formatted, converted date
+ */
+function _ecenter_network_utc_to_local($date, $format = 'Y-m-d H:i:s') {
+  $tz = date_default_timezone_name(TRUE);
+  $adjusted = date_create($date, timezone_open('UTC'));
+  date_timezone_set($adjusted, timezone_open($tz));
+  return date_format($adjusted, $format);
+}
+
+/**
+ * Convert Unix timestamp to formatted local date string 
+ *
+ * @param $date
+ *   A date string
+ * @param $format
+ *   Format to use for return value.
+ * @return string
+ *   Formatted, converted date
+ */
+function _ecenter_network_timestamp_to_local($date, $format = 'Y-m-d H:i:s') {
+  $tz = date_default_timezone_name(TRUE);
+  $adjusted = date_make_date($date, timezone_open('UTC'), DATE_UNIX);
+  date_timezone_set($adjusted, timezone_open($tz));
   return date_format($adjusted, $format);
 }
 
@@ -1310,25 +1385,24 @@ function _ecenter_network_date_to_utc($date, $format = 'Y-m-d H:i:s') {
 function _ecenter_network_extract_query() {
   if ($_REQUEST['form_id'] == 'ecenter_network_select_form') {
     $vars = array(
-      'src' => $_REQUEST['network_wrapper']['query']['src_wrapper']['src'],
-      'dst' => $_REQUEST['network_wrapper']['query']['dst_wrapper']['dst'],
-      'start' => $_REQUEST['network_wrapper']['query']['start']['date'] 
-        .' '. $_REQUEST['network_wrapper']['query']['start']['time'],
-      'end' => $_REQUEST['network_wrapper']['query']['end']['date']
-        .' '. $_REQUEST['network_wrapper']['query']['end']['time'],
+      'src'   => $_REQUEST['network_wrapper']['query']['src_wrapper']['src'],
+      'dst'   => $_REQUEST['network_wrapper']['query']['dst_wrapper']['dst'],
+      'start' => _ecenter_network_local_to_utc(
+        $_REQUEST['network_wrapper']['query']['start']['date'] 
+        .' '. $_REQUEST['network_wrapper']['query']['start']['time']
+      ),
+      'end'   => _ecenter_network_local_to_utc(
+        $_REQUEST['network_wrapper']['query']['end']['date']
+        .' '. $_REQUEST['network_wrapper']['query']['end']['time']
+      ),
     );
   }
   else {
-    $tz = date_default_timezone_name(TRUE);
-    $start = ($_REQUEST['start']) ? 
-      date_format(date_create($_REQUEST['start']), 'Y-m-d H:i') : NULL;
-    $end = ($_REQUEST['end']) ? 
-      date_format(date_create($_REQUEST['end']), 'Y-m-d H:i') : NULL;
     $vars = array(
-      'src' => $_REQUEST['src'],
-      'dst' => $_REQUEST['dst'],
-      'start' => $start,
-      'end' => $end,
+      'src'   => $_REQUEST['src'],
+      'dst'   => $_REQUEST['dst'],
+      'start' => $_REQUEST['start'],
+      'end'   => $_REQUEST['end'],
     );
   }
   return $vars;

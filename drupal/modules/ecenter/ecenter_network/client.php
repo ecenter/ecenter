@@ -168,13 +168,12 @@ class Ecenter_Data_Service_Client {
    *   (optional) Source IP.  If provided, will return all destinations for this
    *   source.
    * @return
-   *   An array of hubs.
+   *   An array of hops.
    */
-  public function getHops($src_ip='') {
+  public function getHops($src_ip = '') {
     $q = (!empty($src_ip)) ? 'destination/' . $src_ip : 'source';
     return $this->query($q);
   }
-
 
   /**
    * Get data from service
@@ -239,4 +238,21 @@ class Ecenter_Data_Service_Client {
     return $this->query('node/'. $ip);
   }
 
+  /**
+   * Get service health over a given time frame
+   *
+   * @param $start
+   *   Start time.
+   * @param $end
+   *   End time.
+   * @return
+   *   Result for this query.
+   */
+  public function getHealth($start, $end) {
+    $params = array(
+      'start' => $start,
+      'end' => $end,
+    );
+    return $this->query('health', $params);
+  }
 }

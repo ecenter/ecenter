@@ -102,10 +102,10 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
 
     $form['field_issue_query']['#access'] = FALSE;
 
-
     $form['title']['#prefix'] = '<div class="title-field-wrapper clearfix">';
     $form['title']['#suffix'] = '</div>';
 
+    $form['revision_information']['#access'] = FALSE;
 
     // If new, populate values and do additional checking
     if (!$form['#node']->nid) {

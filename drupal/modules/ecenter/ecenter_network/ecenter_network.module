@@ -21,6 +21,13 @@ function ecenter_network_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  $items['network/query'] = array(
+    'page callback' => 'ecenter_network_display_data',
+    'page arguments' => array(),
+    'access arguments' => array('access ecenter network'),
+    'type' => MENU_CALLBACK,
+  );
+
   $items['network/health'] = array(
     'page callback' => 'ecenter_network_health',
     'page arguments' => array(),
@@ -424,6 +431,19 @@ function ecenter_network_select_form(&$form_state) {
     $form['results_wrapper']['results']['#value'] = theme('ecenter_network_recent_queries');
   }
   return $form;
+}
+
+// foo..
+function ecenter_network_display_data() {
+  if ($_GET['modal']) {
+    modalframe_child_js();
+  }
+  $query = _ecenter_network_extract_query();
+  $data = ecenter_network_get_data($query['src'], $query['dst'], $query['start'], $query['end']);
+  $preset = openlayers_preset_load('ecenter_network');
+  $map = openlayers_render_map($preset->data, $preset->name);
+  return '<div class="page-network"><div id="content"><div id="network-wrapper">'.
+   $map . theme('ecenter_network_data', $data, $query) .'</div></div></div>';
 }
 
 /**

@@ -337,5 +337,6 @@ function theme_ecenter_issues_data_link($path, $params, $title = NULL) {
 function theme_ecenter_issues_formatter_query_link($element) {
   modalframe_parent_js();
   drupal_add_js(drupal_get_path('module', 'ecenter_issues') .'/js/behaviors.js');
-  return $element['#node']->ecenter_query_modal_link;
+  $node = node_load($element['#node']->nid);
+  return $node->ecenter_query_modal_link;
 }

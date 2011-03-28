@@ -5,7 +5,10 @@
   <div id="hop-wrapper" class="clearfix">
     <?php print $hops; ?>
 
-    <div id="result-links-wrapper"
+    <div id="result-links-wrapper">
+
+      <h2><?php print $title; ?></h2>
+
       <?php if ($issuelink): ?>
       <div class="issuelink">
         <?php print $issuelink; ?>

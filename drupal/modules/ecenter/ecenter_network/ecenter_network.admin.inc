@@ -53,6 +53,13 @@ function ecenter_network_admin_form() {
     '#description' => t('Specify default window of time to query over, in seconds (i.e. 1 hour is 3600 seconds).'),
     '#default_value' => variable_get('ecenter_network_time_window', 7200),
   );
+  $form['service']['ecenter_network_query_resolution'] = array(
+    '#title' => t('Query resolution'),
+    '#type' => 'textfield',
+    '#description' => t('The default query resolution.'),
+    '#default_value' => variable_get('ecenter_network_query_resolution', 50),
+  );
+
 
   $form['performance'] = array(
     '#title' => t('Performance'),
@@ -61,7 +68,7 @@ function ecenter_network_admin_form() {
   $form['performance']['ecenter_network_data_cache_enabled'] = array(
     '#title' => t('Enable data result caching'),
     '#type' => 'checkbox',
-    '#description' => t('Should the Ecenter Network cache results?'),
+    '#description' => t('Should E-center Network cache data results?'),
     '#default_value' => variable_get('ecenter_network_data_cache_enabled', 0),
   );
   $form['performance']['ecenter_network_data_cache_ttl'] = array(
@@ -73,16 +80,27 @@ function ecenter_network_admin_form() {
   $form['performance']['ecenter_network_hop_cache_enabled'] = array(
     '#title' => t('Enable hop result caching'),
     '#type' => 'checkbox',
-    '#description' => t('Should the Ecenter Network cache results?'),
+    '#description' => t('Should E-center Network cache source / destination hop combinations?'),
     '#default_value' => variable_get('ecenter_network_hop_cache_enabled', 0),
   );
   $form['performance']['ecenter_network_hop_cache_ttl'] = array(
     '#title' => t('Hop cache time to live'),
     '#type' => 'textfield',
-    '#description' => t('How long should results be cached, in seconds?'),
+    '#description' => t('How long should hop results be cached, in seconds?'),
     '#default_value' => variable_get('ecenter_network_hop_cache_ttl', 300),
   );
-
+  $form['performance']['ecenter_network_node_cache_enabled'] = array(
+    '#title' => t('Enable node result caching'),
+    '#type' => 'checkbox',
+    '#description' => t('Should E-center Network cache node results?'),
+    '#default_value' => variable_get('ecenter_network_node_cache_enabled', 0),
+  );
+  $form['performance']['ecenter_network_node_cache_ttl'] = array(
+    '#title' => t('Hop cache time to live'),
+    '#type' => 'textfield',
+    '#description' => t('How long should node results be cached, in seconds?'),
+    '#default_value' => variable_get('ecenter_network_node_cache_ttl', 300),
+  );
 
   $form['thresholds_colors'] = array(
     '#title' => t('Threshold colors'),

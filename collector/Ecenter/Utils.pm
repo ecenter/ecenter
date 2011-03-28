@@ -147,12 +147,7 @@ sub refactor_result {
 	    } else {
 	        map {$result->[$j][1]{$_}  += $data_raw->[$i][1]{$_}?$data_raw->[$i][1]{$_}:0}  keys %{$data_raw->[$i][1]};
 	    }	
-	    if( $j > $old_j || $i == ($count-1) ) {
-	        $count_j++ if $i == ($count-1); 
-	        #map {$result->[$old_j][1]{$_} = ($result->[$old_j][1]{$_} &&  $count_j)?
-		#                                  ($result->[$old_j][1]{$_}/$count_j):
-		#				     $result->[$old_j][1]{$_}; } 
-		#			        keys %{$data_raw->[$i][1]};
+
 		$result->[$old_j][0] = ($result->[$old_j][0] &&  $count_j)?int($result->[$old_j][0]/$count_j):$result->[$old_j][0];
 	        if($type eq 'snmp') { 
 		    $result->[$old_j][1]{utilization} /=    $count_j  if $result->[$old_j][1]{utilization} &&  $count_j;
@@ -345,7 +340,7 @@ with this software.  If not, see <http://fermitools.fnal.gov/about/terms.html>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2010, Fermitools
+Copyright (c) 2011, Fermitools
 
 All rights reserved.
 

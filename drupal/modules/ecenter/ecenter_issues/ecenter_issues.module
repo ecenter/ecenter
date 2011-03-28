@@ -32,6 +32,9 @@ function ecenter_issues_theme() {
         'title' => NULL,
       )
     ),
+    'ecenter_issues_formatter_query_link' => array(
+      'arguments' => array('element' => NULL),
+    ),
   );
   return $registry;
 }
@@ -42,6 +45,21 @@ function ecenter_issues_theme() {
 function ecenter_issues_perm() {
   return array('access ecenter issue query values');
 }
+
+
+/**
+* Implementation of hook_field_formatter_info().
+*/
+function ecenter_issues_field_formatter_info() {
+  return array(
+    'query_link' => array(
+      'label' => t('E-Center Query Link'),
+      'field types' => array('nodereference'),
+      'multiple values' => CONTENT_HANDLE_CORE,
+    ),
+  );
+}
+
 
 /**
  * Implementation of hook_init().
@@ -61,8 +79,9 @@ function ecenter_issues_init() {
 function ecenter_issues_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
   if ($node->type == 'issue' && $op == 'load') {
     $query = ecenter_issues_get_node_query($node);
-    $node->ecenter_network_link = theme('ecenter_issues_data_link', 'network', 
-      array('query' => $query, 'attributes' => array('class' => 'issue-modal-frame')),
+    $node->ecenter_query_modal_link = theme('ecenter_issues_data_link', 'network/query', 
+      array('query' => $query + array('modal' => TRUE), 
+      'attributes' => array('class' => 'issue-modalframe')),
       'View query results');
   }
 }
@@ -305,10 +324,16 @@ function theme_ecenter_issues_data_link($path, $params, $title = NULL) {
     array(
       '@src' => $src_value, 
       '@dst' => $dst_value,
-      '@start' => $params['query']['start'], '@end' => $params['query']['end'],
-      '@tz' => str_replace('_', ' ', date_default_timezone_name(TRUE)),  // @TODO this is KNOWN BUGGY, always shows current user's TZ
+      '@start' => $params['start'],
+      '@end' => $params['end'],
     )
   ) : $title;
 
   return l($title, $path, $params);
+}
+
+function theme_ecenter_issues_formatter_query_link($element) {
+  modalframe_parent_js();
+  drupal_add_js(drupal_get_path('module', 'ecenter_issues') .'/js/behaviors.js');
+  return $element['#node']->ecenter_query_modal_link;
 }

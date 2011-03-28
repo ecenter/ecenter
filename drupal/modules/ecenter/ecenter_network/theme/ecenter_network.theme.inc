@@ -58,7 +58,7 @@ function template_preprocess_ecenter_network_data(&$vars) {
 
   // Generate issue link -- encode params for use with custom ecenter_issues
   // module
-  if (module_exists('ecenter_issues') && user_access('create ecenter issue content')) {
+  if (module_exists('ecenter_issues') && user_access('create issue content')) {
     $issue_params = array();
     foreach ($vars['params'] as $key=>$param) {
       $issue_params[] = "$key=$param";
@@ -97,6 +97,8 @@ function theme_ecenter_network_recent_queries($collapse = FALSE) {
   $element['queries'] = array(
     '#type' => 'fieldset',
     '#title' => t('Your recent E-Center Network queries'),
+    '#prefix' => '<div id="recent-queries">',
+    '#suffix' => '</div>',
   );
 
   if (!empty($queries)) {

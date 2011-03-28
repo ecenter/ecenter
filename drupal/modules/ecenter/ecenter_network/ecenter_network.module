@@ -1304,7 +1304,6 @@ function ecenter_network_openlayers_map_preprocess_alter(&$map) {
 
       if ($data && !empty($data['forward'])) {
         $map['layers']['ecenter_traceroute'] = 'ecenter_traceroute';
-        //$map['layer_switcher']['ecenter_traceroute'] = 'ecenter_traceroute';
         $map['layer_styles']['ecenter_traceroute'] = 'ecenter_default';
         $map['layer_activated']['ecenter_traceroute'] = 'ecenter_traceroute';
       }

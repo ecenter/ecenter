@@ -789,7 +789,9 @@ function ecenter_network_ecenter_network_end_to_end_measurements_alter(&$data, $
       $data[$measurement]['timeseries'][$timestamp] = (float) $value;
     }
   }
-  ksort($data[$measurement]['timeseries']);
+  if (!empty($data[$measurement]['timeseries'])) {
+    ksort($data[$measurement]['timeseries']);
+  }
 }
 
 /**
@@ -800,23 +802,10 @@ function ecenter_network_ecenter_network_end_to_end_measurements_statistics_alte
     $values = $measurements['timeseries'];
     $count = count($values);
     $keys = array_keys($values);
-      
-    $floor = round($count / 2) - 1;
-    // Calculate median
-    if ($count % 2 > 0) {
-      $median = $values[$keys[$floor]];
-    }
-    else {
-      $lower = $values[$keys[$floor]];
-      $upper = $values[$keys[$floor + 1]];
-      $median = ($lower + $upper) / 2;
-    }
-      
     $data[$measurement]['statistics'] = array(
       'mean' => array_sum($values)/$count,
-      //'median' => $median,
       'max' => max($values),
-      'min' => min($values),  
+      'min' => min($values),
     );
   }
 }

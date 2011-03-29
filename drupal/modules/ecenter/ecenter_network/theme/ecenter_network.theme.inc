@@ -70,6 +70,16 @@ function template_preprocess_ecenter_network_data(&$vars) {
         'query' => array('query' => $issue_query),
       )
     );
+
+    $query = ecenter_issues_get_query_node($vars['params']);
+    if ($query->nid) {
+      $issue_links = array();
+      $issues = ecenter_issues_get_query_issues($query);
+      foreach ($issues as $issue) {
+        $issue_links[] = l($issue->title, 'node/'. $issue->nid) . t(' by ') . $issue->name;
+      }
+      $vars['issues'] = '<label>'. t('Issues from this query: ') .'</label>'. implode(', ', $issue_links);
+    }
   }
 
 

@@ -192,6 +192,57 @@ function ecenter_issues_issue_add_data($form, &$form_state) {
   global $user;
   $params = ecenter_issues_parse_params($_REQUEST['query']);
 
+  $node = ecenter_issues_get_query_node($params);
+
+  // If query doesn't exist, create new query node
+  if (!$node->nid) {
+    list($src_type, $src_value) = explode(':', $params['src'], 2);
+    list($dst_type, $dst_value) = explode(':', $params['dst'], 2);
+    $src_field_name = 'field_query_src_'. $src_type;
+    $dst_field_name = 'field_query_dst_'. $dst_type;
+
+    $node = new stdClass();
+    $node->type = 'network_query';
+    $node->title = t('@src to @dst, @start - @end',
+      array('@src' => $src_value, '@dst' => $dst_value,
+        '@start' => $start, '@end' => $end,
+      )
+    );
+    $node->uid = $user->uid;
+    $node->created = strtotime("now");
+    $node->changed = strtotime("now");
+    $node->status = 1;
+    $node->comment = 0;
+    $node->promote = 0;
+    $node->moderate = 0;
+    $node->sticky = 0;
+
+    $node->$src_field_name = array(array('value' => $src_value));
+    $node->$dst_field_name = array(array('value' => $dst_value));
+
+    // @TODO this should go in the network_query save routine somehow...
+    $data = ecenter_network_get_data($params['src'], $params['dst'],
+      $params['start'], $params['end']);
+    
+    $node->field_query_data = array(array('value' => serialize($data)));
+    $node->field_query_start = array(array(
+      'value' => $start,
+    ));
+    $node->field_query_end = array(array(
+      'value' => $end,
+    ));
+
+    node_save($node);
+  }
+
+  // Add nid of query node to nodereference field
+  $form_state['values']['field_issue_query'][0] = array('nid' => $node->nid);
+}
+
+/**
+ * ecenter_issues_get_query_node
+ */
+function ecenter_issues_get_query_node($params) {
   list($src_type, $src_value) = explode(':', $params['src'], 2);
   list($dst_type, $dst_value) = explode(':', $params['dst'], 2);
   $src_field_name = 'field_query_src_'. $src_type;
@@ -228,47 +279,22 @@ function ecenter_issues_issue_add_data($form, &$form_state) {
   $nid = db_result(db_query($sql,
     $start_query, $end_query, $src_value, $dst_value));
 
-  // If query doesn't exist, create new query node
-  if (!$nid) {
-    $queryNode = new stdClass();
-    $queryNode->type = 'network_query';
-    $queryNode->title = t('@src to @dst, @start - @end',
-      array('@src' => $src_value, '@dst' => $dst_value,
-        '@start' => $start, '@end' => $end,
-      )
-    );
-    $queryNode->uid = $user->uid;
-    $queryNode->created = strtotime("now");
-    $queryNode->changed = strtotime("now");
-    $queryNode->status = 1;
-    $queryNode->comment = 0;
-    $queryNode->promote = 0;
-    $queryNode->moderate = 0;
-    $queryNode->sticky = 0;
+  return node_load($nid);
+}
 
-    $queryNode->$src_field_name = array(array('value' => $src_value));
-    $queryNode->$dst_field_name = array(array('value' => $dst_value));
+function ecenter_issues_get_query_issues($node) {
+  $query_field = content_fields('field_issue_query');
+  $query_db_info = content_database_info($query_field);
+  $sql = "SELECT n.nid FROM {node} n
+    INNER JOIN {" . $query_db_info['table'] ."} query ON n.vid = query.vid
+    WHERE
+    query.". $query_db_info['columns']['nid']['column'] ." = %d";
 
-    // @TODO this should go in the network_query save routine somehow...
-    $data = ecenter_network_get_data($params['src'], $params['dst'],
-      $params['start'], $params['end']);
-    
-    $queryNode->field_query_data = array(array('value' => serialize($data)));
-    $queryNode->field_query_start = array(array(
-      'value' => $start,
-    ));
-    $queryNode->field_query_end = array(array(
-      'value' => $end,
-    ));
-
-    node_save($queryNode);
+  $result = db_query($sql, $node->nid);
+  while ($issue = db_fetch_object($result)) {
+    $issues[] = node_load($issue->nid);
   }
-  else {
-    $queryNode = node_load($nid);
-  }
-
-  // Add nid of query node to nodereference field
-  $form_state['values']['field_issue_query'][0] = array('nid' => $queryNode->nid);
+  return $issues;
 }
 
 /**

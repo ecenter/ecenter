@@ -814,7 +814,7 @@ function ecenter_network_ecenter_network_end_to_end_measurements_statistics_alte
       
     $data[$measurement]['statistics'] = array(
       'mean' => array_sum($values)/$count,
-      'median' => $median,
+      //'median' => $median,
       'max' => max($values),
       'min' => min($values),  
     );

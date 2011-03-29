@@ -244,7 +244,7 @@ function theme_ecenter_network_hops($hops = array()) {
     $plot_options['linehighlighter'] = array(
       'show' => TRUE,
       'sizeAdjust' => 2.5,
-      'threshold' => 2,
+      'threshold' => 3,
     );
     drupal_alter('ecenter_network_plot_options', $plot_options, 'utilization', 'snmp');
     $options = array(

@@ -11,16 +11,17 @@ function ecenter_issues_content_default_fields() {
     'field_name' => 'field_issue_query',
     'type_name' => 'issue',
     'display_settings' => array(
+      'weight' => '-2',
+      'parent' => '',
       'label' => array(
-        'format' => 'above',
-        'exclude' => 0,
+        'format' => 'hidden',
       ),
       'teaser' => array(
-        'format' => 'default',
+        'format' => 'query_link',
         'exclude' => 0,
       ),
       'full' => array(
-        'format' => 'default',
+        'format' => 'query_link',
         'exclude' => 0,
       ),
       '4' => array(
@@ -66,7 +67,7 @@ function ecenter_issues_content_default_fields() {
       ),
       'default_value_php' => NULL,
       'label' => 'Query',
-      'weight' => '-2',
+      'weight' => '-4',
       'description' => '',
       'type' => 'nodereference_select',
       'module' => 'nodereference',

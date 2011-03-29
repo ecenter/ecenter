@@ -156,16 +156,18 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
         )
       );
 
-      $data_link = theme('ecenter_issues_data_link', 'network',
-        array('query' => $params, 'attributes' => array('class' => 'issue-modalframe')), 
-        t('View query details'));
+      $data_link = theme('ecenter_issues_data_link', 'network/query',
+        array('query' => $params + array('modal' => TRUE), 
+        'attributes' => array('class' => 'issue-modalframe')), 
+        t('View query results'));
     }
     // Editing
     else {
       $query = ecenter_issues_get_node_query($form['#node']);
-      $data_link = theme('ecenter_issues_data_link', 'network', 
-        array('query' => $query, 'attributes' => array('class' => 'issue-modalframe')),
-        t('View query details'));
+      $data_link = theme('ecenter_issues_data_link', 'network/query',
+        array('query' => $query + array('modal' => TRUE), 
+        'attributes' => array('class' => 'issue-modalframe')), 
+        t('View query results'));
     }
 
     // Make 
@@ -320,6 +322,11 @@ function ecenter_issues_get_node_query($node) {
 function theme_ecenter_issues_data_link($path, $params, $title = NULL) {
   list($src_type, $src_value) = explode(':', $params['query']['src'], 2);
   list($dst_type, $dst_value) = explode(':', $params['query']['dst'], 2);
+
+  if ($params['query']['modal']) {
+    modalframe_parent_js();
+    drupal_add_js(drupal_get_path('module', 'ecenter_issues') .'/js/behaviors.js');
+  }
 
   // Default title
   $title = (!$title) ? t('@src to @dst, @start - @end (@tz)',

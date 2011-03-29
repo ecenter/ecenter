@@ -95,7 +95,13 @@
 /* }}} */
 /* Mixins: Misc (.hide) {{{ */
 .hide {
-  display: none;
+  display:none;
+}
+.clear-right {
+  clear: right;
+}
+.clear-left {
+  clear: left;
 }
 /* }}} */
 /* Mixins: Shadows (.shadow, .no_shadow) {{{ */
@@ -134,7 +140,7 @@
 // For making things look like buttons
 .button {
   .vertical_glass_gradient(@color_grey_93; @color_grey_73; @color_grey_80);
-  .round_corner;
+  .round_corner(@intense_corner_radius; @intense_corner_radius; @intense_corner_radius; @intense_corner_radius;);
   text-shadow: 0 1px 1px #fff;
   border: 1px solid @color_grey_53;
   color: @color_grey_20;
@@ -152,13 +158,12 @@
 }
 // For making buttons look like links
 .button_link {
-  .round_corner(0; 0; 0; 0;);
-  border: none;
-  padding: 0;
-  background: none;
-  color: @color_blue;
+  border: none !important;
+  padding: 0 !important;
+  background: none !important;
+  color: @color_blue !important;
   :hover {
-    text-decoration: underline;
+    text-decoration: underline !important;
   }
 }
 /* }}} */
@@ -281,6 +286,18 @@ body.sidebar-right #sidebar-right {
     line-height: 1.5;
     border-bottom: 1px solid #bbb;
   }
+
+  form {
+    .form-item {
+      input, select, textarea {
+        background-color: @color_white;
+        max-width: 150px;
+      }
+      .form-item {
+        display: inline;
+      }
+    }
+  }
 }
 /* }}} */
 /* Links {{{ */
@@ -317,9 +334,7 @@ a {
     font-weight: bold;
     font-size: 1em;
     background-color: transparent;
-    -webkit-border-radius: 7px;
-    -moz-border-radius: 7px;
-    border-radius: 7px;
+    .round_corner(10px; 10px; 10px; 10px;);
     border: 1px solid rgba(255,255,255,0);
     color: @color_black;
     :hover { 
@@ -360,7 +375,7 @@ a {
       font-size: .925em;
     }
     .form-text {
-      .round_corner(7px; 0; 0; 7px;);
+      .round_corner(@intense_corner_radius; 0; 0; @intense_corner_radius;);
       width: 160px;
       margin: 0;
       padding: 0 5px;
@@ -372,7 +387,7 @@ a {
       .button;
       .box;
       height: 1.9em;
-      .round_corner(0; 9px; 9px; 0;);
+      .round_corner(0; @intense_corner_radius; @intense_corner_radius; 0;);
       width: 60px;
       border-color: @color_grey_53;
       border-left: 1px solid @color_grey_73;
@@ -430,12 +445,18 @@ a {
     font-family: @font_droid;
     font-weight: bold;
     margin: 0;
+    a {
+      :hover { 
+        text-decoration: none;
+        background-color: @color_yellow;
+      }
+    }
   }
 
   h1 {
     font-size: 1.8em;
     line-height: 1.6;
-    margin-bottom: 0.83em;
+    margin-bottom: 0;
   }
   h2 {
     font-size: 1.5em;
@@ -587,16 +608,21 @@ a {
 /* Nodes {{{ */
 .node {
   .picture {
-    float: left;
-    margin-right: 6px;
-    margin-top: 5px;
+    .box;
+    margin-right: 5px;
+    img {
+      height: 30px;
+      width: 30px;
+    }
   }
   .field-field-blog-post-authors {
     margin-top: -1.5em;
     margin-bottom: 1.5em;
   }
   .field-field-issue-query {
-    margin-bottom: 1.5em;
+    font-size: @font_size_13;
+    margin-right: 5px;
+    .box;
     a {
       .button;
     }
@@ -604,9 +630,9 @@ a {
 
 }
 .node .submitted, .comment .submitted {
-  line-height: 1;
+  line-height: 27px;
+  font-size: @font_size_13;
   margin-bottom: .5em;
-  font-size: .8em;
   font-weight: bold;
   color: #555;
 }
@@ -628,12 +654,6 @@ a {
 }
 #comments .picture {
   float: left;
-  margin-right: 8px;
-  margin-top: 2px;
-}
-#comments .picture img {
-  width: 32px;
-  height: 32px;
 }
 #comments .comment-title {
   display: none;
@@ -652,30 +672,11 @@ a {
   margin: 0;
 }
 #comments .links li a {
-  display: block;
-  margin-right: 10px;
-  -moz-border-radius: 6px;
-  -webkit-border-radius: 6px;
-  background-color: @color_grey_87;
-  border: 1px solid @color_grey_67;
-  padding: 3px 8px;
+  .box;
+  .button;
+  font-size: @font_size_13;
   line-height: 1;
-  font-size: .7em;
-  color: @color_grey_33;
-  font-weight: bold;
-  text-transform: uppercase;
-  background-image: -webkit-gradient(
-    linear,
-    left bottom,
-    left top,
-    color-stop(0.22, rgb(204,204,204)),
-    color-stop(0.57, rgb(238,238,238))
-  );
-  background-image: -moz-linear-gradient(
-    center bottom,
-    rgb(204,204,204) 22%,
-    rgb(238,238,238) 57%
-  );
+  margin-right: 4px;
 }
 #comment-form .form-item {
   margin-bottom: .5em;
@@ -707,6 +708,15 @@ a {
   border: none !important;
   .oembed-title {
     display: none !important;
+  }
+}
+/* }}} */
+/* Breadcrumbs {{{ */
+.breadcrumb {
+  font-size: @font_size_15;
+  margin-bottom: .75em;
+  a {
+    font-weight: bold;
   }
 }
 /* }}} */
@@ -1171,7 +1181,7 @@ a {
     .box;
     width: 120px;
     font-size: .8em;
-    text-align: right;
+    text-align: right !important;
   } // }}}
   #utilization-tables { // {{{
     float: left;
@@ -1250,7 +1260,10 @@ a {
         display: none;
       }
     }
-    a {
+    .issues {
+      font-size: @font_size_13;
+    }
+    .issuelink a, .permalink a {
       .button;
       display: block;
       text-align: center;
@@ -1258,7 +1271,7 @@ a {
         text-decoration: none;
       }
     }
-    .issuelink, .permalink {
+    .issuelink, .issues, .permalink {
       margin-bottom: 1em;
     }
     .issuelink {
@@ -1458,5 +1471,85 @@ body.page-dashboard h1#page-title {
     background-color: transparent;
     border: none !important;
     padding: 2px 3px !important;
+    max-width: 240px;
   }
 }
+
+#content .view {
+  .row, .views-row {
+    margin-bottom: 1.5em;
+    h3 {
+      margin-bottom: 1.25em;
+      border-bottom: 1px solid @color_grey_73;
+    }
+    span {
+      .box;
+      margin-right: .5em;
+    }
+  }
+}
+
+.views-exposed-form {
+  .views-exposed-widget {
+    width: 250px;
+  }
+  label {
+    .box;
+    width: 80px;
+    font-size: @font_size_13;
+  }
+  .views-widget {
+    .box;
+    width: 150px;
+    input, select, textarea {
+      background-color: @color_white;
+      max-width: 160px;
+    }
+    .form-text {
+      .round_corner(@intense_corner_radius; @intense_corner_radius; @intense_corner_radius; @intense_corner_radius;);
+      padding: 0 6px;
+    }
+    .form-item, .form-select {
+      .box;
+      width: 150px;
+    }
+  }
+  .form-submit {
+    .button;
+  }
+}
+
+#views-exposed-form-ecenter-issues-page-1 {
+  .description {
+    .hide;
+  }
+}
+
+.view-ecenter-issues {
+  span {
+    font-size: @font_size_12;
+  }
+  .query {
+    .box;
+    a {
+      .button;
+      margin-right: 10px;
+      font-size: @font_size_13;
+      .round_corner(@intense_corner_radius; @intense_corner_radius; @intense_corner_radius; @intense_corner_radius;);
+    }
+  }
+  .body {
+    margin-bottom: 1.5em;
+  }
+  .user-picture {
+    .box;
+    clear: left;
+    margin-right: 6px;
+    img {
+      width: 35px;
+      height: 35px;
+    }
+  }
+}
+
+.node

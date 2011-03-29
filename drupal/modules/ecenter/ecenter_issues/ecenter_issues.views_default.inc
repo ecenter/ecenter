@@ -11,17 +11,18 @@ function ecenter_issues_views_default_views() {
   $view->name = 'ecenter_issues';
   $view->description = 'E-Center issues';
   $view->tag = 'ecenter';
-  $view->view_php = '';
   $view->base_table = 'node';
-  $view->is_cacheable = FALSE;
-  $view->api_version = 3.0-alpha1;
+  $view->human_name = '';
+  $view->core = 0;
+  $view->api_version = '3.0-alpha1';
   $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
-  
-/* Display: Defaults */
+
+  /* Display: Defaults */
   $handler = $view->new_display('default', 'Defaults', 'default');
   $handler->display->display_options['title'] = 'Network issues';
   $handler->display->display_options['access']['type'] = 'none';
   $handler->display->display_options['cache']['type'] = 'none';
+  $handler->display->display_options['query']['type'] = 'views_query';
   $handler->display->display_options['exposed_form']['type'] = 'basic';
   $handler->display->display_options['exposed_form']['options']['reset_button'] = TRUE;
   $handler->display->display_options['pager']['type'] = 'full';
@@ -298,7 +299,6 @@ function ecenter_issues_views_default_views() {
   $handler->display->display_options['filters']['uid']['exposed'] = TRUE;
   $handler->display->display_options['filters']['uid']['expose']['operator'] = 'uid_op';
   $handler->display->display_options['filters']['uid']['expose']['label'] = 'Poster';
-  $handler->display->display_options['filters']['uid']['expose']['use_operator'] = 0;
   $handler->display->display_options['filters']['uid']['expose']['identifier'] = 'uid';
   $handler->display->display_options['filters']['uid']['expose']['reduce'] = 0;
   /* Filter: Content: Source Hub (field_query_src_hub) */
@@ -308,9 +308,11 @@ function ecenter_issues_views_default_views() {
   $handler->display->display_options['filters']['field_query_src_hub_value']['relationship'] = 'field_issue_query_nid';
   $handler->display->display_options['filters']['field_query_src_hub_value']['exposed'] = TRUE;
   $handler->display->display_options['filters']['field_query_src_hub_value']['expose']['operator'] = 'field_query_src_hub_value_op';
+  $handler->display->display_options['filters']['field_query_src_hub_value']['expose']['limit_operators'] = array();
   $handler->display->display_options['filters']['field_query_src_hub_value']['expose']['label'] = 'Source';
-  $handler->display->display_options['filters']['field_query_src_hub_value']['expose']['use_operator'] = 0;
   $handler->display->display_options['filters']['field_query_src_hub_value']['expose']['identifier'] = 'src_hub';
+  $handler->display->display_options['filters']['field_query_src_hub_value']['expose']['optional'] = TRUE;
+  $handler->display->display_options['filters']['field_query_src_hub_value']['expose']['single'] = TRUE;
   $handler->display->display_options['filters']['field_query_src_hub_value']['case'] = 0;
   /* Filter: Content: Destination Hub (field_query_dst_hub) */
   $handler->display->display_options['filters']['field_query_dst_hub_value']['id'] = 'field_query_dst_hub_value';
@@ -319,18 +321,48 @@ function ecenter_issues_views_default_views() {
   $handler->display->display_options['filters']['field_query_dst_hub_value']['relationship'] = 'field_issue_query_nid';
   $handler->display->display_options['filters']['field_query_dst_hub_value']['exposed'] = TRUE;
   $handler->display->display_options['filters']['field_query_dst_hub_value']['expose']['operator'] = 'field_query_dst_hub_value_op';
+  $handler->display->display_options['filters']['field_query_dst_hub_value']['expose']['limit_operators'] = array();
   $handler->display->display_options['filters']['field_query_dst_hub_value']['expose']['label'] = 'Destination';
-  $handler->display->display_options['filters']['field_query_dst_hub_value']['expose']['use_operator'] = 0;
   $handler->display->display_options['filters']['field_query_dst_hub_value']['expose']['identifier'] = 'dst_hub';
+  $handler->display->display_options['filters']['field_query_dst_hub_value']['expose']['optional'] = TRUE;
+  $handler->display->display_options['filters']['field_query_dst_hub_value']['expose']['single'] = TRUE;
   $handler->display->display_options['filters']['field_query_dst_hub_value']['case'] = 0;
-  
-/* Display: Page */
+
+  /* Display: Page */
   $handler = $view->new_display('page', 'Page', 'page_1');
   $handler->display->display_options['path'] = 'issues';
   $handler->display->display_options['menu']['type'] = 'normal';
   $handler->display->display_options['menu']['title'] = 'View issues';
   $handler->display->display_options['menu']['weight'] = '15';
   $handler->display->display_options['menu']['name'] = 'primary-links';
+  $translatables['ecenter_issues'] = array(
+    t('Defaults'),
+    t('Network issues'),
+    t('more'),
+    t('Apply'),
+    t('Reset'),
+    t('Sort by'),
+    t('Asc'),
+    t('Desc'),
+    t('Items per page'),
+    t('- All -'),
+    t('Offset'),
+    t('Query'),
+    t('By'),
+    t('Last updated'),
+    t('[comment_count] comments'),
+    t('.'),
+    t(','),
+    t('Last comment'),
+    t('new comments'),
+    t('Node: Last comment time'),
+    t('Node: Post date'),
+    t('Node: Updated date'),
+    t('Poster'),
+    t('Source'),
+    t('Destination'),
+    t('Page'),
+  );
 
   $views[$view->name] = $view;
 

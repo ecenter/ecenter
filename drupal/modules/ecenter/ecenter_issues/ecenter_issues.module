@@ -140,7 +140,7 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
         return;
       }
 
-      // Add submit handler that creates new node reference (or gets the 
+      // Add submit handler that creates new node reference (or gets the
       // old one)
       array_unshift($form['#submit'], 'ecenter_issues_issue_add_data');
 
@@ -151,7 +151,7 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
         array(
           '@src' => $src_value,
           '@dst' => $dst_value,
-          '@start' => $params['start'], 
+          '@start' => $params['start'],
           '@end' => $params['end'],
         )
       );
@@ -205,7 +205,7 @@ function ecenter_issues_issue_add_data($form, &$form_state) {
     $node->type = 'network_query';
     $node->title = t('@src to @dst, @start - @end',
       array('@src' => $src_value, '@dst' => $dst_value,
-        '@start' => $start, '@end' => $end,
+        '@start' => $params['start'], '@end' => $params['end'],
       )
     );
     $node->uid = $user->uid;
@@ -226,10 +226,10 @@ function ecenter_issues_issue_add_data($form, &$form_state) {
     
     $node->field_query_data = array(array('value' => serialize($data)));
     $node->field_query_start = array(array(
-      'value' => $start,
+      'value' => $params['start'],
     ));
     $node->field_query_end = array(array(
-      'value' => $end,
+      'value' => $params['end'],
     ));
 
     node_save($node);

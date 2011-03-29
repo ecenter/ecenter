@@ -106,5 +106,4 @@ function template_preprocess_ecenter_core_sponsors_block(&$vars) {
 /**
  * Theme site info block
  */
-function template_preprocess_ecenter_core_site_info_block(&$vars) {
-}
+function template_preprocess_ecenter_core_site_info_block(&$vars) {}

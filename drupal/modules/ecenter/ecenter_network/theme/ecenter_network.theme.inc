@@ -38,50 +38,51 @@ function template_preprocess_ecenter_network_data(&$vars) {
 
   // Set title
   drupal_set_title(t('E-Center Network Query | ') . $vars['title']);
-
-  // Generate permalink
-  $vars['permalink'] = l(t('Permanent link (bookmark and share results)'), 'network', array(
-    'query' => $vars['params'],
-    'absolute' => TRUE,
-    'attributes' => array('title' => $vars['title']),
-  ));
-  $permalink_field['permalink'] = array(
-    '#id' => 'ecenter-permalink',
-    '#type' => 'textfield',
-    '#size' => 115,
-    '#disabled' => TRUE,
-    '#value' => urldecode(url('network',
-      array('query' => $vars['params'], 'absolute' => TRUE,)
-    )),
-  );
-  $vars['permalink_field'] = drupal_render($permalink_field);
-
-  // Generate issue link -- encode params for use with custom ecenter_issues
-  // module
-  if (module_exists('ecenter_issues') && user_access('create issue content')) {
-    $issue_params = array();
-    foreach ($vars['params'] as $key=>$param) {
-      $issue_params[] = "$key=$param";
-    }
-    $issue_query = urlencode(implode('&', $issue_params));
-
-    $vars['issuelink'] = l('Create issue from these results', 'node/add/issue',
-      array(
-        'query' => array('query' => $issue_query),
-      )
+  
+  if (!$_GET['modal']) {
+    // Generate permalink
+    $vars['permalink'] = l(t('Permanent link (bookmark and share results)'), 'network', array(
+      'query' => $vars['params'],
+      'absolute' => TRUE,
+      'attributes' => array('title' => $vars['title']),
+    ));
+    $permalink_field['permalink'] = array(
+      '#id' => 'ecenter-permalink',
+      '#type' => 'textfield',
+      '#size' => 115,
+      '#disabled' => TRUE,
+      '#value' => urldecode(url('network',
+        array('query' => $vars['params'], 'absolute' => TRUE,)
+      )),
     );
+    $vars['permalink_field'] = drupal_render($permalink_field);
 
-    $query = ecenter_issues_get_query_node($vars['params']);
-    if ($query->nid) {
-      $issue_links = array();
-      $issues = ecenter_issues_get_query_issues($query);
-      foreach ($issues as $issue) {
-        $issue_links[] = l($issue->title, 'node/'. $issue->nid) . t(' by ') . $issue->name;
+    // Generate issue link -- encode params for use with custom ecenter_issues
+    // module
+    if (module_exists('ecenter_issues') && user_access('create issue content')) {
+      $issue_params = array();
+      foreach ($vars['params'] as $key=>$param) {
+        $issue_params[] = "$key=$param";
       }
-      $vars['issues'] = '<label>'. t('Issues from this query: ') .'</label>'. implode(', ', $issue_links);
+      $issue_query = urlencode(implode('&', $issue_params));
+
+      $vars['issuelink'] = l('Create issue from these results', 'node/add/issue',
+        array(
+          'query' => array('query' => $issue_query),
+        )
+      );
+
+      $query = ecenter_issues_get_query_node($vars['params']);
+      if ($query->nid) {
+        $issue_links = array();
+        $issues = ecenter_issues_get_query_issues($query);
+        foreach ($issues as $issue) {
+          $issue_links[] = l($issue->title, 'node/'. $issue->nid) . t(' by ') . $issue->name;
+        }
+        $vars['issues'] = '<label>'. t('Issues from this query: ') .'</label>'. implode(', ', $issue_links);
+      }
     }
   }
-
 
   // End to end measurements
   $vars['end_to_end'] = theme('ecenter_network_end_to_end',

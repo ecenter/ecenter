@@ -298,6 +298,7 @@ function ecenter_issues_views_default_views() {
   $handler->display->display_options['filters']['uid']['value'] = '';
   $handler->display->display_options['filters']['uid']['exposed'] = TRUE;
   $handler->display->display_options['filters']['uid']['expose']['operator'] = 'uid_op';
+  $handler->display->display_options['filters']['uid']['expose']['limit_operators'] = array();
   $handler->display->display_options['filters']['uid']['expose']['label'] = 'Poster';
   $handler->display->display_options['filters']['uid']['expose']['identifier'] = 'uid';
   $handler->display->display_options['filters']['uid']['expose']['reduce'] = 0;
@@ -341,7 +342,7 @@ function ecenter_issues_views_default_views() {
     t('more'),
     t('Apply'),
     t('Reset'),
-    t('Sort by'),
+    t('Sort By'),
     t('Asc'),
     t('Desc'),
     t('Items per page'),

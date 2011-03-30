@@ -69,16 +69,13 @@ function ecenter_network_traceroute_diff($forward, $reverse) {
 function ecenter_network_traceroute_array_keys($hops, $match) {
   $return = array();
   foreach ($hops as $k => $hop) {
-    if ($hop['hop']['hop_ip'] == $match['hop']['hop_ip']) {
+    if ($hop['hop_ip'] == $match['hop_ip']) {
       $return[] = $k;
     }
-    elseif ($hop['hop']['hub'] == $match['hop']['hub']) {
+    elseif ($hop['hub'] == $match['hub']) {
       $return[] = $k;
     }
-    elseif ($hop['hop']['hub_name'] == $match['hop']['hub_name']) {
-      $return[] = $k;
-    }
-    elseif ($hop['hop']['netblock'] == $match['hop']['netblock']) {
+    elseif ($hop['hub_name'] == $match['hub_name']) {
       $return[] = $k;
     }
   }

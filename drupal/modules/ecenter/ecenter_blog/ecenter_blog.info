@@ -1,5 +1,6 @@
 core = "6.x"
 dependencies[] = "features"
+dependencies[] = "semanticviews"
 dependencies[] = "strongarm"
 dependencies[] = "taxonomy"
 dependencies[] = "userreference"

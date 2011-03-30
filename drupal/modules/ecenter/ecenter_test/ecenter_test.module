@@ -27,13 +27,13 @@ function ecenter_test_theme() {
     'ecenter_test_html' => array(
       'arguments' => array(),
     ),
-    'ecenter_test_markdown' => array(
-      'arguments' => array(),
-    ),
     'ecenter_test_combobox' => array(
       'arguments' => array(),
     ),
     'ecenter_test_jqplot' => array(
+      'arguments' => array(),  
+    ),
+    'ecenter_test_ecenter_network' => array(
       'arguments' => array(),  
     ),
   );
@@ -65,10 +65,6 @@ function ecenter_test_menu() {
 
 function theme_ecenter_test_html() {
   return file_get_contents(dirname(__FILE__) . '/markup/html-markup.html');
-}
-
-function theme_ecenter_test_markdown() {
-  return t('Hello world');
 }
 
 function theme_ecenter_test_combobox() {
@@ -128,3 +124,17 @@ function theme_ecenter_test_jqplot() {
   return theme('jqplot_table', $header, $rows, array('id' => 'chart'));
 }
 
+function theme_ecenter_test_ecenter_network() {
+  extract(_ecenter_network_extract_query());
+  if ($src && $dst && $start && $end) {
+    $data = ecenter_network_get_data($src, $dst, $start, $end);
+  }
+  else {
+    $data = ecenter_network_get_data('hub:SLAC', 'hub:ANL', '2011-03-30 19:30:00', '2011-03-30 20:30:00');
+  }
+  //dpm($data['traceroute']['forward']);
+  //dpm($data['traceroute']['reverse']);
+  //dpm($data['traceroute']['diff']);
+  dpm($data);
+  return 'stub';
+}

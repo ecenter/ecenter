@@ -79,7 +79,7 @@ function ecenter_issues_init() {
 function ecenter_issues_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
   if ($node->type == 'issue' && $op == 'load') {
     $query = ecenter_issues_get_node_query($node);
-    $node->ecenter_query_modal_link = theme('ecenter_issues_data_link', 'network/query', 
+    $node->ecenter_query_modal_link = theme('ecenter_issues_data_link', 'network', 
       array('query' => $query + array('modal' => TRUE), 
       'attributes' => array('class' => 'issue-modalframe')),
       'View query results');
@@ -156,7 +156,7 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
         )
       );
 
-      $data_link = theme('ecenter_issues_data_link', 'network/query',
+      $data_link = theme('ecenter_issues_data_link', 'network',
         array('query' => $params + array('modal' => TRUE), 
         'attributes' => array('class' => 'issue-modalframe')), 
         t('View query results'));
@@ -164,7 +164,7 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
     // Editing
     else {
       $query = ecenter_issues_get_node_query($form['#node']);
-      $data_link = theme('ecenter_issues_data_link', 'network/query',
+      $data_link = theme('ecenter_issues_data_link', 'network',
         array('query' => $query + array('modal' => TRUE), 
         'attributes' => array('class' => 'issue-modalframe')), 
         t('View query results'));

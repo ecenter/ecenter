@@ -75,9 +75,6 @@ function ecenter_network_traceroute_array_keys($hops, $match) {
     elseif ($hop['hub'] == $match['hub']) {
       $return[] = $k;
     }
-    elseif ($hop['hub_name'] == $match['hub_name']) {
-      $return[] = $k;
-    }
   }
   return $return;
 }

@@ -67,7 +67,7 @@ sub BUILD {
 after 'url' => sub {
     my ( $self, $arg ) = @_;
     if($arg) {
-        $self->ma(new perfSONAR_PS::Client::MA( { instance => $arg } ));
+        $self->ma(new perfSONAR_PS::Client::MA( { instance => $arg, timeout => 30 } ));
         $self->logger->debug(' MA ' .  $arg  .  ' connected ');
     }
 }; 

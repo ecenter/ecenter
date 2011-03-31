@@ -83,7 +83,7 @@ sub BUILD {
 after 'url' => sub {
     my ( $self, $arg ) = @_;
     if($arg) {
-        $self->ma(new perfSONAR_PS::Client::MA( { instance => $arg } ));
+        $self->ma(new perfSONAR_PS::Client::MA( { instance => $arg, timeout => 30 } ));
         $self->logger->debug(' MA ' .  $arg  .  ' connected ');
     }
 }; 
@@ -175,7 +175,9 @@ sub parse_metadata {
  	my $name      =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='hostName']",  1), 0);
  	my $direction =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='direction']", 1), 0);
  	my $capacity  =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='capacity']",  1), 0);
-	my $eventtype  =  extract( find($metadata->getDocumentElement, "./*[local-name()='subject']/*[local-name()='eventType']",  1), 0);
+	my $eventtype  =  extract( find($metadata->getDocumentElement, "./*[local-name()='eventType']",  1), 0);
+	$eventtype  ||=  extract( find($metadata->getDocumentElement, "./*[local-name()='subject']/*[local-name()='eventType']",  1), 0);
+	
 	
  	$mds->{$id} = {port => $port, ip => $ip, name => $name, direction => $direction, capacity => $capacity, eventtype=>$eventtype};
     }

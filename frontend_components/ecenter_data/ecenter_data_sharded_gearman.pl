@@ -272,15 +272,16 @@ sub process_data {
    my %params = ();
    eval {
      %params = validate(@_, { data       => {type => SCALAR, regex => qr/^(snmp|bwctl|owamp|pinger)$/, optional => 1}, 
-                                id         => {type => SCALAR, regex => qr/^\d+$/, optional => 1}, 
-                                src_ip     => {type => SCALAR, regex => $REG_IP,   optional => 1}, 
-				src_hub    => {type => SCALAR, regex => qr/^\w+$/i,   optional => 1}, 
-                                dst_hub    => {type => SCALAR, regex => qr/^\w+$/i,    optional => 1}, 
-                                dst_ip     => {type => SCALAR, regex => $REG_IP,   optional => 1}, 
-		                start      => {type => SCALAR, regex => $REG_DATE, optional => 1},
-		                end        => {type => SCALAR, regex => $REG_DATE, optional => 1},
-				resolution => {type => SCALAR, regex => qr/^\d+$/, optional => 1},
-			      }
+                              id	 => {type => SCALAR, regex => qr/^\d+$/, optional => 1}, 
+                              src_ip	 => {type => SCALAR, regex => $REG_IP,   optional => 1}, 
+			      src_hub	 => {type => SCALAR, regex => qr/^\w+$/i,   optional => 1}, 
+                              dst_hub	 => {type => SCALAR, regex => qr/^\w+$/i,    optional => 1}, 
+                              dst_ip	 => {type => SCALAR, regex => $REG_IP,   optional => 1}, 
+		              start	 => {type => SCALAR, regex => $REG_DATE, optional => 1},
+		              end	 => {type => SCALAR, regex => $REG_DATE, optional => 1},
+			      resolution => {type => SCALAR, regex => qr/^\d+$/, optional => 1},
+			      timeout	 => {type => SCALAR, regex => qr/^\d+$/, optional => 1},
+			   }
 		 );
     # debug Dumper(\%params );
     ### query allowed  as:?src_ip=131.225.1.1&dst_ip=212.4.4.4&start=2010-05-02%20:01:02&end=2010-05-02%20:01:02
@@ -293,6 +294,11 @@ sub process_data {
         $params{resolution} =  $params{resolution} > 0 && $params{resolution} <= 100?$params{resolution}:100;
     } else {
         $params{resolution} = 50;
+    } 
+    if($params{timeout}) {
+        $params{timeout} =  $params{timeout} > 0 && $params{timeout} <= 1000?$params{timeout}:1000;
+    } else {
+        $params{timeout} = 120;
     }
     #   get epoch or set end default to NOW and start to end-12 hours
    
@@ -356,8 +362,13 @@ sub process_data {
     # end to end data  stats if available
     ### return $data unless $params{src_ip} && $params{dst_ip};
     my %directions = (direct => ['src_ip', 'dst_ip'], reverse => ['dst_ip', 'src_ip'] );
-   
-    my @data_keys = qw/bwctl owamp pinger/;
+    
+    my @data_keys = ();
+    if($params{data}) {
+        @data_keys = ($params{data}) if  $params{data} =~ /^bwctl|owamp|pinger$/;
+    } else {
+        @data_keys =  qw/bwctl owamp pinger/;
+    }
     # my @data_keys = qw/owamp/;
     my %e2e_mds = ();
     map {$data->{$_} = {}} @data_keys;
@@ -396,7 +407,7 @@ sub process_data {
       error "data call  failed - $EVAL_ERROR";
       GeneralException->throw(error => $EVAL_ERROR ); 
   }
-  $task_set->wait(timeout => 120);
+  $task_set->wait(timeout => $params{timeout});
   foreach my $ip_noted (keys %{$data->{snmp}}) { 
         my @result =(); 
         foreach my $time  (sort {$a<=>$b} grep {$_} keys %{$data->{snmp}{$ip_noted}}) { 
@@ -537,7 +548,7 @@ sub get_traceroute {
 			     }
 			    );
     }
-    $task_set->wait();
+    $task_set->wait(timeout => $params->{timeout});
     return {hops => {}, hop_ips => {}} unless  %$hops && %$hop_ips;
     my $ips_str = join (',', map {database('ecenter')->quote($_)} keys %$hop_ips);
     ##  get hub info for each hop in the traceroute

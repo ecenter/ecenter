@@ -732,10 +732,11 @@ function ecenter_network_parse_response($response) {
           $hop['latitude'] = $geo->latitude;
           $hop['geolocated'] = TRUE;
         }
-        $traceroute[$hop['hop_num']] = $hop;
+        $traceroute[$hop['hop_num'] - 1] = $hop;
       }
 
       ksort($traceroute);
+      array_pop($traceroute);
       $parsed_data['traceroute'][$direction] = $traceroute;
     }
   }

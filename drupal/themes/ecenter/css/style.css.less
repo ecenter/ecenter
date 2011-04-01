@@ -1560,13 +1560,25 @@ body.modal {
 
 
 // Tests, @TODO move...
-body.page-ecenter-tests {
+body.page-ecenter-tests #content {
   table {
     font-size: 12px;
+    width: 100%;
+  }
+  .traceroute-test-wrapper {
+    margin-bottom: 3em;
   }
   .traceroute-test-col {
     float: left;
     width: 45%;
-    margin-right: 20px;
+    margin-right: 40px;
+    h3 {
+      font-size: 16px;
+      margin-bottom: 0.5em;
+      text-align: center;
+    }
+  }
+  .trace-label {
+    font-size: 12px;
   }
 }

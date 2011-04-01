@@ -177,8 +177,8 @@ TraceRoute.prototype.drawTraceroute = function(traceroute) {
   var old_row = false;
   var old_match_row = false;
   var last_match = {x : 0, y : 0};
-  var last_reverse_diff_x = {x : 0, y : 0};
-  var last_forward_diff_y = {x : 0, y : 0};
+  var last_reverse_diff = {x : 0, y : 0};
+  var last_forward_diff = {x : 0, y : 0};
 
   for (var i = 0; i < this.data.length; i++) {
     var row = this.data[i];

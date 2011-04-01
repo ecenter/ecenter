@@ -141,6 +141,9 @@ function theme_ecenter_test_ecenter_network() {
 }
 
 function template_preprocess_ecenter_test_visual_traceroute(&$vars) {
+  drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.traceroute.js');
+  drupal_add_js(drupal_get_path('module', 'ecenter_test') .'/ecenter-test.js');
+
   $vars['traceroutes'] = array(
     'base' => array( // Base traceroute
       array(
@@ -394,13 +397,13 @@ function template_preprocess_ecenter_test_visual_traceroute(&$vars) {
       array(
         'hop_ip' => '10.76.11.10',
         'hop_id' => '10_76_11_10',
-        'hub_name' => 'BAZBAR',
+        'hub_name' => 'bazbar',
         'hub' => 'BAZBAR',
       ),
       array(
         'hop_ip' => '10.70.12.155',
         'hop_id' => '10_70_12_155',
-        'hub_name' => 'BAZBAZ',
+        'hub_name' => 'bazbaz',
         'hub' => 'BAZBAZ',
       ),
       array(
@@ -422,7 +425,7 @@ function template_preprocess_ecenter_test_visual_traceroute(&$vars) {
         'hub' => 'BARBAZ',
       ),
     ),
-    'combo' => array( // Base traceroute
+    'combined' => array( // Combo
       array(
         'hop_ip' => '195.34.21.14',
         'hop_id' => '195_34_21_14',
@@ -434,12 +437,6 @@ function template_preprocess_ecenter_test_visual_traceroute(&$vars) {
         'hop_id' => '25_12_29_2',
         'hub_name' => 'bar',
         'hub' => 'BAR',
-      ),
-      array(
-        'hop_ip' => '23.23.120.100',
-        'hop_id' => '23_23_120_100',
-        'hub_name' => 'baz',
-        'hub' => 'BAZ',
       ),
       array(
         'hop_ip' => '92.12.150.200',
@@ -464,6 +461,12 @@ function template_preprocess_ecenter_test_visual_traceroute(&$vars) {
         'hop_id' => '121_74_192_10',
         'hub_name' => 'barfoo',
         'hub' => 'BARFOO',
+      ),
+      array(
+        'hop_ip' => '10.70.12.155',
+        'hop_id' => '10_70_12_155',
+        'hub_name' => 'bazbaz',
+        'hub' => 'BAZBAZ',
       ),
       array(
         'hop_ip' => '92.12.150.200',

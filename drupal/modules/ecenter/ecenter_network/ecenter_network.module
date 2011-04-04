@@ -21,6 +21,13 @@ function ecenter_network_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  $items['network/query'] = array(
+    'page callback' => 'ecenter_network_display_data',
+    'page arguments' => array(),
+    'access arguments' => array('access ecenter network'),
+    'type' => MENU_CALLBACK,
+  );
+
   $items['network/health'] = array(
     'page callback' => 'ecenter_network_health',
     'page arguments' => array(),
@@ -70,8 +77,7 @@ function ecenter_network_theme() {
       )
     ) + $options,
    'ecenter_network_recent_queries' => array(
-      'template' => 'ecenter-network-recent-queries',
-      'arguments' => array(),
+      'arguments' => array('collapse' => NULL),
     ) + $options,
     'ecenter_network_recent_query' => array(
       'arguments' => array(
@@ -412,6 +418,7 @@ function ecenter_network_select_form(&$form_state) {
       drupal_add_js(array('ecenterNetwork' => array('tracerouteData' => $data['traceroute']['diff'])), 'setting');
       drupal_add_js(array('ecenterNetwork' => array('tracerouteMaxLength' => $data['traceroute']['traceroute_max'])), 'setting');
       $form['results_wrapper']['results']['#value'] = theme('ecenter_network_data', $data, $params);
+      $form['results_wrapper']['recent']['#value'] = theme('ecenter_network_recent_queries', TRUE);
     }
     else {
       watchdog('ecenter', 'Query returned no results: <code>@query</code>', array('@query' => $query), WATCHDOG_INFO);
@@ -424,6 +431,19 @@ function ecenter_network_select_form(&$form_state) {
     $form['results_wrapper']['results']['#value'] = theme('ecenter_network_recent_queries');
   }
   return $form;
+}
+
+// foo..
+function ecenter_network_display_data() {
+  if ($_GET['modal']) {
+    modalframe_child_js();
+  }
+  $query = _ecenter_network_extract_query();
+  $data = ecenter_network_get_data($query['src'], $query['dst'], $query['start'], $query['end']);
+  $preset = openlayers_preset_load('ecenter_network');
+  $map = openlayers_render_map($preset->data, $preset->name);
+  return '<div class="page-network"><div id="content"><div id="network-wrapper">'.
+   $map . theme('ecenter_network_data', $data, $query) .'</div></div></div>';
 }
 
 /**
@@ -769,7 +789,9 @@ function ecenter_network_ecenter_network_end_to_end_measurements_alter(&$data, $
       $data[$measurement]['timeseries'][$timestamp] = (float) $value;
     }
   }
-  ksort($data[$measurement]['timeseries']);
+  if (!empty($data[$measurement]['timeseries'])) {
+    ksort($data[$measurement]['timeseries']);
+  }
 }
 
 /**
@@ -780,23 +802,10 @@ function ecenter_network_ecenter_network_end_to_end_measurements_statistics_alte
     $values = $measurements['timeseries'];
     $count = count($values);
     $keys = array_keys($values);
-      
-    $floor = round($count / 2) - 1;
-    // Calculate median
-    if ($count % 2 > 0) {
-      $median = $values[$keys[$floor]];
-    }
-    else {
-      $lower = $values[$keys[$floor]];
-      $upper = $values[$keys[$floor + 1]];
-      $median = ($lower + $upper) / 2;
-    }
-      
     $data[$measurement]['statistics'] = array(
       'mean' => array_sum($values)/$count,
-      'median' => $median,
       'max' => max($values),
-      'min' => min($values),  
+      'min' => min($values),
     );
   }
 }
@@ -1284,7 +1293,6 @@ function ecenter_network_openlayers_map_preprocess_alter(&$map) {
 
       if ($data && !empty($data['forward'])) {
         $map['layers']['ecenter_traceroute'] = 'ecenter_traceroute';
-        //$map['layer_switcher']['ecenter_traceroute'] = 'ecenter_traceroute';
         $map['layer_styles']['ecenter_traceroute'] = 'ecenter_default';
         $map['layer_activated']['ecenter_traceroute'] = 'ecenter_traceroute';
       }

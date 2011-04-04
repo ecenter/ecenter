@@ -63,7 +63,11 @@
     <?php endif; ?>
 
     <div id="content">
+      <?php if ($breadcrumb): ?>
+        <?php print $breadcrumb; ?>
+      <?php endif; ?>
       <?php if (!empty($help)): print $help; endif; ?>
+
       <?php if (!empty($title)): ?><h1 class="title" id="page-title"><?php print $title; ?></h1><?php endif; ?>
       <div id="content-body">
         <?php print $content; ?>

@@ -21,5 +21,15 @@ function ecenter_core_user_default_roles() {
     'name' => 'authenticated user',
   );
 
+  // Exported role: pre authenticated user
+  $roles['pre authenticated user'] = array(
+    'name' => 'pre authenticated user',
+  );
+
+  // Exported role: trusted user
+  $roles['trusted user'] = array(
+    'name' => 'trusted user',
+  );
+
   return $roles;
 }

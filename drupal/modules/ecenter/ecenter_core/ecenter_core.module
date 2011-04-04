@@ -75,6 +75,7 @@ function ecenter_core_form_alter(&$form, &$form_state, $form_id) {
 function template_preprocess_ecenter_core_login_block(&$vars) {
   global $user;
   if ($user->uid > 0) {
+    $links[] = theme('user_picture', $user);
     $links[] = t('Logged in as <span class="bold">@user</span>', array('@user' => $user->name));
     $links[] = l('Settings', 'user');
     $links[] = l(t('Logout'), 'logout');
@@ -105,5 +106,4 @@ function template_preprocess_ecenter_core_sponsors_block(&$vars) {
 /**
  * Theme site info block
  */
-function template_preprocess_ecenter_core_site_info_block(&$vars) {
-}
+function template_preprocess_ecenter_core_site_info_block(&$vars) {}

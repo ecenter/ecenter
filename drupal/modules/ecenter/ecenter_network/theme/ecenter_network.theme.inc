@@ -38,40 +38,51 @@ function template_preprocess_ecenter_network_data(&$vars) {
 
   // Set title
   drupal_set_title(t('E-Center Network Query | ') . $vars['title']);
-
-  // Generate permalink
-  $vars['permalink'] = l(t('Permanent link (bookmark and share results)'), 'network', array(
-    'query' => $vars['params'],
-    'absolute' => TRUE,
-    'attributes' => array('title' => $vars['title']),
-  ));
-  $permalink_field['permalink'] = array(
-    '#id' => 'ecenter-permalink',
-    '#type' => 'textfield',
-    '#size' => 115,
-    '#disabled' => TRUE,
-    '#value' => urldecode(url('network',
-      array('query' => $vars['params'], 'absolute' => TRUE,)
-    )),
-  );
-  $vars['permalink_field'] = drupal_render($permalink_field);
-
-  // Generate issue link -- encode params for use with custom ecenter_issues
-  // module
-  if (module_exists('ecenter_issues') && user_access('create ecenter issue content')) {
-    $issue_params = array();
-    foreach ($vars['params'] as $key=>$param) {
-      $issue_params[] = "$key=$param";
-    }
-    $issue_query = urlencode(implode('&', $issue_params));
-
-    $vars['issuelink'] = l('Create issue from these results', 'node/add/issue',
-      array(
-        'query' => array('query' => $issue_query),
-      )
+  
+  if (!$_GET['modal']) {
+    // Generate permalink
+    $vars['permalink'] = l(t('Permanent link (bookmark and share results)'), 'network', array(
+      'query' => $vars['params'],
+      'absolute' => TRUE,
+      'attributes' => array('title' => $vars['title']),
+    ));
+    $permalink_field['permalink'] = array(
+      '#id' => 'ecenter-permalink',
+      '#type' => 'textfield',
+      '#size' => 115,
+      '#disabled' => TRUE,
+      '#value' => urldecode(url('network',
+        array('query' => $vars['params'], 'absolute' => TRUE,)
+      )),
     );
-  }
+    $vars['permalink_field'] = drupal_render($permalink_field);
 
+    // Generate issue link -- encode params for use with custom ecenter_issues
+    // module
+    if (module_exists('ecenter_issues') && user_access('create issue content')) {
+      $issue_params = array();
+      foreach ($vars['params'] as $key=>$param) {
+        $issue_params[] = "$key=$param";
+      }
+      $issue_query = urlencode(implode('&', $issue_params));
+
+      $vars['issuelink'] = l('Create issue from these results', 'node/add/issue',
+        array(
+          'query' => array('query' => $issue_query),
+        )
+      );
+
+      $query = ecenter_issues_get_query_node($vars['params']);
+      if ($query->nid) {
+        $issue_links = array();
+        $issues = ecenter_issues_get_query_issues($query);
+        foreach ($issues as $issue) {
+          $issue_links[] = l($issue->title, 'node/'. $issue->nid) . t(' by ') . $issue->name;
+        }
+        $vars['issues'] = '<label>'. t('Issues from this query: ') .'</label>'. implode(', ', $issue_links);
+      }
+    }
+  }
 
   // End to end measurements
   $vars['end_to_end'] = theme('ecenter_network_end_to_end',
@@ -85,7 +96,7 @@ function template_preprocess_ecenter_network_data(&$vars) {
 /**
  * Theme recent user queries
  */
-function template_preprocess_ecenter_network_recent_queries(&$vars) {
+function theme_ecenter_network_recent_queries($collapse = FALSE) {
   global $user;
   if ($user->uid > 0) {
     $queries = $user->ecenter_network_queries;
@@ -94,16 +105,34 @@ function template_preprocess_ecenter_network_recent_queries(&$vars) {
     $queries = unserialize(sess_read('ecenter_network_queries'));
   }
 
+  $element['queries'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Your recent E-Center Network queries'),
+    '#prefix' => '<div id="recent-queries">',
+    '#suffix' => '</div>',
+  );
+
   if (!empty($queries)) {
     $links = array();
     foreach ($queries as $query) {
       $links[] = theme('ecenter_network_recent_query', $query['query'], $query['time']);
     }
-    $vars['queries'] = array_reverse($links);
+    $element['queries'] += array(
+      '#collapsible' => $collapse,
+      '#collapsed' => $collapse,
+      'links' => array(
+        '#value' => theme('item_list', array_reverse($links)),
+      ),
+    );
   }
   else {
-    $vars['queries'] = array(t('No recent queries available.'));
+    $element['queries'] = array(
+      'no_queries' => array(
+        '#value' => t('No recent queries available.'),
+      ),
+    );
   }
+  return drupal_render($element);
 }
 
 /**
@@ -216,7 +245,7 @@ function theme_ecenter_network_hops($hops = array()) {
     $plot_options['linehighlighter'] = array(
       'show' => TRUE,
       'sizeAdjust' => 2.5,
-      'threshold' => 2,
+      'threshold' => 3,
     );
     drupal_alter('ecenter_network_plot_options', $plot_options, 'utilization', 'snmp');
     $options = array(
@@ -307,7 +336,7 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
 
     $headers = array(
       array('data' => 'Measurement', 'class' => 'result-header',),
-      t('Average'), t('Median'), t('Max'), t('Min'),
+      t('Average'), t('Max'), t('Min'),
     );
     $vars['table'] = theme('jqplot_table', $headers, $table,
       array('class' => 'end-to-end-table'));

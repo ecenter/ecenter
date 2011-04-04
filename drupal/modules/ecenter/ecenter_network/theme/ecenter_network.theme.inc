@@ -445,8 +445,8 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
     case 'loss':
       $options += $line_options;
       $options['axes']['yaxis']['min'] = 0;
-      $options['axes']['yaxis']['label'] = t('% loss');
-      $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%d%</span>';
+      $options['axes']['yaxis']['label'] = t('loss');
+      $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%d</span>';
       return;
     case 'utilization':
       $options += $line_options;
@@ -533,6 +533,8 @@ function theme_ecenter_network_format_default($value, $type = NULL, $measurement
       $measurement_units = ($units) ? t('ms') : NULL;
       return theme('ecenter_network_format_value', sprintf($format, $value), $measurement_units);
     case 'loss':
+      $format = ($format) ? $format : '%1.1f';
+      return theme('ecenter_network_format_value', sprintf($format, $value));
     case 'lossPercent':
       $format = ($format) ? $format : '%1.1f';
       $measurement_units = ($units) ? t('%') : NULL;

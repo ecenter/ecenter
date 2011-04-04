@@ -719,6 +719,8 @@ function ecenter_network_parse_response($response) {
     $traceroute_direction = ($direction == 'forward') ? 'direct' : 'reverse';
     if (is_array($data[$traceroute_direction .'_traceroute'])) {
       foreach ($data[$traceroute_direction .'_traceroute'] as $series) {
+        usort($series, '_ecenter_network_sort_series');
+        
         // @TODO is this a safe way to get series?
         $hop = array_shift($series);
         $hop += $parsed_data['hops'][$hop['hop_ip']];
@@ -730,21 +732,15 @@ function ecenter_network_parse_response($response) {
           $hop['latitude'] = $geo->latitude;
           $hop['geolocated'] = TRUE;
         }
-
-        // Calculate netblock
-        if ($hop['netblock'] != 'src' && $hop['netblock'] != 'dst') {
-          $mask = (!empty($hop['netmask'])) ? $hop['netmask'] : 24;
-          $hop['netblock'] = long2ip(ip2long($hop['hop_ip']) &
-            ~((1 << (32 - $mask)) - 1));
-        }
         $traceroute[$hop['hop_num'] - 1] = $hop;
       }
 
       ksort($traceroute);
+      array_pop($traceroute);
       $parsed_data['traceroute'][$direction] = $traceroute;
     }
   }
-  
+
   // Calculate diff
   if (!empty($parsed_data['traceroute']['forward']) 
     && !empty($parsed_data['traceroute']['reverse'])) {
@@ -813,8 +809,8 @@ function ecenter_network_ecenter_network_end_to_end_measurements_statistics_alte
 /**
  * Sort traceroute
  */
-function _ecenter_network_sort_traceroute($a, $b) {
-  return ((int) $a['hop_num'] > (int) $b['hop_num']);
+function _ecenter_network_sort_series($a, $b) {
+  return ((int) $a['hop_delay'] > (int) $b['hop_delay']);
 }
 
 /**

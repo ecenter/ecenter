@@ -27,13 +27,17 @@ function ecenter_test_theme() {
     'ecenter_test_html' => array(
       'arguments' => array(),
     ),
-    'ecenter_test_markdown' => array(
-      'arguments' => array(),
-    ),
     'ecenter_test_combobox' => array(
       'arguments' => array(),
     ),
     'ecenter_test_jqplot' => array(
+      'arguments' => array(),  
+    ),
+    'ecenter_test_ecenter_network' => array(
+      'arguments' => array(),  
+    ),
+    'ecenter_test_visual_traceroute' => array(
+      'template' => 'ecenter-test-visual-traceroute',
       'arguments' => array(),  
     ),
   );
@@ -65,10 +69,6 @@ function ecenter_test_menu() {
 
 function theme_ecenter_test_html() {
   return file_get_contents(dirname(__FILE__) . '/markup/html-markup.html');
-}
-
-function theme_ecenter_test_markdown() {
-  return t('Hello world');
 }
 
 function theme_ecenter_test_combobox() {
@@ -128,3 +128,358 @@ function theme_ecenter_test_jqplot() {
   return theme('jqplot_table', $header, $rows, array('id' => 'chart'));
 }
 
+function theme_ecenter_test_ecenter_network() {
+  extract(_ecenter_network_extract_query());
+  if ($src && $dst && $start && $end) {
+    $data = ecenter_network_get_data($src, $dst, $start, $end);
+  }
+  else {
+    $data = ecenter_network_get_data('hub:SLAC', 'hub:ANL', '2011-03-30 19:30:00', '2011-03-30 20:30:00');
+  }
+  dpm($data);
+  return ' ';
+}
+
+function template_preprocess_ecenter_test_visual_traceroute(&$vars) {
+  drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.traceroute.js');
+  drupal_add_js(drupal_get_path('module', 'ecenter_test') .'/ecenter-test.js');
+
+  $vars['traceroutes'] = array(
+    'base' => array( // Base traceroute
+      array(
+        'hop_ip' => '195.34.21.14',
+        'hop_id' => '195_34_21_14',
+        'hub_name' => 'foo',
+        'hub' => 'FOO',
+      ),
+      array(
+        'hop_ip' => '25.12.29.2',
+        'hop_id' => '25_12_29_2',
+        'hub_name' => 'bar',
+        'hub' => 'BAR',
+      ),
+      array(
+        'hop_ip' => '23.23.120.100',
+        'hop_id' => '23_23_120_100',
+        'hub_name' => 'baz',
+        'hub' => 'BAZ',
+      ),
+      array(
+        'hop_ip' => '92.12.150.200',
+        'hop_id' => '92_12_150_200',
+        'hub_name' => 'foofoo',
+        'hub' => 'FOOFOO',
+      ),
+      array(
+        'hop_ip' => '199.135.190.45',
+        'hop_id' => '199_135_190_45',
+        'hub_name' => 'foobar',
+        'hub' => 'FOOBAR',
+      ),
+      array(
+        'hop_ip' => '120.76.192.10',
+        'hop_id' => '120_76_192_10',
+        'hub_name' => 'foobaz',
+        'hub' => 'FOOBAZ',
+      ),
+      array(
+        'hop_ip' => '121.74.192.10',
+        'hop_id' => '121_74_192_10',
+        'hub_name' => 'barfoo',
+        'hub' => 'BARFOO',
+      ),
+      array(
+        'hop_ip' => '92.12.150.200',
+        'hop_id' => '92_12_150_200',
+        'hub_name' => 'barbar',
+        'hub' => 'BARBAR',
+      ),
+      array(
+        'hop_ip' => '111.47.150.2',
+        'hop_id' => '111_47_150_2',
+        'hub_name' => 'barbaz',
+        'hub' => 'BARBAZ',
+      ),
+    ),
+    'missing_one' => array( // Missing hop
+      array(
+        'hop_ip' => '195.34.21.14',
+        'hop_id' => '195_34_21_14',
+        'hub_name' => 'foo',
+        'hub' => 'FOO',
+      ),
+      array(
+        'hop_ip' => '25.12.29.2',
+        'hop_id' => '25_12_29_2',
+        'hub_name' => 'bar',
+        'hub' => 'BAR',
+      ),
+      array(
+        'hop_ip' => '23.23.120.100',
+        'hop_id' => '23_23_120_100',
+        'hub_name' => 'baz',
+        'hub' => 'BAZ',
+      ),
+      array(
+        'hop_ip' => '92.12.150.200',
+        'hop_id' => '92_12_150_200',
+        'hub_name' => 'foofoo',
+        'hub' => 'FOOFOO',
+      ),
+      array(
+        'hop_ip' => '199.135.190.45',
+        'hop_id' => '199_135_190_45',
+        'hub_name' => 'foobar',
+        'hub' => 'FOOBAR',
+      ),
+      array(
+        'hop_ip' => '121.74.192.10',
+        'hop_id' => '121_74_192_10',
+        'hub_name' => 'barfoo',
+        'hub' => 'BARFOO',
+      ),
+      array(
+        'hop_ip' => '92.12.150.200',
+        'hop_id' => '92_12_150_200',
+        'hub_name' => 'barbar',
+        'hub' => 'BARBAR',
+      ),
+      array(
+        'hop_ip' => '111.47.150.2',
+        'hop_id' => '111_47_150_2',
+        'hub_name' => 'barbaz',
+        'hub' => 'BARBAZ',
+      ),
+    ),
+    'missing_multiple' => array( // Skip multiple hops
+      array(
+        'hop_ip' => '195.34.21.14',
+        'hop_id' => '195_34_21_14',
+        'hub_name' => 'foo',
+        'hub' => 'FOO',
+      ),
+      array(
+        'hop_ip' => '23.23.120.100',
+        'hop_id' => '23_23_120_100',
+        'hub_name' => 'baz',
+        'hub' => 'BAZ',
+      ),
+      array(
+        'hop_ip' => '92.12.150.200',
+        'hop_id' => '92_12_150_200',
+        'hub_name' => 'foofoo',
+        'hub' => 'FOOFOO',
+      ),
+      array(
+        'hop_ip' => '199.135.190.45',
+        'hop_id' => '199_135_190_45',
+        'hub_name' => 'foobar',
+        'hub' => 'FOOBAR',
+      ),
+      array(
+        'hop_ip' => '92.12.150.200',
+        'hop_id' => '92_12_150_200',
+        'hub_name' => 'barbar',
+        'hub' => 'BARBAR',
+      ),
+      array(
+        'hop_ip' => '111.47.150.2',
+        'hop_id' => '111_47_150_2',
+        'hub_name' => 'barbaz',
+        'hub' => 'BARBAZ',
+      ),
+    ),
+    'add_one' => array( // Add one hop
+      array(
+        'hop_ip' => '195.34.21.14',
+        'hop_id' => '195_34_21_14',
+        'hub_name' => 'foo',
+        'hub' => 'FOO',
+      ),
+      array(
+        'hop_ip' => '25.12.29.2',
+        'hop_id' => '25_12_29_2',
+        'hub_name' => 'bar',
+        'hub' => 'BAR',
+      ),
+      array(
+        'hop_ip' => '23.23.120.100',
+        'hop_id' => '23_23_120_100',
+        'hub_name' => 'baz',
+        'hub' => 'BAZ',
+      ),
+      array(
+        'hop_ip' => '92.12.150.200',
+        'hop_id' => '92_12_150_200',
+        'hub_name' => 'foofoo',
+        'hub' => 'FOOFOO',
+      ),
+      array(
+        'hop_ip' => '199.135.190.45',
+        'hop_id' => '199_135_190_45',
+        'hub_name' => 'foobar',
+        'hub' => 'FOOBAR',
+      ),
+      array(
+        'hop_ip' => '120.76.192.10',
+        'hop_id' => '120_76_192_10',
+        'hub_name' => 'foobaz',
+        'hub' => 'FOOBAZ',
+      ),
+      array(
+        'hop_ip' => '76.12.150.200',
+        'hop_id' => '76_12_150_200',
+        'hub_name' => 'bazfoo',
+        'hub' => 'BAZFOO',
+      ),
+      array(
+        'hop_ip' => '121.74.192.10',
+        'hop_id' => '121_74_192_10',
+        'hub_name' => 'barfoo',
+        'hub' => 'BARFOO',
+      ),
+      array(
+        'hop_ip' => '92.12.150.200',
+        'hop_id' => '92_12_150_200',
+        'hub_name' => 'barbar',
+        'hub' => 'BARBAR',
+      ),
+      array(
+        'hop_ip' => '111.47.150.2',
+        'hop_id' => '111_47_150_2',
+        'hub_name' => 'barbaz',
+        'hub' => 'BARBAZ',
+      ),
+    ),
+    'add_multiple' => array( // Add multiple hops
+      array(
+        'hop_ip' => '195.34.21.14',
+        'hop_id' => '195_34_21_14',
+        'hub_name' => 'foo',
+        'hub' => 'FOO',
+      ),
+      array(
+        'hop_ip' => '25.12.29.2',
+        'hop_id' => '25_12_29_2',
+        'hub_name' => 'bar',
+        'hub' => 'BAR',
+      ),
+      array(
+        'hop_ip' => '23.23.120.100',
+        'hop_id' => '23_23_120_100',
+        'hub_name' => 'baz',
+        'hub' => 'BAZ',
+      ),
+      array(
+        'hop_ip' => '76.12.150.200',
+        'hop_id' => '76_12_150_200',
+        'hub_name' => 'bazfoo',
+        'hub' => 'BAZFOO',
+      ),
+      array(
+        'hop_ip' => '92.12.150.200',
+        'hop_id' => '92_12_150_200',
+        'hub_name' => 'foofoo',
+        'hub' => 'FOOFOO',
+      ),
+      array(
+        'hop_ip' => '199.135.190.45',
+        'hop_id' => '199_135_190_45',
+        'hub_name' => 'foobar',
+        'hub' => 'FOOBAR',
+      ),
+      array(
+        'hop_ip' => '120.76.192.10',
+        'hop_id' => '120_76_192_10',
+        'hub_name' => 'foobaz',
+        'hub' => 'FOOBAZ',
+      ),
+      array(
+        'hop_ip' => '10.76.11.10',
+        'hop_id' => '10_76_11_10',
+        'hub_name' => 'bazbar',
+        'hub' => 'BAZBAR',
+      ),
+      array(
+        'hop_ip' => '10.70.12.155',
+        'hop_id' => '10_70_12_155',
+        'hub_name' => 'bazbaz',
+        'hub' => 'BAZBAZ',
+      ),
+      array(
+        'hop_ip' => '121.74.192.10',
+        'hop_id' => '121_74_192_10',
+        'hub_name' => 'barfoo',
+        'hub' => 'BARFOO',
+      ),
+      array(
+        'hop_ip' => '92.12.150.200',
+        'hop_id' => '92_12_150_200',
+        'hub_name' => 'barbar',
+        'hub' => 'BARBAR',
+      ),
+      array(
+        'hop_ip' => '111.47.150.2',
+        'hop_id' => '111_47_150_2',
+        'hub_name' => 'barbaz',
+        'hub' => 'BARBAZ',
+      ),
+    ),
+    'combined' => array( // Combo
+      array(
+        'hop_ip' => '195.34.21.14',
+        'hop_id' => '195_34_21_14',
+        'hub_name' => 'foo',
+        'hub' => 'FOO',
+      ),
+      array(
+        'hop_ip' => '25.12.29.2',
+        'hop_id' => '25_12_29_2',
+        'hub_name' => 'bar',
+        'hub' => 'BAR',
+      ),
+      array(
+        'hop_ip' => '92.12.150.200',
+        'hop_id' => '92_12_150_200',
+        'hub_name' => 'foofoo',
+        'hub' => 'FOOFOO',
+      ),
+      array(
+        'hop_ip' => '199.135.190.45',
+        'hop_id' => '199_135_190_45',
+        'hub_name' => 'foobar',
+        'hub' => 'FOOBAR',
+      ),
+      array(
+        'hop_ip' => '120.76.192.10',
+        'hop_id' => '120_76_192_10',
+        'hub_name' => 'foobaz',
+        'hub' => 'FOOBAZ',
+      ),
+      array(
+        'hop_ip' => '121.74.192.10',
+        'hop_id' => '121_74_192_10',
+        'hub_name' => 'barfoo',
+        'hub' => 'BARFOO',
+      ),
+      array(
+        'hop_ip' => '10.70.12.155',
+        'hop_id' => '10_70_12_155',
+        'hub_name' => 'bazbaz',
+        'hub' => 'BAZBAZ',
+      ),
+      array(
+        'hop_ip' => '92.12.150.200',
+        'hop_id' => '92_12_150_200',
+        'hub_name' => 'barbar',
+        'hub' => 'BARBAR',
+      ),
+      array(
+        'hop_ip' => '111.47.150.2',
+        'hop_id' => '111_47_150_2',
+        'hub_name' => 'barbaz',
+        'hub' => 'BARBAZ',
+      ),
+    ),
+  );
+}

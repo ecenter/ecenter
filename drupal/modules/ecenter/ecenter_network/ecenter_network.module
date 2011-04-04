@@ -719,9 +719,8 @@ function ecenter_network_parse_response($response) {
     $traceroute_direction = ($direction == 'forward') ? 'direct' : 'reverse';
     if (is_array($data[$traceroute_direction .'_traceroute'])) {
       foreach ($data[$traceroute_direction .'_traceroute'] as $series) {
+        // Sort series so first hop is best candidate for most likely hop
         usort($series, '_ecenter_network_sort_series');
-        
-        // @TODO is this a safe way to get series?
         $hop = array_shift($series);
         $hop += $parsed_data['hops'][$hop['hop_ip']];
 
@@ -735,8 +734,13 @@ function ecenter_network_parse_response($response) {
         $traceroute[$hop['hop_num'] - 1] = $hop;
       }
 
+      // Sort by hop number
       ksort($traceroute);
-      array_pop($traceroute);
+
+      // Filter out hops which don't have SNMP data
+      // @TODO may require differentiation between no SNMP data and no 
+      // *available* SNMP data. 
+      $traceroute = array_filter($traceroute, '_ecenter_network_filter_traceroute');
       $parsed_data['traceroute'][$direction] = $traceroute;
     }
   }
@@ -770,8 +774,14 @@ function ecenter_network_parse_response($response) {
     $parsed_data['traceroute']['traceroute_max'] = count($diff);
   }
   
-  //dpm($parsed_data, 'parsed'); 
   return $parsed_data;
+}
+
+/**
+ * Filter traceroute results: Hops without 
+ */
+function _ecenter_network_filter_traceroute($hop) {
+  return (!empty($hop['data']['snmp']));
 }
 
 /**

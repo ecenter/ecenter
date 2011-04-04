@@ -141,8 +141,11 @@ function theme_ecenter_test_ecenter_network() {
 }
 
 function template_preprocess_ecenter_test_visual_traceroute(&$vars) {
+  drupal_add_css(libraries_get_path('jquery-svg') .'/jquery.svg.css');
+  drupal_add_js(libraries_get_path('jquery-svg') .'/jquery.svg.js');
   drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.traceroute.js');
   drupal_add_js(drupal_get_path('module', 'ecenter_test') .'/ecenter-test.js');
+
 
   $vars['traceroutes'] = array(
     'base' => array( // Base traceroute

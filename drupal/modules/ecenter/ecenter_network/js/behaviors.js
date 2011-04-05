@@ -16,15 +16,19 @@ Drupal.behaviors.EcenterTraceroute = function(context) {
 
 // Catchall for minor behavior modifications
 Drupal.behaviors.EcenterEvents = function(context) {
+  try { console.log(context, 'EcenterEvents called'); } catch(e) {}
+
   // Clear out results wrapper
   $('#query input[type=hidden]').change(function() {
+    try { console.log('clear results wrapper:', this); } catch(e) {}
     $('#results-wrapper').text('');
   });
-  $('#edit-network-wrapper-query-src-wrapper-src-wrapper input').change(function() {
+  /*$('#edit-network-wrapper-query-src-wrapper-src-wrapper input').change(function() {
+    try { console.log(this, 'src input changed'); } catch(e) {}
     var input = $('#edit-network-wrapper-query-dst-wrapper-dst-wrapper input');
     input.val('');
     input.data('autocomplete')._trigger('change');
-  });
+  });*/
 }
 
 Drupal.behaviors.EcenterShowTables = function(context) {
@@ -32,8 +36,10 @@ Drupal.behaviors.EcenterShowTables = function(context) {
   var hide_label = Drupal.t('Hide data');
   $('<button class="toggle-data">' + show_label + '</button>')
   .toggle(function() {
+    try { console.log(this, 'showing data tables'); } catch(e) {}
     $(this).text(hide_label).parents('.wrapper').find('.data-tables').slideDown('fast');
   }, function() {
+    try { console.log(this, 'hiding data tables'); } catch(e) {}
     $(this).text(show_label).parents('.wrapper').find('.data-tables').slideUp('fast');
   })
   .appendTo($('.chart-title', context));
@@ -46,6 +52,8 @@ EcenterNetwork.selectFeature = function(select) {
   var val = $(this).val().split(':', 2);
   var query_type = val[0];
   var query_value = val[1];
+
+  try { console.log('selectFeature called'); } catch(e) {}
 
   // Iterate over "all" maps for ease.  There should be but one.
   if (query_type == 'hub') {
@@ -84,6 +92,7 @@ Drupal.behaviors.EcenterSelectSetForm = function(context) {
  * and executed once.
  */
 $(document).ready(function() {
+
   // Clear out 'remembered' form values
   var src_input = $('#edit-network-wrapper-query-src-wrapper-src-wrapper input');
   var dst_input = $('#edit-network-wrapper-query-dst-wrapper-dst-wrapper input');
@@ -91,18 +100,24 @@ $(document).ready(function() {
   if (src_input.val() != '' && dst_input.val() == '') {
     src_input.val('');
     src_select.val('');
+    try { console.log('clearing out remembered form values'); } catch(e) {}
     EcenterNetwork.selectFeature.call(src_select, false);
   }
 
   // If a src/dst changes, change the map, too.
   $('#ecenter-network-select-form #src-wrapper select, #ecenter-network-select-form #dst-wrapper select')
   .change(function(e) { 
+    try { console.log('calling select feature', this); } catch(e) {}
     EcenterNetwork.selectFeature.call(this, true);
   });
 
   // Bind to ajaxSend event
   $('#ecenter-network-select-form').bind('ajaxSend', function(ajax, xhr) {
     self = this;
+
+    /*try { console.log(ajax, 'ajax send called: ajax'); } catch(e) {}
+    try { console.log(xhr, 'ajax send called: xhr'); } catch(e) {}
+    try { console.log(this, 'ajax send called: this'); } catch(e) {}*/
 
     // Add overlay...
     $(this).addClass('data-loading').css('position', 'relative');
@@ -122,6 +137,8 @@ $(document).ready(function() {
 
     $('button.cancel', overlay).click(function(e) {
       e.stopPropagation();
+
+      try { console.log('cancel button clicked', xhr); } catch(e) {}
 
       xhr.aborted = true;
       xhr.abort();

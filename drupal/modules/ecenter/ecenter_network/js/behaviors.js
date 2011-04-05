@@ -141,9 +141,6 @@ $(document).ready(function() {
       xhr.aborted = true;
       xhr.abort();
 
-      var input = $('#edit-network-wrapper-query-dst-wrapper-dst-wrapper input');
-      input.val('');
-      input.data('autocomplete')._trigger('change');
       $(self).removeClass('data-loading');
 
       $('.loading-overlay', self).fadeOut('fast', function() {
@@ -154,7 +151,7 @@ $(document).ready(function() {
     });
   });
 
-  // Behind to ahah_end event
+  // Bind to ajaxSuccess event
   $('#ecenter-network-select-form').bind('ajaxSuccess', function() {
     // Add overlay...
     $(this).removeClass('data-loading');
@@ -163,7 +160,15 @@ $(document).ready(function() {
     });
   });
 
-  // Bind to series highlighting
+  // Behind to ajaxError event
+  $('#ecenter-network-select-form').bind('ajaxError', function() {
+    try { console.log('ajaxError triggered'); } catch(e) {}
+    var input = $('#edit-network-wrapper-query-dst-wrapper-dst-wrapper input');
+    input.val('');
+    input.data('autocomplete')._trigger('change');
+  });
+
+  // Bind to series highlight
   $('#results').live('jqplotHighlightSeries', function(e, sidx, plot) {
     if (Drupal.settings.ecenterNetwork.seriesLookupByIndex) {
       var hop = Drupal.settings.ecenterNetwork.seriesLookupByIndex[sidx];

@@ -1,21 +1,6 @@
-// jQuery plugin to create a "subway map" of a traceroute
-
 /**
  * This plugin takes a specially formed array and turns it into a traceroute
  * "subway map".
- *
- * History
- *
- * - 0.1: Got basic diff drawing and parsing working. Vertical "subway map"
- *   detailed hop labels.
- * - 0.2: Current iteration: Horizontal subway map, significantly smaller
- *   implementations.
- * - Future: More configurable and generic plugin:
- *
- * Configurable callbacks could include:
- *    
- * - Increment/calculate next hop location
- * - What to do in various diff conditions
  */
 (function($) {
 
@@ -136,6 +121,35 @@ $.traceroute.prototype.draw = function(data) {
     if (step.diff != undefined) {
       var most_hops = (step.diff.forward.length > step.diff.reverse.length) ? 
         'forward' : 'reverse';
+      var longest_segment = (link_length * (step.diff[most_hops].length + 1));
+  
+      for (j in step.diff.forward) {
+        step.x = last_step.x + link_length;
+        var node_x = step.x + node_center_offset;
+        var node_options = $.extend(this.options.hop.style, {
+          id: 'hop-' + step.diff.forward[j].hub_name}
+        );
+        var node = svg.circle(
+          g, node_x, 95, 
+          this.options.hop.radius,
+          node_options
+        );
+        last_step = step;
+      }
+   
+      // Create labels
+      // @TODO center text
+      //var out_label = svg.text(g, step.x, 125, 
+      //  step.diff.forward[0].hub_name, this.options.label.style);
+    
+      //var in_label = svg.text(g, step.x, 72, 
+      //  step.diff.forward[0].hub_name, this.options.label.style);
+    
+    }
+
+    /*if (step.diff != undefined) {
+      var most_hops = (step.diff.forward.length > step.diff.reverse.length) ? 
+        'forward' : 'reverse';
       var least_hops = (step.diff.forward.length > step.diff.reverse.length) ? 
         'reverse' : 'forward';
       var longest_segment = (link_length * (step.diff[most_hops].length + 1));
@@ -147,7 +161,7 @@ $.traceroute.prototype.draw = function(data) {
         var g = svg.group(nodes, {});
 
         var hop = step.diff.forward[j];
-        //if (most_hops == 'forward') {
+        if (most_hops == 'forward') {
           if (last_step.forward_step == undefined) {
             step.forward_step = { x : last_step.x + link_length, y: 95};
           } else {
@@ -193,7 +207,7 @@ $.traceroute.prototype.draw = function(data) {
           step.diff.reverse[j].hub_name, this.options.label.style);
       }
       last_step = step;
-    }
+    }*/
   }
 }
 

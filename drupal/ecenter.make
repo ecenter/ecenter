@@ -21,13 +21,13 @@ projects[ahah_helper][version] = "2.1"
 
 ; Allow ahah_helper to manipulate all Drupal javascript settings
 ; (may cause instability for untested modules)
-projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/ecenter-1.0-alpha3/raw/drupal/patches/ahah_helper_js_settings.patch"
+projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/buildsystem/raw/drupal/patches/ahah_helper_js_settings.patch"
 
 projects[beautytips][subdir] = "contrib"
 projects[beautytips][version] = "2.0"
 
 projects[conditional_styles][subdir] = "contrib"
-projects[conditional_styles][version] = "1.1"
+projects[conditional_styles][version] = "1.2"
 
 projects[cck][subdir] = "contrib"
 projects[cck][version] = "2.9"

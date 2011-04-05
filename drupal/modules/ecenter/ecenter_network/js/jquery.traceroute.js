@@ -26,8 +26,8 @@ $.fn.traceroute = function(data, options) {
     if (traceroutes[options.tracerouteName] == undefined) {
       traceroutes[options.tracerouteName] = new $.traceroute(this, options);
       $(this).data('traceroute', traceroutes);
+      traceroutes[options.tracerouteName].draw(data);
     }
-    traceroutes[options.tracerouteName].draw(data);
   });
 };
 
@@ -38,10 +38,10 @@ $.fn.traceroute.defaults = {
   'drawArrows' : true,
   'append' : true,
   'link' : {
-    'length' : 45,
+    'length' : 60,
     'style' : {
       'stroke' : '#aaaaaa',
-      'strokeWidth' : 5
+      'strokeWidth' : 4,
     }
   },
   'arrow' : {
@@ -57,18 +57,24 @@ $.fn.traceroute.defaults = {
     'style' : {
       'stroke' : '#0000ff',
       'fill' : '#ffffff',
-      'strokeWidth' : 4
+      'strokeWidth' : 4,
     }
   },
   'label' : {
-    'width' : 63,
-    'top_margin' : 4,
     'style' : {
-      'fontSize' : '12px',
+      'fontSize' : '13px',
       'fill' : '#000000',
-      'fontFamily' : 'Verdana'
+      'fontFamily' : '"Droid Sans", Verdana, sans-serif'
+    },
+  },
+  'description' : {
+    'style' : {
+      'fontSize' : '10px',
+      'fill' : '#444444',
+      'fontFamily' : '"Droid Sans", Verdana, sans-serif'
     }
   }
+  
 };
 
 // Traceroute constructor
@@ -89,24 +95,58 @@ $.traceroute.prototype.draw = function(data) {
     {id: 'surface', 'fill': 'transparent'}
   );
 
+  var node_center_offset = this.options.hop.radius + (this.options.hop.style.strokeWidth / 2);
+  var node_right_offset = 2 * node_center_offset;
+  var link_length = this.options.link.length + node_right_offset;
+  var last_step = { x : 0, y: 0 };
+
+  var links = svg.group('links');
+  var nodes = svg.group('nodes');
+
   for (var i in data) {
     var step = data[i];
     
     if (step.match != undefined) {
-      // Position node
-      var node_y = this.options.hop.radius + this.options.hop.style.strokeWidth + 
-        i * (this.options.link.length + (2 * (this.options.hop.radius + this.options.hop.style.strokeWidth)));
+      var g = svg.group(nodes, 'match-' + step.match.forward[0].hub_name);
       
-      var node_options = $.extend(this.options.hop.style, {id: 'hop-' + step.match.forward[0].hub_name});
+      step.x = (i > 0) ? last_step.x + link_length : 0;
+      var node_x = step.x + node_center_offset;
+
+      //var node_x = node_center_offset + (i * link_length);
+      var node_options = $.extend(this.options.hop.style, {
+        id: 'hop-' + step.match.forward[0].hub_name}
+      );
       var node = svg.circle(
-        node_y, 155, 
+        g, node_x, 95, 
         this.options.hop.radius,
         node_options
       );
    
-      // @TODO replace with theme functions, use svg lib's chaining...
-      var out_label = svg.text(step.match.forward[0].hub_name + ' (' + step.match.forward[0].hop_id + ')', this.options.label.style); 
+      // Create labels
+      // @TODO center text
+      var out_label = svg.text(g, step.x, 125, 
+        step.match.forward[0].hub_name, this.options.label.style);
+    
+      var in_label = svg.text(g, step.x, 72, 
+        step.match.reverse[0].hub_name, this.options.label.style);
+      
+      // Draw lines backwards to last step
+      if (last_step) {
+        if (last_step.match != undefined) {
+          var link_start = last_step.x + node_center_offset;
+          var link_end = step.x + node_center_offset;
+          svg.line(links, link_start, 90, link_end, 90, this.options.link.style);
+          svg.line(links, link_start, 98, link_end, 98, this.options.link.style);
+        }
+      }
     }
+
+    if (step.diff != undefined) {
+      step.x = 20;
+      last_step = step;
+    }
+
+    var last_step = step;
   }
 
 }

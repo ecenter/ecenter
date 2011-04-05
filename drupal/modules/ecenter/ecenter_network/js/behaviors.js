@@ -79,10 +79,8 @@ Drupal.behaviors.EcenterSelectSetForm = function(context) {
   var dst = $('#edit-network-wrapper-query-dst-wrapper-dst');
 
   if (src.val()) {
+    try { console.log('calling select feature for source', this); } catch(e) {}
     EcenterNetwork.selectFeature.call(src.get(0), true);
-  }
-  if (dst.val()) {
-    EcenterNetwork.selectFeature.call(dst.get(0), true);
   }
 }
 

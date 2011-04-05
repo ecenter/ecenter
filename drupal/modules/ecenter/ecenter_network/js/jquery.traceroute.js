@@ -38,7 +38,7 @@ $.fn.traceroute.defaults = {
   'drawArrows' : true,
   'append' : true,
   'link' : {
-    'length' : 60,
+    'length' : 55,
     'style' : {
       'stroke' : '#aaaaaa',
       'strokeWidth' : 4,
@@ -52,8 +52,7 @@ $.fn.traceroute.defaults = {
     }
   },
   'hop' : {
-    'margin' : 6,
-    'radius' : 8,
+    'radius' : 7,
     'style' : {
       'stroke' : '#0000ff',
       'fill' : '#ffffff',
@@ -62,19 +61,11 @@ $.fn.traceroute.defaults = {
   },
   'label' : {
     'style' : {
-      'fontSize' : '13px',
+      'fontSize' : '11px',
       'fill' : '#000000',
       'fontFamily' : '"Droid Sans", Verdana, sans-serif'
     },
   },
-  'description' : {
-    'style' : {
-      'fontSize' : '10px',
-      'fill' : '#444444',
-      'fontFamily' : '"Droid Sans", Verdana, sans-serif'
-    }
-  }
-  
 };
 
 // Traceroute constructor
@@ -98,7 +89,7 @@ $.traceroute.prototype.draw = function(data) {
   var node_center_offset = this.options.hop.radius + (this.options.hop.style.strokeWidth / 2);
   var node_right_offset = 2 * node_center_offset;
   var link_length = this.options.link.length + node_right_offset;
-  var last_step = { x : 0, y: 0 };
+  var last_step = { x : 0, y : 0 };
 
   var links = svg.group('links');
   var nodes = svg.group('nodes');
@@ -139,16 +130,71 @@ $.traceroute.prototype.draw = function(data) {
           svg.line(links, link_start, 98, link_end, 98, this.options.link.style);
         }
       }
-    }
-
-    if (step.diff != undefined) {
-      step.x = 20;
       last_step = step;
     }
 
-    var last_step = step;
-  }
+    if (step.diff != undefined) {
+      var most_hops = (step.diff.forward.length > step.diff.reverse.length) ? 
+        'forward' : 'reverse';
+      var least_hops = (step.diff.forward.length > step.diff.reverse.length) ? 
+        'reverse' : 'forward';
+      var longest_segment = (link_length * (step.diff[most_hops].length + 1));
+      var adjusted_link_length = longest_segment / (step.diff[least_hops].length + 1);
 
+      // Forward
+      for (j in step.diff.forward) {
+
+        var g = svg.group(nodes, {});
+
+        var hop = step.diff.forward[j];
+        //if (most_hops == 'forward') {
+          if (last_step.forward_step == undefined) {
+            step.forward_step = { x : last_step.x + link_length, y: 95};
+          } else {
+            step.forward_step = { x : last_step.forward_step.x + link_length, y: 95};
+          }
+          $.extend(step, step.forward_step);
+        } else {
+          if (last_step.forward_step == undefined) {
+            step.forward_step = { x : last_step.x + adjusted_link_length, y: 95};
+          } else {
+            step.forward_step = { x : last_step.forward_step.x + adjusted_link_length, y: 95};
+          }
+        }
+        svg.circle(g, step.forward_step.x + node_center_offset, step.forward_step.y, this.options.hop.radius, this.options.hop.style);
+        
+        var label = svg.text(g, step.forward_step.x, 125, 
+          step.diff.forward[j].hub_name, this.options.label.style);
+      }
+
+      // Forward
+      for (j in step.diff.reverse) {
+
+        var g = svg.group(nodes, {});
+
+        var hop = step.diff.reverse[j];
+        if (most_hops == 'forward') {
+          if (last_step.reverse_step == undefined) {
+            step.reverse_step = { x : last_step.x + link_length, y: 75};
+          } else {
+            step.reverse_step = { x : last_step.reverse_step.x + link_length, y: 75};
+          }
+          $.extend(step, step.reverse_step);
+        } else {
+          if (last_step.reverse_step == undefined) {
+            step.reverse_step = { x : last_step.x + adjusted_link_length, y: 75};
+          } else {
+            step.reverse_step = { x : last_step.reverse_step.x + adjusted_link_length, y: 75};
+          }
+        }
+        svg.circle(g, step.reverse_step.x + node_center_offset, step.reverse_step.y, this.options.hop.radius, this.options.hop.style);
+        
+        var label = svg.text(g, step.reverse_step.x, 45, 
+          step.diff.reverse[j].hub_name, this.options.label.style);
+      }
+      last_step = step;
+    }
+  }
 }
 
 })(jQuery);

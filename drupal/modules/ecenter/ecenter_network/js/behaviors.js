@@ -3,7 +3,7 @@ $.fn.tablechart.defaults.attachMethod = function(container) {
 }
 
 // Add traceroute
-Drupal.behaviors.EcenterTraceroute = function(context) {
+/*Drupal.behaviors.EcenterTraceroute = function(context) {
   $('#traceroute-wrapper').remove();
   if (Drupal.settings.ecenterNetwork && Drupal.settings.ecenterNetwork.tracerouteData) {
     $('<div id="traceroute-wrapper">')
@@ -12,7 +12,7 @@ Drupal.behaviors.EcenterTraceroute = function(context) {
     .appendTo($('#traceroute-wrapper'))
     .traceroute(Drupal.settings.ecenterNetwork.tracerouteData);
   }
-}
+}*/
 
 // Catchall for minor behavior modifications
 Drupal.behaviors.EcenterEvents = function(context) {

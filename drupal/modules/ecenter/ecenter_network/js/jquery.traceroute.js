@@ -43,7 +43,7 @@ $.fn.traceroute.defaults = {
       'class' : 'marker',
       'stroke' : '#0000ff',
       'fill' : '#ffffff',
-      'strokeWidth' : 4,
+      'strokeWidth' : 4
     }
   },
   'label' : {
@@ -94,7 +94,7 @@ $.traceroute.prototype.draw = function(data) {
     if (row_type == 'diff') {
       var longest_direction = (step.forward.length > step.reverse.length) ? 'forward' : 'reverse';
       var last_diff_x = 0;
-      var adjusted_link_length = link_length - 30;
+      var adjusted_link_length = link_length - 30; // @TODO properly calculate
     }
 
 
@@ -132,10 +132,9 @@ $.traceroute.prototype.draw = function(data) {
         }
         
         // Drawing routines 
-        // @TODO make configurable callback?
         var hop_id = row_type + '-' + direction + '-' + hop.hop_id;
         
-        var hop_class = row_type + '-' + direction + '-' + hop.hub_name;
+        var hop_class = 'node ' + row_type + '-' + direction + '-' + hop.hub_name;
         
         var node = svg.group(node_group, hop_id, {'class' : hop_class});
         
@@ -148,17 +147,26 @@ $.traceroute.prototype.draw = function(data) {
 
         var line_offset = 0;
         if (last_hop != undefined && last_hop[direction] != undefined) {
+          // Last hop in the same direction as this hop
           var last_sibling = last_hop[direction];
+
           var startx = last_sibling.x_offset + marker_center_offset;
           var endx = marker_offset;
+          
           if (direction == 'forward') {
+            
+            // Offset link y-position for parallel forward and reverse "rails"
             if (last_sibling.ttl + 1 == i && last_sibling.type == 'match' && hop.type == 'match') {
               var line_offset = 4;
             }
+
             var link = svg.line(links, startx, 70 + line_offset - last_hop[direction].y_offset, endx, 70 + line_offset - y_offset, this.options.link.style);
+          
           } else {
-            // Non-skip differences
+          
+            // Non-skip differences: The current TTL is 1 ahead of previous sibling hop's TTL
             if (last_sibling.ttl + 1 == i || (last_sibling.type == 'diff' && hop.type == 'diff')) {
+              // Offset link y-position for parallel forward and reverse "rails"
               if (hop.type == 'match' && last_sibling.type == 'match') {
                 line_offset = -4;
               }
@@ -169,12 +177,23 @@ $.traceroute.prototype.draw = function(data) {
               var path = svg.createPath();
               svg.path(links, path.move(startx, 70).curveC([[startx, 45, endx, 45, endx, 70]]), this.options.link.style);
             }
+          
           }
         }
         last_hop[direction] = hop;
       }
     }
   }
+  
+  // Bind behaviors
+  $('.match, .diff .node', svg.root()).bind({
+    'mouseover' : function() {
+      console.log('over', this); 
+    },
+    'mouseout' : function() {
+      console.log('out', this);
+    }
+  });
 }
 
 })(jQuery);

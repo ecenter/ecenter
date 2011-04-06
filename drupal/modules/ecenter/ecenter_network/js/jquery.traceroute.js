@@ -25,6 +25,7 @@ $.fn.traceroute.defaults = {
   'link' : {
     'length' : 55,
     'style' : {
+      'fill' : 'transparent',
       'stroke' : '#aaaaaa',
       'strokeWidth' : 4,
     }
@@ -100,7 +101,7 @@ $.traceroute.prototype.draw = function(data) {
     // Draw markers and labels
     for (var direction in {forward: 1, reverse: 1}) {
       // @TODO make configurable
-      var y_offset = (row_type == 'diff' && direction == 'reverse') ? 35 : 0;
+      var y_offset = (row_type == 'diff' && direction == 'reverse') ? 25 : 0;
 
       for (var j = 0; j < step[direction].length; j++) {
         var hop = step[direction][j];
@@ -146,45 +147,34 @@ $.traceroute.prototype.draw = function(data) {
           hop.hub_name, this.options.label.style);
 
         var line_offset = 0;
-        if (last_hop != undefined) {
-          // draw backwards from this hop to last hop!
-          if (last_hop[direction] != undefined) {
-            var last_sibling = last_hop[direction];
-            var startx = last_sibling.x_offset + marker_center_offset;
-            var endx = marker_offset;
-            if (direction == 'forward') {
-              if (last_sibling.ttl + 1 == i && (last_sibling.type == hop.type)) {
-                var line_offset = 4;
+        if (last_hop != undefined && last_hop[direction] != undefined) {
+          var last_sibling = last_hop[direction];
+          var startx = last_sibling.x_offset + marker_center_offset;
+          var endx = marker_offset;
+          if (direction == 'forward') {
+            if (last_sibling.ttl + 1 == i && last_sibling.type == 'match' && hop.type == 'match') {
+              var line_offset = 4;
+            }
+            var link = svg.line(links, startx, 70 + line_offset - last_hop[direction].y_offset, endx, 70 + line_offset - y_offset, this.options.link.style);
+          } else {
+            // Non-skip differences
+            if (last_sibling.ttl + 1 == i || (last_sibling.type == 'diff' && hop.type == 'diff')) {
+              if (hop.type == 'match' && last_sibling.type == 'match') {
+                line_offset = -4;
               }
               var link = svg.line(links, startx, 70 + line_offset - last_hop[direction].y_offset, endx, 70 + line_offset - y_offset, this.options.link.style);
-            } else {
-              // Non-skip differences
-              if (last_sibling.ttl + 1 == i || (last_sibling.type == 'diff' && hop.type == 'diff')) {
-                line_offset = -4;
-                var link = svg.line(links, startx, 70 + line_offset - last_hop[direction].y_offset, endx, 70 + line_offset - y_offset, this.options.link.style);
-              }
-              // Skip links 
-              else {
-              }
+            }
+            // Skip links 
+            else {
+              var path = svg.createPath();
+              svg.path(links, path.move(startx, 70).curveC([[startx, 45, endx, 45, endx, 70]]), this.options.link.style);
             }
           }
         }
-
         last_hop[direction] = hop;
-
       }
-
     }
   }
-}
-
-function isEmpty(obj) {
-  for (var prop in obj) {
-    if (obj.hasOwnProperty(prop)) {
-      return false;
-    }
-  }
-  return true;
 }
 
 })(jQuery);

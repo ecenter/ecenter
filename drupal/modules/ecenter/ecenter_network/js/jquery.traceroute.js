@@ -81,8 +81,7 @@ $.traceroute.prototype.draw = function(data) {
   var links = svg.group('links');
   var nodes = svg.group('nodes');
   var x_offset = -link_length;
-  var last_match = {}; var last_diff = {};
-
+  var last_hop = {};
 
   for (var i = 0; i < data.length; i++) {
     var row = data[i];
@@ -94,8 +93,9 @@ $.traceroute.prototype.draw = function(data) {
     if (row_type == 'diff') {
       var longest_direction = (step.forward.length > step.reverse.length) ? 'forward' : 'reverse';
       var last_diff_x = 0;
-      var adjusted_link_length = link_length - 10;
+      var adjusted_link_length = link_length - 30;
     }
+
 
     // Draw markers and labels
     for (var direction in {forward: 1, reverse: 1}) {
@@ -105,6 +105,8 @@ $.traceroute.prototype.draw = function(data) {
       for (var j = 0; j < step[direction].length; j++) {
         var hop = step[direction][j];
         
+        $.extend(hop, {'ttl' : i, 'type' : row_type, 'direction' : direction, 'y_offset': y_offset});
+
         if (row_type == 'match') {
           // Only increment x counter once on matches
           if (direction == 'forward') {
@@ -112,10 +114,8 @@ $.traceroute.prototype.draw = function(data) {
           }
           label_offset = x_offset;
           marker_offset = marker_center_offset + label_offset;
-          last_diff = {};
-          last_match[direction] = { step: step, group: node_group, x_offset: x_offset };
+          $.extend(hop, {'x_offset' : x_offset});
         } else {
-          
           // Increment global x_offset when working in longest direction
           if (direction == longest_direction) {
             x_offset += link_length;
@@ -127,8 +127,7 @@ $.traceroute.prototype.draw = function(data) {
           }
           label_offset = last_diff_x;
           marker_offset = marker_center_offset + label_offset;
-          last_match = {};
-          last_diff[direction] = { step: step, group: node_group, x_offset: marker_offset };
+          $.extend(hop, {'x_offset' : last_diff_x});
         }
         
         // Drawing routines 
@@ -145,16 +144,36 @@ $.traceroute.prototype.draw = function(data) {
         var label_height_adjust = (direction == 'reverse') ? -20 - y_offset: 20;
         var label = svg.text(node, label_offset, 73 + label_height_adjust, 
           hop.hub_name, this.options.label.style);
+
+        var line_offset = 0;
+        if (last_hop != undefined) {
+          // draw backwards from this hop to last hop!
+          if (last_hop[direction] != undefined) {
+            var last_sibling = last_hop[direction];
+            var startx = last_sibling.x_offset + marker_center_offset;
+            var endx = marker_offset;
+            if (direction == 'forward') {
+              if (last_sibling.ttl + 1 == i && (last_sibling.type == hop.type)) {
+                var line_offset = 4;
+              }
+              var link = svg.line(links, startx, 70 + line_offset - last_hop[direction].y_offset, endx, 70 + line_offset - y_offset, this.options.link.style);
+            } else {
+              // Non-skip differences
+              if (last_sibling.ttl + 1 == i || (last_sibling.type == 'diff' && hop.type == 'diff')) {
+                line_offset = -4;
+                var link = svg.line(links, startx, 70 + line_offset - last_hop[direction].y_offset, endx, 70 + line_offset - y_offset, this.options.link.style);
+              }
+              // Skip links 
+              else {
+              }
+            }
+          }
+        }
+
+        last_hop[direction] = hop;
+
       }
-    }
 
-    // Draw connectors
-    if (row_type == 'match' && !isEmpty(last_diff)) {
-       
-    }
-
-    if (row_type == 'match' && !isEmpty(last_match)) {
-       
     }
   }
 }

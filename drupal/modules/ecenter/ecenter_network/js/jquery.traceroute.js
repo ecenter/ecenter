@@ -36,9 +36,10 @@ $.fn.traceroute.defaults = {
       'fill' : '#666666'
     }
   },
-  'hop' : {
+  'marker' : {
     'radius' : 7,
     'style' : {
+      'class' : 'marker',
       'stroke' : '#0000ff',
       'fill' : '#ffffff',
       'strokeWidth' : 4,
@@ -46,6 +47,7 @@ $.fn.traceroute.defaults = {
   },
   'label' : {
     'style' : {
+      'class' : 'label',
       'fontSize' : '11px',
       'fill' : '#000000',
       'fontFamily' : '"Droid Sans", Verdana, sans-serif'
@@ -58,8 +60,9 @@ $.traceroute = function(el, options, data) {
   this.el = el;
   this.options = options;
   $(el).css({
-    width: '100%',
-    height: '200px',
+    'width' : '100%',
+    'height' : '100px',
+    'background-color' : '#eeeeee'
   })
   .svg();
 }
@@ -71,7 +74,8 @@ $.traceroute.prototype.draw = function(data) {
     {id: 'surface', 'fill': 'transparent'}
   );
 
-  var node_center_offset = this.options.hop.radius + (this.options.hop.style.strokeWidth / 2);
+  var node_center_offset = this.options.marker.radius + 
+    (this.options.marker.style.strokeWidth / 2);
   var node_right_offset = 2 * node_center_offset;
   var link_length = this.options.link.length + node_right_offset;
   var last_step = { x : 0, y : 0 };
@@ -79,10 +83,37 @@ $.traceroute.prototype.draw = function(data) {
   var links = svg.group('links');
   var nodes = svg.group('nodes');
 
-  for (var i in data) {
+  for (var i = 0; i < data.length; i++) {
     var step = data[i];
-    
-    if (step.match != undefined) {
+   
+    var step_type = (step.match != undefined) ? 'match' : 'diff';
+
+    // Draw markers and labels
+    for (var direction in {forward: 1, reverse: 1}) {
+      for (var j = 0; j < step[step_type][direction].length; j++) {
+        // @TODO make this into configurable callback with calculated position?
+        var hop = step[step_type][direction][j];
+        var hop_id = step_type + '-' + direction + '-' + hop.hop_id;
+        var hop_class = step_type + '-' + direction + '-' + hop.hub_name;
+        var node = svg.group(nodes, hop_id, {'class' : hop_class});
+        var height_adjust = (direction == 'reverse') ? 20 : -20;
+        var marker = svg.circle(node, node_center_offset + (link_length * i), 50, this.options.marker.radius, 
+          this.options.marker.style);
+        var label = svg.text(node, link_length * i, 53 + height_adjust, 
+          hop.hub_name, this.options.label.style);
+      }
+    }
+
+    // Draw lines between nodes
+
+    // Forward
+
+    // Reverse
+    /*for (var j = 0; j < step.forward.length; j++) {
+      
+    }*/
+
+    /*if (step.match != undefined) {
       var g = svg.group(nodes, 'match-' + step.match.forward[0].hub_name);
       
       step.x = (i > 0) ? last_step.x + link_length : 0;
@@ -145,7 +176,7 @@ $.traceroute.prototype.draw = function(data) {
       //var in_label = svg.text(g, step.x, 72, 
       //  step.diff.forward[0].hub_name, this.options.label.style);
     
-    }
+    }*/
 
     /*if (step.diff != undefined) {
       var most_hops = (step.diff.forward.length > step.diff.reverse.length) ? 

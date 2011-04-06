@@ -74,172 +74,98 @@ $.traceroute.prototype.draw = function(data) {
     {id: 'surface', 'fill': 'transparent'}
   );
 
-  var node_center_offset = this.options.marker.radius + 
+  var marker_center_offset = this.options.marker.radius + 
     (this.options.marker.style.strokeWidth / 2);
-  var node_right_offset = 2 * node_center_offset;
-  var link_length = this.options.link.length + node_right_offset;
-  var last_step = { x : 0, y : 0 };
-
+  var marker_right_offset = 2 * marker_center_offset;
+  var link_length = this.options.link.length + marker_right_offset;
   var links = svg.group('links');
   var nodes = svg.group('nodes');
+  var x_offset = -link_length;
+  var last_match = {}; var last_diff = {};
+
 
   for (var i = 0; i < data.length; i++) {
-    var step = data[i];
-   
-    var step_type = (step.match != undefined) ? 'match' : 'diff';
+    var row = data[i];
+    var row_type = (row.match != undefined) ? 'match' : 'diff';
+    var step = row[row_type];
+
+    var node_group = svg.group(nodes, 'step-' + i, {'class' : row_type});
+
+    if (row_type == 'diff') {
+      var longest_direction = (step.forward.length > step.reverse.length) ? 'forward' : 'reverse';
+      var last_diff_x = 0;
+      var adjusted_link_length = link_length - 10;
+    }
 
     // Draw markers and labels
     for (var direction in {forward: 1, reverse: 1}) {
-      for (var j = 0; j < step[step_type][direction].length; j++) {
-        // @TODO make this into configurable callback with calculated position?
-        var hop = step[step_type][direction][j];
-        var hop_id = step_type + '-' + direction + '-' + hop.hop_id;
-        var hop_class = step_type + '-' + direction + '-' + hop.hub_name;
-        var node = svg.group(nodes, hop_id, {'class' : hop_class});
-        var height_adjust = (direction == 'reverse') ? 20 : -20;
-        var marker = svg.circle(node, node_center_offset + (link_length * i), 50, this.options.marker.radius, 
+      // @TODO make configurable
+      var y_offset = (row_type == 'diff' && direction == 'reverse') ? 35 : 0;
+
+      for (var j = 0; j < step[direction].length; j++) {
+        var hop = step[direction][j];
+        
+        if (row_type == 'match') {
+          // Only increment x counter once on matches
+          if (direction == 'forward') {
+            x_offset += link_length;
+          }
+          label_offset = x_offset;
+          marker_offset = marker_center_offset + label_offset;
+          last_diff = {};
+          last_match[direction] = { step: step, group: node_group, x_offset: x_offset };
+        } else {
+          
+          // Increment global x_offset when working in longest direction
+          if (direction == longest_direction) {
+            x_offset += link_length;
+            last_diff_x = x_offset;
+          }
+          else {
+            // @TODO test this...
+            last_diff_x = (j > 0) ? last_diff_x + adjusted_link_length : x_offset + adjusted_link_length;
+          }
+          label_offset = last_diff_x;
+          marker_offset = marker_center_offset + label_offset;
+          last_match = {};
+          last_diff[direction] = { step: step, group: node_group, x_offset: marker_offset };
+        }
+        
+        // Drawing routines 
+        // @TODO make configurable callback?
+        var hop_id = row_type + '-' + direction + '-' + hop.hop_id;
+        
+        var hop_class = row_type + '-' + direction + '-' + hop.hub_name;
+        
+        var node = svg.group(node_group, hop_id, {'class' : hop_class});
+        
+        var marker = svg.circle(node, marker_offset, 70 - y_offset, this.options.marker.radius, 
           this.options.marker.style);
-        var label = svg.text(node, link_length * i, 53 + height_adjust, 
+        
+        var label_height_adjust = (direction == 'reverse') ? -20 - y_offset: 20;
+        var label = svg.text(node, label_offset, 73 + label_height_adjust, 
           hop.hub_name, this.options.label.style);
       }
     }
 
-    // Draw lines between nodes
-
-    // Forward
-
-    // Reverse
-    /*for (var j = 0; j < step.forward.length; j++) {
-      
-    }*/
-
-    /*if (step.match != undefined) {
-      var g = svg.group(nodes, 'match-' + step.match.forward[0].hub_name);
-      
-      step.x = (i > 0) ? last_step.x + link_length : 0;
-      var node_x = step.x + node_center_offset;
-
-      //var node_x = node_center_offset + (i * link_length);
-      var node_options = $.extend(this.options.hop.style, {
-        id: 'hop-' + step.match.forward[0].hub_name}
-      );
-      var node = svg.circle(
-        g, node_x, 95, 
-        this.options.hop.radius,
-        node_options
-      );
-   
-      // Create labels
-      // @TODO center text
-      var out_label = svg.text(g, step.x, 125, 
-        step.match.forward[0].hub_name, this.options.label.style);
-    
-      var in_label = svg.text(g, step.x, 72, 
-        step.match.reverse[0].hub_name, this.options.label.style);
-      
-      // Draw lines backwards to last step
-      if (last_step) {
-        if (last_step.match != undefined) {
-          var link_start = last_step.x + node_center_offset;
-          var link_end = step.x + node_center_offset;
-          svg.line(links, link_start, 90, link_end, 90, this.options.link.style);
-          svg.line(links, link_start, 98, link_end, 98, this.options.link.style);
-        }
-      }
-      last_step = step;
+    // Draw connectors
+    if (row_type == 'match' && !isEmpty(last_diff)) {
+       
     }
 
-    if (step.diff != undefined) {
-      var most_hops = (step.diff.forward.length > step.diff.reverse.length) ? 
-        'forward' : 'reverse';
-      var longest_segment = (link_length * (step.diff[most_hops].length + 1));
-  
-      for (j in step.diff.forward) {
-        step.x = last_step.x + link_length;
-        var node_x = step.x + node_center_offset;
-        var node_options = $.extend(this.options.hop.style, {
-          id: 'hop-' + step.diff.forward[j].hub_name}
-        );
-        var node = svg.circle(
-          g, node_x, 95, 
-          this.options.hop.radius,
-          node_options
-        );
-        last_step = step;
-      }
-   
-      // Create labels
-      // @TODO center text
-      //var out_label = svg.text(g, step.x, 125, 
-      //  step.diff.forward[0].hub_name, this.options.label.style);
-    
-      //var in_label = svg.text(g, step.x, 72, 
-      //  step.diff.forward[0].hub_name, this.options.label.style);
-    
-    }*/
-
-    /*if (step.diff != undefined) {
-      var most_hops = (step.diff.forward.length > step.diff.reverse.length) ? 
-        'forward' : 'reverse';
-      var least_hops = (step.diff.forward.length > step.diff.reverse.length) ? 
-        'reverse' : 'forward';
-      var longest_segment = (link_length * (step.diff[most_hops].length + 1));
-      var adjusted_link_length = longest_segment / (step.diff[least_hops].length + 1);
-
-      // Forward
-      for (j in step.diff.forward) {
-
-        var g = svg.group(nodes, {});
-
-        var hop = step.diff.forward[j];
-        if (most_hops == 'forward') {
-          if (last_step.forward_step == undefined) {
-            step.forward_step = { x : last_step.x + link_length, y: 95};
-          } else {
-            step.forward_step = { x : last_step.forward_step.x + link_length, y: 95};
-          }
-          $.extend(step, step.forward_step);
-        } else {
-          if (last_step.forward_step == undefined) {
-            step.forward_step = { x : last_step.x + adjusted_link_length, y: 95};
-          } else {
-            step.forward_step = { x : last_step.forward_step.x + adjusted_link_length, y: 95};
-          }
-        }
-        svg.circle(g, step.forward_step.x + node_center_offset, step.forward_step.y, this.options.hop.radius, this.options.hop.style);
-        
-        var label = svg.text(g, step.forward_step.x, 125, 
-          step.diff.forward[j].hub_name, this.options.label.style);
-      }
-
-      // Forward
-      for (j in step.diff.reverse) {
-
-        var g = svg.group(nodes, {});
-
-        var hop = step.diff.reverse[j];
-        if (most_hops == 'forward') {
-          if (last_step.reverse_step == undefined) {
-            step.reverse_step = { x : last_step.x + link_length, y: 75};
-          } else {
-            step.reverse_step = { x : last_step.reverse_step.x + link_length, y: 75};
-          }
-          $.extend(step, step.reverse_step);
-        } else {
-          if (last_step.reverse_step == undefined) {
-            step.reverse_step = { x : last_step.x + adjusted_link_length, y: 75};
-          } else {
-            step.reverse_step = { x : last_step.reverse_step.x + adjusted_link_length, y: 75};
-          }
-        }
-        svg.circle(g, step.reverse_step.x + node_center_offset, step.reverse_step.y, this.options.hop.radius, this.options.hop.style);
-        
-        var label = svg.text(g, step.reverse_step.x, 45, 
-          step.diff.reverse[j].hub_name, this.options.label.style);
-      }
-      last_step = step;
-    }*/
+    if (row_type == 'match' && !isEmpty(last_match)) {
+       
+    }
   }
+}
+
+function isEmpty(obj) {
+  for (var prop in obj) {
+    if (obj.hasOwnProperty(prop)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 })(jQuery);

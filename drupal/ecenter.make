@@ -27,7 +27,7 @@ projects[beautytips][subdir] = "contrib"
 projects[beautytips][version] = "2.0"
 
 projects[conditional_styles][subdir] = "contrib"
-projects[conditional_styles][version] = "1.1"
+projects[conditional_styles][version] = "1.2"
 
 projects[cck][subdir] = "contrib"
 projects[cck][version] = "2.9"
@@ -55,7 +55,7 @@ projects[filefield][subdir] = "contrib"
 projects[filefield][version] = "3.9"
 
 projects[geoip][subdir] = "contrib"
-projects[geoip][version] = "1.3"
+projects[geoip][version] = "1.4"
 
 projects[homebox][subdir] = "contrib"
 projects[homebox][version] = "2.1"
@@ -112,12 +112,12 @@ projects[markdownify][type] = "module"
 projects[jquery_ui][subdir] = "contrib"
 projects[jquery_ui][version] = "1.4"
 ; Handle multiple jQuery UI versions
-projects[jquery_ui][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/buildsystem/raw/drupal/patches/jquery_ui_multiple_versions.patch"
+projects[jquery_ui][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/ecenter-1.0-alpha3/raw/drupal/patches/jquery_ui_multiple_versions.patch"
 
 projects[jquery_update][subdir] = "contrib"
 projects[jquery_update][version] = "1.1"
 ; Patch for jQuery 1.4.4, required by jqPlot and jQuery UI 1.8.x
-projects[jquery_update][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/buildsystem/raw/drupal/patches/jquery_update_jquery-1.4.4.patch"
+projects[jquery_update][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/ecenter-1.0-alpha3/raw/drupal/patches/jquery_update_jquery-1.4.4.patch"
 
 projects[less][subdir] = "contrib"
 projects[less][version] = "2.6"
@@ -143,7 +143,7 @@ projects[vertical_tabs][version] = "1.0-rc1"
 projects[views][subdir] = "contrib"
 projects[views][version] = "3.x-dev"
 projects[views][patch][] = "http://drupal.org/files/issues/844910-views.dont-add-field-in-orderby_0.patch"
-projects[views][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/buildsystem/raw/drupal/patches/views_groupwise_max.patch"
+projects[views][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/ecenter-1.0-alpha3/raw/drupal/patches/views_groupwise_max.patch"
 
 projects[wysiwyg][subdir] = "contrib"
 projects[wysiwyg][version] = "2.2"

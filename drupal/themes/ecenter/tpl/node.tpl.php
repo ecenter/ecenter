@@ -7,6 +7,13 @@
   <h2><a href="<?php print $node_url ?>" title="<?php print $title ?>"><?php print $title ?></a></h2>
 <?php endif; ?>
 
+  <?php if ($submitted): ?>
+    <div class="submitted clearfix">
+      <?php print $picture; ?>
+      <?php print $submitted; ?>
+    </div>
+  <?php endif; ?>
+
   <div class="content">
     <?php print $content ?>
   </div>

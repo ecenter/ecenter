@@ -32,6 +32,9 @@ function ecenter_issues_theme() {
         'title' => NULL,
       )
     ),
+    'ecenter_issues_formatter_query_link' => array(
+      'arguments' => array('element' => NULL),
+    ),
   );
   return $registry;
 }
@@ -42,6 +45,21 @@ function ecenter_issues_theme() {
 function ecenter_issues_perm() {
   return array('access ecenter issue query values');
 }
+
+
+/**
+* Implementation of hook_field_formatter_info().
+*/
+function ecenter_issues_field_formatter_info() {
+  return array(
+    'query_link' => array(
+      'label' => t('E-Center Query Link'),
+      'field types' => array('nodereference'),
+      'multiple values' => CONTENT_HANDLE_CORE,
+    ),
+  );
+}
+
 
 /**
  * Implementation of hook_init().
@@ -61,8 +79,9 @@ function ecenter_issues_init() {
 function ecenter_issues_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
   if ($node->type == 'issue' && $op == 'load') {
     $query = ecenter_issues_get_node_query($node);
-    $node->ecenter_network_link = theme('ecenter_issues_data_link', 'network', 
-      array('query' => $query, 'attributes' => array('class' => 'issue-modal-frame')),
+    $node->ecenter_query_modal_link = theme('ecenter_issues_data_link', 'network', 
+      array('query' => $query + array('modal' => TRUE), 
+      'attributes' => array('class' => 'issue-modalframe')),
       'View query results');
   }
 }
@@ -83,10 +102,10 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
 
     $form['field_issue_query']['#access'] = FALSE;
 
-
     $form['title']['#prefix'] = '<div class="title-field-wrapper clearfix">';
     $form['title']['#suffix'] = '</div>';
 
+    $form['revision_information']['#access'] = FALSE;
 
     // If new, populate values and do additional checking
     if (!$form['#node']->nid) {
@@ -121,7 +140,7 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
         return;
       }
 
-      // Add submit handler that creates new node reference (or gets the 
+      // Add submit handler that creates new node reference (or gets the
       // old one)
       array_unshift($form['#submit'], 'ecenter_issues_issue_add_data');
 
@@ -130,21 +149,25 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
       list($dst_type, $dst_value) = explode(':', $params['dst'], 2);
       $form['title']['#default_value'] = t('@src to @dst, @start - @end (UTC)',
         array(
-          '@src' => $src_value, '@dst' => $dst_value,
-          '@start' => $params['start'], '@end' => $params['end'],
+          '@src' => $src_value,
+          '@dst' => $dst_value,
+          '@start' => $params['start'],
+          '@end' => $params['end'],
         )
       );
 
       $data_link = theme('ecenter_issues_data_link', 'network',
-        array('query' => $params, 'attributes' => array('class' => 'issue-modalframe')), 
-        t('View query details'));
+        array('query' => $params + array('modal' => TRUE), 
+        'attributes' => array('class' => 'issue-modalframe')), 
+        t('View query results'));
     }
     // Editing
     else {
       $query = ecenter_issues_get_node_query($form['#node']);
-      $data_link = theme('ecenter_issues_data_link', 'network', 
-        array('query' => $query, 'attributes' => array('class' => 'issue-modalframe')),
-        t('View query details'));
+      $data_link = theme('ecenter_issues_data_link', 'network',
+        array('query' => $query + array('modal' => TRUE), 
+        'attributes' => array('class' => 'issue-modalframe')), 
+        t('View query results'));
     }
 
     // Make 
@@ -169,6 +192,57 @@ function ecenter_issues_issue_add_data($form, &$form_state) {
   global $user;
   $params = ecenter_issues_parse_params($_REQUEST['query']);
 
+  $node = ecenter_issues_get_query_node($params);
+
+  // If query doesn't exist, create new query node
+  if (!$node->nid) {
+    list($src_type, $src_value) = explode(':', $params['src'], 2);
+    list($dst_type, $dst_value) = explode(':', $params['dst'], 2);
+    $src_field_name = 'field_query_src_'. $src_type;
+    $dst_field_name = 'field_query_dst_'. $dst_type;
+
+    $node = new stdClass();
+    $node->type = 'network_query';
+    $node->title = t('@src to @dst, @start - @end',
+      array('@src' => $src_value, '@dst' => $dst_value,
+        '@start' => $params['start'], '@end' => $params['end'],
+      )
+    );
+    $node->uid = $user->uid;
+    $node->created = strtotime("now");
+    $node->changed = strtotime("now");
+    $node->status = 1;
+    $node->comment = 0;
+    $node->promote = 0;
+    $node->moderate = 0;
+    $node->sticky = 0;
+
+    $node->$src_field_name = array(array('value' => $src_value));
+    $node->$dst_field_name = array(array('value' => $dst_value));
+
+    // @TODO this should go in the network_query save routine somehow...
+    $data = ecenter_network_get_data($params['src'], $params['dst'],
+      $params['start'], $params['end']);
+    
+    $node->field_query_data = array(array('value' => serialize($data)));
+    $node->field_query_start = array(array(
+      'value' => $params['start'],
+    ));
+    $node->field_query_end = array(array(
+      'value' => $params['end'],
+    ));
+
+    node_save($node);
+  }
+
+  // Add nid of query node to nodereference field
+  $form_state['values']['field_issue_query'][0] = array('nid' => $node->nid);
+}
+
+/**
+ * ecenter_issues_get_query_node
+ */
+function ecenter_issues_get_query_node($params) {
   list($src_type, $src_value) = explode(':', $params['src'], 2);
   list($dst_type, $dst_value) = explode(':', $params['dst'], 2);
   $src_field_name = 'field_query_src_'. $src_type;
@@ -176,8 +250,10 @@ function ecenter_issues_issue_add_data($form, &$form_state) {
 
   $start = $params['start'];
   $end = $params['end'];
-  $start_query = date_format(date_create($start, timezone_open('UTC')), 'Y-m-d\TH:i:s');
-  $end_query = date_format(date_create($end, timezone_open('UTC')), 'Y-m-d\TH:i:s');
+  $start_query = date_format(date_create($start, timezone_open('UTC')), 
+    'Y-m-d\TH:i:s');
+  $end_query = date_format(date_create($end, timezone_open('UTC')),
+    'Y-m-d\TH:i:s');
 
   // Get all field definitions
   $start_field = content_fields('field_query_start');
@@ -203,46 +279,22 @@ function ecenter_issues_issue_add_data($form, &$form_state) {
   $nid = db_result(db_query($sql,
     $start_query, $end_query, $src_value, $dst_value));
 
-  // If query doesn't exist, create new query node
-  if (!$nid) {
-    $queryNode = new stdClass();
-    $queryNode->type = 'network_query';
-    $queryNode->title = t('@src to @dst, @start - @end',
-      array('@src' => $src_value, '@dst' => $dst_value,
-        '@start' => $start, '@end' => $end,
-      )
-    );
-    $queryNode->uid = $user->uid;
-    $queryNode->created = strtotime("now");
-    $queryNode->changed = strtotime("now");
-    $queryNode->status = 1;
-    $queryNode->comment = 0;
-    $queryNode->promote = 0;
-    $queryNode->moderate = 0;
-    $queryNode->sticky = 0;
+  return node_load($nid);
+}
 
-    $queryNode->$src_field_name = array(array('value' => $src_value));
-    $queryNode->$dst_field_name = array(array('value' => $dst_value));
+function ecenter_issues_get_query_issues($node) {
+  $query_field = content_fields('field_issue_query');
+  $query_db_info = content_database_info($query_field);
+  $sql = "SELECT n.nid FROM {node} n
+    INNER JOIN {" . $query_db_info['table'] ."} query ON n.vid = query.vid
+    WHERE
+    query.". $query_db_info['columns']['nid']['column'] ." = %d";
 
-    // @TODO this should go in the network_query save routine somehow...
-    $data = ecenter_network_get_data($params['src'], $params['dst'], $params['start'], $params['end']);
-    $queryNode->field_query_data = array(array('value' => serialize($data)));
-
-    $queryNode->field_query_start = array(array(
-      'value' => $start,
-    ));
-    $queryNode->field_query_end = array(array(
-      'value' => $end,
-    ));
-
-    node_save($queryNode);
+  $result = db_query($sql, $node->nid);
+  while ($issue = db_fetch_object($result)) {
+    $issues[] = node_load($issue->nid);
   }
-  else {
-    $queryNode = node_load($nid);
-  }
-
-  // Add nid of query node to nodereference field
-  $form_state['values']['field_issue_query'][0] = array('nid' => $queryNode->nid);
+  return $issues;
 }
 
 /**
@@ -275,13 +327,10 @@ function ecenter_issues_parse_params($param_string) {
 function ecenter_issues_get_node_query($node) {
   $query = node_load($node->field_issue_query[0]['nid']);
 
-  $tz = timezone_open(date_default_timezone_name(TRUE));
   $start = date_create($query->field_query_start[0]['value'], 
-    timezone_open($query->field_query_start[0]['timezone']));
+    timezone_open('UTC'));
   $end = date_create($query->field_query_end[0]['value'],
-    timezone_open($query->field_query_end[0]['timezone']));
-  date_timezone_set($start, $tz);
-  date_timezone_set($end, $tz);
+    timezone_open('UTC'));
 
   $query = array(
     'src' => (!empty($query->field_query_src_hub[0]['value'])) ? 
@@ -290,8 +339,8 @@ function ecenter_issues_get_node_query($node) {
     'dst' => (!empty($query->field_query_dst_hub[0]['value'])) ? 
       'hub:'. $query->field_query_dst_hub[0]['value'] :
       'ip:'. $query->field_query_dst_ip[0]['value'],
-    'start' => date_format($start, 'Y-m-d H:i'),
-    'end' => date_format($end, 'Y-m-d H:i'),
+    'start' => date_format($start, 'Y-m-d H:i:s'),
+    'end' => date_format($end, 'Y-m-d H:i:s'),
   );
   return $query;
 }
@@ -300,15 +349,27 @@ function theme_ecenter_issues_data_link($path, $params, $title = NULL) {
   list($src_type, $src_value) = explode(':', $params['query']['src'], 2);
   list($dst_type, $dst_value) = explode(':', $params['query']['dst'], 2);
 
+  if ($params['query']['modal']) {
+    modalframe_parent_js();
+    drupal_add_js(drupal_get_path('module', 'ecenter_issues') .'/js/behaviors.js');
+  }
+
   // Default title
   $title = (!$title) ? t('@src to @dst, @start - @end (@tz)',
     array(
       '@src' => $src_value, 
       '@dst' => $dst_value,
-      '@start' => $params['query']['start'], '@end' => $params['query']['end'],
-      '@tz' => str_replace('_', ' ', date_default_timezone_name(TRUE)),  // @TODO this is KNOWN BUGGY, always shows current user's TZ
+      '@start' => $params['start'],
+      '@end' => $params['end'],
     )
   ) : $title;
 
   return l($title, $path, $params);
+}
+
+function theme_ecenter_issues_formatter_query_link($element) {
+  modalframe_parent_js();
+  drupal_add_js(drupal_get_path('module', 'ecenter_issues') .'/js/behaviors.js');
+  $node = node_load($element['#node']->nid);
+  return $node->ecenter_query_modal_link;
 }

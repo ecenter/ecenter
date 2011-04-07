@@ -53,11 +53,11 @@ perfSONAR-PS - pinger  data retrieval API,see L<Ecenter::Data::Requester> fro mo
 =cut
 
 
-has 'packetsize'  => (is => 'rw', isa => 'Ecenter::Types::PositiveInt', default => '1000');
+has 'packetsize' => (is => 'rw', isa => 'Ecenter::Types::PositiveInt');
 has 'src_regexp' => (is => 'rw', isa => 'Str'); 
 has 'dst_regexp' => (is => 'rw', isa => 'Str');
-has 'src_name' => (is => 'rw', isa => 'Str');
-has 'dst_name' => (is => 'rw', isa => 'Str');
+has 'src_name'   => (is => 'rw', isa => 'Str');
+has 'dst_name'   => (is => 'rw', isa => 'Str');
 
 sub BUILD {
       my $self = shift;
@@ -75,7 +75,7 @@ sub BUILD {
 after 'url' => sub {
     my ( $self, $arg ) = @_;
     if($arg) {
-        $self->ma(new perfSONAR_PS::Client::PingER( { instance => $arg } ));
+        $self->ma(new perfSONAR_PS::Client::PingER( { instance => $arg, timeout => $self->timeout } ));
         $self->logger->debug(' MA ' .  $arg  .  ' connected ');
     }
 }; 

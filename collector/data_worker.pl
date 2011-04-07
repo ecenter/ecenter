@@ -39,6 +39,11 @@ Default: 10221
 
 time period to check if we have complete data cached in the DB
 Default: 1800 seconds from the start and 1800 from the end of the request time slice
+
+=item --timeout=<time period in seconds>
+
+time period to timeout call to the remote perfSONAR-PS service
+Default: 120 seconds
    
 =item --help
 
@@ -93,7 +98,7 @@ my $DATA = { bwctl	=> {table => 'BwctlData',   class => 'Bwctl',      data => [q
      	     traceroute => {table => 'HopData',    callback  => \&process_trace, class => 'Traceroute', data => [qw/hop_ip   hop_num  hop_delay/]},
      	   };
 my %OPTIONS;
-my @string_option_keys = qw/port host pass user db period/;
+my @string_option_keys = qw/port host pass user db period timeout/;
 GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
             qw/debug help/,
@@ -114,6 +119,7 @@ $OPTIONS{host} ||= 'localhost';
 $OPTIONS{port} ||= 10221;
 $OPTIONS{user} ||= 'ecenter';
 $OPTIONS{period} ||= 1800;
+$OPTIONS{timeout} ||= 120;
 $OPTIONS{db} ||= 'ecenter_data';
 my $ready = 0;
 my $pid;
@@ -231,7 +237,7 @@ sub _get_remote_data  {
     my ($request, $dbh) = @_;
     my $result = {status => 'ok', data => [] };
     eval {
-        my $ma =  ("Ecenter::Data::$DATA->{$request->{type}}{class}")->new({ url =>  $request->{md_row}{service} });
+        my $ma =  ("Ecenter::Data::$DATA->{$request->{type}}{class}")->new({ url =>  $request->{md_row}{service} , timeout => $OPTIONS{timeout}});
         my $ns = $ma->namespace;
         my $nsid = $ma->nsid;
 	my $subject = $request->{md_row}{subject};
@@ -393,8 +399,8 @@ sub dispatch_snmp {
     return encode_json  $result  unless  $data_ref && %{$data_ref->{md}};
     # if we have difference on any end more than 30 minutes  then run remote query
     if ($data_ref->{end_time} < 0 || 
-           abs($data_ref->{start_time} - $request->{start}) > 1800 ||
-           abs($data_ref->{end_time}  - $request->{end}) >  1800
+           abs($data_ref->{start_time} - $request->{start}) > $OPTIONS{period} ||
+           abs($data_ref->{end_time}  - $request->{end}) > $OPTIONS{period}
     	) {
     	my (undef, $request_params) = each(%{$data_ref->{md}});
         $logger->info("params to ma: ip=$request_params->{snmp_ip} start=$request->{start} end=$request->{end} ");
@@ -421,7 +427,8 @@ sub  process_trace {
    					 nodename => $sql_datum->{ip_noted},
    					 ip_noted => $sql_datum->{ip_noted}
    					});
-    my %tmp = %$sql_datum;			
+    my %tmp = %$sql_datum;
+    $tmp{hop_ip} =  ref  $tmp{hop_ip}?$tmp{hop_ip}->ip_addr:$tmp{hop_ip};			
     push @{$results->{data}}, \%tmp;
     delete $sql_datum->{ip_noted};
     #delete $sql_datum->{ip_noted};
@@ -446,8 +453,8 @@ sub dispatch_data {
                      abs($start_time - $request->{start}) .  
 		   "... end_dif=" . abs( $request->{end} -  $end_time ));
      
-    if(  abs($end_time   -  $request->{end})	> 1800 ||
-     	  abs($start_time -  $request->{start}) > 1800  ) {
+    if( abs($end_time   -  $request->{end})	> $OPTIONS{period} ||
+     	abs($start_time -  $request->{start}) > $OPTIONS{period} ) {
      	  @{$result->{data}} = () if    $result->{data};
      	  $logger->info("$request->{type} --- params to ma: ip=  $request->{md_row}{service} start= $request->{start} end= $request->{end} ");
      	  return _get_remote_data($request, $dbh);

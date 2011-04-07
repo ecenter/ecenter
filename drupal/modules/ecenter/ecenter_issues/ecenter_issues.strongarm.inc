@@ -137,14 +137,13 @@ function ecenter_issues_strongarm() {
   $strongarm->name = 'content_extra_weights_issue';
   $strongarm->value = array(
     'title' => '-5',
-    'body_field' => '-4',
-    'revision_information' => '-3',
+    'body_field' => '-3',
+    'revision_information' => '-2',
     'author' => '2',
     'options' => '3',
     'comment_settings' => '0',
     'menu' => '1',
     'path' => '-1',
-    'subscriptions_ui' => '4',
   );
 
   $export['content_extra_weights_issue'] = $strongarm;

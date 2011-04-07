@@ -14,7 +14,11 @@
         <?php print $issuelink; ?>
       </div>
       <?php endif; ?>
-
+      <?php if ($issues): ?>
+      <div class="issues">
+        <?php print $issues; ?>
+      </div>
+      <?php endif; ?>
       <?php if ($permalink): ?>
       <div class="permalink">
         <?php print $permalink; ?>

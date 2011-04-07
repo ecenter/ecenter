@@ -5,7 +5,10 @@
  */
 function ecenter_issues_ctools_plugin_api() {
   list($module, $api) = func_get_args();
-  if ($module == "strongarm" && $api == "strongarm") {
+  if ($module == "context" && $api == "context") {
+    return array("version" => 3);
+  }
+  elseif ($module == "strongarm" && $api == "strongarm") {
     return array("version" => 1);
   }
 }
@@ -39,4 +42,13 @@ function ecenter_issues_node_info() {
     ),
   );
   return $items;
+}
+
+/**
+ * Implementation of hook_views_api().
+ */
+function ecenter_issues_views_api() {
+  return array(
+    'api' => '3.0-alpha1',
+  );
 }

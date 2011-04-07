@@ -56,21 +56,22 @@ use English qw( -no_match_vars );
 
 =cut
 
-has 'ma'         => (is => 'rw', isa => 'Object' );
-has 'data'       => (is => 'rw', isa => 'ArrayRef');
-has 'subject'    => (is => 'rw', isa => 'Str');
-has 'metadata'   => (is => 'rw', isa => 'HashRef');
-has  namespace    => (is => 'rw', isa => 'Str');
-has 'url'        => (is => 'rw', isa => 'Str' );
-has 'start'      => (is => 'rw', isa => 'DateTime');
-has 'end'        => (is => 'rw', isa => 'DateTime');
-has 'logger'     => (is => 'rw', isa => 'Log::Log4perl::Logger');
-has 'resolution' => (is => 'rw', isa => 'Ecenter::Types::PositiveInt', default => '5');
-has 'cf'         => (is => 'rw', isa => 'Str', default => 'AVERAGE');
-has  parser       => (is => 'rw', isa => 'Object'); 
-has 'meta_keys'  => (is => 'rw', isa => 'ArrayRef');
+has ma         => (is => 'rw', isa => 'Object' );
+has data       => (is => 'rw', isa => 'ArrayRef');
+has subject    => (is => 'rw', isa => 'Str');
+has metadata   => (is => 'rw', isa => 'HashRef');
+has namespace  => (is => 'rw', isa => 'Str');
+has url        => (is => 'rw', isa => 'Str' );
+has start      => (is => 'rw', isa => 'DateTime');
+has end        => (is => 'rw', isa => 'DateTime');
+has logger     => (is => 'rw', isa => 'Log::Log4perl::Logger');
+has resolution => (is => 'rw', isa => 'Ecenter::Types::PositiveInt', default => '5');
+has timeout    => (is => 'rw', isa => 'Ecenter::Types::PositiveInt', default => '120');
+has cf         => (is => 'rw', isa => 'Str', default => 'AVERAGE');
+has parser     => (is => 'rw', isa => 'Object'); 
+has meta_keys  => (is => 'rw', isa => 'ArrayRef');
 has eventtypes => (is => 'rw', isa => 'ArrayRef');
-has nsid => (is => 'rw', isa => 'Str'); 
+has nsid       => (is => 'rw', isa => 'Str'); 
 
 sub BUILD { 
       my $self = shift;

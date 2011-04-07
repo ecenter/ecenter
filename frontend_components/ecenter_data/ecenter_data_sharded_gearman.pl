@@ -62,6 +62,7 @@ any ['get'] =>  "/health.:format" =>
        sub {
  	      return get_health(params('query'));
        };
+
 ## get all hubs for src_ip/dst_ip
 any ['get'] =>  "/source.:format" => 
        sub {
@@ -133,14 +134,12 @@ any ['get', 'post'] =>  '/data.:format' =>
 #   deal with dates
 #
 sub _params_to_date {
-     my %params = validate(@_, { start  => {type => SCALAR, regex => $REG_DATE, optional => 1},
-		                 end    => {type => SCALAR, regex => $REG_DATE, optional => 1},
+     my %params = validate(@_, { start  => {type => SCALAR, regex => $REG_DATE, optional =>  1},
+		                 end    => {type => SCALAR, regex => $REG_DATE, optional =>  1},
 			    }
 	       );
-    $params{end} =  DateTime::Format::MySQL->parse_datetime( $params{end} )->epoch if $params{end};
-    $params{end} ||=  time();
-    $params{start} = DateTime::Format::MySQL->parse_datetime($params{start})->epoch if $params{start};
-    $params{start} ||=  ($params{end}  - 12*3600);
+    $params{end}  =  $params{end}?DateTime::Format::MySQL->parse_datetime( $params{end} )->epoch:time();
+    $params{start}  = $params{start}?DateTime::Format::MySQL->parse_datetime($params{start})->epoch:$params{end} - 12*3600;
     map { $params{$_}{end} =  $params{end};   
           $params{$_}{start} =  $params{start}
 	} 
@@ -157,39 +156,58 @@ sub _params_to_date {
 # return hash with error string for each non-healthy part of the data service
 #
 #
+
 sub get_health {
-    my $params = _params_to_date(@_);
+    my %req_params =  validate(@_, { start  => {type => SCALAR, regex => $REG_DATE, optional => 1},
+    	                             end    => {type => SCALAR, regex => $REG_DATE, optional => 1},
+    	                             hub    => {type => SCALAR, regex => qr/^\w+$/i,optional => 1},
+				     data    => {type => SCALAR, regex => qr/^(snmp|traceroute|bwctl|owamp|pinger)$/i, optional => 1}, 
+				  });
+    debug Dumper(@_);
+    my @dates =  map{$_ => $req_params{$_} } grep($req_params{$_}, qw/start end/);
+    my $params  =  _params_to_date( @dates  );
     my @services = ();
-    my %health = (); 
-    foreach my $site ( @HEALTH_NAMES ) {
-        foreach my $type (qw/bwctl pinger owamp traceroute/) {
-    	    my $e2e_sql = qq|select  distinct m.metaid  from metadata m
-					        		join node n_src on(m.src_ip = n_src.ip_addr) 
-							 	join eventtype e on(m.eventtype_id = e.ref_id)
-								join service s  on (e.service = s.service)
-							  where  
-								n_src.nodename like '%$site%'   and
-								e.service_type  = '$type' and
-								s.service  like 'http%' |;
-	    debug " E2E SQL:: $e2e_sql";
-	    my @mds=  @{database('ecenter')->selectall_arrayref($e2e_sql)}; 
-	    debug " MDS::" . Dumper \@mds;
-	    $health{metadata}{$site}{$type}{metadata_count} = scalar @mds;
-	    $health{time_period}{$type}{start} =   $params->{$type}{start};
-	    $health{time_period}{$type}{end} =   $params->{$type}{end};
-	    if(@mds) {
-	        my $md_ins = join("','", map {$_->[0]} @mds);
-		my $table = $type eq 'traceroute'?'hop':$type;
-		my $shards = _get_shards({data => $table,start => $params->{$type}{start},end => $params->{$type}{end}});
-		foreach my $shard (sort  { $a <=> $b } keys %$shards) {
-		    my $sql = qq|select count(*) from  $shards->{$shard}{table}{dbi}  
-		                 where metaid in  ('$md_ins') and  timestamp >=  $shards->{$shard}{start} and  timestamp <= $shards->{$shard}{end} |;
-		   #debug "Data::sql::$sql";
-	           $health{metadata}{$site}{$type}{$shard}{cached_data_count} = database('ecenter')->selectrow_array($sql);
-		}
-	    }
-	    
-        }
+    my %health = ();
+    
+    my $hub_sql = $req_params{hub}?' AND hub_name =' . database('ecenter')->quote($req_params{hub}):' AND 1';
+    my $hhub_sql = qq|select distinct hub_name from  hub where 1 $hub_sql|;
+    debug " E2E SQL:: $hhub_sql";
+    my $hubs =  database('ecenter')->selectall_hashref( qq|select distinct hub_name from  hub where 1 $hub_sql|, 'hub_name');
+    foreach my $site  ( sort  keys %{$hubs} ) {
+        next if $req_params{hub} && $req_params{hub} ne $site;
+	$hub_sql =  ' AND hub_name =' . database('ecenter')->quote($site);
+	foreach my $type (qw/snmp bwctl pinger owamp traceroute/) {
+	    next if $req_params{data} && $type ne $req_params{data};
+	    my $e2e_sql = qq|select  distinct m.metaid  from metadata m
+    								join node n_src on(m.src_ip = n_src.ip_addr)	    
+    								join l2_l3_map llm on(n_src.ip_addr = llm.ip_addr) 
+								join l2_port l2p on(llm.l2_urn =l2p.l2_urn) 
+								join hub h using(hub) 
+    								join eventtype e on(m.eventtype_id = e.ref_id)
+    								join service s  on (e.service = s.service)
+    							  where  
+    								1  $hub_sql  and 
+    								e.service_type  = '$type' and
+    								s.service  like 'http%' |;
+    	    #debug " E2E SQL::  $site";
+    	    my @mds=  @{database('ecenter')->selectall_arrayref($e2e_sql)}; 
+    	    ##debug " MDS::" . Dumper \@mds;
+    	    $health{metadata}{$site}{$type}{metadata_count} = scalar @mds;
+    	    $health{time_period}{$type}{start} =   $params->{$type}{start};
+    	    $health{time_period}{$type}{end} =   $params->{$type}{end};
+    	    if(@mds) {
+    		my $md_ins = join("','", map {$_->[0]} @mds);
+    		my $table = $type eq 'traceroute'?'hop':$type;
+    		my $shards = _get_shards({data => $table,start => $params->{$type}{start},end => $params->{$type}{end}});
+    		foreach my $shard (sort  { $a <=> $b } keys %$shards) {
+    		   my $sql = qq|select count(*) from  $shards->{$shard}{table}{dbi}  
+    				 where metaid in  ('$md_ins') and  timestamp >=  $shards->{$shard}{start} and  timestamp <= $shards->{$shard}{end} |;
+    		   debug "Data::sql::$sql";
+    		   $health{metadata}{$site}{$type}{$shard}{cached_data_count} = database('ecenter')->selectrow_array($sql);
+    		}
+    	    }
+
+	}
     }
     # debug Dumper(\@services);
     return \%health;
@@ -271,7 +289,7 @@ sub process_data {
    my $task_set;
    my %params = ();
    eval {
-     %params = validate(@_, { data       => {type => SCALAR, regex => qr/^(snmp|bwctl|owamp|pinger)$/, optional => 1}, 
+     %params = validate(@_, { data       => {type => SCALAR, regex => qr/^(snmp|bwctl|owamp|pinger)$/i, optional => 1}, 
                               id	 => {type => SCALAR, regex => qr/^\d+$/, optional => 1}, 
                               src_ip	 => {type => SCALAR, regex => $REG_IP,   optional => 1}, 
 			      src_hub	 => {type => SCALAR, regex => qr/^\w+$/i,   optional => 1}, 
@@ -291,9 +309,9 @@ sub process_data {
     # 
     #  when id is provided then it superseeds src_ip and dst_ip, id means metadata id
     if($params{resolution}) {
-        $params{resolution} =  $params{resolution} > 0 && $params{resolution} <= 100?$params{resolution}:100;
+        $params{resolution} =  $params{resolution} > 0 && $params{resolution} <= 1000?$params{resolution}:1000;
     } else {
-        $params{resolution} = 50;
+        $params{resolution} = 20;
     } 
     if($params{timeout}) {
         $params{timeout} =  $params{timeout} > 0 && $params{timeout} <= 1000?$params{timeout}:1000;
@@ -351,12 +369,14 @@ sub process_data {
     debug "HOPS:::" . Dumper(\%allhops);
     return $data unless $traceroute->{direct_traceroute}{hop_ips} || $traceroute->{reverse_traceroute}{hop_ips};
     $task_set = $g_client->new_task_set; 
-    $data->{snmp} = {}; 
-    eval {
-	 get_snmp($task_set, $data->{snmp}, \%allhops, \%params);
-    }; 
-    if($EVAL_ERROR) {
-	error "  No SNMP data - failed $EVAL_ERROR";
+    $data->{snmp} = {};
+    if(!$params{data} || $params{data} =~ /^snmp$/i) {
+        eval {
+	    get_snmp($task_set, $data->{snmp}, \%allhops, \%params);
+        }; 
+        if($EVAL_ERROR) {
+	    error "  No SNMP data - failed $EVAL_ERROR";
+        }
     }
      #return $data;
     # end to end data  stats if available
@@ -365,7 +385,7 @@ sub process_data {
     
     my @data_keys = ();
     if($params{data}) {
-        @data_keys = ($params{data}) if  $params{data} =~ /^bwctl|owamp|pinger$/;
+        @data_keys = ($params{data}) if  $params{data} =~ /^bwctl|owamp|pinger$/i;
     } else {
         @data_keys =  qw/bwctl owamp pinger/;
     }
@@ -439,7 +459,7 @@ sub get_e2e{
         my  $md_row =  $md_href->{$metaid}; 
 	debug " ------  $type md  $metaid  :::  SRC=$md_row->{src_ip} DST= $md_row->{dst_ip} "; 
         next if $md_row->{type} ne $type || !$metaid;
-        $logger->info(" ------ FOUND $type md =$metaid  :::" .
+        $logger->info(" ------ FOUND METADATA:: $type md =$metaid  :::" .
 	              " SRC=$md_row->{src_ip} DST= $md_row->{dst_ip} start=$params->{$type}{start} " .
 		      " end=$params->{$type}{end} slice=$time_slice");
 	$data_hr->{$md_row->{src_ip}}{$md_row->{dst_ip}} = {};
@@ -455,8 +475,8 @@ sub get_e2e{
                                                 	   start  => $st_time,
 							   type => $type,
 							   resolution => $params->{resolution},
-					     	 	   end    =>  $end_time,
-					     	 	  }, 
+					     	 	   end    =>  $end_time
+					     	 	  },
 					  {
 					   on_fail     => sub {$FAILED++;
 					                      $logger->error("FAILED: $metaid $params->{table_map}{$type}{table}$data_table ".
@@ -471,7 +491,7 @@ sub get_e2e{
 								     }
 				                                     $data_hr->{$md_row->{src_ip}}{$md_row->{dst_ip}}{$datum->[0]} = $datum->[1];
 								 }
-								 $logger->debug("DATA for $type: md=$metaid times=$st_time - $end_time :::" . scalar(@{$returned->{data}})); 
+								 $logger->debug("DATA for $type: md=$metaid times=$st_time - $end_time :::" . scalar(@{$returned->{data}}));
 			    	                                 
 							     } else {
 							         $logger->info("NO DATA for $type: md=$metaid times=$st_time - $end_time :::", Dumper($returned)); 

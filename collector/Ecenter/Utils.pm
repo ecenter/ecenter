@@ -102,7 +102,7 @@ sub get_datums {
         map {$result_row{$_} = $datum->$_ } @{$datum_names}; ##$params->{table_map}{$type}{data}
 	###$result_row{hop_ip} =  ipv4to6($result_row{hop_ip}) if exists $result_row{hop_ip} && isIPv4($result_row{hop_ip});
         push @{$results_raw}, [$datum->timestamp, \%result_row];
-        $end_time =   $datum->timestamp if $datum->timestamp > $end_time;
+        $end_time   =  $datum->timestamp if  $datum->timestamp > $end_time;
         $start_time =  $datum->timestamp if  $datum->timestamp < $start_time;
     }
     if($type =~ /^owamp|pinger|bwctl|snmp$/) {

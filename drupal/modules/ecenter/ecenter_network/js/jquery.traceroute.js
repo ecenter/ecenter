@@ -27,7 +27,7 @@ $.fn.traceroute.defaults = {
     'style' : {
       'fill' : 'transparent',
       'stroke' : '#aaaaaa',
-      'strokeWidth' : 4,
+      'strokeWidth' : 3,
     }
   },
   'arrow' : {
@@ -38,7 +38,7 @@ $.fn.traceroute.defaults = {
     }
   },
   'marker' : {
-    'radius' : 7,
+    'radius' : 8,
     'style' : {
       'class' : 'marker',
       'stroke' : '#0000ff',
@@ -92,7 +92,8 @@ $.traceroute.prototype.draw = function(data) {
     var node_group = svg.group(nodes, 'step-' + i, {'class' : row_type});
 
     if (row_type == 'diff') {
-      var longest_direction = (step.forward.length > step.reverse.length) ? 'forward' : 'reverse';
+      var longest_direction = (step.forward.length > step.reverse.length) ? 
+        'forward' : 'reverse';
       var last_diff_x = 0;
       var adjusted_link_length = link_length - 30; // @TODO properly calculate
     }
@@ -106,7 +107,8 @@ $.traceroute.prototype.draw = function(data) {
       for (var j = 0; j < step[direction].length; j++) {
         var hop = step[direction][j];
         
-        $.extend(hop, {'ttl' : i, 'type' : row_type, 'direction' : direction, 'y_offset': y_offset});
+        $.extend(hop, {'ttl' : i, 'type' : row_type, 
+          'direction' : direction, 'y_offset': y_offset});
 
         if (row_type == 'match') {
           // Only increment x counter once on matches
@@ -124,7 +126,8 @@ $.traceroute.prototype.draw = function(data) {
           }
           else {
             // @TODO test this...
-            last_diff_x = (j > 0) ? last_diff_x + adjusted_link_length : x_offset + adjusted_link_length;
+            last_diff_x = (j > 0) ? last_diff_x + adjusted_link_length : 
+              x_offset + adjusted_link_length;
           }
           label_offset = last_diff_x;
           marker_offset = marker_center_offset + label_offset;
@@ -138,8 +141,8 @@ $.traceroute.prototype.draw = function(data) {
         
         var node = svg.group(node_group, hop_id, {'class' : hop_class});
         
-        var marker = svg.circle(node, marker_offset, 70 - y_offset, this.options.marker.radius, 
-          this.options.marker.style);
+        var marker = svg.circle(node, marker_offset, 70 - y_offset, 
+          this.options.marker.radius, this.options.marker.style);
         
         var label_height_adjust = (direction == 'reverse') ? -20 - y_offset: 20;
         var label = svg.text(node, label_offset, 73 + label_height_adjust, 
@@ -160,8 +163,18 @@ $.traceroute.prototype.draw = function(data) {
               var line_offset = 4;
             }
 
-            var link = svg.line(links, startx, 70 + line_offset - last_hop[direction].y_offset, endx, 70 + line_offset - y_offset, this.options.link.style);
-          
+            var link = svg.group(links);
+            
+            var line = svg.line(link, startx, 
+              70 + line_offset - last_hop[direction].y_offset, endx, 
+              70 + line_offset - y_offset, this.options.link.style);
+
+            // Arrows
+            var arrowx = startx + ((endx - startx)/2);
+            var arrow = svg.polygon(link, [[arrowx - 5, 70 + line_offset + 4],
+              [arrowx + 5, 70 + line_offset], [arrowx - 5, 70 + line_offset - 4]],
+              this.options.arrow.style);
+        
           } else {
           
             // Non-skip differences: The current TTL is 1 ahead of previous sibling hop's TTL
@@ -170,12 +183,22 @@ $.traceroute.prototype.draw = function(data) {
               if (hop.type == 'match' && last_sibling.type == 'match') {
                 line_offset = -4;
               }
-              var link = svg.line(links, startx, 70 + line_offset - last_hop[direction].y_offset, endx, 70 + line_offset - y_offset, this.options.link.style);
+              var link = svg.line(links, startx,
+                70 + line_offset - last_hop[direction].y_offset, endx, 
+                70 + line_offset - y_offset, this.options.link.style);
+              
+              // Arrows
+              var arrowx = startx + ((endx - startx)/2);
+              var arrow = svg.polygon(link, [[arrowx - 5, 70 + line_offset + 4],
+                [arrowx + 5, 70 + line_offset], [arrowx - 5, 70 + line_offset - 4]],
+                this.options.arrow.style);
             }
             // Skip links 
             else {
               var path = svg.createPath();
-              svg.path(links, path.move(startx, 70).curveC([[startx, 45, endx, 45, endx, 70]]), this.options.link.style);
+              svg.path(links, 
+                path.move(startx, 70).curveC([[startx, 45, endx, 45, endx, 70]]),
+                this.options.link.style);
             }
           
           }

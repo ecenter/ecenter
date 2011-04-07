@@ -164,7 +164,8 @@ foreach my $date (keys %datestamps) {
     #
     make_schema_at(
 	  'Ecenter::DB',
-	  {  really_erase_my_files =>  ($OPTIONS{fresh}?1:0), 
+	  {  really_erase_my_files =>  ($OPTIONS{fresh}?1:0),
+	     preserve_case => 1,
              dump_directory => "$OPTIONS{trunk}/frontend_components/ecenter_data/lib" },
 	   [ "dbi:mysql:database=$OPTIONS{db}", $OPTIONS{user} ,  $OPTIONS{pass} ],
     );

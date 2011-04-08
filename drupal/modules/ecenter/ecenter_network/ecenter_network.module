@@ -173,6 +173,8 @@ function ecenter_network_init() {
     drupal_add_js(drupal_get_path('module', 'jqplot') .'/js/jqplot-behaviors.js');
 
     drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.metadata.js');
+    drupal_add_css(libraries_get_path('jquery-svg') .'/jquery.svg.css');
+    drupal_add_js(libraries_get_path('jquery-svg') .'/jquery.svg.js');
     drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.traceroute.js');
     drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/behaviors.js');
 

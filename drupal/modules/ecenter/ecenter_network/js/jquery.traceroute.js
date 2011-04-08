@@ -19,7 +19,7 @@ $.fn.traceroute = function(data, options) {
 // Defaults
 $.fn.traceroute.defaults = {
   'tracerouteName' : 'default',
-  'diff_y_offset' : 20,
+  'diff_y_offset' : 25,
   'container' : {
     'style' : {
       'width' : '100%', // Width of canvas
@@ -27,7 +27,7 @@ $.fn.traceroute.defaults = {
     }
   },
   'link' : {
-    'match_offset' : 4,
+    'match_offset' : 6,
     'length' : 55,
     'style' : {
       'fill' : 'transparent',
@@ -40,20 +40,22 @@ $.fn.traceroute.defaults = {
     'height' : 10,
     'width' : 10,
     'style' : {
-      'fill' : '#666666'
+      'fill' : '#555555',
+      'strokeWidth' : 1,
+      'stroke' : '#ffffff'
     }
   },
   'marker' : {
-    'radius' : 7,
+    'radius' : 8,
     'style' : {
       'class' : 'marker',
       'stroke' : '#0000ff',
       'fill' : '#ffffff',
-      'strokeWidth' : 4
+      'strokeWidth' : 5
     }
   },
   'label' : {
-    'margin' : 14,
+    'margin' : 18,
     'style' : {
       'class' : 'label',
       'fontSize' : '11px',
@@ -70,10 +72,11 @@ $.traceroute = function(el, options, data) {
   $(el)
     .css(options.container.style)
     .svg();
+  this.svg = $(this.el).svg('get');
 }
 
 $.traceroute.prototype.draw = function(data) {
-  var svg = $(this.el).svg('get');
+  var svg = this.svg;
 
   var surface = svg.rect(0, 0, '100%', '100%', 
     {id: 'surface', 'fill': 'transparent'}
@@ -184,29 +187,60 @@ $.traceroute.prototype.draw = function(data) {
                 this.options.link.style);
 
             // Draw arrow
-            var arrow_start = startx + link_length - (this.options.arrow.width / 2);
+            var arrow_start = startx + ((endx - startx) / 2) - (this.options.arrow.width / 2);
             var arrow_end = arrow_start + this.options.arrow.width;
-            var arrow_top = y_adjust + (this.options.arrow.height / 2);
-            var arrow_bottom = y_adjust - (this.options.arrow.height / 2);
-            var arrow = svg.polygon(link, [[arrow_start, arrow_top], [arrow_start, arrow_bottom], [arrow_end, y_adjust]],
-                this.options.arrow.style);
-          
+            var arrow_top = y_adjust + line_offset + (this.options.arrow.height / 2);
+            var arrow_bottom = y_adjust + line_offset - (this.options.arrow.height / 2);
+            var arrow = svg.polygon(link, [
+                [arrow_start, arrow_top], [arrow_start, arrow_bottom], 
+                [arrow_end, y_adjust + line_offset]
+              ],this.options.arrow.style);
           } else {
           
             // Non-skip differences: The current TTL is 1 ahead of previous sibling hop's TTL
             if (last_sibling.ttl + 1 == i || (last_sibling.type == 'diff' && hop.type == 'diff')) {
+              
               // Offset link y-position for parallel forward and reverse "rails"
               if (hop.type == 'match' && last_sibling.type == 'match') {
                 line_offset = 4;
               }
-              var link = svg.line(links, startx, last_hop[direction].y_offset - line_offset, endx, y_adjust - line_offset, this.options.link.style);
+              
+              var link = svg.group(links);
+              var line = svg.line(link, startx, last_hop[direction].y_offset - line_offset, endx, y_adjust - line_offset, this.options.link.style);
+              
+              // @TODO Rotate arrows
+              if ((hop.type == 'match' && last_sibling.type == 'match') || 
+                (last_sibling.type == 'diff' && hop.type == 'diff')) {
+                
+                // Draw arrow
+                var arrow_start = startx + ((endx - startx) / 2) - (this.options.arrow.width / 2);
+                var arrow_end = arrow_start + this.options.arrow.width;
+                var arrow_top = y_adjust - line_offset + (this.options.arrow.height / 2);
+                var arrow_bottom = y_adjust - line_offset - (this.options.arrow.height / 2);
+                var arrow = svg.polygon(link, [
+                    [arrow_end, arrow_top], [arrow_end, arrow_bottom], 
+                    [arrow_start, y_adjust - line_offset]
+                  ],this.options.arrow.style);
+              }
             }
+
             // Skip links 
             else {
+              var link = svg.group(links);
               // @TODO remove fudge factor
-              var control_y = y_adjust - (1.75 * this.options.diff_y_offset);
+              var control_y = y_adjust - (1.35 * this.options.diff_y_offset);
               var path = svg.createPath();
-              svg.path(links, path.move(startx, y_adjust).curveC([[startx, control_y, endx, control_y, endx, y_adjust]]), this.options.link.style);
+              var curve = svg.path(link, path.move(startx, y_adjust).curveC([[startx, control_y, endx, control_y, endx, y_adjust]]), this.options.link.style);
+
+              // Draw arrow
+              var arrow_start = startx + ((endx - startx) / 2) - (this.options.arrow.width / 2);
+              var arrow_end = arrow_start + this.options.arrow.width;
+              var arrow_top = y_adjust - this.options.diff_y_offset + (this.options.arrow.height / 2);
+              var arrow_bottom = y_adjust - this.options.diff_y_offset - (this.options.arrow.height / 2);
+              var arrow = svg.polygon(link, [
+                  [arrow_end, arrow_top], [arrow_end, arrow_bottom], 
+                  [arrow_start, y_adjust - this.options.diff_y_offset]
+                ], this.options.arrow.style);
             }
           
           }

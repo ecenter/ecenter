@@ -19,10 +19,15 @@ $.fn.traceroute = function(data, options) {
 // Defaults
 $.fn.traceroute.defaults = {
   'tracerouteName' : 'default',
-  'tracerouteLength' : null,
-  'drawArrows' : true,
-  'append' : true,
+  'diff_y_offset' : 20,
+  'container' : {
+    'style' : {
+      'width' : '100%', // Width of canvas
+      'height' : '100'  // Height of canvas
+    }
+  },
   'link' : {
+    'match_offset' : 4,
     'length' : 55,
     'style' : {
       'fill' : 'transparent',
@@ -31,8 +36,9 @@ $.fn.traceroute.defaults = {
     }
   },
   'arrow' : {
-    'height' : 6,
-    'width' : 8,
+    'show' : true,
+    'height' : 10,
+    'width' : 10,
     'style' : {
       'fill' : '#666666'
     }
@@ -47,6 +53,7 @@ $.fn.traceroute.defaults = {
     }
   },
   'label' : {
+    'margin' : 14,
     'style' : {
       'class' : 'label',
       'fontSize' : '11px',
@@ -60,12 +67,9 @@ $.fn.traceroute.defaults = {
 $.traceroute = function(el, options, data) {
   this.el = el;
   this.options = options;
-  $(el).css({
-    'width' : '100%',
-    'height' : '100px',
-    'background-color' : '#eeeeee'
-  })
-  .svg();
+  $(el)
+    .css(options.container.style)
+    .svg();
 }
 
 $.traceroute.prototype.draw = function(data) {
@@ -75,13 +79,27 @@ $.traceroute.prototype.draw = function(data) {
     {id: 'surface', 'fill': 'transparent'}
   );
 
+  // Calculate some measurements
+  
+  // Marker offsets
   var marker_center_offset = this.options.marker.radius + 
     (this.options.marker.style.strokeWidth / 2);
-  var marker_right_offset = 2 * marker_center_offset;
-  var link_length = this.options.link.length + marker_right_offset;
+  
+  var link_length = this.options.link.length + (2* marker_center_offset);
+
+  // Start at a negative distance so first iteration starts at 0
+  var x_offset = -link_length;
+  
+  // Always vertically center markers
+  var y_offset = this.options.container.style.height / 2;
+  
+  // Set up groups to hold graphical elements
   var links = svg.group('links');
   var nodes = svg.group('nodes');
-  var x_offset = -link_length;
+
+  // Last hop tracks the last hop in the forward and reverse directions, 
+  // irrespective of the current step. This allows us to always draw backwards
+  // to the appropriate marker.
   var last_hop = {};
 
   for (var i = 0; i < data.length; i++) {
@@ -97,16 +115,14 @@ $.traceroute.prototype.draw = function(data) {
       var adjusted_link_length = link_length - 30; // @TODO properly calculate
     }
 
-
     // Draw markers and labels
     for (var direction in {forward: 1, reverse: 1}) {
-      // @TODO make configurable
-      var y_offset = (row_type == 'diff' && direction == 'reverse') ? 25 : 0;
+      var y_adjust = (row_type == 'diff' && direction == 'reverse') ? y_offset - this.options.diff_y_offset : y_offset;
 
       for (var j = 0; j < step[direction].length; j++) {
         var hop = step[direction][j];
         
-        $.extend(hop, {'ttl' : i, 'type' : row_type, 'direction' : direction, 'y_offset': y_offset});
+        $.extend(hop, {'ttl' : i, 'type' : row_type, 'direction' : direction, 'y_offset': y_adjust});
 
         if (row_type == 'match') {
           // Only increment x counter once on matches
@@ -133,16 +149,17 @@ $.traceroute.prototype.draw = function(data) {
         
         // Drawing routines 
         var hop_id = row_type + '-' + direction + '-' + hop.hop_id;
-        
         var hop_class = 'node ' + row_type + '-' + direction + '-' + hop.hub_name;
         
         var node = svg.group(node_group, hop_id, {'class' : hop_class});
-        
-        var marker = svg.circle(node, marker_offset, 70 - y_offset, this.options.marker.radius, 
+        var marker = svg.circle(node, marker_offset, y_adjust, this.options.marker.radius, 
           this.options.marker.style);
         
-        var label_height_adjust = (direction == 'reverse') ? -20 - y_offset: 20;
-        var label = svg.text(node, label_offset, 73 + label_height_adjust, 
+        var label_y = (direction == 'reverse') ? 
+          y_adjust - this.options.label.margin : 
+          y_adjust + parseInt(this.options.label.style.fontSize) 
+            + this.options.label.margin;
+        var label = svg.text(node, label_offset, label_y, 
           hop.hub_name, this.options.label.style);
 
         var line_offset = 0;
@@ -157,10 +174,22 @@ $.traceroute.prototype.draw = function(data) {
             
             // Offset link y-position for parallel forward and reverse "rails"
             if (last_sibling.ttl + 1 == i && last_sibling.type == 'match' && hop.type == 'match') {
-              var line_offset = 4;
+              var line_offset = this.options.link.match_offset;
             }
 
-            var link = svg.line(links, startx, 70 + line_offset - last_hop[direction].y_offset, endx, 70 + line_offset - y_offset, this.options.link.style);
+            var link = svg.group(links);
+            var line = svg.line(link, 
+                startx, y_adjust + line_offset, 
+                endx, y_adjust + line_offset, 
+                this.options.link.style);
+
+            // Draw arrow
+            var arrow_start = startx + link_length - (this.options.arrow.width / 2);
+            var arrow_end = arrow_start + this.options.arrow.width;
+            var arrow_top = y_adjust + (this.options.arrow.height / 2);
+            var arrow_bottom = y_adjust - (this.options.arrow.height / 2);
+            var arrow = svg.polygon(link, [[arrow_start, arrow_top], [arrow_start, arrow_bottom], [arrow_end, y_adjust]],
+                this.options.arrow.style);
           
           } else {
           
@@ -168,14 +197,16 @@ $.traceroute.prototype.draw = function(data) {
             if (last_sibling.ttl + 1 == i || (last_sibling.type == 'diff' && hop.type == 'diff')) {
               // Offset link y-position for parallel forward and reverse "rails"
               if (hop.type == 'match' && last_sibling.type == 'match') {
-                line_offset = -4;
+                line_offset = 4;
               }
-              var link = svg.line(links, startx, 70 + line_offset - last_hop[direction].y_offset, endx, 70 + line_offset - y_offset, this.options.link.style);
+              var link = svg.line(links, startx, last_hop[direction].y_offset - line_offset, endx, y_adjust - line_offset, this.options.link.style);
             }
             // Skip links 
             else {
+              // @TODO remove fudge factor
+              var control_y = y_adjust - (1.75 * this.options.diff_y_offset);
               var path = svg.createPath();
-              svg.path(links, path.move(startx, 70).curveC([[startx, 45, endx, 45, endx, 70]]), this.options.link.style);
+              svg.path(links, path.move(startx, y_adjust).curveC([[startx, control_y, endx, control_y, endx, y_adjust]]), this.options.link.style);
             }
           
           }
@@ -184,16 +215,6 @@ $.traceroute.prototype.draw = function(data) {
       }
     }
   }
-  
-  // Bind behaviors
-  $('.match, .diff .node', svg.root()).bind({
-    'mouseover' : function() {
-      console.log('over', this); 
-    },
-    'mouseout' : function() {
-      console.log('out', this);
-    }
-  });
 }
 
 })(jQuery);

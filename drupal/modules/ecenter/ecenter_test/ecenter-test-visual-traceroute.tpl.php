@@ -30,7 +30,7 @@
   <?php
     $diff = ecenter_network_traceroute_diff($traceroutes['base'], 
       $traceroutes['base']);
-    kpr($diff);
+    //kpr($diff);
     $settings[] = array(
       'id' => 'base',
       'diff' => $diff,
@@ -58,7 +58,7 @@
   <?php
     $diff = ecenter_network_traceroute_diff($traceroutes['base'], 
       $traceroutes['missing_one']);
-    kpr($diff);
+    //kpr($diff);
     $settings[] = array(
       'id' => 'missing-hop',
       'diff' => $diff,
@@ -82,7 +82,7 @@
   <?php
     $diff = ecenter_network_traceroute_diff($traceroutes['base'], 
       $traceroutes['missing_multiple']);
-    kpr($diff);
+    //kpr($diff);
     $settings[] = array(
       'id' => 'missing-multiple',
       'diff' => $diff,
@@ -106,7 +106,7 @@
   <?php
     $diff = ecenter_network_traceroute_diff($traceroutes['base'], 
       $traceroutes['add_one']);
-    kpr($diff);
+    //kpr($diff);
     $settings[] = array(
       'id' => 'add-hop',
       'diff' => $diff,
@@ -130,7 +130,7 @@
   <?php
     $diff = ecenter_network_traceroute_diff($traceroutes['base'], 
       $traceroutes['add_multiple']);
-    kpr($diff);
+    //kpr($diff);
     $settings[] = array(
       'id' => 'add-multiple',
       'diff' => $diff,
@@ -138,6 +138,32 @@
   ?>
   <div class="visual-traceroute-wrapper"></div>
 </div>
+
+<h2>Additional multiple hops - Missing single hop</h2>
+<div id="add-multiple" class="clearfix traceroute-test-wrapper">
+  <div class="clearfix">
+    <div class="traceroute-test-col">
+      <h3>Additional multiple hops</h3>
+      <?php print theme('table', $headers, $traceroutes['add_multiple']); ?>
+    </div>
+    <div class="traceroute-test-col">
+      <h3>Missing one hop</h3>
+      <?php print theme('table', $headers, $traceroutes['combined']); ?>
+    </div>
+  </div>
+  <?php
+    $diff = ecenter_network_traceroute_diff($traceroutes['missing_multiple'], 
+      $traceroutes['add_multiple']);
+    //kpr($diff);
+    $settings[] = array(
+      'id' => 'add-multiple',
+      'diff' => $diff,
+    );
+  ?>
+  <div class="visual-traceroute-wrapper"></div>
+</div>
+
+
 
 <h2>Combined</h2>
 <div id="combined" class="clearfix traceroute-test-wrapper">
@@ -154,7 +180,7 @@
   <?php
     $diff = ecenter_network_traceroute_diff($traceroutes['base'], 
       $traceroutes['combined']);
-    kpr($diff);
+    //kpr($diff);
     $settings[] = array(
       'id' => 'combined',
       'diff' => $diff,

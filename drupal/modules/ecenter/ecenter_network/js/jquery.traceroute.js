@@ -4,6 +4,7 @@
  */
 (function($) {
 
+// @TODO account for redrawing
 $.fn.traceroute = function(data, options) {
   var options = $.extend(true, {}, $.fn.traceroute.defaults, options);
   return this.each(function(i) {
@@ -28,11 +29,11 @@ $.fn.traceroute.defaults = {
   },
   'link' : {
     'match_offset' : 6,
-    'length' : 55,
+    'length' : 45,
     'style' : {
       'fill' : 'transparent',
       'stroke' : '#aaaaaa',
-      'strokeWidth' : 4,
+      'strokeWidth' : 5,
     }
   },
   'arrow' : {
@@ -46,23 +47,32 @@ $.fn.traceroute.defaults = {
     }
   },
   'marker' : {
-    'radius' : 8,
+    'radius' : 9,
     'style' : {
       'class' : 'marker',
-      'stroke' : '#0000ff',
+      'stroke' : '#555555',
       'fill' : '#ffffff',
       'strokeWidth' : 5
     }
   },
   'label' : {
     'margin' : 18,
+    'padding_x' : 2,
+    'padding_y' : 2,
     'style' : {
       'class' : 'label',
       'fontSize' : '11px',
-      'fill' : '#000000',
+      'fill' : '#555555',
       'fontFamily' : '"Droid Sans", Verdana, sans-serif'
-    },
+    }
   },
+  'label_background' : {
+    'style' : { 
+      'fill' : '#ffffff',
+      'strokeWidth' : 0,
+      'class' : 'label-background',
+    }
+  }
 };
 
 // Traceroute constructor
@@ -94,7 +104,7 @@ $.traceroute.prototype.draw = function(data) {
   var x_offset = -link_length;
   
   // Always vertically center markers
-  var y_offset = this.options.container.style.height / 2;
+  var y_offset = this.options.container.style.height / 1.75;
   
   // Set up groups to hold graphical elements
   var links = svg.group('links');
@@ -103,7 +113,7 @@ $.traceroute.prototype.draw = function(data) {
   // Last hop tracks the last hop in the forward and reverse directions, 
   // irrespective of the current step. This allows us to always draw backwards
   // to the appropriate marker.
-  var last_hop = {};
+  var last_hop = {'forward': null, 'reverse' : null};
 
   for (var i = 0; i < data.length; i++) {
     var row = data[i];
@@ -120,7 +130,12 @@ $.traceroute.prototype.draw = function(data) {
 
     // Draw markers and labels
     for (var direction in {forward: 1, reverse: 1}) {
-      var y_adjust = (row_type == 'diff' && direction == 'reverse') ? y_offset - this.options.diff_y_offset : y_offset;
+
+      var y_adjust = (i > 0 && row_type == 'diff' && direction == 'reverse') ? y_offset - this.options.diff_y_offset : y_offset;
+
+      if (step[direction] == undefined) {
+        continue;
+      }
 
       for (var j = 0; j < step[direction].length; j++) {
         var hop = step[direction][j];
@@ -151,19 +166,31 @@ $.traceroute.prototype.draw = function(data) {
         }
         
         // Drawing routines 
-        var hop_id = row_type + '-' + direction + '-' + hop.hop_id;
-        var hop_class = 'node ' + row_type + '-' + direction + '-' + hop.hub_name;
+        var hop_id = row_type + '-' + direction + '-' + hop.id;
+        var hop_class = 'node ' + row_type + '-' + direction + '-' + hop.hub;
         
-        var node = svg.group(node_group, hop_id, {'class' : hop_class});
+        var node = svg.group(node_group, hop_id, {'hop_id' : hop.id, 'class' : hop_class});
         var marker = svg.circle(node, marker_offset, y_adjust, this.options.marker.radius, 
           this.options.marker.style);
-        
+        var background = svg.group(node, {'class' : 'background'});
+        var label = svg.group(node, {'class' : 'label'});
+       
+        var font_size = parseInt(this.options.label.style.fontSize);
+
         var label_y = (direction == 'reverse') ? 
-          y_adjust - this.options.label.margin : 
-          y_adjust + parseInt(this.options.label.style.fontSize) 
-            + this.options.label.margin;
-        var label = svg.text(node, label_offset, label_y, 
-          hop.hub_name, this.options.label.style);
+          y_adjust - this.options.label.margin - (2 * this.options.label.padding_y): 
+          y_adjust + font_size + this.options.label.margin + (2 * this.options.label.padding_y);
+       
+        var label_x = label_offset + this.options.label.padding_x;
+
+        var label_text = svg.text(label, label_x, label_y, 
+          hop.hub, this.options.label.style);
+
+        // @TODO replace '65' with calculated width...
+        var label_background = svg.rect(background, 
+          label_offset, label_y - font_size - this.options.label.padding_y, 
+          65, font_size + (3 * this.options.label.padding_y), 
+          this.options.label_background.style);
 
         var line_offset = 0;
         if (last_hop != undefined && last_hop[direction] != undefined) {

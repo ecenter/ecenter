@@ -17,6 +17,8 @@ function template_preprocess_ecenter_network_data(&$vars) {
   $src_hop = $hops['combined'][$vars['params']['src']];
   $dst_hop = $hops['combined'][$vars['params']['dst']];
 
+  //dpm($vars);
+
   // Generate date range -- internal date is stored as UTC
   $dates = array();
   foreach (array('start', 'end') as $val) {
@@ -187,12 +189,25 @@ function theme_ecenter_network_hops($hops = array()) {
 
   $settings = array();
 
+  $sidx = 0;
+
   // Create tables for scraping
   foreach ($hops as $hop) {
     // @TODO Iterate over all types, use measurement / type callbacks
     $table = array();
 
-    $settings['ecenterNetwork']['seriesLookupByIndex'][] = array('id' => $hop['id'], 'hub' => $hop['hub']);
+    $settings['ecenterNetwork']['seriesLookupByIndex'][] = array(
+      'id' => $hop['id'], 
+      'hub' => $hop['hub']
+    );
+    $settings['ecenterNetwork']['seriesLookupByID'][$hop['id']] = array(
+      'sidx' => $sidx,
+      'hub' => $hop['hub'],
+    );
+    $settings['ecenterNetwork']['seriesLookupByHub'][$hop['hub']]['id'][] = $hop['id'];
+    $settings['ecenterNetwork']['seriesLookupByHub'][$hop['hub']]['sidx'][] = $sidx;
+    $sidx++;
+
 
     foreach ($hop['data']['snmp'] as $timeseries) {
 
@@ -215,23 +230,10 @@ function theme_ecenter_network_hops($hops = array()) {
       $tables[] = theme('ecenter_network_utilization_table', $table, $hop);
     }
   }
-
-  foreach ($settings['ecenterNetwork']['seriesLookupByIndex'] as $sidx => $hop) {
-    $settings['ecenterNetwork']['seriesLookupByID'][$hop['id']] = array(
-      'sidx' => $sidx,
-      'hub' => $hop['hub'],
-    );
-    if (!is_array($settings['ecenterNetwork']['seriesLookupByHub'][$hop['hub']])) {
-      $settings['ecenterNetwork']['seriesLookupByHub'][$hop['hub']] = array();
-    }
-    $settings['ecenterNetwork']['seriesLookupByHub'][$hop['hub']] += array(
-      'sidx' => array($sidx),
-      'id' => array($hop['id']),
-    );
-  }
+  
+  drupal_add_js($settings, 'setting');
 
   if (!empty($tables)) {
-    drupal_add_js($settings, 'setting');
 
     $plot_options = _ecenter_network_plot_options_template();
     $plot_options['seriesDefaults']['markerOptions']['show'] = FALSE;
@@ -405,8 +407,8 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
   $line_options = array(
     'highlighter' => array(
       'show' => TRUE,
-      'sizeAdjust' => 1,
-      'lineWidthAdjust' => 1,
+      'sizeAdjust' => 0,
+      'lineWidthAdjust' => 0,
       'tooltipLocation' => 'n',
       'tooltipOffset' => 10,
       'tooltipSeparator' => ': ',
@@ -475,7 +477,7 @@ function _ecenter_network_plot_options_template() {
       'xoffset' => 1,
       'yoffset' => 1,
     ),
-    'seriesColors' => array('#035dc5', '#e34605', '#a71932', '#133f52', '#672b18', '#049e33',  '#650fc2',),
+    'seriesColors' => array('#035dc5', '#a71932', '#133f52', '#e34605', '#672b18', '#049e33',  '#650fc2',),
     'axes' => array(
       'xaxis' => array(
         'autoscale' => TRUE,

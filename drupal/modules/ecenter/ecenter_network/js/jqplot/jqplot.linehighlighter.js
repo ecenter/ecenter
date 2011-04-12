@@ -83,6 +83,11 @@
   $.jqplot.LineHighlighter.prototype.highlightSeries = function(sidx, plot, options) {
     var o = options || {};
     var s = plot.series[sidx];
+
+    if (!s) { 
+      return;
+    }
+
     var lh = plot.plugins.linehighlighter;
     var hc = lh.highlightCanvas;
     var hctx = hc.setContext();
@@ -91,12 +96,13 @@
     var sizeAdjust = (s.sizeAdjust !== false) ? s.sizeAdjust : lh.sizeAdjust;
     
     if (lh.colors) {
-      // @TODO account for and test...
+      var idx = sidx % lh.colors.length;
+      var series_color = lh.colors[idx];
+      console.log('user set color', series_color);
     }
     else {
-      var length = s.seriesColors.length;
-      sidx = sidx % length;
-      var series_color = s.seriesColors[sidx];
+      var idx = sidx % s.seriesColors.length;
+      var series_color = s.seriesColors[idx];
     }
 
     var opts = $.extend(true, {}, {color: series_color, lineWidth: s.lineWidth + sizeAdjust}, o);
@@ -109,6 +115,9 @@
   // Unhighlight a series (technically, this unhighlights ALL series)
   $.jqplot.LineHighlighter.prototype.unhighlightSeries = function(sidx, plot) {
     var s = plot.series[sidx];
+    if (!s) {
+      return;
+    }
     var hc = plot.plugins.linehighlighter.highlightCanvas;
     var hctx = hc.setContext();
 

@@ -53,11 +53,15 @@ Drupal.behaviors.EcenterTraceroute = function(context) {
           $('circle', group).each(function() {
             this.setAttribute('stroke', color);
           });
-          $('text', group).each(function() {
+          $('text.label', group).each(function() {
             this.setAttribute('fill', '#ffffff');
           });
-          $('rect', group).each(function() {
+          $('text.hub-label', group).each(function() {
+            this.setAttribute('fill', '#000000');
+          });
+          $('rect.label-background', group).each(function() {
             this.setAttribute('fill', color);
+            this.setAttribute('fill-opacity', 1);
           });
           
         });
@@ -79,14 +83,19 @@ Drupal.behaviors.EcenterTraceroute = function(context) {
           var feature = layer.getFeatureBy('ecenterID', hop.hub);
           
           control.callbacks.out.call(control, feature);*/
+
           $('circle', group).each(function() {
-            this.setAttribute('stroke', '#555555');
+            this.setAttribute('stroke', '#999999');
           });
-          $('text', group).each(function() {
-            this.setAttribute('fill', '#555555');
+          $('text.label', group).each(function() {
+            this.setAttribute('fill', '#000000');
           });
-          $('rect', group).each(function() {
+          $('text.hub-label', group).each(function() {
+            this.setAttribute('fill', '#444444');
+          });
+          $('rect.label-background', group).each(function() {
             this.setAttribute('fill', '#ffffff');
+            this.setAttribute('fill-opacity', 0.65);
           });
         }); 
       }

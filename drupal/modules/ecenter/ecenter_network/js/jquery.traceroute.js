@@ -28,47 +28,64 @@ $.fn.traceroute.defaults = {
     }
   },
   'link' : {
-    'match_offset' : 6,
-    'length' : 45,
+    'match_offset' : 10,
+    'length' : 61,
     'style' : {
       'fill' : 'transparent',
-      'stroke' : '#aaaaaa',
-      'strokeWidth' : 5,
+      'stroke' : '#dddddd',
+      'strokeWidth' : 4,
     }
   },
   'arrow' : {
     'show' : true,
-    'height' : 10,
-    'width' : 10,
+    'height' : 12,
+    'width' : 12,
     'style' : {
-      'fill' : '#555555',
+      'fill' : '#aaaaaa',
       'strokeWidth' : 1,
       'stroke' : '#ffffff'
     }
   },
   'marker' : {
-    'radius' : 9,
+    'radius' : 11,
     'style' : {
       'class' : 'marker',
-      'stroke' : '#555555',
+      'stroke' : '#aaaaaa',
       'fill' : '#ffffff',
-      'strokeWidth' : 5
+      'strokeWidth' : 3
+    }
+  },
+  'hub_label' : {
+    'style' : {
+      'class' : 'hub-label',
+      'fill' : '#444444',
+      'fontWeight' : 'bold',
+      'fontSize' : '12px',
+      'fontFamily' : '"Droid Sans", Verdana, sans-serif'
+    }
+  },
+  'hub_label_background' : {
+    'style' : {
+      'fill' : '#ffffff',
+      'fillOpacity' : 0.65
     }
   },
   'label' : {
-    'margin' : 18,
+    'width' : 80,
+    'margin' : 17,
     'padding_x' : 2,
     'padding_y' : 2,
     'style' : {
       'class' : 'label',
-      'fontSize' : '11px',
-      'fill' : '#555555',
+      'fontSize' : '8px',
+      'fill' : '#000000',
       'fontFamily' : '"Droid Sans", Verdana, sans-serif'
     }
   },
   'label_background' : {
     'style' : {
       'fill' : '#ffffff',
+      'fillOpacity' : 0.65,
       'strokeWidth' : 0,
       'class' : 'label-background',
     }
@@ -149,7 +166,7 @@ $.traceroute.prototype.draw = function(data) {
             x_offset += link_length;
           }
           label_offset = x_offset;
-          marker_offset = marker_center_offset + label_offset;
+          marker_offset = marker_center_offset + label_offset + (this.options.label.width / 4);
           $.extend(hop, {'x_offset' : x_offset});
         } else {
           // Increment global x_offset when working in longest direction
@@ -162,7 +179,7 @@ $.traceroute.prototype.draw = function(data) {
             last_diff_x = (j > 0) ? last_diff_x + adjusted_link_length : x_offset + adjusted_link_length;
           }
           label_offset = last_diff_x;
-          marker_offset = marker_center_offset + label_offset;
+          marker_offset = marker_center_offset + label_offset + (this.options.label.width / 4);
           $.extend(hop, {'x_offset' : last_diff_x});
         }
 
@@ -175,6 +192,7 @@ $.traceroute.prototype.draw = function(data) {
           this.options.marker.style);
         var background = svg.group(node, {'class' : 'background'});
         var label = svg.group(node, {'class' : 'label'});
+        var hub_label = svg.group(node, {'class' : 'hub_label'});
 
         var font_size = parseInt(this.options.label.style.fontSize);
 
@@ -185,20 +203,31 @@ $.traceroute.prototype.draw = function(data) {
         var label_x = label_offset + this.options.label.padding_x;
 
         var label_text = svg.text(label, label_x, label_y,
-          hop.hub, this.options.label.style);
+          hop.hop_ip, this.options.label.style);
 
-        // @TODO replace '65' with calculated width...
         var label_background = svg.rect(background,
           label_offset, label_y - font_size - this.options.label.padding_y,
-          65, font_size + (3 * this.options.label.padding_y),
+          this.options.label.width, font_size + (3 * this.options.label.padding_y),
           this.options.label_background.style);
+
+        // Hub label
+        if ((direction == 'forward' && row_type == 'diff') || direction == 'reverse') {
+          var hub_label_background = svg.rect(hub_label, label_offset, y_adjust - (parseInt(this.options.hub_label.style.fontSize) / 2.5) - 1, 
+            65, 
+            parseInt(this.options.hub_label.style.fontSize) + 2, 
+            this.options.hub_label_background.style
+          );
+          var hub_label = svg.text(hub_label, label_offset + 5, 
+            y_adjust + (parseInt(this.options.hub_label.style.fontSize) / 2.5),
+            hop.hub, this.options.hub_label.style);
+        }
 
         var line_offset = 0;
         if (last_hop != undefined && last_hop[direction] != undefined) {
           // Last hop in the same direction as this hop
           var last_sibling = last_hop[direction];
 
-          var startx = last_sibling.x_offset + marker_center_offset;
+          var startx = last_sibling.x_offset + marker_center_offset + (this.options.label.width / 4);
           var endx = marker_offset;
 
           if (direction == 'forward') {
@@ -230,7 +259,7 @@ $.traceroute.prototype.draw = function(data) {
 
               // Offset link y-position for parallel forward and reverse "rails"
               if (hop.type == 'match' && last_sibling.type == 'match') {
-                line_offset = 4;
+                var line_offset = this.options.link.match_offset;
               }
 
               var link = svg.group(links);

@@ -22,93 +22,97 @@ Drupal.behaviors.EcenterTraceroute = function(context) {
 
     $('.match, .diff', traceroute.root()).
     bind({
-      'mouseover' : function(e) {
-        $('g.node', e.currentTarget).each(function(e) {
-          var group = this;
-          var hop_id = $(this).attr('hop_id');
-          var hop = Drupal.settings.ecenterNetwork.seriesLookupByID[hop_id];
-
-          var tc = $('#utilization-tables').data('tablechart');
-          var lh = tc['default'].chart.plugins.linehighlighter;
-          
-          if (lh.colors) {
-            var idx = hop.sidx % lh.colors.length;
-            var color = lh.colors[idx];
-          }
-          else {
-            var idx = hop.sidx % tc['default'].chart.seriesColors.length;
-            var color = tc['default'].chart.seriesColors[idx];
-          }
-
-          lh.highlightSeries(hop.sidx, tc['default'].chart);
-          
-          /*var ol = $('#openlayers-map-auto-id-0').data('openlayers');
-          var map = ol.openlayers;
-          var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
-          var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
-          var feature = layer.getFeatureBy('ecenterID', hop.hub);
-          
-          control.callbacks.over.call(control, feature);*/
-
-          $('circle', group).each(function() {
-            this.setAttribute('stroke', color);
-          });
-          $('text.label', group).each(function() {
-            this.setAttribute('fill', '#ffffff');
-          });
-          $('text.hub-label', group).each(function() {
-            this.setAttribute('fill', '#000000');
-          });
-          $('rect.label-background', group).each(function() {
-            this.setAttribute('fill', color);
-            this.setAttribute('fill-opacity', 1);
-          });
-          
-        });
-      },
-      'mouseout' : function(e) {
-        $('g.node', e.currentTarget).each(function(e) {
-          var group = this;
-          var hop_id = $(this).attr('hop_id');
-          var hop = Drupal.settings.ecenterNetwork.seriesLookupByID[hop_id];
-
-          var tc = $('#utilization-tables').data('tablechart');
-          var lh = tc['default'].chart.plugins.linehighlighter;
-          lh.unhighlightSeries(hop.sidx, tc['default'].chart);
-
-          /*var ol = $('#openlayers-map-auto-id-0').data('openlayers');
-          var map = ol.openlayers;
-          var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
-          var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
-          var feature = layer.getFeatureBy('ecenterID', hop.hub);
-          
-          control.callbacks.out.call(control, feature);*/
-
-          $('circle', group).each(function() {
-            this.setAttribute('stroke', '#999999');
-          });
-          $('text.label', group).each(function() {
-            this.setAttribute('fill', '#000000');
-          });
-          $('text.hub-label', group).each(function() {
-            this.setAttribute('fill', '#444444');
-          });
-          $('rect.label-background', group).each(function() {
-            this.setAttribute('fill', '#ffffff');
-            this.setAttribute('fill-opacity', 0.65);
-          });
-        }); 
-      }
+      'mouseover' : tracerouteMouseover,
+      'mouseout' : tracerouteMouseout,
     });
-
-
   }
+}
+
+function tracerouteMouseover(e, feature_select) {
+  $('g.node', e.currentTarget).each(function(e) {
+    var group = this;
+    var hop_id = $(this).attr('hop_id');
+    var hop = Drupal.settings.ecenterNetwork.seriesLookupByID[hop_id];
+
+    var tc = $('#utilization-tables').data('tablechart');
+    var lh = tc['default'].chart.plugins.linehighlighter;
+    
+    if (lh.colors) {
+      var idx = hop.sidx % lh.colors.length;
+      var color = lh.colors[idx];
+    }
+    else {
+      var idx = hop.sidx % tc['default'].chart.seriesColors.length;
+      var color = tc['default'].chart.seriesColors[idx];
+    }
+
+    lh.highlightSeries(hop.sidx, tc['default'].chart);
+   
+    if (feature_select == undefined || !feature_select) {
+      var ol = $('#openlayers-map-auto-id-0').data('openlayers');
+      var map = ol.openlayers;
+      var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
+      var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
+      var feature = layer.getFeatureBy('ecenterID', hop.hub);
+      
+      control.callbacks.over.call(control, feature);
+    }
+
+    $('circle', group).each(function() {
+      this.setAttribute('stroke', color);
+    });
+    $('text.label', group).each(function() {
+      this.setAttribute('fill', '#ffffff');
+    });
+    $('text.hub-label', group).each(function() {
+      this.setAttribute('fill', '#000000');
+    });
+    $('rect.label-background', group).each(function() {
+      this.setAttribute('fill', color);
+      this.setAttribute('fill-opacity', 1);
+    });
+  });
+}
+
+function tracerouteMouseout(e, feature_select) {
+  $('g.node', e.currentTarget).each(function(e) {
+    var group = this;
+    var hop_id = $(this).attr('hop_id');
+    var hop = Drupal.settings.ecenterNetwork.seriesLookupByID[hop_id];
+
+    var tc = $('#utilization-tables').data('tablechart');
+    var lh = tc['default'].chart.plugins.linehighlighter;
+    lh.unhighlightSeries(hop.sidx, tc['default'].chart);
+
+    if (feature_select == undefined || !feature_select) {
+      var ol = $('#openlayers-map-auto-id-0').data('openlayers');
+      var map = ol.openlayers;
+      var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
+      var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
+      var feature = layer.getFeatureBy('ecenterID', hop.hub);
+      
+      control.callbacks.out.call(control, feature);
+    }
+
+    $('circle', group).each(function() {
+      this.setAttribute('stroke', '#999999');
+    });
+    $('text.label', group).each(function() {
+      this.setAttribute('fill', '#000000');
+    });
+    $('text.hub-label', group).each(function() {
+      this.setAttribute('fill', '#444444');
+    });
+    $('rect.label-background', group).each(function() {
+      this.setAttribute('fill', '#ffffff');
+      this.setAttribute('fill-opacity', 0.65);
+    });
+  }); 
 }
 
 // Catchall for minor behavior modifications
 Drupal.behaviors.EcenterEvents = function(context) {
   //try { console.log(context, 'EcenterEvents called'); } catch(e) {}
-
   // Clear out results wrapper
   $('#query input[type=hidden]').change(function() {
     //try { console.log('clear results wrapper:', this); } catch(e) {}
@@ -343,7 +347,7 @@ $(document).ready(function() {
           var traceroute = traceroutes['default'].svg;
           for (id in hub.id) {
             var group = $('g[hop_id="'+ hub.id[id] +'"]', traceroute.root());
-            group.trigger('mouseover');
+            group.trigger('mouseover', [true]);
           }
         } else {
           var selectStyle = {
@@ -379,7 +383,7 @@ $(document).ready(function() {
           }
           for (id in hub.id) {
             var group = $('g[hop_id="'+ hub.id[id] +'"]', traceroute.root());
-            group.trigger('mouseout');
+            group.trigger('mouseout', true);
           }
         } 
       }

@@ -28,12 +28,12 @@ $.fn.traceroute.defaults = {
     }
   },
   'link' : {
-    'match_offset' : 10,
-    'length' : 61,
+    'match_offset' : 9,
+    'length' : 57,
     'style' : {
       'fill' : 'transparent',
       'stroke' : '#dddddd',
-      'strokeWidth' : 4,
+      'strokeWidth' : 3,
     }
   },
   'arrow' : {
@@ -47,7 +47,7 @@ $.fn.traceroute.defaults = {
     }
   },
   'marker' : {
-    'radius' : 11,
+    'radius' : 9,
     'style' : {
       'class' : 'marker',
       'stroke' : '#aaaaaa',
@@ -60,14 +60,14 @@ $.fn.traceroute.defaults = {
       'class' : 'hub-label',
       'fill' : '#444444',
       'fontWeight' : 'bold',
-      'fontSize' : '12px',
+      'fontSize' : '10px',
       'fontFamily' : '"Droid Sans", Verdana, sans-serif'
     }
   },
   'hub_label_background' : {
     'style' : {
       'fill' : '#ffffff',
-      'fillOpacity' : 0.65
+      'fillOpacity' : 0.80
     }
   },
   'label' : {
@@ -213,7 +213,7 @@ $.traceroute.prototype.draw = function(data) {
         // Hub label
         if ((direction == 'forward' && row_type == 'diff') || direction == 'reverse') {
           var hub_label_background = svg.rect(hub_label, label_offset, y_adjust - (parseInt(this.options.hub_label.style.fontSize) / 2.5) - 1, 
-            65, 
+            45, 
             parseInt(this.options.hub_label.style.fontSize) + 2, 
             this.options.hub_label_background.style
           );

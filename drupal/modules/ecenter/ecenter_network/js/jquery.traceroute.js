@@ -29,7 +29,7 @@ $.fn.traceroute.defaults = {
   },
   'link' : {
     'match_offset' : 9,
-    'length' : 57,
+    'length' : 55,
     'style' : {
       'fill' : 'transparent',
       'stroke' : '#dddddd',
@@ -47,12 +47,12 @@ $.fn.traceroute.defaults = {
     }
   },
   'marker' : {
-    'radius' : 9,
+    'radius' : 10,
     'style' : {
       'class' : 'marker',
       'stroke' : '#aaaaaa',
       'fill' : '#ffffff',
-      'strokeWidth' : 3
+      'strokeWidth' : 4
     }
   },
   'hub_label' : {

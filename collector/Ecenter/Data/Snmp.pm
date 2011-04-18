@@ -12,7 +12,7 @@ use Log::Log4perl qw(get_logger);
 use Data::Dumper;
 use perfSONAR_PS::Client::MA;  
 use perfSONAR_PS::Common qw( find findvalue extract);
- 
+use Ecenter::Types;
 
 =head1 NAME
 
@@ -64,7 +64,7 @@ has 'direction'  => (is => 'rw', isa => 'Str');
 has 'urn'        => (is => 'rw', isa => 'Str');
 has 'ifName'     => (is => 'rw', isa => 'Str');
 has 'ifIndex'    => (is => 'rw', isa => 'Str');
-has 'ifAddress'  => (is => 'rw', isa => 'Str');
+has 'ifAddress'  => (is => 'rw', isa => 'Ecenter::Types::IPAddr');
 has 'hostName'   => (is => 'rw', isa => 'Str');
 has 'subject'    => (is => 'rw', isa => 'Str');
 has 'eventtypes' => (is => 'rw', isa => 'ArrayRef');

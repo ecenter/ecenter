@@ -221,11 +221,6 @@ function _ecenter_network_select_form() {
   $offset = variable_get('ecenter_network_default_offset', 600);
   $now = time();
   
-  $start = _ecenter_network_timestamp_to_local($now - $offset - $default_start, 'Y-m-d H:i');
-  $end = _ecenter_network_timestamp_to_local($now - $offset, 'Y-m-d H:i');
-
-  $inc = variable_get('ecenter_network_time_increment', 10);
-
   // Map
   $preset = openlayers_preset_load('ecenter_network');
   $map = openlayers_render_map($preset->data, $preset->name);
@@ -289,31 +284,50 @@ function _ecenter_network_select_form() {
 
   // Date select
   $form['network_wrapper']['query']['start'] = array(
-    '#type' => 'date_popup',
+    '#type' => 'date_text',
     '#title' => t('Start date'),
-    '#date_increment' => $inc,
-    '#default_value' => $start,
+    //'#default_value' => $start,
+    '#access' => FALSE,
   );
   $form['network_wrapper']['query']['end'] = array(
-    '#type' => 'date_popup',
+    '#type' => 'date_text',
     '#title' => t('End date'),
-    '#date_increment' => $inc,
-    '#default_value' => $end,
+    //'#default_value' => $end,
+    '#access' => FALSE,
+  );
+
+  $form['network_wrapper']['query']['recent_select'] = array(
+    '#type' => 'radios',
+    '#prefix' => '<div id="recent-select">',
+    '#suffix' => '</div>',
+    '#title' => t('Show results from'),
+    '#options' => array(
+      3 => t('Last 3 hours'),
+      6 => t('Last 6 hours'),
+      12 => t('Last 12 hours'),
+      24 => t('Last day'),
+    ),
+    '#default_value' => 3,
+  );
+  $form['network_wrapper']['query']['date_select'] = array(
+    '#type' => 'date_popup',
+    '#title' => t('Specific day'),
+    '#date_format' => 'Y-m-d',
+    '#granularity' => array('year', 'month', 'day'),
+    '#default_value' => NULL,
   );
 
   $form['network_wrapper']['query']['date_description'] = array(
     '#prefix' => '<div id="date-description-wrapper"><p>',
     '#suffix' => '</p></div>',
-    '#value' => t('Input time in 24 hour format (e.g. <em>15:30</em>). '),
   );
 
   if ($user->uid) {
     $form['network_wrapper']['query']['date_description']['#value'] .=  
-      t('The query date and time is expressed in your local timezone (@tz). You may 
-        change your timezone on your !link.', 
+      t('Results are adjusted to your local timezone (@tz). <span class="profile">[!link]</span>', 
         array(
           '@tz' => str_replace('_', ' ', date_default_timezone_name(TRUE)), 
-          '!link' => l('user profile', 'user/'. $user->uid .'/edit')
+          '!link' => l('Update my timezone', 'user/'. $user->uid .'/edit')
         )
       );
   }
@@ -327,10 +341,10 @@ function _ecenter_network_select_form() {
   }
 
   // Submit button
-  $form['submit'] = array(
+  $form['network_wrapper']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit'),
-    '#attributes' => array('class' => 'no-js'),
+    //'#attributes' => array('class' => 'no-js'),
   );
 
   // Data results display
@@ -364,6 +378,7 @@ function ecenter_network_select_form(&$form_state) {
   ahah_helper_register($form, $form_state);
 
   // Get variables
+  //dpm(_ecenter_network_extract_query());
   extract(_ecenter_network_extract_query());
 
   // Refresh map
@@ -454,6 +469,34 @@ function ecenter_network_display_data() {
 function ecenter_network_select_form_submit($form, &$form_state) {
   // Do what AHAH helper does on an AJAX call, to make form constructor a 
   // little less crazy
+  
+  $inc = variable_get('ecenter_network_time_increment', 10);
+  
+  if ($form_state['values']['network_wrapper']['query']['recent_select'] 
+    && !$form_state['values']['network_wrapper']['query']['date_select']) {
+    
+    $date = time();
+    $offset = 3600 * $form_state['values']['network_wrapper']['query']['recent_select'];
+    $tz = timezone_open('UTC');
+    $end = date_make_date($date, $tz, DATE_UNIX);
+    $start = date_make_date($date - $offset, $tz, DATE_UNIX);
+
+    date_increment_round($start, $inc);
+    date_increment_round($end, $inc);
+
+    $start = date_format($start, 'Y-m-d H:i:s');
+    $end = date_format($end, 'Y-m-d H:i:s');
+  }
+  else if ($form_state['values']['network_wrapper']['query']['date_select']) {
+  }
+
+  $form_state['values']['network_wrapper']['query']['start'] = $start;
+  $form_state['values']['network_wrapper']['query']['end'] = $end;
+  
+  // @TODO Set request variables -- seems hackish at this point
+  $_REQUEST['network_wrapper']['query']['start']['date'] = $start;
+  $_REQUEST['network_wrapper']['query']['end']['date'] = $end;
+  
   $form_state['storage'] = $form_state['values'];
   $form_state['rebuild'] = TRUE;
 }
@@ -1404,14 +1447,8 @@ function _ecenter_network_extract_query() {
     $vars = array(
       'src'   => $_REQUEST['network_wrapper']['query']['src_wrapper']['src'],
       'dst'   => $_REQUEST['network_wrapper']['query']['dst_wrapper']['dst'],
-      'start' => _ecenter_network_local_to_utc(
-        $_REQUEST['network_wrapper']['query']['start']['date'] 
-        .' '. $_REQUEST['network_wrapper']['query']['start']['time']
-      ),
-      'end'   => _ecenter_network_local_to_utc(
-        $_REQUEST['network_wrapper']['query']['end']['date']
-        .' '. $_REQUEST['network_wrapper']['query']['end']['time']
-      ),
+      'start' => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['start']['date']),
+      'end'   => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['end']['date']),
     );
   }
   else {

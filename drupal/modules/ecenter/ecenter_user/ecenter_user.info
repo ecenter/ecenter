@@ -1,7 +1,6 @@
 core = "6.x"
 dependencies[] = "autoload"
 dependencies[] = "curl"
-dependencies[] = "fbconnect"
 dependencies[] = "features"
 dependencies[] = "linkedin"
 dependencies[] = "linkedin_auth"

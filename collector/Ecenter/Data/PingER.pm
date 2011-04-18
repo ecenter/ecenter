@@ -11,7 +11,7 @@ use English qw( -no_match_vars );
 use Log::Log4perl qw(get_logger); 
 use Data::Dumper;
 use perfSONAR_PS::Client::PingER; 
-use Ecenter::Types qw(IP_addr PositiveInt);
+use Ecenter::Types qw(IPAddr PositiveInt);
 use DateTime; 
 
 =head1 NAME

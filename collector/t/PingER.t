@@ -18,7 +18,8 @@ my %params = (
               url =>  $url,
               ma   =>  perfSONAR_PS::Client::PingER->new( { instance =>  $url}),
 	      src_regexp => 'fnal',
-	      dst_regexp => 'slac'
+	      dst_regexp => 'slac',
+              resolution => 10
 	     );
 #2
 eval {

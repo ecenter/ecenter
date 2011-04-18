@@ -289,7 +289,7 @@ sub process_data {
    my $task_set;
    my %params = ();
    eval {
-     %params = validate(@_, { data       => {type => SCALAR, regex => qr/^(snmp|bwctl|owamp|pinger)$/i, optional => 1}, 
+     %params = validate(@_, { data_type  => {type => SCALAR, regex => qr/^(snmp|bwctl|owamp|pinger)$/i, optional => 1}, 
                               id	 => {type => SCALAR, regex => qr/^\d+$/, optional => 1}, 
                               src_ip	 => {type => SCALAR, regex => $REG_IP,   optional => 1}, 
 			      src_hub	 => {type => SCALAR, regex => qr/^\w+$/i,   optional => 1}, 

@@ -10,7 +10,7 @@ use lib  "$FindBin::Bin";
 use Log::Log4perl qw(get_logger);
 use DateTime;
 
-use Ecenter::Types qw(IP_addr PositiveInt);
+use Ecenter::Types;
 use English qw( -no_match_vars );
 
 =head1 NAME

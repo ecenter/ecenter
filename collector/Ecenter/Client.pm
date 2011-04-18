@@ -3,16 +3,13 @@ package Ecenter::Client;
 use Moose;
 use namespace::autoclean;
 
-
 use FindBin qw($RealBin);
 use lib  "$FindBin::Bin";
 
 use Log::Log4perl qw(get_logger);
-use DateTime;
 use LWP::UserAgent;
 use JSON::XS;
 
-use Ecenter::Types qw(IP_addr PositiveInt);
 use English qw( -no_match_vars );
 
 =head1 NAME
@@ -21,91 +18,89 @@ use English qw( -no_match_vars );
 
 =head1 DESCRIPTION
 
-   base client for the DRS data consumer
+   base client for the DRS data consumer, subclass it to get implementation for the specific DRS call
   
 =head1 SYNOPSIS 
  
-    ## initiate remote query object for the DRS  based on url provided
-    my $data= E-Center::Client( {  url => 'http://xxxxxxxxx' } );
-    
-    ## send request for all data between two hubs
-    my $data_hashref = $data->get_data({src_hub => 'FNAL', dst_hub => 'LBL', 
-                                        start => '2011-03-01 01:02:00', end => '2011-04-01 01:02:00',
-				        resolution => 100, timeout => 200 } );
-    
-    ## send request for all data between two IPs
-    my $data_hashref = $data->get_data({src_ip => '198.129.4.2', dst_ip => '131.225.110.80', 
-                                        start => '2011-03-01 01:02:00', end => '2011-04-01 01:02:00',
-				        resolution => 100, timeout => 200 } );
-    
-     ## send request for the BWCTL  data only between two IPs
-     my $data_hashref = $data->get_data({data_type => 'bwctl',
-                                         src_ip => '198.129.4.2', dst_ip => '131.225.110.80', 
-                                         start => '2011-03-01 01:02:00', end => '2011-04-01 01:02:00',
-				         resolution => 100, timeout => 200 } );
-    
-    
-    ## send request for the list of hubs (without arguments) or for the list of available paired
-    ## destination hubs for the provided  source hub name parameter
-    
-    my $hubs_arref = $data->get_hubs({src_hub => 'FNAL' } );
-     
-    ## get snmp data structure 
-    my $snmp_arref = $data->snmp();
-     
-    #The same could be repeated for OWMAP or PingER 
-    
-    my $pinger_arref = $data->pinger(); 
- 
-  
+see Ecenter::DataClient for the subclassing example. Normal usage:
+
+ use Moose;
+ extends 'Ecenter::Client';
+
+
+
 =head1 ATTRIBUTES
 
 =over
 
-=item  ma
+=item  request
+
+LWP request object
 
 =item  data 
 
+returned data hashref
+
 =item  url
 
-=item  type
+base URL for the DRS service
+default: http://xenmon.fnal.gov:8055
+
+=item  logger
+
+logging  agent via C<Log::Log4perl>
 
 =back
 
+=head1 METHODS
+
+
 =cut
 
- 
-has data_type  => (is => 'rw', isa => 'Str');
-has data       => (is => 'rw', isa => 'HashRef');
-has url        => (is => 'rw', isa => 'Str' );
-has start      => (is => 'rw', isa => 'Str');
-has end        => (is => 'rw', isa => 'Str');
-has bwctl      => (is => 'rw', isa => 'HashRef' );
-has pinger     => (is => 'rw', isa => 'HashRef' );
-has owamp      => (is => 'rw', isa => 'HashRef' );
-has snmp       => (is => 'rw', isa => 'HashRef' );
-has traceroute => (is => 'rw', isa => 'HashRef' );
+has url        => (is => 'rw', isa => 'Str', default => 'http://xenmon.fnal.gov:8055' );
+has request    => (is => 'rw', isa => 'LWP::UserAgent');
 has logger     => (is => 'rw', isa => 'Log::Log4perl::Logger');
-has resolution => (is => 'rw', isa => 'Ecenter::Types::PositiveInt', default => '20');
-has timeout    => (is => 'rw', isa => 'Ecenter::Types::PositiveInt', default => '120');
+has data       => (is => 'rw', isa => 'HashRef');
 
-sub BUILD { 
-      my $self = shift;
-      $self->logger(get_logger(__PACKAGE__)); 
-      map {$self->$_($args->{$_}) if $self->can($_)}  keys %$args if $args && ref $args eq ref {};
-      return  $self->url if $args->{url};
+sub BUILD {
+    my ($self, $args) = @_;
+    $self->logger(get_logger(__PACKAGE__)); 
+    map {$self->$_($args->{$_}) if $self->can($_)}  keys %$args if $args && ref $args eq ref {};
+    return  $self->url if $args->{url};
 }
 
- }
+=head1  send_request
 
-sub get_data { 
-    my ( $self, $params ) = @_;
-    map {$self->$_($params->{$_}) if $self->can($_)} keys %$params if $params && ref $params eq ref {};
-    my $agent = LWP::UserAgent();
-    
-    
+sends request to the DRS, accepts single parameter - complete URL for the request
+
+=cut 
+
+sub send_request {
+    my ($self, $request_url) = @_;
+    unless($request_url) {
+        $self->logger->error("Failed, URL must be provided as argumnet");
+	return;
+    }   
+    $self->request(LWP::UserAgent->new('DRS useragent 1.001')) 
+        unless $self->request;
+    $self->request->default_header( 'Content-Type' => 'application/json' );
+ 
+    my $response_http = $self->request->get( $request_url );
+    if ($response_http->is_success) {
+        eval {
+            $self->data( decode_json($response_http->content) );
+	    
+        };
+        if($EVAL_ERROR || !($self->data && ref $self->data eq ref {})) {
+            $self->logger->error("DRS webservice failed with  $EVAL_ERROR for: $request_url");
+            return $self->data({status => 'error'});
+        }
+    }
+    else {
+        $self->logger->error("Failed request::   $request_url " . $response_http->status_line);
+	return $self->data({status => 'error'});
+    }
 }
-
 
 no Moose;
 __PACKAGE__->meta->make_immutable;

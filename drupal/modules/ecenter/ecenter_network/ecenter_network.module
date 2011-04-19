@@ -287,50 +287,44 @@ function _ecenter_network_select_form() {
     ),
   );
 
+  $form['network_wrapper']['query']['time'] = array(
+    'recent_selector' => array(
+      '#type' => 'radios',
+      '#options' => array(2 => t('Last 2 hours'), 6 => t('Last 6 hours'), 12 => t('Last 12 hours'), 24 => t('Last day')),
+      '#default_value' => 2,
+      '#required' => FALSE,
+    ),
+    'day_selector' => array(
+      '#type' => 'date_popup',
+      '#granularity' => array('year', 'month', 'day'),
+      '#date_format' => 'Y-m-d',
+    ),
+  );
+
+
   // Date select
   $form['network_wrapper']['query']['start'] = array(
-    '#type' => 'date_popup',
+    '#type' => 'date_text',
     '#title' => t('Start date'),
     '#date_increment' => $inc,
-    '#default_value' => $start,
+    '#default_value' => NULL,
+    //'#default_value' => $start,
+    '#access' => FALSE,
   );
   $form['network_wrapper']['query']['end'] = array(
-    '#type' => 'date_popup',
+    '#type' => 'date_text',
     '#title' => t('End date'),
     '#date_increment' => $inc,
-    '#default_value' => $end,
+    '#default_value' => NULL,
+    //'#default_value' => $end,
+    '#access' => FALSE,
   );
-
-  $form['network_wrapper']['query']['date_description'] = array(
-    '#prefix' => '<div id="date-description-wrapper"><p>',
-    '#suffix' => '</p></div>',
-    '#value' => t('Input time in 24 hour format (e.g. <em>15:30</em>). '),
-  );
-
-  if ($user->uid) {
-    $form['network_wrapper']['query']['date_description']['#value'] .=  
-      t('The query date and time is expressed in your local timezone (@tz). You may 
-        change your timezone on your !link.', 
-        array(
-          '@tz' => str_replace('_', ' ', date_default_timezone_name(TRUE)), 
-          '!link' => l('user profile', 'user/'. $user->uid .'/edit')
-        )
-      );
-  }
-  else {
-    $form['network_wrapper']['query']['date_description']['#value'] .= '<p>'. 
-      t('The query date and time is expressed in site\'s default timezone (@tz).',
-        array(
-          '@tz' => str_replace('_', ' ', date_default_timezone_name(TRUE)), 
-        )
-      ) .'</p>';
-  }
 
   // Submit button
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit'),
-    '#attributes' => array('class' => 'no-js'),
+    //'#attributes' => array('class' => 'no-js'),
   );
 
   // Data results display
@@ -363,20 +357,16 @@ function ecenter_network_select_form(&$form_state) {
   $form = _ecenter_network_select_form();
   ahah_helper_register($form, $form_state);
 
-  // Get variables
   extract(_ecenter_network_extract_query());
 
   // Refresh map
   ecenter_network_refresh_map('ecenter_network', 'openlayers-map-auto-id-0');
 
-  // Set dates
-  if (!empty($start)) {
-    $form['network_wrapper']['query']['start']['#default_value'] = 
-      _ecenter_network_utc_to_local($start);
+  if (!empty($form_state['values']['network_wrapper']['query']['start']['date'])) {
+    $start = _ecenter_network_local_to_utc($form_state['values']['network_wrapper']['query']['start']['date']);
   }
-  if (!empty($end)) {
-    $form['network_wrapper']['query']['end']['#default_value'] = 
-      _ecenter_network_utc_to_local($end);
+  if (!empty($form_state['values']['network_wrapper']['query']['end']['date'])) {
+    $end = _ecenter_network_local_to_utc($form_state['values']['network_wrapper']['query']['end']['date']);
   }
 
   $sources = ecenter_network_get_hops();
@@ -448,12 +438,41 @@ function ecenter_network_display_data() {
    $map . theme('ecenter_network_data', $data, $query) .'</div></div></div>';
 }
 
-/**
+/**y
  * Default submit handler for network form
  */
 function ecenter_network_select_form_submit($form, &$form_state) {
   // Do what AHAH helper does on an AJAX call, to make form constructor a 
   // little less crazy
+
+  $now = time();
+  $offset = variable_get('ecenter_network_default_offset', 600);
+  
+  if (!empty($form_state['values']['network_wrapper']['query']['time']['recent_selector']) 
+    && empty($form_state['values']['network_wrapper']['query']['time']['day_selector'])) {
+
+    $inc = variable_get('ecenter_network_time_increment', 10);
+
+    $delta = $form_state['values']['network_wrapper']['query']['time']['recent_selector'] * 3600;
+    
+    $form_state['values']['network_wrapper']['query']['start']['date'] = _ecenter_network_timestamp_to_local($now - $offset - $delta, 'Y-m-d H:i:s', $inc);
+    $form_state['values']['network_wrapper']['query']['end']['date'] = _ecenter_network_timestamp_to_local($now - $offset, 'Y-m-d H:i:s', $inc);
+
+  }
+
+  if (!empty($form_state['values']['network_wrapper']['query']['time']['day_selector'])) {
+    $date = $form_state['values']['network_wrapper']['query']['time']['day_selector'];
+
+    $tz = date_default_timezone_name(TRUE);
+    $day = date_create($date, timezone_open($tz));
+
+    $start = date_format($day, 'Y-m-d H:i:s');
+    $end = date_format(date_modify($day, '+1 day'), 'Y-m-d h:i:s');
+    
+    $form_state['values']['network_wrapper']['query']['start']['date'] = _ecenter_network_local_to_utc($start, 'Y-m-d H:i:s');
+    $form_state['values']['network_wrapper']['query']['end']['date'] = _ecenter_network_local_to_utc($end, 'Y-m-d H:i:s');
+  }
+  
   $form_state['storage'] = $form_state['values'];
   $form_state['rebuild'] = TRUE;
 }
@@ -1382,10 +1401,28 @@ function _ecenter_network_utc_to_local($date, $format = 'Y-m-d H:i:s') {
  * @return string
  *   Formatted, converted date
  */
-function _ecenter_network_timestamp_to_local($date, $format = 'Y-m-d H:i:s') {
+function _ecenter_network_timestamp_to_local($date, $format = 'Y-m-d H:i:s', $round = NULL) {
   $tz = date_default_timezone_name(TRUE);
   $adjusted = date_make_date($date, timezone_open('UTC'), DATE_UNIX);
   date_timezone_set($adjusted, timezone_open($tz));
+  if ($round) {
+    date_increment_round($adjusted, $round);
+  }
+  return date_format($adjusted, $format);
+}
+
+/**
+ * Convert Unix timestamp to formatted UTC date string 
+ *
+ * @param $date
+ *   A date string
+ * @param $format
+ *   Format to use for return value.
+ * @return string
+ *   Formatted, converted date
+ */
+function _ecenter_network_timestamp_to_utc($date, $format = 'Y-m-d H:i:s', $tz = NULL) {
+  $adjusted = date_make_date($date, timezone_open('UTC'), DATE_UNIX);
   return date_format($adjusted, $format);
 }
 
@@ -1406,11 +1443,9 @@ function _ecenter_network_extract_query() {
       'dst'   => $_REQUEST['network_wrapper']['query']['dst_wrapper']['dst'],
       'start' => _ecenter_network_local_to_utc(
         $_REQUEST['network_wrapper']['query']['start']['date'] 
-        .' '. $_REQUEST['network_wrapper']['query']['start']['time']
       ),
       'end'   => _ecenter_network_local_to_utc(
         $_REQUEST['network_wrapper']['query']['end']['date']
-        .' '. $_REQUEST['network_wrapper']['query']['end']['time']
       ),
     );
   }

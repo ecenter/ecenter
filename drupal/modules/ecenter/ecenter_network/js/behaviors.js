@@ -1,334 +1,110 @@
+(function($) {
+
 $.fn.tablechart.defaults.attachMethod = function(container) {
   $('.chart-title', this.el).after(container); 
 }
 
-// Add traceroute
-Drupal.behaviors.EcenterTraceroute = function(context) {
-  $('#traceroute-wrapper').remove();
-  if (Drupal.settings.ecenterNetwork && Drupal.settings.ecenterNetwork.tracerouteData) {
-    $('<div id="traceroute-wrapper">')
-      .prependTo($('#hop-wrapper'));
-    
-    $('<div id="traceroute"></div>')
-      .appendTo($('#traceroute-wrapper'))
-      .traceroute(Drupal.settings.ecenterNetwork.tracerouteData);
-    
-    var traceroutes = $('#traceroute').data('traceroute');
-    if (traceroutes == undefined) {
-      return;
-    }
+Drupal.behaviors.EcenterNetwork = function(context) {
+  console.log(context);
 
-    var traceroute = traceroutes['default'].svg;
-
-    $('.match, .diff', traceroute.root()).
-    bind({
-      'mouseover' : tracerouteMouseover,
-      'mouseout' : tracerouteMouseout,
-    });
-  }
+  $('#ecenter-network-select-form').ecenter_network();
 }
 
-function tracerouteMouseover(e, feature_select) {
-  $('g.node', e.currentTarget).each(function(e) {
-    var group = this;
-    var hop_id = $(this).attr('hop_id');
-    var hop = Drupal.settings.ecenterNetwork.seriesLookupByID[hop_id];
-
-    var tc = $('#utilization-tables').data('tablechart');
-    
-    if (tc) {
-      var lh = tc['default'].chart.plugins.linehighlighter;
-      
-      if (lh.colors) {
-        var idx = hop.sidx % lh.colors.length;
-        var color = lh.colors[idx];
-      }
-      else {
-        var idx = hop.sidx % tc['default'].chart.seriesColors.length;
-        var color = tc['default'].chart.seriesColors[idx];
-      }
-
-      lh.highlightSeries(hop.sidx, tc['default'].chart);
-    }
-   
-    if (feature_select == undefined || !feature_select) {
-      var ol = $('#openlayers-map-auto-id-0').data('openlayers');
-      var map = ol.openlayers;
-      var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
-      var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
-      var feature = layer.getFeatureBy('ecenterID', hop.hub);
-      
-      control.callbacks.over.call(control, feature);
-    }
-
-    $('circle', group).each(function() {
-      this.setAttribute('stroke', color);
-    });
-    $('text.label', group).each(function() {
-      this.setAttribute('fill', '#ffffff');
-    });
-    $('text.hub-label', group).each(function() {
-      this.setAttribute('fill', '#000000');
-    });
-    $('rect.label-background', group).each(function() {
-      this.setAttribute('fill', color);
-      this.setAttribute('fill-opacity', 1);
-    });
+// No options yet...
+$.fn.ecenter_network = function() {
+  this.each(function(i) {
+    var ecenter_network = $(this).data('ecenterNetwork');
+    if (ecenter_network == undefined) {
+      ecenter_network = new $.ecenter_network(this);
+      $(this).data('ecenterNetwork', ecenter_network);
+    };
+    ecenter_network.refresh();
   });
 }
 
-function tracerouteMouseout(e, feature_select) {
-  $('g.node', e.currentTarget).each(function(e) {
-    var group = this;
-    var hop_id = $(this).attr('hop_id');
-    var hop = Drupal.settings.ecenterNetwork.seriesLookupByID[hop_id];
-
-    var tc = $('#utilization-tables').data('tablechart');
-
-    if (tc) {
-      var lh = tc['default'].chart.plugins.linehighlighter;
-      lh.unhighlightSeries(hop.sidx, tc['default'].chart);
-    }
-
-    if (feature_select == undefined || !feature_select) {
-      var ol = $('#openlayers-map-auto-id-0').data('openlayers');
-      var map = ol.openlayers;
-      var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
-      var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
-      var feature = layer.getFeatureBy('ecenterID', hop.hub);
-      
-      control.callbacks.out.call(control, feature);
-    }
-
-    $('circle', group).each(function() {
-      this.setAttribute('stroke', '#999999');
-    });
-    $('text.label', group).each(function() {
-      this.setAttribute('fill', '#000000');
-    });
-    $('text.hub-label', group).each(function() {
-      this.setAttribute('fill', '#444444');
-    });
-    $('rect.label-background', group).each(function() {
-      this.setAttribute('fill', '#ffffff');
-      this.setAttribute('fill-opacity', 0.65);
-    });
-  }); 
-}
-
-// Catchall for minor behavior modifications
-Drupal.behaviors.EcenterEvents = function(context) {
-  //try { console.log(context, 'EcenterEvents called'); } catch(e) {}
-  // Clear out results wrapper
-  $('#query input[type=hidden]').change(function() {
-    //try { console.log('clear results wrapper:', this); } catch(e) {}
-    $('#results-wrapper').text('');
-  });
-}
-
-Drupal.behaviors.EcenterShowTables = function(context) {
-  var show_label = Drupal.t('Show data');
-  var hide_label = Drupal.t('Hide data');
-  $('<button class="toggle-data">' + show_label + '</button>')
-  .toggle(function() {
-    //try { console.log(this, 'showing data tables'); } catch(e) {}
-    $(this).text(hide_label).parents('.wrapper').find('.data-tables').slideDown('fast');
-  }, function() {
-    //try { console.log(this, 'hiding data tables'); } catch(e) {}
-    $(this).text(show_label).parents('.wrapper').find('.data-tables').slideUp('fast');
-  })
-  .appendTo($('.chart-title', context));
-}
-
-EcenterNetwork = {};
-
-EcenterNetwork.selectFeature = function(select) {
-  var maps = Drupal.settings.openlayers.maps;
-  var val = $(this).val().split(':', 2);
-  var query_type = val[0];
-  var query_value = val[1];
-
-  //try { console.log('selectFeature called'); } catch(e) {}
-
-  // Iterate over "all" maps for ease.  There should be but one.
-  if (query_type == 'hub') {
-    for (key in maps) {
-      var ol = $('#' + maps[key].id).data('openlayers');
-      var layer = ol.openlayers.getLayersBy('drupalID', 'ecenter_network_sites').pop();
-      var control = ol.openlayers.getControlsBy('drupalID', 'ecenterSelect').pop();
-      var feature = layer.getFeatureBy('ecenterID', query_value);
-
-      // If this is called while loading, we have a problem
-      if (control && feature) {
-        if (select) {
-          control.select.call(control, feature);
-        }
-        control.callbacks.over.call(control, feature);
-      }
-    }
+$.ecenter_network = function(el) {
+  this.el = el;
+  // Bind events
+  for (var name in $.fn.ecenter_network.events) {
+    var plugin = $.fn.ecenter_network.events[name];
+    plugin.call(this);
   }
 }
 
-Drupal.behaviors.EcenterSelectSetForm = function(context) {
-  var src = $('#edit-network-wrapper-query-src-wrapper-src');
-  var dst = $('#edit-network-wrapper-query-dst-wrapper-dst');
-
-  if (src.val()) {
-    //try { console.log('calling select feature for source', this); } catch(e) {}
-    EcenterNetwork.selectFeature.call(src.get(0), true);
-  }
-  if (dst.val()) {
-    EcenterNetwork.selectFeature.call(dst.get(0), true);
+$.ecenter_network.prototype.refresh = function() {
+  for (var name in $.fn.ecenter_network.refresh) {
+    var plugin = $.fn.ecenter_network.refresh[name];
+    plugin.call(this);
   }
 }
 
-/*
- * Adding this to Drupal behaviors causes some serious chaos because it winds
- * up getting called many times, which the behavior only needs to be bound
- * and executed once.
- */
-$(document).ready(function() {
-  $('select').change(function() {
-    console.log('select called');
-    console.log(this);
-  });
+// World's tiniest plugin architecture
+$.fn.ecenter_network.events = {}
+$.fn.ecenter_network.refresh = {}
 
-  // Clear out 'remembered' form values
-  var src_input = $('#edit-network-wrapper-query-src-wrapper-src-wrapper input');
-  var dst_input = $('#edit-network-wrapper-query-dst-wrapper-dst-wrapper input');
-  var src_select = $('#edit-network-wrapper-query-src-wrapper-src-wrapper select');
-  if (src_input.val() != '' && dst_input.val() == '') {
-    src_input.val('');
-    src_select.val('');
-    //try { console.log('clearing out remembered form values'); } catch(e) {}
-    EcenterNetwork.selectFeature.call(src_select, false);
-  }
+$.fn.ecenter_network.events.ajax = function() {
+  var el = this.el;
 
-  // If a src/dst changes, change the map, too.
-  $('#ecenter-network-select-form #src-wrapper select, #ecenter-network-select-form #dst-wrapper select')
-  .change(function(e) { 
-    //try { console.log('calling select feature', this); } catch(e) {}
-    EcenterNetwork.selectFeature.call(this, true);
-  });
+  $(el).bind({
+    'ajaxStart' : function(ajax, xhr) {
 
-  // If date changes, update results
-  // @TODO handle multi-part element sanely...
-  $('#edit-network-wrapper-query-start-wrapper input, #edit-network-wrapper-query-end-wrapper input')
-  .blur(function(e) {
-    var src_input = $('#edit-network-wrapper-query-src-wrapper-src-wrapper input');
-    var dst_input = $('#edit-network-wrapper-query-dst-wrapper-dst-wrapper input');
-    console.log(src_input.val());
-    console.log(dst_input.val());
-    if (src_input.val() && dst_input.val()) {
-      console.log(dst_input.val());
-      dst_input.data('autocomplete')._trigger('change');
-    }
-  });
-
-  // Bind to ajaxSend event
-  $('#ecenter-network-select-form').bind('ajaxSend', function(ajax, xhr) {
-    self = this;
-
-    //try { console.log(ajax, 'ajax send called: ajax'); } catch(e) {}
-    //try { console.log(xhr, 'ajax send called: xhr'); } catch(e) {}
-    //try { console.log(this, 'ajax send called: this'); } catch(e) {}
-
-    // Add overlay...
-    $(this).addClass('data-loading').css('position', 'relative');
-
-    var overlay = $('<div class="loading-overlay"><div class="loading-wrapper"><p class="loading">' + Drupal.t('Loading...') + '</p><button class="cancel">' + Drupal.t('Cancel') + '</button></div></div>');
-    overlay.css({
-      'position' : 'absolute',
-      'top' : 0,
-      'left' : 0,
-      'width' : $(this).outerWidth(),
-      'height' : $(this).height(),
-      'z-index' : 5,
-      'display' : 'none',
-    });
-    $(this).prepend(overlay);
-    overlay.fadeIn('slow');
-
-    $('button.cancel', overlay).click(function(e) {
-      e.stopPropagation();
-
-      //try { console.log('cancel button clicked', xhr); } catch(e) {}
-
-      xhr.aborted = true;
-      xhr.abort();
-
-      $(self).removeClass('data-loading');
-
-      $('.loading-overlay', self).fadeOut('fast', function() {
+      // Clear out old results
+      $('#results', el).slideUp(function() {
         $(this).remove();
       });
 
-      return false;
-    });
-  });
+      // Add overlay...
+      $(el).addClass('data-loading').css('position', 'relative');
 
-  // Bind to ajaxSuccess event
-  $('#ecenter-network-select-form').bind('ajaxSuccess', function() {
-    // Add overlay...
-    $(this).removeClass('data-loading');
-    $('.loading-overlay', this).fadeOut('fast', function() {
-      $(this).remove();
-    });
-  });
+      var overlay = $('<div class="loading-overlay"><div class="loading-wrapper"><p class="loading">' + Drupal.t('Loading...') + '</p><button class="cancel">' + Drupal.t('Cancel') + '</button></div></div>');
+      overlay.css({
+        'position' : 'absolute',
+        'top' : 0,
+        'left' : 0,
+        'width' : $(this).outerWidth(),
+        'height' : $(this).height(),
+        'z-index' : 5,
+        'display' : 'none',
+      });
+      $(el).prepend(overlay);
+      overlay.fadeIn('slow');
 
-  // Behind to ajaxError event
-  $('#ecenter-network-select-form').bind('ajaxError', function() {
-    //try { console.log('ajaxError triggered'); } catch(e) {}
-    var input = $('#edit-network-wrapper-query-dst-wrapper-dst-wrapper input');
-    input.val('');
-    input.data('autocomplete')._trigger('change');
-  });
+      $('button.cancel', overlay).click(function(e) {
+        e.stopPropagation();
 
-  // Bind to series highlight
-  $('#results').live('jqplotHighlightSeries', function(e, sidx, plot) {
-    if (Drupal.settings.ecenterNetwork.seriesLookupByIndex) {
-      var hop = Drupal.settings.ecenterNetwork.seriesLookupByIndex[sidx];
-      var tc = $('#utilization-tables').data('tablechart');
-      var lh = tc['default'].chart.plugins.linehighlighter;
+        try { console.log('cancel button clicked', xhr); } catch(e) {}
 
-      var length = tc['default'].chart.seriesColors.length;
-      sidx = sidx % length;
-      var background_color = tc['default'].chart.seriesColors[sidx];
+        xhr.aborted = true;
+        xhr.abort();
 
-      var ol = $('#openlayers-map-auto-id-0').data('openlayers');
-      var map = ol.openlayers;
-      var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop(); 
-      var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
-      var feature = layer.getFeatureBy('ecenterID', hop.hub);
-      
-      control.callbacks.over.call(control, feature);
-    
-      var traceroutes = $('#traceroute').data('traceroute');
-      var traceroute = traceroutes['default'].svg;
-      var group = $('g[hop_id="'+ hop.id +'"]', traceroute.root());
-      group.trigger('mouseover');
+        $(el).removeClass('data-loading');
+
+        $('.loading-overlay', el).fadeOut('fast', function() {
+          $(this).remove();
+        });
+
+        return false;
+      });
+    },
+    'ajaxSuccess' : function() {
+      $(el).removeClass('data-loading');
+      $('.loading-overlay', el).fadeOut('fast', function() {
+        $(this).remove();
+      });
     }
   });
+}
 
-  // Bind to series unhighlighting
-  $('#results').live('jqplotUnhighlightSeries', function(e, sidx, plot) {
-  
-    var hop = Drupal.settings.ecenterNetwork.seriesLookupByIndex[sidx];
-    var ol = $('#openlayers-map-auto-id-0').data('openlayers');
-    var map = ol.openlayers;
-    var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop(); 
-    var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
-    var feature = layer.getFeatureBy('ecenterID', hop.hub);
-    
-    control.callbacks.out.call(control, feature);
-
-    var traceroutes = $('#traceroute').data('traceroute');
-    var traceroute = traceroutes['default'].svg;
-    var group = $('g[hop_id="'+ hop.id +'"]', traceroute.root());
-    group.trigger('mouseout');
-    
+$.fn.ecenter_network.events.date_behavior = function() {
+  $('#recent-select input, #date-select input', this.el).change(function() {
+    var dst = $('#dst-wrapper input', this.el);
+    if (dst.val()) {
+      dst.data('autocomplete')._trigger('change');
+    }
   });
+}
 
+$.fn.ecenter_network.refresh.map = function() {
   var maps = Drupal.settings.openlayers.maps;
   for (key in maps) {
     var id = '#' + maps[key].id;
@@ -444,6 +220,136 @@ $(document).ready(function() {
       }
     });
   }
-});
+}
 
+$.fn.ecenter_network.refresh.traceroute = function() {
+  var el = this.el;
+  if (Drupal.settings.ecenterNetwork && Drupal.settings.ecenterNetwork.tracerouteData) {
+    $('<div id="traceroute-wrapper">')
+      .prependTo($('#hop-wrapper'));
+    
+    $('<div id="traceroute"></div>')
+      .appendTo($('#traceroute-wrapper'))
+      .traceroute(Drupal.settings.ecenterNetwork.tracerouteData);
+    
+    var traceroutes = $('#traceroute').data('traceroute');
+    if (traceroutes == undefined) {
+      return;
+    }
 
+    var traceroute = traceroutes['default'].svg;
+
+    $('.match, .diff', traceroute.root()).
+    bind({
+      'mouseover' : function(e, map_highlight) {
+        var map_highlight = (undefined || true) ? true : false;
+        $('g.node', e.currentTarget).each(function(e) {
+          var group = this;
+          var hop_id = $(this).attr('hop_id');
+          var hop = Drupal.settings.ecenterNetwork.seriesLookupByID[hop_id];
+
+          var tc = $('#utilization-tables').data('tablechart');
+          
+          if (tc) {
+            var lh = tc['default'].chart.plugins.linehighlighter;
+            
+            if (lh.colors) {
+              var idx = hop.sidx % lh.colors.length;
+              var color = lh.colors[idx];
+            }
+            else {
+              var idx = hop.sidx % tc['default'].chart.seriesColors.length;
+              var color = tc['default'].chart.seriesColors[idx];
+            }
+
+            lh.highlightSeries(hop.sidx, tc['default'].chart);
+          } 
+         
+          /*if (map_highlight) {
+            var ol = $('#openlayers-map-auto-id-0').data('openlayers');
+            var map = ol.openlayers;
+            var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
+            var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
+            var feature = layer.getFeatureBy('ecenterID', hop.hub);
+            control.callbacks.over.call(control, feature);
+          }*/
+
+          $('circle', group).each(function() {
+            this.setAttribute('stroke', color);
+          });
+          $('text', group).each(function() {
+            this.setAttribute('fill', '#ffffff');
+          });
+          $('rect', group).each(function() {
+            this.setAttribute('fill', color);
+          });
+          
+        });
+      },
+      'mouseout' : function(e, map_highlight) {
+        var map_highlight = (undefined || true) ? true : false;
+
+        $('g.node', e.currentTarget).each(function(e) {
+          var group = this;
+          var hop_id = $(this).attr('hop_id');
+          var hop = Drupal.settings.ecenterNetwork.seriesLookupByID[hop_id];
+
+          var tc = $('#utilization-tables').data('tablechart');
+          
+          if (tc) {
+            var lh = tc['default'].chart.plugins.linehighlighter;
+            lh.unhighlightSeries(hop.sidx, tc['default'].chart);
+          }
+
+          /*if (map_highlight) {
+            var ol = $('#openlayers-map-auto-id-0').data('openlayers');
+            var map = ol.openlayers;
+            var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
+            var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
+            var feature = layer.getFeatureBy('ecenterID', hop.hub);
+            control.callbacks.out.call(control, feature);
+          }*/
+
+          $('circle', group).each(function() {
+            this.setAttribute('stroke', '#555555');
+          });
+          $('text', group).each(function() {
+            this.setAttribute('fill', '#555555');
+          });
+          $('rect', group).each(function() {
+            this.setAttribute('fill', '#ffffff');
+          });
+        }); 
+      }
+    });
+  }
+}
+
+EcenterNetwork = {};
+
+EcenterNetwork.selectFeature = function(select) {
+  var maps = Drupal.settings.openlayers.maps;
+  var val = $(this).val().split(':', 2);
+  var query_type = val[0];
+  var query_value = val[1];
+
+  // Iterate over "all" maps for ease.  There should be but one.
+  if (query_type == 'hub') {
+    for (key in maps) {
+      var ol = $('#' + maps[key].id).data('openlayers');
+      var layer = ol.openlayers.getLayersBy('drupalID', 'ecenter_network_sites').pop();
+      var control = ol.openlayers.getControlsBy('drupalID', 'ecenterSelect').pop();
+      var feature = layer.getFeatureBy('ecenterID', query_value);
+
+      // If this is called while loading, we have a problem
+      if (control && feature) {
+        if (select) {
+          control.select.call(control, feature);
+        }
+        control.callbacks.over.call(control, feature);
+      }
+    }
+  }
+}
+
+})(jQuery);

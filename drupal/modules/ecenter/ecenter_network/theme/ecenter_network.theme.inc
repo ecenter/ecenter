@@ -237,8 +237,8 @@ function theme_ecenter_network_hops($hops = array()) {
 
     $plot_options = _ecenter_network_plot_options_template();
     $plot_options['seriesDefaults']['markerOptions']['show'] = FALSE;
-    $plot_options['seriesDefaults']['lineWidth'] = 1;
-    $plot_options['seriesDefaults']['color'] = '#999999';
+    $plot_options['seriesDefaults']['lineWidth'] = 0.85;
+    $plot_options['seriesDefaults']['color'] = '#777777';
     $plot_options['axes']['xaxis']['pad'] = 0;
     $plot_options['axes']['xaxis']['numberTicks'] = 10;
     $plot_options['axes']['yaxis']['min'] = 0;
@@ -247,7 +247,7 @@ function theme_ecenter_network_hops($hops = array()) {
     $plot_options['linehighlighter'] = array(
       'show' => TRUE,
       'sizeAdjust' => 2.5,
-      'threshold' => 3,
+      'threshold' => 4,
     );
     drupal_alter('ecenter_network_plot_options', $plot_options, 'utilization', 'snmp');
     $options = array(

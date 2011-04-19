@@ -188,6 +188,10 @@ Drupal.behaviors.EcenterSelectSetForm = function(context) {
  * and executed once.
  */
 $(document).ready(function() {
+  $('select').change(function() {
+    console.log('select called');
+    console.log(this);
+  });
 
   // Clear out 'remembered' form values
   var src_input = $('#edit-network-wrapper-query-src-wrapper-src-wrapper input');
@@ -207,13 +211,27 @@ $(document).ready(function() {
     EcenterNetwork.selectFeature.call(this, true);
   });
 
+  // If date changes, update results
+  // @TODO handle multi-part element sanely...
+  $('#edit-network-wrapper-query-start-wrapper input, #edit-network-wrapper-query-end-wrapper input')
+  .blur(function(e) {
+    var src_input = $('#edit-network-wrapper-query-src-wrapper-src-wrapper input');
+    var dst_input = $('#edit-network-wrapper-query-dst-wrapper-dst-wrapper input');
+    console.log(src_input.val());
+    console.log(dst_input.val());
+    if (src_input.val() && dst_input.val()) {
+      console.log(dst_input.val());
+      dst_input.data('autocomplete')._trigger('change');
+    }
+  });
+
   // Bind to ajaxSend event
   $('#ecenter-network-select-form').bind('ajaxSend', function(ajax, xhr) {
     self = this;
 
-    /*try { console.log(ajax, 'ajax send called: ajax'); } catch(e) {}
-    try { console.log(xhr, 'ajax send called: xhr'); } catch(e) {}
-    try { console.log(this, 'ajax send called: this'); } catch(e) {}*/
+    //try { console.log(ajax, 'ajax send called: ajax'); } catch(e) {}
+    //try { console.log(xhr, 'ajax send called: xhr'); } catch(e) {}
+    //try { console.log(this, 'ajax send called: this'); } catch(e) {}
 
     // Add overlay...
     $(this).addClass('data-loading').css('position', 'relative');

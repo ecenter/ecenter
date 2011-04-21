@@ -259,6 +259,8 @@ function _ecenter_network_select_form() {
     '#cols' => 50,
     '#required' => TRUE,
     '#options' => array('' => t('Select a source')),
+    '#prefix' => '<div class="src-wrapper">',
+    '#suffix' => '</div>',
     '#ahah' => array(
       'event' => 'change',
       'path' => ahah_helper_path(array('network_wrapper', 'query', 'dst_wrapper', 'dst')),
@@ -303,9 +305,9 @@ function _ecenter_network_select_form() {
 
   $form['network_wrapper']['query']['recent_select'] = array(
     '#type' => 'radios',
+    '#title' => t('Show results from'),
     '#prefix' => '<div id="recent-select">',
     '#suffix' => '</div>',
-    '#title' => t('Show results from'),
     '#options' => array(
       3 => t('Last 3 hours'),
       6 => t('Last 6 hours'),
@@ -317,6 +319,8 @@ function _ecenter_network_select_form() {
   $form['network_wrapper']['query']['date_select'] = array(
     '#type' => 'date_popup',
     '#title' => t('Specific day'),
+    '#prefix' => '<div id="date-select">',
+    '#suffix' => '</div>',
     '#date_format' => 'Y-m-d',
     '#granularity' => array('year', 'month', 'day'),
     '#default_value' => NULL,
@@ -349,7 +353,7 @@ function _ecenter_network_select_form() {
   $form['network_wrapper']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit'),
-    //'#attributes' => array('class' => 'no-js'),
+    '#attributes' => array('class' => 'no-js'),
   );
 
   // Data results display

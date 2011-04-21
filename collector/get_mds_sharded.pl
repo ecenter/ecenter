@@ -104,7 +104,8 @@ my $MAX_THREADS = 10;
 #
 #    pattern to match on hLS names
  
-our $HOST_MATCH = qr/((es|deemz)\.net|\w+\.gov|slac\.stanford\.edu)/i;
+#our $HOST_MATCH = qr/((es|deemz)\.net|\w+\.gov|slac\.stanford\.edu)/i;
+our $HOST_MATCH = qr/nersc\.gov/i;
 our $SERVICE_MATCH = qr/pinger|bwctl|owamp|traceroute/xim;
 
 our %SERVICE_PARAM = ( service => [qw/accessPoint address/], 
@@ -223,7 +224,11 @@ my %e2e_threads= ();
 foreach my $hls (@hlses) {
     $logger->debug("LSS INDEX BEFORE:	$hls"); 
     $logger->info("CHECKING HLS: $hls");  
-    #  if($hls !~ /(anl|ornl|lbl|lbnl|jlab|bnl)\.gov|es\.net|\w+.edu|dmz\.net|[\w\-]+\.org/) { 
+    #  if($hls !~ /(anl|ornl|lbl|lbnl|jlab|bnl)\.gov|es\.net|\w+.edu|dmz\.net|[\w\-]+\.org/) {
+    if($hls = ~ m|http://([\d\.]+)/|) {
+        my $ip = $1;
+     
+    }
     next unless(  $hls =~ $HOST_MATCH );
     
     ### run query/echo/ping async

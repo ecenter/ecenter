@@ -2,7 +2,7 @@ logger: "console"
 log: "error"
 warnings: 0
 debug: 0
-time_slice_secs: 36000
+time_slice_secs: 1209600
 show_errors: 1
 route_cache: 1
 auto_reload: 0

@@ -47,6 +47,11 @@ Default: ecenter_data
 port for the Gearman worker to connect
 Default: 10221
 
+=item --timeout=<time period in seconds>
+
+time period to timeout call to the remote perfSONAR-PS service
+Default: 120 seconds
+  
 =item --logdir
 
 logdir for the worker logs
@@ -65,7 +70,7 @@ use Pod::Usage;
 use Log::Log4perl qw(:easy);
 use Getopt::Long;
 my %OPTIONS;
-my @string_option_keys = qw/workers port db logdir/;
+my @string_option_keys = qw/workers port db logdir timeout/;
 GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
             qw/debug help clean/
@@ -77,16 +82,17 @@ my %logger_opts = (
     layout => '%d (%P) %p> %F{1}:%L %M - %m%n'
 );
 Log::Log4perl->easy_init(\%logger_opts);
-my  $logger = Log::Log4perl->get_logger(__PACKAGE__);
+my $logger = Log::Log4perl->get_logger(__PACKAGE__);
 pod2usage(-verbose => 2) 
     if (  $OPTIONS{help} || 
 	 ($OPTIONS{workers} && $OPTIONS{workers} !~ /^\d{1,2}$/) || 
 	 ($OPTIONS{port} && $OPTIONS{port} !~ /^\d+$/) || 
 	 ($OPTIONS{logdir} && !(-d $OPTIONS{logdir})) );
-$OPTIONS{port} ||=10221;
-$OPTIONS{workers} ||=4;
-$OPTIONS{db} ||= 'ecenter_data';
-$OPTIONS{logdir} ||= '/tmp'; 
+$OPTIONS{port}    ||= 10221;
+$OPTIONS{timeout} ||= 120;
+$OPTIONS{workers} ||= 4;
+$OPTIONS{db}      ||= 'ecenter_data';
+$OPTIONS{logdir}  ||= '/tmp'; 
 
 `/bin/ps auxwww | grep 'data_worker' | grep $OPTIONS{port} | grep -v grep | grep -v  nedit  | awk '{print \$2}' | xargs kill -9` if $OPTIONS{clean};
 for(my $i=0;$i<$OPTIONS{workers};$i++) {

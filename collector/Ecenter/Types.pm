@@ -5,7 +5,7 @@ use warnings;
  
 use English qw( -no_match_vars );
 use Net::IP;
- 
+
 =head1 NAME
 
  E-Center::Types  - added types for the Ecenter with builtin validation
@@ -27,7 +27,7 @@ use Net::IP;
 =cut
 
 
-use MooseX::Types -declare => [qw( PositiveInt  IP_addr  HubName MyDateTime )];
+use MooseX::Types -declare => [qw( PositiveInt  IPAddr  HubName MyDateTime )];
 
          # import builtin types
          use MooseX::Types::Moose qw/Int HashRef Str/;
@@ -64,12 +64,14 @@ use MooseX::Types -declare => [qw( PositiveInt  IP_addr  HubName MyDateTime )];
            via { DateTime->new($_) };
 	 
 	  # type definition.
-	 class_type IP_addr, {class => 'Net::IP'}, message {Net::IP::Error()};
-	 
-         # type coercion
-	 coerce IP_addr,
+	 subtype IPAddr,
+	    as Str,
+	    where  { defined Net::IP->new($_) },
+	    message {"$_ must be IP address"};
+           # type coercion
+	 coerce IPAddr,
            from Str,
-           via { Net::IP->new($_) };
+           via { 1 };
 	   
 
 1;

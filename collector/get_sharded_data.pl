@@ -384,7 +384,7 @@ sub get_e2e {
 	                                        	   url     => $md->eventtype->service->service,
 	                                        	   start   =>   $secs_past,
     	    			                	   end     => time(),
-							   resolution => 1000000,
+							   resolution => 100000,
 							   args => {
 						        	subject => $md->subject
 							  }

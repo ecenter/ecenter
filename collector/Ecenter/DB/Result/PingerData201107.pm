@@ -33,22 +33,22 @@ __PACKAGE__->table("pinger_data_201107");
   is_foreign_key: 1
   is_nullable: 0
 
-=head2 minrtt
+=head2 minRtt
 
   data_type: 'float'
   is_nullable: 1
 
-=head2 meanrtt
+=head2 meanRtt
 
   data_type: 'float'
   is_nullable: 1
 
-=head2 medianrtt
+=head2 medianRtt
 
   data_type: 'float'
   is_nullable: 1
 
-=head2 maxrtt
+=head2 maxRtt
 
   data_type: 'float'
   is_nullable: 1
@@ -59,17 +59,17 @@ __PACKAGE__->table("pinger_data_201107");
   extra: {unsigned => 1}
   is_nullable: 0
 
-=head2 minipd
+=head2 minIpd
 
   data_type: 'float'
   is_nullable: 1
 
-=head2 meanipd
+=head2 meanIpd
 
   data_type: 'float'
   is_nullable: 1
 
-=head2 maxipd
+=head2 maxIpd
 
   data_type: 'float'
   is_nullable: 1
@@ -80,7 +80,7 @@ __PACKAGE__->table("pinger_data_201107");
   extra: {unsigned => 1}
   is_nullable: 1
 
-=head2 outoforder
+=head2 outOfOrder
 
   data_type: 'smallint'
   extra: {unsigned => 1}
@@ -91,12 +91,12 @@ __PACKAGE__->table("pinger_data_201107");
   data_type: 'float'
   is_nullable: 1
 
-=head2 iqripd
+=head2 iqrIpd
 
   data_type: 'float'
   is_nullable: 1
 
-=head2 losspercent
+=head2 lossPercent
 
   data_type: 'float'
   is_nullable: 1
@@ -118,31 +118,31 @@ __PACKAGE__->add_columns(
     is_foreign_key => 1,
     is_nullable => 0,
   },
-  "minrtt",
+  "minRtt",
   { data_type => "float", is_nullable => 1 },
-  "meanrtt",
+  "meanRtt",
   { data_type => "float", is_nullable => 1 },
-  "medianrtt",
+  "medianRtt",
   { data_type => "float", is_nullable => 1 },
-  "maxrtt",
+  "maxRtt",
   { data_type => "float", is_nullable => 1 },
   "timestamp",
   { data_type => "bigint", extra => { unsigned => 1 }, is_nullable => 0 },
-  "minipd",
+  "minIpd",
   { data_type => "float", is_nullable => 1 },
-  "meanipd",
+  "meanIpd",
   { data_type => "float", is_nullable => 1 },
-  "maxipd",
+  "maxIpd",
   { data_type => "float", is_nullable => 1 },
   "duplicates",
   { data_type => "smallint", extra => { unsigned => 1 }, is_nullable => 1 },
-  "outoforder",
+  "outOfOrder",
   { data_type => "smallint", extra => { unsigned => 1 }, is_nullable => 1 },
   "clp",
   { data_type => "float", is_nullable => 1 },
-  "iqripd",
+  "iqrIpd",
   { data_type => "float", is_nullable => 1 },
-  "losspercent",
+  "lossPercent",
   { data_type => "float", is_nullable => 1 },
 );
 __PACKAGE__->set_primary_key("pinger_data");

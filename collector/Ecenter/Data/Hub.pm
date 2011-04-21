@@ -9,7 +9,7 @@ use English qw( -no_match_vars );
 use Data::Dumper;
 use Log::Log4perl qw(get_logger);
 use Net::Netmask; 
-use Ecenter::Types qw(HubName IP_addr);
+use Ecenter::Types;
 use MooseX::Params::Validate;
 use JSON::XS  qw(decode_json);
 use LWP::UserAgent;

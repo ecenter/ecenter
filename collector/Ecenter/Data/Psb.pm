@@ -15,7 +15,7 @@ use Data::Dumper;
 use XML::LibXML;
 use perfSONAR_PS::Client::MA;
 use perfSONAR_PS::Common qw( extract find );
-use Ecenter::Types qw(IP_addr PositiveInt);
+use Ecenter::Types;
 use DateTime;
 
 =head1 NAME
@@ -51,8 +51,8 @@ use DateTime;
 
 =cut
 
-has 'src_ip' => (is => 'rw', isa => 'Str');
-has 'dst_ip' => (is => 'rw', isa => 'Str');
+has 'src_ip'   => (is => 'rw', isa => 'Ecenter::Types::IPAddr');
+has 'dst_ip'   => (is => 'rw', isa => 'Ecenter::Types::IPAddr');
 has 'src_name' => (is => 'rw', isa => 'Str');
 has 'dst_name' => (is => 'rw', isa => 'Str');
  
@@ -67,7 +67,7 @@ sub BUILD {
 after 'url' => sub {
     my ( $self, $arg ) = @_;
     if($arg) {
-        $self->ma(new perfSONAR_PS::Client::MA( { instance => $arg, timeout => 30 } ));
+        $self->ma(new perfSONAR_PS::Client::MA( { instance => $arg, timeout => $self->timeout } ));
         $self->logger->debug(' MA ' .  $arg  .  ' connected ');
     }
 }; 

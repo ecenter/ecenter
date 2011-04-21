@@ -100,7 +100,7 @@ $.fn.tablechart = function(options) {
     charts[options.chartName].draw();
   });
   return this;
-};
+}
 
 /**
  * Tablechart object constructor

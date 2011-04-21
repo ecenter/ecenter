@@ -52,7 +52,7 @@ function template_preprocess_ecenter_network_data(&$vars) {
       '#id' => 'ecenter-permalink',
       '#type' => 'textfield',
       '#size' => 115,
-      '#disabled' => TRUE,
+      '#attributes' => array('readonly' => 1),
       '#value' => urldecode(url('network',
         array('query' => $vars['params'], 'absolute' => TRUE,)
       )),

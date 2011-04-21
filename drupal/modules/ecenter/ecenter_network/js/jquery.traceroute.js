@@ -57,7 +57,6 @@ $.fn.traceroute.defaults = {
   },
   'hub_label' : {
     'style' : {
-      'class' : 'hub-label',
       'fill' : '#444444',
       'fontWeight' : 'bold',
       'fontSize' : '10px',
@@ -71,7 +70,7 @@ $.fn.traceroute.defaults = {
     }
   },
   'label' : {
-    'width' : 80,
+    'width' : 75,
     'margin' : 17,
     'padding_x' : 2,
     'padding_y' : 2,
@@ -85,7 +84,6 @@ $.fn.traceroute.defaults = {
   'label_background' : {
     'style' : {
       'fill' : '#ffffff',
-      'fillOpacity' : 0.65,
       'strokeWidth' : 0,
       'class' : 'label-background',
     }
@@ -211,9 +209,11 @@ $.traceroute.prototype.draw = function(data) {
           this.options.label_background.style);
 
         // Hub label
-        if ((direction == 'forward' && row_type == 'diff') || direction == 'reverse') {
-          var hub_label_background = svg.rect(hub_label, label_offset, y_adjust - (parseInt(this.options.hub_label.style.fontSize) / 2.5) - 1, 
-            45, 
+        if ((direction == 'forward' && row_type == 'diff') ||
+          (row_type == 'match' && !step['reverse']) || direction == 'reverse') {
+          var hub_label_background = svg.rect(hub_label, 5 + label_offset, 
+            y_adjust - (parseInt(this.options.hub_label.style.fontSize) / 2.5) - 1, 
+            55, 
             parseInt(this.options.hub_label.style.fontSize) + 2, 
             this.options.hub_label_background.style
           );

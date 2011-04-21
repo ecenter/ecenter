@@ -1325,7 +1325,7 @@ function ecenter_network_layers_traceroute() {
 }
 
 /**
- * @TODO HARDCODED BADNESS along same lines as above
+ * @TODO HARDCODED BADNESS along same lines as sites above
  */
 function _ecenter_network_layers_traceroute_rejigger(&$features) {
   foreach ($features as $k => $feature) {

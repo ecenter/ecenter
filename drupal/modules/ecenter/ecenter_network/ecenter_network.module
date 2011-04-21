@@ -225,6 +225,11 @@ function _ecenter_network_select_form() {
   $preset = openlayers_preset_load('ecenter_network');
   $map = openlayers_render_map($preset->data, $preset->name);
 
+  $form['build_time'] = array(
+    '#type' => 'value',
+    '#value' => time(),
+  );
+
   // Network map
   $form['network_wrapper'] = array(
     '#prefix' => '<div id="network-wrapper" class="clear-block">',
@@ -469,11 +474,11 @@ function ecenter_network_select_form_submit($form, &$form_state) {
   // little less crazy
   
   $inc = variable_get('ecenter_network_time_increment', 10);
-  
+
   if ($form_state['values']['network_wrapper']['query']['recent_select'] 
     && !$form_state['values']['network_wrapper']['query']['date_select']) {
     
-    $date = time();
+    $date = $form_state['values']['build_time'];
     $offset = 3600 * $form_state['values']['network_wrapper']['query']['recent_select'];
     $tz = timezone_open('UTC');
     $end = date_make_date($date, $tz, DATE_UNIX);
@@ -486,16 +491,14 @@ function ecenter_network_select_form_submit($form, &$form_state) {
     $end = date_format($end, 'Y-m-d H:i:s');
   }
   else if ($form_state['values']['network_wrapper']['query']['date_select']) {
-    $date = $form_state['values']['network_wrapper']['query']['time']['day_selector'];
+    $date = $form_state['values']['network_wrapper']['query']['date_selector'];
 
     $tz = date_default_timezone_name(TRUE);
     $day = date_create($date, timezone_open($tz));
 
     $start = date_format($day, 'Y-m-d H:i:s');
     $end = date_format(date_modify($day, '+1 day'), 'Y-m-d h:i:s');
-    
-    $form_state['values']['network_wrapper']['query']['start']['date'] = _ecenter_network_local_to_utc($start, 'Y-m-d H:i:s');
-    $form_state['values']['network_wrapper']['query']['end']['date'] = _ecenter_network_local_to_utc($end, 'Y-m-d H:i:s');
+
   }
 
   $form_state['values']['network_wrapper']['query']['start'] = $start;

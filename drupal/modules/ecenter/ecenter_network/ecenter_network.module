@@ -1310,11 +1310,66 @@ function ecenter_network_layers_traceroute() {
         $old_hop = $hop;
         $i += 1;
 
-        $layer->data['features'] = $features;
       }
     }
+
+    if (!empty($features)) {
+      _ecenter_network_layers_traceroute_rejigger($features);
+    }
+    $layer->data['features'] = $features;
+
   }
   return $layer;
+}
+
+/**
+ * @TODO HARDCODED BADNESS along same lines as above
+ */
+function _ecenter_network_layers_traceroute_rejigger(&$features) {
+  foreach ($features as $k => $feature) {
+    switch ($feature['extra']['ecenterID']) {
+      case 'bnl-mr2':
+        $features[$k]['style']['labelXOffset'] = 35;
+        $features[$k]['style']['labelYOffset'] = 0;
+        break;
+      case 'chic-cr1':
+        $features[$k]['style']['labelXOffset'] = -10;
+        $features[$k]['style']['labelYOffset'] = 15;
+        break;
+      case 'bost-cr1':
+        $features[$k]['style']['labelXOffset'] = 10;
+        $features[$k]['style']['labelYOffset'] = 15;
+        break;
+      case 'lbl-mr2':
+      case 'star-cr1':
+        $features[$k]['style']['labelXOffset'] = -15;
+        $features[$k]['style']['labelYOffset'] = 20;
+        break;
+      case 'star-sdn1':
+        $features[$k]['style']['labelXOffset'] = 30;
+        break;
+      case 'slac-mr2':
+      case 'snv-mr2':
+        $features[$k]['style']['labelXOffset'] = -35;
+        $features[$k]['style']['labelYOffset'] = 0;
+        break;
+      case 'wash-sdn2':
+        $features[$k]['style']['labelXOffset'] = -40;
+        $features[$k]['style']['labelYOffset'] = 0;
+        break;
+      case 'sunn-cr1':
+      case 'llnl-mr2':
+      case 'wash-cr1':
+        $features[$k]['style']['labelXOffset'] = 40;
+        $features[$k]['style']['labelYOffset'] = 0;
+        break;
+      case 'pppl-rt2':
+        $features[$k]['style']['labelYOffset'] = 15;
+        break;
+      default:
+        break;
+    }
+  }
 }
 
 /**

@@ -1177,8 +1177,7 @@ function ecenter_network_layers_sites() {
     $data = ecenter_network_get_data($src, $dst, $start, $end);
   }
 
-  if (($data && empty($data['traceroute']['forward']))
-    || (empty($src) || empty($dst) || empty($start) || empty($end))) {
+  if (empty($src) || empty($dst) || empty($start) || empty($end)) {
     foreach ($hops['hubs'] as $hub) {
       $features[] = array(
         'wkt' => "POINT({$hub['longitude']} {$hub['latitude']})",
@@ -1278,7 +1277,10 @@ function ecenter_network_layers_traceroute() {
 
     $data = ecenter_network_get_data($src, $dst, $start, $end);
 
-    if ($data && $traceroute = $data['traceroute']['forward']) {
+    $traceroute = (!empty($data['traceroute']['forward'])) ? 
+      $data['traceroute']['forward'] : $data['traceroute']['reverse'];
+
+    if ($data && !empty($traceroute)) {
 
       // Initialize some counters, etc
       $old_hop = NULL;

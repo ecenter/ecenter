@@ -162,7 +162,7 @@ $.traceroute.prototype.draw = function(data) {
 
         if (row_type == 'match') {
           // Only increment x counter once on matches
-          if (direction == 'forward') {
+          if (direction == 'forward' || !step['forward']) {
             x_offset += link_length;
           }
           label_offset = x_offset;

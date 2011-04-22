@@ -1354,6 +1354,7 @@ a {
     }
   }
 } // }}}
+
 /* BeautyTips {{{ */
 #content-body {
   .bt-wrapper {
@@ -1475,8 +1476,7 @@ body.page-dashboard h1#page-title {
   }
 }
 /* }}} */
-
-/* --- @TODO sort and arrange --- */
+/* jQuery {{{ */
 .jqplot-highlighter-tooltip {
   background-color: rgba(15, 15, 15, 0.75) !important;
   padding: 3px 5px !important;
@@ -1487,20 +1487,16 @@ body.page-dashboard h1#page-title {
     font-weight: bold;
   }
 }
-
 .jqplot-yaxis-tick {
   top: 0;
 }
-
 .jqplot-yaxis-tick, .jqplot-xaxis-tick {
   font-size: 11px;
 }
-
 td.jqplot-table-legend > div {
   border: none !important;
   padding: 0 !important;
 }
-
 .jqplot-table-legend {
   background-color: rgba(220, 220, 220, 0.35) !important;
   border: none !important;
@@ -1513,7 +1509,8 @@ td.jqplot-table-legend > div {
     max-width: 240px;
   }
 }
-
+/* }}} */
+/* Views {{{ */
 #content .view {
   .row, .views-row {
     margin-bottom: 1.5em;
@@ -1590,15 +1587,8 @@ td.jqplot-table-legend > div {
     }
   }
 }
-
-body.modal {
-  #header-wrapper, #navigation, .simplemenu-block, #footer, #recent-queries {
-    display: none !important;
-  }
-}
-
-
-// Tests, @TODO move...
+/* }}} */
+/* Tests {{{ */
 body.page-ecenter-tests #content {
   table {
     font-size: 12px;
@@ -1621,3 +1611,11 @@ body.page-ecenter-tests #content {
     font-size: 12px;
   }
 }
+/* }}} */
+/* Modal windows {{{ */
+body.modal {
+  #header-wrapper, #navigation, .simplemenu-block, #footer, #recent-queries {
+    display: none !important;
+  }
+}
+/* }}} */

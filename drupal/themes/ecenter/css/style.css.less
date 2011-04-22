@@ -41,6 +41,7 @@
 @font_helvetica: "Helvetica Neue", Helvetica, Verdana, sans-serif;
 @font_droid: "Droid Sans", Arial, sans-serif;
 @font_liberation: "Liberation Mono", monospace;
+@font_size_11: 0.6875em;
 @font_size_12: 0.75em;
 @font_size_13: 0.8125em;
 @font_size_14: 0.875em;
@@ -1171,12 +1172,20 @@ a {
       margin-bottom: 55px;
       .chart-title {
         .box;
+        border-bottom: 1px solid @color_grey_80;
         margin-top: -25px;
         h3 {
           .box;
-          width: 300px;
+          width: 150px;
           font-size: .875em;
           margin: 0;
+        }
+        .chart-label {
+          font-size: @font_size_11;
+          color: @color_grey_33;
+          float: left;
+          width: 270px;
+          text-align: right;
         }
         h4 {
           font-size: .8em;
@@ -1479,11 +1488,25 @@ body.page-dashboard h1#page-title {
   }
 }
 
+.jqplot-yaxis-tick {
+  top: 0;
+}
+
+.jqplot-yaxis-tick, .jqplot-xaxis-tick {
+  font-size: 11px;
+}
+
+td.jqplot-table-legend > div {
+  border: none !important;
+  padding: 0 !important;
+}
+
 .jqplot-table-legend {
-  background-color: rgba(185, 185, 185, 0.35) !important;
+  background-color: rgba(220, 220, 220, 0.35) !important;
   border: none !important;
   margin: 0 !important;
   tbody td, th {
+    font-weight: normal;
     background-color: transparent;
     border: none !important;
     padding: 2px 3px !important;

@@ -92,7 +92,6 @@ function template_preprocess_ecenter_network_data(&$vars) {
 
   // Per-hop measurements
   $vars['hops'] = theme('ecenter_network_hops', $vars['data']['hops']);
-
 }
 
 /**
@@ -277,6 +276,9 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
   $data_tables = array();
 
   foreach ($data as $test => $directions) {
+    $start = 0;
+    $end = 0;
+
     foreach ($directions as $direction => $measurements) {
       foreach ($measurements as $measurement => $values) {
         // Suggestion array to format values
@@ -311,7 +313,6 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
             'class' => $test .'_'. $measurement .' '. $test .'_'. $measurement
               .'_'. $direction,
           );
-
         }
 
         if (($timeseries = $values['timeseries']) && is_array($timeseries)
@@ -319,6 +320,13 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
           $data_table = array();
           $i = 1;
           ksort($timeseries);
+
+          $time_range = array_keys($timeseries);
+          $max = max($time_range);
+          $min = min($time_range);
+          $end = ($max > $end) ? $max : $end;
+          $start = ($start == 0 || $min < $start) ? $min : $start;
+
           foreach ($timeseries as $timestamp => $value) {
             $time = _ecenter_network_timestamp_to_local($timestamp);
             $data_table[] = array(
@@ -327,6 +335,8 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
             );
           }
           $data_tables[$test][$measurement][$direction] = $data_table;
+          $data_tables[$test][$measurement]['start'] = $start;
+          $data_tables[$test][$measurement]['end'] = $end;
         }
       }
     }
@@ -356,7 +366,10 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
 function theme_ecenter_network_end_to_end_tables($tables) {
   $output = '';
   foreach ($tables as $type => $measurements) {
-    foreach ($measurements as $measurement => $directions) {
+    foreach ($measurements as $measurement => $measurement_data) {
+      $start = _ecenter_network_timestamp_to_local($measurement_data['start'], 'M j, Y H:i');
+      $end = _ecenter_network_timestamp_to_local($measurement_data['end'], 'M j, Y H:i');
+
       $suggestions = array(
         'ecenter_network_format_'. $type .'_'. $measurement .'_label',
         'ecenter_network_format_'. $type .'_label',
@@ -364,17 +377,23 @@ function theme_ecenter_network_end_to_end_tables($tables) {
       );
       $output .= '<div class="wrapper" id="'. $type .'-'. $measurement
         .'-data-tables">';
-      $output .= '<div class="chart-title"><h3>'.
-        theme($suggestions, $measurement, $type) .'</h3></div>';
+      $output .= '<div class="chart-title clearfix"><h3>'.
+        theme($suggestions, $measurement, $type) .'</h3>';
+
+      $output .= '<div class="chart-label">'. 
+        t('@start - @end', array('@start' => $start, '@end' => $end)) 
+        .'</div>';
+      $output .= '</div>';
 
       $output .= '<div class="data-tables">';
-      foreach ($directions as $direction => $data) {
+      foreach (array('forward', 'reverse') as $direction) {
         $output .= '<div class="data-table">';
         $output .= '<h4>'. t(ucfirst($direction)) .'</h4>';
-        $output .= theme('jqplot_table', array(), $data);
+        $output .= theme('jqplot_table', array(), $measurement_data[$direction]);
         $output .= '</div>';
       }
       $output .= '</div>';
+
       $output .= '</div>';
 
       $plot_options = _ecenter_network_plot_options_template();
@@ -382,7 +401,7 @@ function theme_ecenter_network_end_to_end_tables($tables) {
       drupal_alter('ecenter_network_plot_options', $plot_options, $measurement,
         $type);
       $options = array(
-        'height' => 150,
+        'height' => 125,
         'width' => 400,
         'hideTables' => FALSE,
         'parseX' => '$.tablechart.parseText',
@@ -473,7 +492,7 @@ function _ecenter_network_plot_options_template() {
       ),
     ),
     'legend' => array(
-      'location' => 'ne',
+      'location' => 'se',
       'xoffset' => 1,
       'yoffset' => 1,
     ),
@@ -481,7 +500,7 @@ function _ecenter_network_plot_options_template() {
     'axes' => array(
       'xaxis' => array(
         'autoscale' => TRUE,
-        'numberTicks' => 8,
+        'numberTicks' => 9,
         'renderer' => '$.jqplot.DateAxisRenderer',
         'tickOptions' => array(
           'formatString' => "%H:%M",

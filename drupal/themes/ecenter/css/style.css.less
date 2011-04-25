@@ -41,6 +41,7 @@
 @font_helvetica: "Helvetica Neue", Helvetica, Verdana, sans-serif;
 @font_droid: "Droid Sans", Arial, sans-serif;
 @font_liberation: "Liberation Mono", monospace;
+@font_size_11: 0.6875em;
 @font_size_12: 0.75em;
 @font_size_13: 0.8125em;
 @font_size_14: 0.875em;
@@ -968,7 +969,6 @@ a {
   #traceroute-wrapper { // {{{
     margin-bottom: .75em;
     #traceroute {
-      margin-left: 15px;
       .trace-label {
         font-size: 11px;
         font-weight: bold;
@@ -991,19 +991,6 @@ a {
     margin-left: 15px;
     #instructions { // {{{
       margin-bottom: 1.25em;
-    } // }}}
-    .form-item { // {{{
-      float: left;
-      margin: 0;
-      &.form-item-labeled { margin-bottom: 1em; }
-      .form-item { margin: 0 9px 0 0; };
-      label {
-        float: left;
-        width: 85px;
-        margin-top: 2px;
-        font-size: @font_size_15;
-        .form-required { .hide; }
-      }
     } // }}}
     #edit-network-wrapper-query-start-wrapper { // {{{
       margin-bottom: .25em;
@@ -1037,12 +1024,42 @@ a {
         width: 50px;
       }
     } // }}}
-    #src-wrapper, #dst-wrapper { // {{{
+    label {
+      font-size: @font_size_15;
+      .form-required { .hide; }
+    }
+    .form-item {
+      margin: 0;
+    }
+    #recent-select {
       .box;
       width: 300px;
+      margin-bottom: 12px;
+      .form-option {
+        float: left;
+        width: 140px;
+        margin-right: 10px;
+        label { font-weight: normal; }
+      }
+    }
+    #src-wrapper, #dst-wrapper, #date-select { // {{{
+      .box;
+      width: 300px;
+      .form-item {
+        float: left;
+        &.form-item-labeled { margin-bottom: 1em; }
+        .form-item { margin: 0 9px 0 0; };
+        label {
+          float: left;
+          width: 85px;
+          margin-top: 2px;
+        }
+      }
       input {
         .box;
         width: 140px;
+      }
+      .dst-wrapper input, .src-wrapper input {
         .round_corner(5px; 0; 0; 5px;);
         border-right: none;
       }
@@ -1155,12 +1172,20 @@ a {
       margin-bottom: 55px;
       .chart-title {
         .box;
+        border-bottom: 1px solid @color_grey_80;
         margin-top: -25px;
         h3 {
           .box;
-          width: 300px;
+          width: 150px;
           font-size: .875em;
           margin: 0;
+        }
+        .chart-label {
+          font-size: @font_size_11;
+          color: @color_grey_33;
+          float: left;
+          width: 270px;
+          text-align: right;
         }
         h4 {
           font-size: .8em;
@@ -1329,6 +1354,7 @@ a {
     }
   }
 } // }}}
+
 /* BeautyTips {{{ */
 #content-body {
   .bt-wrapper {
@@ -1450,8 +1476,7 @@ body.page-dashboard h1#page-title {
   }
 }
 /* }}} */
-
-/* --- @TODO sort and arrange --- */
+/* jqplot {{{ */
 .jqplot-highlighter-tooltip {
   background-color: rgba(15, 15, 15, 0.75) !important;
   padding: 3px 5px !important;
@@ -1462,19 +1487,30 @@ body.page-dashboard h1#page-title {
     font-weight: bold;
   }
 }
-
+.jqplot-yaxis-tick {
+  top: 0;
+}
+.jqplot-yaxis-tick, .jqplot-xaxis-tick {
+  font-size: 11px;
+}
+td.jqplot-table-legend > div {
+  border: none !important;
+  padding: 0 !important;
+}
 .jqplot-table-legend {
-  background-color: rgba(185, 185, 185, 0.35) !important;
+  background-color: rgba(220, 220, 220, 0.35) !important;
   border: none !important;
   margin: 0 !important;
   tbody td, th {
+    font-weight: normal;
     background-color: transparent;
     border: none !important;
     padding: 2px 3px !important;
     max-width: 240px;
   }
 }
-
+/* }}} */
+/* Views {{{ */
 #content .view {
   .row, .views-row {
     margin-bottom: 1.5em;
@@ -1551,9 +1587,35 @@ body.page-dashboard h1#page-title {
     }
   }
 }
-
+/* }}} */
+/* Tests {{{ */
+body.page-ecenter-tests #content {
+  table {
+    font-size: 12px;
+    width: 100%;
+  }
+  .traceroute-test-wrapper {
+    margin-bottom: 3em;
+  }
+  .traceroute-test-col {
+    float: left;
+    width: 45%;
+    margin-right: 40px;
+    h3 {
+      font-size: 16px;
+      margin-bottom: 0.5em;
+      text-align: center;
+    }
+  }
+  .trace-label {
+    font-size: 12px;
+  }
+}
+/* }}} */
+/* Modal windows {{{ */
 body.modal {
   #header-wrapper, #navigation, .simplemenu-block, #footer, #recent-queries {
     display: none !important;
   }
 }
+/* }}} */

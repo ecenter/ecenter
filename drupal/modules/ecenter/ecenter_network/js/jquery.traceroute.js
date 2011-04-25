@@ -1,507 +1,313 @@
-// jQuery plugin to create a "subway map" of a traceroute
-
 /**
  * This plugin takes a specially formed array and turns it into a traceroute
  * "subway map".
- *
- * History
- *
- * - 0.1: Got basic diff drawing and parsing working. Vertical "subway map"
- *   detailed hop labels.
- * - 0.2: Current iteration: Horizontal subway map, significantly smaller
- *   implementations.
- * - Future: More configurable and generic plugin:
- *
- * Configurable callbacks could include:
- *    
- * - Increment/calculate next hop location
- * - What to do in various diff conditions
  */
 (function($) {
 
+// @TODO account for redrawing
 $.fn.traceroute = function(data, options) {
   var options = $.extend(true, {}, $.fn.traceroute.defaults, options);
   return this.each(function(i) {
-    var trace = $(this).data('TraceRoute');
-    if (trace == undefined) {
-      trace = new TraceRoute(this, data, options);
-      $(this).data('TraceRoute', trace);
-    }
-    else {
-      trace.redraw(data, options);
+    var traceroutes = $(this).data('traceroute') || {};
+    if (traceroutes[options.tracerouteName] == undefined) {
+      traceroutes[options.tracerouteName] = new $.traceroute(this, options);
+      $(this).data('traceroute', traceroutes);
+      traceroutes[options.tracerouteName].draw(data);
     }
   });
 };
 
 // Defaults
 $.fn.traceroute.defaults = {
-  'tracerouteLength' : null,
-  'drawArrows' : true,
-  'append' : true,
-  'link' : {
-    'linkLength' : 45,
+  'tracerouteName' : 'default',
+  'diff_y_offset' : 25,
+  'container' : {
     'style' : {
-      'lineWidth' : 5,
-      'strokeStyle' : '#aaaaaa'
+      'width' : '100%', // Width of canvas
+      'height' : '100'  // Height of canvas
+    }
+  },
+  'link' : {
+    'match_offset' : 9,
+    'length' : 55,
+    'style' : {
+      'fill' : 'transparent',
+      'stroke' : '#dddddd',
+      'strokeWidth' : 3,
     }
   },
   'arrow' : {
-    'arrowHeight' : 6,
-    'arrowWidth' : 8,
+    'show' : true,
+    'height' : 12,
+    'width' : 12,
     'style' : {
-      'fillStyle' : '#666666'
+      'fill' : '#aaaaaa',
+      'strokeWidth' : 1,
+      'stroke' : '#ffffff'
     }
   },
-  'hop' : {
-    'extraMargin' : 6,
-    'radius' : 8,
+  'marker' : {
+    'radius' : 10,
     'style' : {
-      'strokeStyle' : '#0000ff',
-      'fillStyle' : '#ffffff',
-      'lineWidth' : 4
+      'class' : 'marker',
+      'stroke' : '#aaaaaa',
+      'fill' : '#ffffff',
+      'strokeWidth' : 4
+    }
+  },
+  'hub_label' : {
+    'style' : {
+      'fill' : '#444444',
+      'fontWeight' : 'bold',
+      'fontSize' : '10px',
+      'fontFamily' : '"Droid Sans", Verdana, sans-serif'
+    }
+  },
+  'hub_label_background' : {
+    'style' : {
+      'fill' : '#ffffff',
+      'fillOpacity' : 0.80
     }
   },
   'label' : {
-    'width' : 63,
-    'top_margin' : 4,
+    'width' : 75,
+    'margin' : 17,
+    'padding_x' : 2,
+    'padding_y' : 2,
+    'style' : {
+      'class' : 'label',
+      'fontSize' : '8px',
+      'fill' : '#000000',
+      'fontFamily' : '"Droid Sans", Verdana, sans-serif'
+    }
+  },
+  'label_background' : {
+    'style' : {
+      'fill' : '#ffffff',
+      'strokeWidth' : 0,
+      'class' : 'label-background',
+    }
   }
 };
 
 // Traceroute constructor
-function TraceRoute(el, data, options) {
+$.traceroute = function(el, options, data) {
   this.el = el;
   this.options = options;
-  this.data = data;
-
-  // Get traceroute length if not provided; we need it to size the canvas
-  if (this.options.tracerouteLength || this.options.tracerouteLength < 1) {
-    this.options.tracerouteLength = this.tracerouteLength();
-  }
-
-  // Initialize canvas
-  this.initCanvas();
-
-  // Create labels (need to create these first, to precalculate width)
-  this.createLabels();
-
-  // Draw traceroute
-  this.drawTraceroute();
-
+  $(el)
+    .css(options.container.style)
+    .svg();
+  this.svg = $(this.el).svg('get');
 }
 
-TraceRoute.prototype.createLabels = function() {
-  for (var i = 0; i < this.data.length; i++) {
-    var row = this.data[i];
-  }
-}
+$.traceroute.prototype.draw = function(data) {
+  var svg = this.svg;
 
-TraceRoute.prototype.initCanvas = function() {
-  var o = this.options;
+  var surface = svg.rect(0, 0, '100%', '100%',
+    {id: 'surface', 'fill': 'transparent'}
+  );
 
-  // Create canvases
-  var hopCanvas = document.createElement('canvas');
-  var linkCanvas = document.createElement('canvas');
+  // Calculate some measurements
 
-  // Create canvases for IE
-  if ($.browser.msie) {
-    hopCanvas = window.G_vmlCanvasManager.initElement(hopCanvas);
-    linkCanvas = window.G_vmlCanvasManager.initElement(linkCanvas);
-  }
+  // Marker offsets
+  var marker_center_offset = this.options.marker.radius +
+    (this.options.marker.style.strokeWidth / 2);
 
-  // Default "layer" CSS settings
-  canvasCss = {
-    'position' : 'absolute',
-    'left' : 0,
-    'top' : 0,
-    'z-index' : 0,
-  };
+  var link_length = this.options.link.length + (2* marker_center_offset);
 
-  // Layer canvases onto target
-  $(linkCanvas).addClass('traceroute-links').css(canvasCss);
-  $(hopCanvas).addClass('traceroute-links').css($.extend(canvasCss, {'z-index' : 1}));
+  // Start at a negative distance so first iteration starts at 0
+  var x_offset = -link_length;
 
-  // Calculate constants
-  this.hopRadius = o.hop.radius + (o.hop.style.lineWidth / 2);
-  this.hopSize = this.hopRadius * 2;
-  this.segmentLength = o.link.linkLength + this.hopSize;
-  this.hopAsymOffset = this.hopSize + o.hop.extraMargin;
+  // Always vertically center markers
+  var y_offset = this.options.container.style.height / 1.75;
 
-  linkCenter = (o.hop.radius / 2) + (o.link.style.lineWidth / 3);
-  this.forwardLinkX = linkCenter;
-  this.reverseLinkX = linkCenter + o.hop.radius;
-  this.singleLinkX = this.hopRadius;
+  // Set up groups to hold graphical elements
+  var links = svg.group('links');
+  var nodes = svg.group('nodes');
 
-  // Set size for both canvases
-  hopCanvas.height = linkCanvas.height = (this.hopSize * 2) + o.hop.extraMargin;
-  hopCanvas.width = linkCanvas.width = (o.link.linkLength * (o.tracerouteLength - 1)) + (this.hopSize * o.tracerouteLength);
+  // Last hop tracks the last hop in the forward and reverse directions,
+  // irrespective of the current step. This allows us to always draw backwards
+  // to the appropriate marker.
+  var last_hop = {'forward': null, 'reverse' : null};
 
-  // Position container
-  //this.containerHeight = (o.label.hei * 2) + hopCanvas.width;
-  this.containerHeight = hopCanvas.height;
+  for (var i = 0; i < data.length; i++) {
+    var row = data[i];
+    var row_type = (row.match != undefined) ? 'match' : 'diff';
+    var step = row[row_type];
 
-  $(this.el).css({
-    'position' : 'relative',
-    'width' : hopCanvas.width,
-    'height' : this.containerHeight + 'px'
-  })
-  .append(linkCanvas)
-  .append(hopCanvas);
+    var node_group = svg.group(nodes, 'step-' + i, {'class' : row_type});
 
-  // Provide canvases as part of traceroute object
-  this.hopCanvas = hopCanvas;
-  this.hopContext = hopCanvas.getContext('2d');
-  this.linkCanvas = linkCanvas;
-  this.linkContext = linkCanvas.getContext('2d');
-
-}
-
-// Calculate traceroute length
-TraceRoute.prototype.tracerouteLength = function() {
-  var count = 0;
-  for (var i = 0; i < this.data.length; i++) {
-    var row = this.data[i];
-    if (row.match != undefined) {
-      count += 1;
+    if (row_type == 'diff') {
+      var longest_direction = (step.forward.length > step.reverse.length) ?
+        'forward' : 'reverse';
+      var last_diff_x = 0;
+      var adjusted_link_length = link_length - 30; // @TODO properly calculate
     }
-    if (row.diff != undefined) {
-      count += (row.diff.reverse.length > row.diff.forward.length) ? row.diff.reverse.length : row.diff.forward.length;
-    }
-  }
-  return count;
-}
 
-// Draw traceroute chart
-TraceRoute.prototype.drawTraceroute = function(traceroute) {
-  var o = this.options;
-  var extra_inc = 0;
-  var old_row = false;
-  var old_match_row = false;
-  var last_match = {x : 0, y : 0};
-  var last_reverse_diff_x = {x : 0, y : 0};
-  var last_forward_diff_y = {x : 0, y : 0};
+    // Draw markers and labels
+    for (var direction in {forward: 1, reverse: 1}) {
 
-  for (var i = 0; i < this.data.length; i++) {
-    var row = this.data[i];
+      var y_adjust = (i > 0 && row_type == 'diff' && direction == 'reverse') ? y_offset - this.options.diff_y_offset : y_offset;
 
-    // Row contains matching hops
-    if (row.match != undefined) {
-      hopStyle = (row.hopStyle != undefined) ? row.hopStyle : o.hop.style;
-      hopX = (this.segmentLength * (i + extra_inc)) + this.hopRadius;
+      if (step[direction] == undefined) {
+        continue;
+      }
 
-      this.drawHop(hopX, this.hopRadius, o.hop.radius, hopStyle);
+      for (var j = 0; j < step[direction].length; j++) {
+        var hop = step[direction][j];
 
-      // If an old row exists, draw backwards lines running to it
-      if (old_row) {
-        linkStyle = (row.linkStyle != undefined) ? row.linkStyle : o.link.style;
-        arrowStyle = (row.arrowStyle != undefined) ? row.arrowStyle : o.arrow.style;
+        $.extend(hop, {'ttl' : i, 'type' : row_type, 'direction' : direction, 'y_offset': y_adjust});
 
-        // If the old row was another matching hop, just draw regular lines back
-        if (old_row.match != undefined) {
-          if (old_row.match.reverse != undefined) {
-            this.drawSegment(last_match.x, this.forwardLinkX, hopX, this.forwardLinkX, linkStyle, arrowStyle);
-            this.drawSegment(hopX, this.reverseLinkX, last_match.x, this.reverseLinkX, linkStyle, arrowStyle);
-            
+        if (row_type == 'match') {
+          // Only increment x counter once on matches
+          if (direction == 'forward' || !step['forward']) {
+            x_offset += link_length;
+          }
+          label_offset = x_offset;
+          marker_offset = marker_center_offset + label_offset + (this.options.label.width / 4);
+          $.extend(hop, {'x_offset' : x_offset});
+        } else {
+          // Increment global x_offset when working in longest direction
+          if (direction == longest_direction) {
+            x_offset += link_length;
+            last_diff_x = x_offset;
+          }
+          else {
+            // @TODO test this...
+            last_diff_x = (j > 0) ? last_diff_x + adjusted_link_length : x_offset + adjusted_link_length;
+          }
+          label_offset = last_diff_x;
+          marker_offset = marker_center_offset + label_offset + (this.options.label.width / 4);
+          $.extend(hop, {'x_offset' : last_diff_x});
+        }
+
+        // Drawing routines
+        var hop_id = row_type + '-' + direction + '-' + hop.id;
+        var hop_class = 'node ' + row_type + '-' + direction + '-' + hop.hub;
+
+        var node = svg.group(node_group, hop_id, {'hop_id' : hop.id, 'class' : hop_class});
+        var marker = svg.circle(node, marker_offset, y_adjust, this.options.marker.radius,
+          this.options.marker.style);
+        var background = svg.group(node, {'class' : 'background'});
+        var label = svg.group(node, {'class' : 'label'});
+        var hub_label = svg.group(node, {'class' : 'hub_label'});
+
+        var font_size = parseInt(this.options.label.style.fontSize);
+
+        var label_y = (direction == 'reverse') ?
+          y_adjust - this.options.label.margin - (2 * this.options.label.padding_y):
+          y_adjust + font_size + this.options.label.margin + (2 * this.options.label.padding_y);
+
+        var label_x = label_offset + this.options.label.padding_x;
+
+        var label_text = svg.text(label, label_x, label_y,
+          hop.hop_ip, this.options.label.style);
+
+        var label_background = svg.rect(background,
+          label_offset, label_y - font_size - this.options.label.padding_y,
+          this.options.label.width, font_size + (3 * this.options.label.padding_y),
+          this.options.label_background.style);
+
+        // Hub label
+        if ((direction == 'forward' && row_type == 'diff') ||
+          (row_type == 'match' && !step['reverse']) || direction == 'reverse') {
+          var hub_label_background = svg.rect(hub_label, 5 + label_offset, 
+            y_adjust - (parseInt(this.options.hub_label.style.fontSize) / 2.5) - 1, 
+            55, 
+            parseInt(this.options.hub_label.style.fontSize) + 2, 
+            this.options.hub_label_background.style
+          );
+          var hub_label = svg.text(hub_label, label_offset + 5, 
+            y_adjust + (parseInt(this.options.hub_label.style.fontSize) / 2.5),
+            hop.hub, this.options.hub_label.style);
+        }
+
+        var line_offset = 0;
+        if (last_hop != undefined && last_hop[direction] != undefined) {
+          // Last hop in the same direction as this hop
+          var last_sibling = last_hop[direction];
+
+          var startx = last_sibling.x_offset + marker_center_offset + (this.options.label.width / 4);
+          var endx = marker_offset;
+
+          if (direction == 'forward') {
+
+            // Offset link y-position for parallel forward and reverse "rails"
+            if (last_sibling.ttl + 1 == i && last_sibling.type == 'match' && hop.type == 'match') {
+              var line_offset = this.options.link.match_offset;
+            }
+
+            var link = svg.group(links);
+            var line = svg.line(link,
+                startx, y_adjust + line_offset,
+                endx, y_adjust + line_offset,
+                this.options.link.style);
+
+            // Draw arrow
+            var arrow_start = startx + ((endx - startx) / 2) - (this.options.arrow.width / 2);
+            var arrow_end = arrow_start + this.options.arrow.width;
+            var arrow_top = y_adjust + line_offset + (this.options.arrow.height / 2);
+            var arrow_bottom = y_adjust + line_offset - (this.options.arrow.height / 2);
+            var arrow = svg.polygon(link, [
+                [arrow_start, arrow_top], [arrow_start, arrow_bottom],
+                [arrow_end, y_adjust + line_offset]
+              ],this.options.arrow.style);
           } else {
-            this.drawSegment(last_match.x, this.singleLinkX, hopX, this.singleLinkX, linkStyle, arrowStyle);
+
+            // Non-skip differences: The current TTL is 1 ahead of previous sibling hop's TTL
+            if (last_sibling.ttl + 1 == i || (last_sibling.type == 'diff' && hop.type == 'diff')) {
+
+              // Offset link y-position for parallel forward and reverse "rails"
+              if (hop.type == 'match' && last_sibling.type == 'match') {
+                var line_offset = this.options.link.match_offset;
+              }
+
+              var link = svg.group(links);
+              var line = svg.line(link, startx, last_hop[direction].y_offset - line_offset, endx, y_adjust - line_offset, this.options.link.style);
+
+              // @TODO Rotate arrows
+              if ((hop.type == 'match' && last_sibling.type == 'match') ||
+                (last_sibling.type == 'diff' && hop.type == 'diff')) {
+
+                // Draw arrow
+                var arrow_start = startx + ((endx - startx) / 2) - (this.options.arrow.width / 2);
+                var arrow_end = arrow_start + this.options.arrow.width;
+                var arrow_top = y_adjust - line_offset + (this.options.arrow.height / 2);
+                var arrow_bottom = y_adjust - line_offset - (this.options.arrow.height / 2);
+                var arrow = svg.polygon(link, [
+                    [arrow_end, arrow_top], [arrow_end, arrow_bottom],
+                    [arrow_start, y_adjust - line_offset]
+                  ],this.options.arrow.style);
+              }
+            }
+
+            // Skip links
+            else {
+              var link = svg.group(links);
+              // @TODO remove fudge factor
+              var control_y = y_adjust - (1.35 * this.options.diff_y_offset);
+              var path = svg.createPath();
+              var curve = svg.path(link,
+                path.move(startx, y_adjust).curveC([[startx, control_y, endx, control_y, endx, y_adjust]]),
+                this.options.link.style);
+
+              // Draw arrow
+              var arrow_start = startx + ((endx - startx) / 2) - (this.options.arrow.width / 2);
+              var arrow_end = arrow_start + this.options.arrow.width;
+              var arrow_top = y_adjust - this.options.diff_y_offset + (this.options.arrow.height / 2);
+              var arrow_bottom = y_adjust - this.options.diff_y_offset - (this.options.arrow.height / 2);
+              var arrow = svg.polygon(link, [
+                  [arrow_end, arrow_top], [arrow_end, arrow_bottom],
+                  [arrow_start, y_adjust - this.options.diff_y_offset]
+                ], this.options.arrow.style);
+            }
+
           }
         }
-
-        // The old row had asymmetry, but contributed no hops in the reverse direction (a skip)
-        if (old_row.diff != undefined && !old_row.diff.reverse.length) {
-          this.drawSegment(last_forward_diff.x, this.forwardLinkX, hopX, this.forwardLinkX, linkStyle, arrowStyle);
-          this.drawCurve(this.hopAsymOffset, this.reverseLinkX, hopX, last_match.y, linkStyle, arrowStyle);
-        }
-
-        // The old row contributed hops in the reverse direction
-        /*if (old_row.diff != undefined && old_row.diff.reverse.length) {
-          forwardY  = (last_forward_diff_y > last_match_y) ? last_forward_diff_y : last_match_y;
-          this.drawSegment(this.forwardLinkX, forwardY, this.forwardLinkX, hopY, linkStyle, arrowStyle);
-          this.drawSegment(this.hopRadius, hopY, this.hopAsymOffset, last_reverse_diff_y, linkStyle, arrowStyle);
-        }*/
-
+        last_hop[direction] = hop;
       }
-      last_match.x = hopX;
-      this.drawHopLabel(row.match.forward[0], hopX - (this.options.label.width / 2), this.hopSize + this.options.label.top_margin);
     }
-
-    /*if (row.diff != undefined) {
-
-      // Calculate position / segment length
-      mostHops = (row.diff.forward.length > row.diff.reverse.length) ? 'forward' : 'reverse';
-      leastHops = (row.diff.forward.length > row.diff.reverse.length) ? 'reverse' : 'forward';
-      longestSegment = (o.link.linkLength * (row.diff[mostHops].length + 1)) + (this.hopSize * row.diff[mostHops].length);
-      adjustedLinkLength = (longestSegment - (row.diff[leastHops].length * this.hopSize)) / (row.diff[leastHops].length + 1);
-      adjustedSegmentHeight = adjustedLinkLength + this.hopSize;
-
-      // Forward
-      for (var j = 0; j < row.diff.forward.length; j++) {
-
-        hop = row.diff.forward[j];
-        hopStyle = (row.hopStyle != undefined) ? hop.hopStyle : o.hop.style;
-
-        if (leastHops == 'forward') {
-          lastHopY = last_match_y + (adjustedSegmentHeight * j);
-          hopY = last_match_y + (adjustedSegmentHeight * (j + 1));
-        }
-        else {
-          lastHopY = last_match_y + (this.segmentLength * j);
-          hopY = last_match_y + (this.segmentLength * (j + 1));
-        }
-        last_forward_diff_y = hopY;
-
-        this.drawHop(this.hopRadius, hopY, o.hop.radius, hopStyle);
-
-        linkStyle = (hop.linkStyle != undefined) ? hop.linkStyle : o.link.style;
-        arrowStyle = (hop.arrowStyle != undefined) ? hop.arrowStyle : o.arrow.style;
-        this.drawSegment(this.forwardLinkX, lastHopY, this.forwardLinkX, hopY, linkStyle, arrowStyle);
-
-        this.drawHopLabel(hop, 0, hopY - this.hopSize);
-      }
-
-      // Reverse
-      for (var k = 0; k < row.diff.reverse.length; k++) {
-        hop = row.diff.reverse[k];
-        hopStyle = (row.hopStyle != undefined) ? hop.hopStyle : o.hop.style;
-        linkStyle = (hop.linkStyle != undefined) ? hop.linkStyle : o.link.style;
-        arrowStyle = (hop.arrowStyle != undefined) ? hop.arrowStyle : o.arrow.style;
-
-        if (leastHops == 'reverse') {
-          lastHopY = last_match_y + (adjustedSegmentHeight * k);
-          hopY = last_match_y + (adjustedSegmentHeight * (k + 1));
-        }
-        else {
-          lastHopY = last_match_y + (this.segmentLength * k);
-          hopY = last_match_y + (this.segmentLength * (k + 1));
-        }
-        last_reverse_diff_y = hopY;
-
-        this.drawHop(this.hopAsymOffset, hopY, o.hop.radius, hopStyle);
-        this.drawHopLabel(hop, o.label.width + this.hopAsymOffset + this.hopSize, hopY - this.hopSize, 'right');
-
-        if (k == 0) {
-          this.drawSegment(this.hopAsymOffset, hopY, this.hopRadius, last_match_y, linkStyle, arrowStyle);
-        } else {
-          this.drawSegment(this.hopAsymOffset, hopY, this.hopAsymOffset, lastHopY, linkStyle, arrowStyle);
-        }
-      }
-
-      // Set extra increment for next match
-      if (j > 1 || k > 1) {
-        extra_inc += (k > j) ? k - 1 : j - 1;
-      }
-
-    }*/
-
-    // Save last row...
-    old_row = row;
   }
-}
-
-TraceRoute.prototype.drawHop = function(x, y, r, options) {
-  ctx = this.hopContext;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.beginPath();
-  ctx.arc(0, 0, r, 0, Math.PI*2, true);
-  for (option in options) {
-    ctx[option] = options[option];
-  }
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-  ctx.restore();
-}
-
-TraceRoute.prototype.drawCurve = function(x, xOffset, y1, y2, options, arrow_options) {
-  ctx = this.linkContext;
-  o = this.options;
-
-  ctx.save();
-  ctx.beginPath();
-  ctx.moveTo(x, y1);
-  ctx.bezierCurveTo(x + xOffset, y1, x + xOffset, y2, x, y2); 
-  for (option in options) {
-    ctx[option] = options[option];
-  }
-  ctx.stroke();
-  ctx.restore();
-
-  // Draw arrow on line
-  ctx.save();
-  arrowY = y1 + (o.arrow.arrowHeight / 2) + ((y2 - y1)/2);
-
-  // Simplified version of Bezier algorithm, with t=0.5 (because we're positioning halfway)
-  offset = (1.5*Math.pow((0.5), 2)*xOffset) + (1.5*Math.pow(0.5,2)*xOffset) + x;
-
-  arrowStartX = offset - (o.arrow.arrowWidth / 2);
-  arrowEndX = offset + (o.arrow.arrowWidth / 2);
-  ctx.beginPath();
-  ctx.moveTo(arrowStartX, arrowY);
-  ctx.lineTo(arrowEndX, arrowY);
-  ctx.lineTo(offset, arrowY - o.arrow.arrowHeight);
-  for (option in arrow_options) {
-    ctx[option] = arrow_options[option];
-  }
-  ctx.fill();
-  ctx.restore();
-
-}
-
-TraceRoute.prototype.drawSegment = function(x1, y1, x2, y2, options, arrow_options) {
-  ctx = this.linkContext;
-  o = this.options; // Needed for arrow drawing
-
-  ctx.save();
-
-  // Draw line
-  ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x2, y2);
-  for (option in options) {
-    ctx[option] = options[option];
-  }
-  ctx.stroke();
-
-  if (arrow_options != undefined) {
-    arrowX = o.arrow.arrowWidth / 2;
-    deltaY = y2 - y1;
-    deltaX = x2 - x1;
-
-    ctx.translate(x1, y1);
-
-    rotation = (2 * Math.PI) - Math.tan(deltaX/deltaY);
-    // NaN in horizontal case
-    if (rotation) {
-      ctx.rotate(rotation);
-    }
-
-    hypotenuse = Math.sqrt(Math.pow(deltaY, 2) + Math.pow(deltaX, 2));
-    ctx.beginPath();
-
-    // @TODO Draw arrows for diagonal lines
-    if (deltaX === 0) {
-
-      // "Forward" traceroutes
-      if (deltaY > 0) {
-        arrowY = (hypotenuse / 2) - (o.arrow.arrowHeight / 2);
-        ctx.moveTo(-arrowX, arrowY);
-        ctx.lineTo(arrowX, arrowY);
-        ctx.lineTo(0, arrowY + o.arrow.arrowHeight);
-      }
-      else {
-        arrowY = (-hypotenuse / 2) + (o.arrow.arrowHeight / 2);
-        ctx.moveTo(-arrowX, arrowY);
-        ctx.lineTo(arrowX, arrowY);
-        ctx.lineTo(0, arrowY - o.arrow.arrowHeight);
-      }
-
-      for (option in arrow_options) {
-        ctx[option] = arrow_options[option];
-      }
-
-    }
-
-    ctx.fill();
-
-  }
-  ctx.restore();
-}
-
-TraceRoute.prototype.drawHopLabel = function(hop, x, y, align) {
-  var o = this.options;
-
-  label = '<div class="trace-label" id="trace-hop-label-' + hop.id + '" hopid="' + hop.id + '">';
-  label += hop.hub;
-  label += '</div>';
-  label = $(label);
-
-  //if (hop_data.data) {
-  //  label.addClass('has-chart');
-  //}
-
-  label_width = o.label.width;
-  css = {
-    'z-index' : 50,
-    'width' : label_width + 'px',
-    'position' : 'absolute',
-    'left' : x,
-    'top' : y,
-    'text-align' : 'center',
-  };
-  label.css(css);
-  $(this.el).append(label);
-
-  // Attach label behavior
-  this.hopBehavior(label);
-}
-
-// @TODO Provide generic behavior and override elsewhere
-TraceRoute.prototype.hopBehavior = function(el) {
-  $(el).hover(function() {
-    var hopid = $(this).attr('hopid');
-    var hop = Drupal.settings.ecenterNetwork.seriesLookupByID[hopid];
-    var tc = $('#utilization-tables').data('tablechart');
-    var lh = tc['default'].chart.plugins.linehighlighter;
-    lh.highlightSeries(hop.sidx, tc['default'].chart);
-
-    var length = tc['default'].chart.seriesColors.length;
-    var sidx = hop.sidx % length;
-    var background_color = tc['default'].chart.seriesColors[sidx];
-
-    $(this)
-      .addClass('highlight')
-      .css({'background-color' : background_color });
-
-    var ol = $('#openlayers-map-auto-id-0').data('openlayers');
-    var map = ol.openlayers;
-    var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop(); 
-    var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
-    var feature = layer.getFeatureBy('ecenterID', hop.hub);
-    
-    control.callbacks.over.call(control, feature);
-
-  }, function() {
-    var hopid = $(this).attr('hopid');
-    var hop = Drupal.settings.ecenterNetwork.seriesLookupByID[hopid];
-    var tc = $('#utilization-tables').data('tablechart');
-    var lh = tc['default'].chart.plugins.linehighlighter;
-    lh.unhighlightSeries(hop.sidx, tc['default'].chart);
-
-    $(this)
-      .removeClass('highlight')
-      .css({'background-color' : 'transparent'});
-    
-    var ol = $('#openlayers-map-auto-id-0').data('openlayers');
-    var map = ol.openlayers;
-    var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop(); 
-    var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
-    var feature = layer.getFeatureBy('ecenterID', hop.hub);
-    
-    control.callbacks.out.call(control, feature);
-  });
-}
-
-// @TODO: DRY violation
-TraceRoute.prototype.redraw = function(data, options) {
-  this.options = options;
-  this.data = data;
-
-  $(this.hopCanvas).remove();
-  $(this.linkCanvas).remove();
-
-  // @TODO not really generic
-  $('.trace-label', this.el).remove();
-
-  // Get traceroute length if not provided; we need it to size the canvas
-  if (this.options.tracerouteLength || this.options.tracerouteLength < 1) {
-    this.options.tracerouteLength = this.tracerouteLength();
-  }
-
-  // Initialize canvas
-  this.initCanvas();
-
-  // Draw traceroute
-  this.drawTraceroute();
 }
 
 })(jQuery);

@@ -173,6 +173,8 @@ function ecenter_network_init() {
     drupal_add_js(drupal_get_path('module', 'jqplot') .'/js/jqplot-behaviors.js');
 
     drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.metadata.js');
+    drupal_add_css(libraries_get_path('jquery-svg') .'/jquery.svg.css');
+    drupal_add_js(libraries_get_path('jquery-svg') .'/jquery.svg.js');
     drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.traceroute.js');
     drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/behaviors.js');
 
@@ -219,14 +221,14 @@ function _ecenter_network_select_form() {
   $offset = variable_get('ecenter_network_default_offset', 600);
   $now = time();
   
-  $start = _ecenter_network_timestamp_to_local($now - $offset - $default_start, 'Y-m-d H:i');
-  $end = _ecenter_network_timestamp_to_local($now - $offset, 'Y-m-d H:i');
-
-  $inc = variable_get('ecenter_network_time_increment', 10);
-
   // Map
   $preset = openlayers_preset_load('ecenter_network');
   $map = openlayers_render_map($preset->data, $preset->name);
+
+  $form['build_time'] = array(
+    '#type' => 'value',
+    '#value' => time(),
+  );
 
   // Network map
   $form['network_wrapper'] = array(
@@ -257,6 +259,8 @@ function _ecenter_network_select_form() {
     '#cols' => 50,
     '#required' => TRUE,
     '#options' => array('' => t('Select a source')),
+    '#prefix' => '<div class="src-wrapper">',
+    '#suffix' => '</div>',
     '#ahah' => array(
       'event' => 'change',
       'path' => ahah_helper_path(array('network_wrapper', 'query', 'dst_wrapper', 'dst')),
@@ -287,31 +291,52 @@ function _ecenter_network_select_form() {
 
   // Date select
   $form['network_wrapper']['query']['start'] = array(
-    '#type' => 'date_popup',
+    '#type' => 'date_text',
     '#title' => t('Start date'),
-    '#date_increment' => $inc,
-    '#default_value' => $start,
+    '#default_value' => NULL,
+    '#access' => FALSE,
   );
   $form['network_wrapper']['query']['end'] = array(
-    '#type' => 'date_popup',
+    '#type' => 'date_text',
     '#title' => t('End date'),
-    '#date_increment' => $inc,
-    '#default_value' => $end,
+    '#default_value' => NULL,
+    '#access' => FALSE,
+  );
+
+  $form['network_wrapper']['query']['recent_select'] = array(
+    '#type' => 'radios',
+    '#title' => t('Show results from'),
+    '#prefix' => '<div id="recent-select">',
+    '#suffix' => '</div>',
+    '#options' => array(
+      3 => t('Last 3 hours'),
+      6 => t('Last 6 hours'),
+      12 => t('Last 12 hours'),
+      24 => t('Last day'),
+    ),
+    '#default_value' => 3,
+  );
+  $form['network_wrapper']['query']['date_select'] = array(
+    '#type' => 'date_popup',
+    '#title' => t('Specific day'),
+    '#prefix' => '<div id="date-select">',
+    '#suffix' => '</div>',
+    '#date_format' => 'Y-m-d',
+    '#granularity' => array('year', 'month', 'day'),
+    '#default_value' => NULL,
   );
 
   $form['network_wrapper']['query']['date_description'] = array(
     '#prefix' => '<div id="date-description-wrapper"><p>',
     '#suffix' => '</p></div>',
-    '#value' => t('Input time in 24 hour format (e.g. <em>15:30</em>). '),
   );
 
   if ($user->uid) {
     $form['network_wrapper']['query']['date_description']['#value'] .=  
-      t('The query date and time is expressed in your local timezone (@tz). You may 
-        change your timezone on your !link.', 
+      t('Results are adjusted to your local timezone (@tz). <span class="profile">[!link]</span>', 
         array(
           '@tz' => str_replace('_', ' ', date_default_timezone_name(TRUE)), 
-          '!link' => l('user profile', 'user/'. $user->uid .'/edit')
+          '!link' => l('Update my timezone', 'user/'. $user->uid .'/edit')
         )
       );
   }
@@ -325,7 +350,7 @@ function _ecenter_network_select_form() {
   }
 
   // Submit button
-  $form['submit'] = array(
+  $form['network_wrapper']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit'),
     '#attributes' => array('class' => 'no-js'),
@@ -361,7 +386,6 @@ function ecenter_network_select_form(&$form_state) {
   $form = _ecenter_network_select_form();
   ahah_helper_register($form, $form_state);
 
-  // Get variables
   extract(_ecenter_network_extract_query());
 
   // Refresh map
@@ -452,6 +476,42 @@ function ecenter_network_display_data() {
 function ecenter_network_select_form_submit($form, &$form_state) {
   // Do what AHAH helper does on an AJAX call, to make form constructor a 
   // little less crazy
+  
+  $inc = variable_get('ecenter_network_time_increment', 10);
+
+  if ($form_state['values']['network_wrapper']['query']['recent_select'] 
+    && !$form_state['values']['network_wrapper']['query']['date_select']) {
+    
+    $date = $form_state['values']['build_time'];
+    $offset = 3600 * $form_state['values']['network_wrapper']['query']['recent_select'];
+    $tz = timezone_open('UTC');
+    $end = date_make_date($date, $tz, DATE_UNIX);
+    $start = date_make_date($date - $offset, $tz, DATE_UNIX);
+
+    date_increment_round($start, $inc);
+    date_increment_round($end, $inc);
+
+    $start = date_format($start, 'Y-m-d H:i:s');
+    $end = date_format($end, 'Y-m-d H:i:s');
+  }
+  else if ($form_state['values']['network_wrapper']['query']['date_select']) {
+    $date = $form_state['values']['network_wrapper']['query']['date_selector'];
+
+    $tz = date_default_timezone_name(TRUE);
+    $day = date_create($date, timezone_open($tz));
+
+    $start = date_format($day, 'Y-m-d H:i:s');
+    $end = date_format(date_modify($day, '+1 day'), 'Y-m-d h:i:s');
+
+  }
+
+  $form_state['values']['network_wrapper']['query']['start'] = $start;
+  $form_state['values']['network_wrapper']['query']['end'] = $end;
+  
+  // @TODO Set request variables -- seems hackish at this point
+  $_REQUEST['network_wrapper']['query']['start']['date'] = $start;
+  $_REQUEST['network_wrapper']['query']['end']['date'] = $end;
+  
   $form_state['storage'] = $form_state['values'];
   $form_state['rebuild'] = TRUE;
 }
@@ -522,28 +582,6 @@ function ecenter_network_get_data($src, $dst, $start, $end, $debug_url = FALSE) 
   ));
 
   if (!array_key_exists($query, $results)) {
-    // Remember user's last queries: Anonymous users queries are stored in
-    // their session; authenticated users queries are stored along with their
-    // user object.
-    if ($user->uid > 0) {
-      $queries = $user->ecenter_network_queries;
-      if (count($queries) > 
-        (variable_get('ecenter_network_recent_query_limit', 5))) {
-        array_shift($queries);
-      }
-      $queries[$query] = array('time' => time(), 'query' => $query);
-      user_save($user, array('ecenter_network_queries' => $queries));
-    }
-    else if (isset($_COOKIE[session_name()])) {
-      $queries = unserialize(sess_read('ecenter_network_queries'));
-      if (count($queries) > 
-        (variable_get('ecenter_network_recent_query_limit', 5) - 1)) {
-        array_shift($queries);
-      }
-      $queries[$query] = array('time' => time(), 'query' => $query);
-      sess_write('ecenter_network_queries', serialize($queries));
-    }
-
     $caching = variable_get('ecenter_network_data_cache_enabled', 0);
     if ($caching && $result = cache_get($query, 'cache_ecenter_data')) {
       $results[$query] = $result->data;
@@ -566,6 +604,29 @@ function ecenter_network_get_data($src, $dst, $start, $end, $debug_url = FALSE) 
           '@response' => $result['response'])));
       }
     }
+
+    // Remember user's last queries: Anonymous users queries are stored in
+    // their session; authenticated users queries are stored along with their
+    // user object. Only capture successful queries.
+    if (!empty($results[$query]) && $user->uid > 0) {
+      $queries = $user->ecenter_network_queries;
+      if (count($queries) > 
+        (variable_get('ecenter_network_recent_query_limit', 5))) {
+        array_shift($queries);
+      }
+      $queries[$query] = array('time' => time(), 'query' => $query);
+      user_save($user, array('ecenter_network_queries' => $queries));
+    }
+    else if (!empty($results[$query]) && isset($_COOKIE[session_name()])) {
+      $queries = unserialize(sess_read('ecenter_network_queries'));
+      if (count($queries) > 
+        (variable_get('ecenter_network_recent_query_limit', 5) - 1)) {
+        array_shift($queries);
+      }
+      $queries[$query] = array('time' => time(), 'query' => $query);
+      sess_write('ecenter_network_queries', serialize($queries));
+    }
+
   }
   return $results[$query];
 }
@@ -719,7 +780,8 @@ function ecenter_network_parse_response($response) {
     $traceroute_direction = ($direction == 'forward') ? 'direct' : 'reverse';
     if (is_array($data[$traceroute_direction .'_traceroute'])) {
       foreach ($data[$traceroute_direction .'_traceroute'] as $series) {
-        // @TODO is this a safe way to get series?
+        // Sort series so first hop is best candidate for most likely hop
+        usort($series, '_ecenter_network_sort_series');
         $hop = array_shift($series);
         $hop += $parsed_data['hops'][$hop['hop_ip']];
 
@@ -730,21 +792,20 @@ function ecenter_network_parse_response($response) {
           $hop['latitude'] = $geo->latitude;
           $hop['geolocated'] = TRUE;
         }
-
-        // Calculate netblock
-        if ($hop['netblock'] != 'src' && $hop['netblock'] != 'dst') {
-          $mask = (!empty($hop['netmask'])) ? $hop['netmask'] : 24;
-          $hop['netblock'] = long2ip(ip2long($hop['hop_ip']) &
-            ~((1 << (32 - $mask)) - 1));
-        }
         $traceroute[$hop['hop_num'] - 1] = $hop;
       }
 
+      // Sort by hop number
       ksort($traceroute);
+
+      // Filter out hops which don't have SNMP data
+      // @TODO may require differentiation between no SNMP data and no 
+      // *available* SNMP data. 
+      //$traceroute = array_filter($traceroute, '_ecenter_network_filter_traceroute');
       $parsed_data['traceroute'][$direction] = $traceroute;
     }
   }
-  
+
   // Calculate diff
   if (!empty($parsed_data['traceroute']['forward']) 
     && !empty($parsed_data['traceroute']['reverse'])) {
@@ -774,8 +835,14 @@ function ecenter_network_parse_response($response) {
     $parsed_data['traceroute']['traceroute_max'] = count($diff);
   }
   
-  //dpm($parsed_data, 'parsed'); 
   return $parsed_data;
+}
+
+/**
+ * Filter traceroute results: Hops without 
+ */
+function _ecenter_network_filter_traceroute($hop) {
+  return (!empty($hop['data']['snmp']));
 }
 
 /**
@@ -813,8 +880,8 @@ function ecenter_network_ecenter_network_end_to_end_measurements_statistics_alte
 /**
  * Sort traceroute
  */
-function _ecenter_network_sort_traceroute($a, $b) {
-  return ((int) $a['hop_num'] > (int) $b['hop_num']);
+function _ecenter_network_sort_series($a, $b) {
+  return ((int) $a['hop_delay'] > (int) $b['hop_delay']);
 }
 
 /**
@@ -1110,8 +1177,7 @@ function ecenter_network_layers_sites() {
     $data = ecenter_network_get_data($src, $dst, $start, $end);
   }
 
-  if (($data && empty($data['traceroute']['forward']))
-    || (empty($src) || empty($dst) || empty($start) || empty($end))) {
+  if (empty($src) || empty($dst) || empty($start) || empty($end)) {
     foreach ($hops['hubs'] as $hub) {
       $features[] = array(
         'wkt' => "POINT({$hub['longitude']} {$hub['latitude']})",
@@ -1211,7 +1277,10 @@ function ecenter_network_layers_traceroute() {
 
     $data = ecenter_network_get_data($src, $dst, $start, $end);
 
-    if ($data && $traceroute = $data['traceroute']['forward']) {
+    $traceroute = (!empty($data['traceroute']['forward'])) ? 
+      $data['traceroute']['forward'] : $data['traceroute']['reverse'];
+
+    if ($data && !empty($traceroute)) {
 
       // Initialize some counters, etc
       $old_hop = NULL;
@@ -1243,11 +1312,66 @@ function ecenter_network_layers_traceroute() {
         $old_hop = $hop;
         $i += 1;
 
-        $layer->data['features'] = $features;
       }
     }
+
+    if (!empty($features)) {
+      _ecenter_network_layers_traceroute_rejigger($features);
+    }
+    $layer->data['features'] = $features;
+
   }
   return $layer;
+}
+
+/**
+ * @TODO HARDCODED BADNESS along same lines as sites above
+ */
+function _ecenter_network_layers_traceroute_rejigger(&$features) {
+  foreach ($features as $k => $feature) {
+    switch ($feature['extra']['ecenterID']) {
+      case 'bnl-mr2':
+        $features[$k]['style']['labelXOffset'] = 35;
+        $features[$k]['style']['labelYOffset'] = 0;
+        break;
+      case 'chic-cr1':
+        $features[$k]['style']['labelXOffset'] = -10;
+        $features[$k]['style']['labelYOffset'] = 15;
+        break;
+      case 'bost-cr1':
+        $features[$k]['style']['labelXOffset'] = 10;
+        $features[$k]['style']['labelYOffset'] = 15;
+        break;
+      case 'lbl-mr2':
+      case 'star-cr1':
+        $features[$k]['style']['labelXOffset'] = -15;
+        $features[$k]['style']['labelYOffset'] = 20;
+        break;
+      case 'star-sdn1':
+        $features[$k]['style']['labelXOffset'] = 30;
+        break;
+      case 'slac-mr2':
+      case 'snv-mr2':
+        $features[$k]['style']['labelXOffset'] = -35;
+        $features[$k]['style']['labelYOffset'] = 0;
+        break;
+      case 'wash-sdn2':
+        $features[$k]['style']['labelXOffset'] = -40;
+        $features[$k]['style']['labelYOffset'] = 0;
+        break;
+      case 'sunn-cr1':
+      case 'llnl-mr2':
+      case 'wash-cr1':
+        $features[$k]['style']['labelXOffset'] = 40;
+        $features[$k]['style']['labelYOffset'] = 0;
+        break;
+      case 'pppl-rt2':
+        $features[$k]['style']['labelYOffset'] = 15;
+        break;
+      default:
+        break;
+    }
+  }
 }
 
 /**
@@ -1395,14 +1519,8 @@ function _ecenter_network_extract_query() {
     $vars = array(
       'src'   => $_REQUEST['network_wrapper']['query']['src_wrapper']['src'],
       'dst'   => $_REQUEST['network_wrapper']['query']['dst_wrapper']['dst'],
-      'start' => _ecenter_network_local_to_utc(
-        $_REQUEST['network_wrapper']['query']['start']['date'] 
-        .' '. $_REQUEST['network_wrapper']['query']['start']['time']
-      ),
-      'end'   => _ecenter_network_local_to_utc(
-        $_REQUEST['network_wrapper']['query']['end']['date']
-        .' '. $_REQUEST['network_wrapper']['query']['end']['time']
-      ),
+      'start' => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['start']['date']),
+      'end'   => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['end']['date']),
     );
   }
   else {

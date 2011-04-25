@@ -74,6 +74,20 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+__PACKAGE__->has_many(
+  "src_ips",
+  "Ecenter::DB::Result::Metadata",
+  { "foreign.src_ip" => "self.ip_addr" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+__PACKAGE__->has_many(
+  "dst_ips",
+  "Ecenter::DB::Result::Metadata",
+  { "foreign.dst_ip" => "self.ip_addr" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 hop_data_201001s
 
 Type: has_many

@@ -245,7 +245,6 @@ function _ecenter_network_select_form() {
   $form['network_wrapper']['query'] = array(
     '#prefix' => '<div id="query-wrapper">',
     '#suffix' => '</div>',
-    '#value' => '<p id="instructions">'. t('Select source and destination by clicking sites on the map, or specify below.') .'</p>',
   );
 
   // Source IP
@@ -326,6 +325,12 @@ function _ecenter_network_select_form() {
     '#default_value' => NULL,
   );
 
+  $form['network_wrapper']['query']['help'] = array(
+    '#value' => '<p id="instructions">'. 
+      t('Select source and destination by clicking sites on the map, or 
+         specify above.') .'</p>',
+  );
+
   $form['network_wrapper']['query']['date_description'] = array(
     '#prefix' => '<div id="date-description-wrapper"><p>',
     '#suffix' => '</p></div>',
@@ -333,7 +338,7 @@ function _ecenter_network_select_form() {
 
   if ($user->uid) {
     $form['network_wrapper']['query']['date_description']['#value'] .=  
-      t('Results are adjusted to your local timezone (@tz). <span class="profile">[!link]</span>', 
+      t('Results are adjusted to your local timezone (@tz). <span class="profile-link">!link</span>', 
         array(
           '@tz' => str_replace('_', ' ', date_default_timezone_name(TRUE)), 
           '!link' => l('Update my timezone', 'user/'. $user->uid .'/edit')
@@ -457,7 +462,9 @@ function ecenter_network_select_form(&$form_state) {
   return $form;
 }
 
-// foo..
+/**
+ * Display ecenter data 
+ */
 function ecenter_network_display_data() {
   if ($_GET['modal']) {
     modalframe_child_js();
@@ -476,7 +483,6 @@ function ecenter_network_display_data() {
 function ecenter_network_select_form_submit($form, &$form_state) {
   // Do what AHAH helper does on an AJAX call, to make form constructor a 
   // little less crazy
-  
   $inc = variable_get('ecenter_network_time_increment', 10);
 
   if ($form_state['values']['network_wrapper']['query']['recent_select'] 
@@ -502,7 +508,7 @@ function ecenter_network_select_form_submit($form, &$form_state) {
 
     $start = date_format($day, 'Y-m-d H:i:s');
     $end = date_format(date_modify($day, '+1 day'), 'Y-m-d h:i:s');
-
+ 
   }
 
   $form_state['values']['network_wrapper']['query']['start'] = $start;
@@ -570,7 +576,7 @@ function ecenter_network_get_client($status_check = FALSE) {
  * @return
  *   An array of parsed data
  */
-function ecenter_network_get_data($src, $dst, $start, $end, $debug_url = FALSE) {
+function ecenter_network_get_data($src, $dst, $start, $end) {
   global $user;
   static $results = array();
 

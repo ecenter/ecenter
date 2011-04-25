@@ -20,7 +20,7 @@
 
 // Override how tablechart works
 $.fn.tablechart.defaults.attachMethod = function(container) {
-  $('.chart-title', this.el).after(container); 
+  $('.chart-title', this.el).after(container);
 }
 
 // Fire plugin with Drupal behaviors (needs to run more or less last)
@@ -318,7 +318,7 @@ $.fn.ecenter_network.plugins.draw_map = function() {
 $.fn.ecenter_network.plugins.traceroute = function() {http://localhost/ecenter/network
   var el = this.el;
   var trace_el = $('#traceroute-wrapper', this.el);
-  
+
   if (!trace_el.length && Drupal.settings.ecenterNetwork && Drupal.settings.ecenterNetwork.tracerouteData) {
     var traceroutes = $('#traceroute').data('traceroute');
     $('<div id="traceroute-wrapper">')
@@ -327,12 +327,12 @@ $.fn.ecenter_network.plugins.traceroute = function() {http://localhost/ecenter/n
     $('<div id="traceroute"></div>')
       .appendTo($('#traceroute-wrapper'))
       .traceroute(Drupal.settings.ecenterNetwork.tracerouteData);
-   
+
     var traceroutes = $('#traceroute').data('traceroute');
     if (!traceroutes) {
       return;
     }
-    
+
     var traceroute = traceroutes['default'].svg;
 
     $('.match, .diff', traceroute.root()).

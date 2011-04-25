@@ -989,8 +989,9 @@ a {
     font-size: @font_size_14;
     margin-top: 10px;
     margin-left: 15px;
-    #instructions { // {{{
-      margin-bottom: 1.25em;
+    p { // {{{
+      margin-bottom: 0;
+      line-height: 1.4;
     } // }}}
     #edit-network-wrapper-query-start-wrapper { // {{{
       margin-bottom: .25em;
@@ -1034,7 +1035,8 @@ a {
     #recent-select {
       .box;
       width: 300px;
-      margin-bottom: 12px;
+      margin-bottom: 2em;
+      margin-top: .75em;
       .form-option {
         float: left;
         width: 140px;
@@ -1093,11 +1095,10 @@ a {
         }
       }
     } // }}}
-    #date-description-wrapper { // {{{
+    #date-description-wrapper, #instructions { // {{{
       width: 285px;
       float: left;
-      font-style: italic;
-      margin-top: 1em;
+      margin-top: .75em;
     } // }}}
   } // }}}
   #results-wrapper { // {{{

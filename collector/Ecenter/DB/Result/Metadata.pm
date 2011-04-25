@@ -124,6 +124,21 @@ __PACKAGE__->add_columns(
   },
 );
 __PACKAGE__->set_primary_key("metaid");
+
+__PACKAGE__->belongs_to(
+  "src_ip_node",
+  "Ecenter::DB::Result::Node",
+  { ip_addr => "src_ip" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+);
+
+__PACKAGE__->belongs_to(
+  "dst_ip_node",
+  "Ecenter::DB::Result::Node",
+  { ip_addr => "dst_ip" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+);
+
 __PACKAGE__->add_unique_constraint("md_ips_type", ["src_ip", "dst_ip", "eventtype_id"]);
 
 =head1 RELATIONS

@@ -242,7 +242,7 @@ sub pool_control {
     }
     my @running =  threads->list(threads::running);
     my $num_threads = scalar   @running;
-    $logger->info("Threads::$num_threads vs $max_threads");
+    $logger->debug("Threads::$num_threads vs $max_threads");
     
     while( $num_threads >= $max_threads) {
   	foreach my $tidx (@running) {
@@ -250,7 +250,7 @@ sub pool_control {
   		sleep 1; 
 		$tidx->join();
   		$num_threads = threads->list(threads::running);
-		$logger->info("Waiting on Threads::$num_threads");
+		$logger->debug("Waiting on Threads::$num_threads");
   	    }
   	}
     }

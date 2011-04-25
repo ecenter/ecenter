@@ -130,6 +130,13 @@ function ecenter_network_theme() {
         'units' => NULL,
       ),
     ) + $options,
+    'ecenter_network_health' => array(
+      'arguments' => array(
+        'value' => NULL,
+        'units' => NULL,
+      ),
+    ) + $options,
+
   );
   return $registry;
 }
@@ -199,15 +206,14 @@ function ecenter_network_health() {
   $client = ecenter_network_get_client('503');
   
   extract(_ecenter_network_extract_query());
+  $response = $client->getHealth($start, $end);
   
-  if (!$start) {
-    $start = '2011-03-05 01:00:00';
-  }
-  if (!$end) {
-    $end = '2011-03-06 01:00:00';
-  }
-  dpm($client->getHealth($start, $end));
-  return 'testing stub';
+  switch ($response['code']) {
+    case 200:
+      return theme('ecenter_network_health', $response['response']);
+    default: 
+      return drupal_not_found();
+  } 
 }
 
 /**

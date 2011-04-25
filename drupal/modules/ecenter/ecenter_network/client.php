@@ -248,7 +248,7 @@ class Ecenter_Data_Service_Client {
    * @return
    *   Result for this query.
    */
-  public function getHealth($start, $end) {
+  public function getHealth($start = NULL, $end = NULL) {
     $params = array(
       'start' => $start,
       'end' => $end,

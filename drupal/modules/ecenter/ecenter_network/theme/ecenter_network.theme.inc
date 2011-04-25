@@ -643,3 +643,11 @@ function theme_ecenter_network_hop_option($hop) {
       return check_plain($hop['hub_name']) .' ('. check_plain($hop['hub']) .' - '. check_plain($hop['ip_noted']) .')';
   }
 }
+
+/**
+ * Theme E-center network health display
+ */
+function theme_ecenter_network_health($data) {
+  dpm($data);
+  return 'stub';  
+}

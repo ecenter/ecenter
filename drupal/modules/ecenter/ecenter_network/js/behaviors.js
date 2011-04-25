@@ -298,7 +298,8 @@ $.fn.ecenter_network.plugins.map.unselectFeature = function() {
       var feature = layer.getFeatureBy('ecenterID', query_value);
 
       if (control && feature) {
-        control.callbacks.clickout.call(control, feature);
+        control.unselect(feature);
+        control.callbacks.out.call(control, feature);
       }
     }
   }
@@ -408,13 +409,13 @@ $.fn.ecenter_network.plugins.chart = function() {
       var length = tc['default'].chart.seriesColors.length;
       sidx = sidx % length;
       var background_color = tc['default'].chart.seriesColors[sidx];
-  
+
       var ol = $('#openlayers-map-auto-id-0').data('openlayers');
       var map = ol.openlayers;
       var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop(); 
       var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
       var feature = layer.getFeatureBy('ecenterID', hop.hub);
-      
+
       if (feature) {
         control.callbacks.over.call(control, feature);
       }

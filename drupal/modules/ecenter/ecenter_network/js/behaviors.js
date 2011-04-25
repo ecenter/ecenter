@@ -67,38 +67,35 @@ $.fn.ecenter_network.plugins = {}
 $.fn.ecenter_network.plugins.ajax = function() {
   var self = this;
   var el = this.el;
+
+  // Add hidden loading overlay so it will be available later
+  $('#network-wrapper', el).prepend($('<div id="loading-overlay"><div class="loading-wrapper"><p class="loading">' + Drupal.t('Loading...') + '</p><button class="cancel">' + Drupal.t('Cancel') + '</button></div></div>'));
+
   $(el).bind({
-    /*'ajaxSend' : function(xhr, s) {
+    'ajaxSend' : function(e, xhr, s) {
       $('button.cancel').click(function(e) {
         e.stopPropagation();
-
-        try { console.log('cancel button clicked', xhr); } catch(e) {}
 
         xhr.aborted = true;
         xhr.abort();
 
-        $(el).removeClass('data-loading');
-
-        $('.loading-overlay', el).fadeOut('fast', function() {
-          $(this).remove();
-        });
-
         return false;
       });
-    },*/
-    'ajaxSuccess' : function() {
-      $(el).removeClass('data-loading');
-      $('.loading-overlay', self.el).fadeOut('fast', function() {
-        $(this).remove();
-      });
     },
-    'ajaxError' : function() {
+    'ajaxSuccess' : function(e) {
       $(el).removeClass('data-loading');
-      $('.loading-overlay', self.el).fadeOut('fast', function() {
-        $(this).remove();
-      });
-    }
+      $('#loading-overlay', self.el).fadeOut('fast');
+    },
+    'ajaxError' : function(e) {
+      var dst = $('#dst-wrapper select');
+      $.fn.ecenter_network.plugins.map.unselectFeature.call(dst.get(0));
 
+      dst.val('');
+      $('#dst-wrapper input').val('');
+
+      $(el).removeClass('data-loading');
+      $('#loading-overlay', self.el).fadeOut('fast');
+    }
   });
 }
 
@@ -126,10 +123,10 @@ $.fn.ecenter_network.plugins.change = function() {
         $(this).remove();
       });
 
-      // Add overlay...
+      // Add overlay.
       $(self.el).addClass('data-loading').css('position', 'relative');
 
-      var overlay = $('<div class="loading-overlay"><div class="loading-wrapper"><p class="loading">' + Drupal.t('Loading...') + '</p><button class="cancel">' + Drupal.t('Cancel') + '</button></div></div>');
+      var overlay = $('#loading-overlay')
       overlay.css({
         'position' : 'absolute',
         'top' : 0,
@@ -287,6 +284,26 @@ $.fn.ecenter_network.plugins.map.selectFeature = function(select) {
   }
 }
 
+$.fn.ecenter_network.plugins.map.unselectFeature = function() {
+  var maps = Drupal.settings.openlayers.maps;
+  var val = $(this).val().split(':', 2);
+  var query_type = val[0];
+  var query_value = val[1];
+
+  if (query_type == 'hub') {
+    for (key in maps) {
+      var ol = $('#' + maps[key].id).data('openlayers');
+      var layer = ol.openlayers.getLayersBy('drupalID', 'ecenter_network_sites').pop();
+      var control = ol.openlayers.getControlsBy('drupalID', 'ecenterSelect').pop();
+      var feature = layer.getFeatureBy('ecenterID', query_value);
+
+      if (control && feature) {
+        control.callbacks.clickout.call(control, feature);
+      }
+    }
+  }
+}
+
 $.fn.ecenter_network.plugins.draw_map = function() {
   var src = $('#src-wrapper select', this.el);
   var dst = $('#dst-wrapper select', this.el);
@@ -432,8 +449,8 @@ $.fn.ecenter_network.defaults = {
   // Drawing plugins
   draw_plugins : [
     $.fn.ecenter_network.plugins.change,
-    $.fn.ecenter_network.plugins.draw_map,
     $.fn.ecenter_network.plugins.traceroute,
+    $.fn.ecenter_network.plugins.draw_map,
   ]
 };
 

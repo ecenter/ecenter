@@ -71,14 +71,24 @@ $.fn.ecenter_network.plugins.ajax = function() {
   // Add hidden loading overlay so it will be available later
   $('#network-wrapper', el).prepend($('<div id="loading-overlay"><div class="loading-wrapper"><p class="loading">' + Drupal.t('Loading...') + '</p><button class="cancel">' + Drupal.t('Cancel') + '</button></div></div>'));
 
+  // Clear out 'remembered' form values
+  /*var src_input = $('#edit-network-wrapper-query-src-wrapper-src-wrapper input');
+  var dst_input = $('#edit-network-wrapper-query-dst-wrapper-dst-wrapper input');
+  var src_select = $('#edit-network-wrapper-query-src-wrapper-src-wrapper select');
+  if (src_input.val() != '' && dst_input.val() == '') {
+    src_input.val('');
+    src_select.val('');
+    $.fn.ecenter_network.plugins.map.unselectFeature.call(src_select);
+  }*/
+ 
   $(el).bind({
     'ajaxSend' : function(e, xhr, s) {
+      console.log('e', e);
+      console.log('xhr', xhr);
       $('button.cancel').click(function(e) {
         e.stopPropagation();
-
         xhr.aborted = true;
         xhr.abort();
-
         return false;
       });
     },
@@ -110,6 +120,42 @@ $.fn.ecenter_network.plugins.date = function() {
 
 $.fn.ecenter_network.plugins.change = function() {
   var self = this;
+
+  var processed = $('#src-wrapper select').data('ecenterProcessed');
+
+  // Clear out old results when destination select changes
+  if (!processed) {
+    $('#src-wrapper select', this.el).bind('change', function(e) {
+      /*$('#results', self.el).slideUp(600, function() {
+        $(this).remove();
+      });
+
+      $('#recent-queries', self.el).slideUp(600, function() {
+        $(this).remove();
+      });*/
+
+      // Add overlay.
+      $(self.el).addClass('data-loading').css('position', 'relative');
+
+      var overlay = $('#loading-overlay')
+      overlay.css({
+        'position' : 'absolute',
+        'top' : 0,
+        'left' : 0,
+        'width' : $('#network-wrapper', self.el).outerWidth(),
+        'height' : $('#network-wrapper', self.el).height(),
+        'z-index' : 5,
+        'display' : 'none',
+      });
+      $(self.el).prepend(overlay);
+      overlay.fadeIn('slow');
+
+      $(this).data('ecenterProcessed', true);
+    });
+  }
+
+
+
   var processed = $('#dst-wrapper select').data('ecenterProcessed');
 
   // Clear out old results when destination select changes
@@ -428,8 +474,7 @@ $.fn.ecenter_network.plugins.chart = function() {
     var ol = $('#openlayers-map-auto-id-0').data('openlayers');
     var map = ol.openlayers;
     var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop(); 
-    var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
-    var feature = layer.getFeatureBy('ecenterID', hop.hub);
+    var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();    var feature = layer.getFeatureBy('ecenterID', hop.hub);
 
     if (feature) {
       control.callbacks.out.call(control, feature);
@@ -437,7 +482,6 @@ $.fn.ecenter_network.plugins.chart = function() {
   });
 
 }
-
 
 $.fn.ecenter_network.defaults = {
   // Initialization plugins

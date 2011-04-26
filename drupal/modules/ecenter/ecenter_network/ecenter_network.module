@@ -521,6 +521,8 @@ function ecenter_network_select_form_submit($form, &$form_state) {
   // @TODO Set request variables -- seems hackish at this point
   $_REQUEST['network_wrapper']['query']['start']['date'] = $start;
   $_REQUEST['network_wrapper']['query']['end']['date'] = $end;
+
+  //dpm($form_state['values']);
   
   $form_state['storage'] = $form_state['values'];
   $form_state['rebuild'] = TRUE;

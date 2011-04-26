@@ -363,11 +363,12 @@ function _ecenter_network_select_form() {
 
   // Data results display
   $form['results_wrapper'] = array(
-    '#prefix' => '<div id="results-wrapper" class="clear-block">',
+    '#prefix' => '<div id="results-wrapper" class="clearfix">',
     '#suffix' => '</div>',
   );
   $form['results_wrapper']['results'] = array(
-    '#value' => '&nbsp;',
+    '#prefix' => '<div id="results">',
+    '#suffix' => '</div>',
   );
 
   // For ahah helper
@@ -444,16 +445,19 @@ function ecenter_network_select_form(&$form_state) {
 
     // If we've got the data (at bare minimum, a traceroute), delegate to rendering function
     if ($data) {
-      drupal_add_js(array('ecenterNetwork' => array('tracerouteData' => $data['traceroute']['diff'])), 'setting');
-      drupal_add_js(array('ecenterNetwork' => array('tracerouteMaxLength' => $data['traceroute']['traceroute_max'])), 'setting');
-      $form['results_wrapper']['results']['#value'] = theme('ecenter_network_data', $data, $params);
-      $form['results_wrapper']['recent']['#value'] = theme('ecenter_network_recent_queries', TRUE);
+      drupal_add_js(array('ecenterNetwork' => array('tracerouteData' => 
+        $data['traceroute']['diff'])), 'setting');
+      drupal_add_js(array('ecenterNetwork' => array('tracerouteMaxLength' => 
+        $data['traceroute']['traceroute_max'])), 'setting');
+      $form['results_wrapper']['results']['#value'] =
+        theme('ecenter_network_data', $data, $params);
+      $form['results_wrapper']['recent']['#value'] =
+        theme('ecenter_network_recent_queries', TRUE);
     }
     else {
-      watchdog('ecenter', 'Query returned no results: <code>@query</code>', array('@query' => $query), WATCHDOG_INFO);
-      $form['results_wrapper']['results']['#value'] = '<p>'. t('Whoops! No data was available for this query. If you believe there should be data for this query, send the site administrator feedback along with executed query, provided below:') .'</p>';
-      $form['results_wrapper']['results']['#value'] .= '<pre>'. $query .'</pre>';
-      $form['results_wrapper']['results']['#value'] .= '<p>'. l(t('Permalink'), 'network', array('query' => $query_params)) .'</p>';
+      $form['results_wrapper']['results']['#value'] = '<p>'. t('Whoops! No data was available for this query. If you believe there should be data for this query, send the site administrator feedback along with executed query, provided below.') .'</p>';
+      $form['results_wrapper']['results']['#value'] .=
+        '<p>'. l(t('Permalink'), 'network', array('query' => $params)) .'</p>';
     }
   }
   else {
@@ -605,9 +609,11 @@ function ecenter_network_get_data($src, $dst, $start, $end) {
         $results[$query] = $data;
       }
       else { // Note that the static variable is NOT set in this case
-        drupal_set_message(t('Request (@url) failed with code @code (@response).', 
+        watchdog('ecenter_network', 
+          'Request (@url) failed with code @code (@response).', 
           array('@url' => $result['url'], '@code' => $result['code'], 
-          '@response' => $result['response'])));
+          '@response' => $result['response']), WATCHDOG_WARNING);
+        return NULL;
       }
     }
 

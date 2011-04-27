@@ -18,17 +18,24 @@
 
 (function($) {
 
-// Override how tablechart works
+/**
+ * Override tablechart attachMethod
+ */
 $.fn.tablechart.defaults.attachMethod = function(container) {
   $('.chart-title', this.el).after(container);
 }
 
-// Fire plugin with Drupal behaviors (needs to run more or less last)
+/**
+ * Drupal behavior to attach network weathermap behaviors
+ */
 Drupal.behaviors.EcenterNetwork = function(context) {
   $('#ecenter-network-select-form').ecenter_network();
 }
 
-// No options yet...
+/**
+ * jQuery plugin for controlling and delegating event binding and weathermap
+ * behavior.
+ */
 $.fn.ecenter_network = function(options) {
   var options = $.extend(true, {}, $.fn.ecenter_network.defaults, options);
 
@@ -42,6 +49,12 @@ $.fn.ecenter_network = function(options) {
   });
 }
 
+/**
+ * E-center Network object for encapulsating functionality
+ *
+ * Constructor calls init_plugins, which should bind once or
+ * live bind to weathermap events.
+ */
 $.ecenter_network = function(el, options) {
   this.el = el;
   this.options = options;
@@ -54,6 +67,11 @@ $.ecenter_network = function(el, options) {
   }
 }
 
+/**
+ * E-Center Network draw method
+ *
+ * Call draw_plugins, which must be bound to each new query result
+ */
 $.ecenter_network.prototype.draw = function() {
   var length = this.options.draw_plugins.length;
   for (var i=0; i < length; i++) {
@@ -62,8 +80,14 @@ $.ecenter_network.prototype.draw = function() {
   }
 }
 
+/**
+ * Container object for default plugins
+ */
 $.fn.ecenter_network.plugins = {}
 
+/**
+ * Bind AJAX behaviors
+ */
 $.fn.ecenter_network.plugins.ajax = function() {
   var self = this;
   var el = this.el;
@@ -71,6 +95,7 @@ $.fn.ecenter_network.plugins.ajax = function() {
   // Add hidden loading overlay so it will be available later
   $('#network-wrapper', el).prepend($('<div id="loading-overlay"><div class="loading-wrapper"><p class="loading">' + Drupal.t('Loading...') + '</p><button class="cancel">' + Drupal.t('Cancel') + '</button></div></div>'));
 
+  // Use bind; ajax_form events do not bubble to the top of the DOM
   $(el).bind({
     'ajaxSend' : function(e, xhr, s) {
       $('button.cancel').click(function(e) {
@@ -97,6 +122,9 @@ $.fn.ecenter_network.plugins.ajax = function() {
   });
 }
 
+/**
+ * Trigger form submission when destination value is provided and date changes.
+ */
 $.fn.ecenter_network.plugins.date = function() {
   $('#recent-select input, #date-select input', this.el).bind('change', function() {
     var dst = $('#dst-wrapper input', this.el);
@@ -106,6 +134,10 @@ $.fn.ecenter_network.plugins.date = function() {
   });
 }
 
+/**
+ * Trigger loading screen, destruction of old DOM elements and handlers
+ * when destination changes.
+ */
 $.fn.ecenter_network.plugins.change = function() {
   var self = this;
 
@@ -168,6 +200,10 @@ $.fn.ecenter_network.plugins.change = function() {
   }
 }
 
+/**
+ * Handle map events; we can bind with 'live' because these custom events
+ * bubble to the top of the DOM.
+ */
 $.fn.ecenter_network.plugins.map = function() {
   var maps = Drupal.settings.openlayers.maps;
   for (key in maps) {
@@ -284,6 +320,9 @@ $.fn.ecenter_network.plugins.map = function() {
   }
 }
 
+/**
+ * Helper function for selecting a map feature based on select element value
+ */
 $.fn.ecenter_network.plugins.map.selectFeature = function(select) {
   var maps = Drupal.settings.openlayers.maps;
   var val = $(this).val().split(':', 2);
@@ -308,6 +347,10 @@ $.fn.ecenter_network.plugins.map.selectFeature = function(select) {
   }
 }
 
+/**
+ * Helper function for unselecting a map feature based on select element
+ * value.
+ */
 $.fn.ecenter_network.plugins.map.unselectFeature = function() {
   var maps = Drupal.settings.openlayers.maps;
   var val = $(this).val().split(':', 2);
@@ -329,6 +372,10 @@ $.fn.ecenter_network.plugins.map.unselectFeature = function() {
   }
 }
 
+
+/**
+ * When drawing map, automatically select features based on present form values.
+ */
 $.fn.ecenter_network.plugins.draw_map = function() {
   var src = $('#src-wrapper select', this.el);
   var dst = $('#dst-wrapper select', this.el);
@@ -340,7 +387,10 @@ $.fn.ecenter_network.plugins.draw_map = function() {
   }
 }
 
-$.fn.ecenter_network.plugins.traceroute = function() {http://localhost/ecenter/network
+/**
+ * Create traceroute visualization using traceroute jQuery plugin.
+ */
+$.fn.ecenter_network.plugins.traceroute = function() {
   var el = this.el;
   var trace_el = $('#traceroute-wrapper', this.el);
 
@@ -393,7 +443,7 @@ $.fn.ecenter_network.plugins.traceroute = function() {http://localhost/ecenter/n
             var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
             var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
             var feature = layer.getFeatureBy('ecenterID', hop.hub);
-            
+
             control.callbacks.over.call(control, feature);
           }
 
@@ -417,7 +467,7 @@ $.fn.ecenter_network.plugins.traceroute = function() {http://localhost/ecenter/n
           var group = this;
           var hop_id = $(this).attr('hop_id');
           var hop = Drupal.settings.ecenterNetwork.seriesLookupByID[hop_id];
-          
+
           if (!stop_highlight) {
             var tc = $('#utilization-tables').data('tablechart');
             if (tc) {
@@ -429,7 +479,7 @@ $.fn.ecenter_network.plugins.traceroute = function() {http://localhost/ecenter/n
             var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
             var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
             var feature = layer.getFeatureBy('ecenterID', hop.hub);
-            
+
             control.callbacks.out.call(control, feature);
           }
 
@@ -437,7 +487,7 @@ $.fn.ecenter_network.plugins.traceroute = function() {http://localhost/ecenter/n
             this.setAttribute('stroke', '#aaaaaa');
           });
           $('.hub-label text', group).each(function() {
-            this.setAttribute('fill', '#444444');
+            this.setAttribute('fill', '#000000');
           });
           $('.label text', group).each(function() {
             this.setAttribute('fill', '#555555');
@@ -451,6 +501,9 @@ $.fn.ecenter_network.plugins.traceroute = function() {http://localhost/ecenter/n
   }
 }
 
+/**
+ * Live bind to series highlighting.
+ */
 $.fn.ecenter_network.plugins.chart = function() {
   // Bind to series highlighting
   $('#results', this.el).live('jqplotHighlightSeries', function(e, sidx, plot) {
@@ -490,6 +543,9 @@ $.fn.ecenter_network.plugins.chart = function() {
 
 }
 
+/**
+ * Default options: Define default plugins to call
+ */
 $.fn.ecenter_network.defaults = {
   // Initialization plugins
   init_plugins : [

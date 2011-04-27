@@ -30,7 +30,7 @@ my $REG_DATE = qr/^\d{4}\-\d{2}\-\d{2}\s+\d{2}\:\d{2}\:\d{2}$/;
 my @HEALTH_NAMES = qw/nasa.gov pnl.gov llnl.gov pnnl.gov pppl.gov anl.gov lbl.gov bnl.gov dmz.net nersc.gov ornl.gov slac.stanford.edu es.net/;
 my $TABLEMAP = { bwctl      => {table => 'BwctlData',  class => 'Bwctl',      data => [qw/throughput/]},
    		 owamp      => {table => 'OwampData',  class => 'Owamp',      data => [qw/sent loss min_delay max_delay duplicates/]},
-    		 pinger     => {table => 'PingerData', class => 'PingER',     data => [qw/meanRtt maxRtt medianRtt minRtt iqrIpd lossPercent/]},
+    		 pinger     => {table => 'PingerData', class => 'PingER',     data => [qw/meanRtt maxRtt medianRtt maxIpd meanIpd minIpd minRtt iqrIpd lossPercent/]},
 		 traceroute => {table => 'HopData',    class => 'Traceroute', data => [qw/hop_ip	hop_num  hop_delay/]},
     	       };
 #set serializer => 'JSON';
@@ -342,9 +342,13 @@ sub process_data {
     #
     #
     my $g_client = new Gearman::Client;
-    unless($g_client->job_servers(config->{gearman}{server} .':'.  config->{gearman}{port}) ) {
-        error "Failed to add Gearman  server ";
-	GearmanServerException->throw(" Failed to add Gearman  server  ");
+    my @servers = ();
+    foreach my $host ( %{config->{gearman}{servers}}) {
+        push @servers, (map { $host . ":$_"} @{config->{gearman}{servers}{$host}});
+    }
+    unless($g_client->job_servers( @servers ) ) {
+         error "Failed to add Gearman  servera ";
+	 GearmanServerException->throw(" Failed to add Gearman  servers  ");
     }
     #
 #

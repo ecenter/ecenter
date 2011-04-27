@@ -94,7 +94,7 @@ use DBI;
 
 my $DATA = { bwctl	=> {table => 'BwctlData',   class => 'Bwctl',      data => [qw/throughput/]},
      	     owamp	=> {table => 'OwampData',   class => 'Owamp',      data => [qw/sent loss min_delay max_delay duplicates/]},
-     	     pinger	=> {table => 'PingerData',  class => 'PingER',     data => [qw/meanRtt maxRtt medianRtt minRtt iqrIpd lossPercent/]},
+     	     pinger	=> {table => 'PingerData',  class => 'PingER',     data => [qw/meanRtt maxRtt medianRtt minRtt maxIpd meanIpd minIpd iqrIpd lossPercent/]},
      	     traceroute => {table => 'HopData',    callback  => \&process_trace, class => 'Traceroute', data => [qw/hop_ip   hop_num  hop_delay/]},
      	   };
 my %OPTIONS;

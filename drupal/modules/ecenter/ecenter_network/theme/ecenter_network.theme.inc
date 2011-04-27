@@ -95,6 +95,99 @@ function template_preprocess_ecenter_network_data(&$vars) {
 }
 
 /**
+ * Theme end to end data table
+ */
+function template_preprocess_ecenter_network_end_to_end(&$vars) {
+  $data = $vars['data'];
+  $statistics_table = array();
+  $data_tables = array();
+
+  foreach ($data as $test => $directions) {
+    $start = 0;
+    $end = 0;
+
+    foreach ($directions as $direction => $measurements) {
+      foreach ($measurements as $measurement => $values) {
+        // Suggestion array to format values
+        $value_suggestions = array(
+          'ecenter_network_format_'. $test .'_'. $measurement,
+          'ecenter_network_format_'. $test,
+          'ecenter_network_format_default',
+        );
+
+        // Process stats table
+        if (($statistics = $values['statistics']) && is_array($statistics)) {
+          // Suggestion array to format value labels
+          $label_suggestions = array(
+            'ecenter_network_format_'. $test .'_'. $measurement .'_label',
+            'ecenter_network_format_'. $test .'_label',
+            'ecenter_network_format_default_label',
+          );
+
+          $row = array();
+          foreach ($statistics as $key => $value) {
+            $row[$key] = array('data' => theme($value_suggestions, $value,
+              $test, $measurement), 'class' => $key);
+          }
+          $header = array(
+            'header' => TRUE,
+            'data' => theme($label_suggestions, $measurement, $test,
+              $direction, TRUE),
+          );
+          // Create table row for theming
+          $table[$test .'_'. $measurement .'_'. $direction] = array(
+            'data' => array($header) + $row,
+            'class' => $test .'_'. $measurement .' '. $test .'_'. $measurement
+              .'_'. $direction,
+          );
+        }
+
+        if (($timeseries = $values['timeseries']) && is_array($timeseries)
+          && $values['statistics']['max'] > 0) {
+          $data_table = array();
+          $i = 1;
+          ksort($timeseries);
+
+          $time_range = array_keys($timeseries);
+          $max = max($time_range);
+          $min = min($time_range);
+          $end = ($max > $end) ? $max : $end;
+          $start = ($start == 0 || $min < $start) ? $min : $start;
+
+          foreach ($timeseries as $timestamp => $value) {
+            $time = _ecenter_network_timestamp_to_local($timestamp);
+            $data_table[] = array(
+              array('data' => $time, 'header' => TRUE),
+              theme($value_suggestions, $value, $test, $measurement, FALSE)
+            );
+          }
+          $data_tables[$test][$measurement][$direction] = $data_table;
+          $data_tables[$test][$measurement]['start'] = $start;
+          $data_tables[$test][$measurement]['end'] = $end;
+        }
+      }
+    }
+  }
+
+  if (!empty($table)) {
+    // Sort table
+    ksort($table);
+
+    $headers = array(
+      array('data' => 'Measurement', 'class' => 'result-header',),
+      t('Average'), t('Max'), t('Min'),
+    );
+    $vars['table'] = theme('jqplot_table', $headers, $table,
+      array('class' => 'end-to-end-table'));
+    $vars['data_tables'] = theme('ecenter_network_end_to_end_tables',
+      $data_tables);
+  }
+  else {
+    $vars['table'] = '<p>'. t('No end-to-end results available.') .'</p>';
+  }
+}
+
+/**
  * Theme recent user queries
  */
 function theme_ecenter_network_recent_queries($collapse = FALSE) {
@@ -268,99 +361,6 @@ function theme_ecenter_network_hops($hops = array()) {
 }
 
 /**
- * Theme end to end data table
- */
-function template_preprocess_ecenter_network_end_to_end(&$vars) {
-  $data = $vars['data'];
-  $statistics_table = array();
-  $data_tables = array();
-
-  foreach ($data as $test => $directions) {
-    $start = 0;
-    $end = 0;
-
-    foreach ($directions as $direction => $measurements) {
-      foreach ($measurements as $measurement => $values) {
-        // Suggestion array to format values
-        $value_suggestions = array(
-          'ecenter_network_format_'. $test .'_'. $measurement,
-          'ecenter_network_format_'. $test,
-          'ecenter_network_format_default',
-        );
-
-        // Process stats table
-        if (($statistics = $values['statistics']) && is_array($statistics)) {
-          // Suggestion array to format value labels
-          $label_suggestions = array(
-            'ecenter_network_format_'. $test .'_'. $measurement .'_label',
-            'ecenter_network_format_'. $test .'_label',
-            'ecenter_network_format_default_label',
-          );
-
-          $row = array();
-          foreach ($statistics as $key => $value) {
-            $row[$key] = array('data' => theme($value_suggestions, $value,
-              $test, $measurement), 'class' => $key);
-          }
-          $header = array(
-            'header' => TRUE,
-            'data' => theme($label_suggestions, $measurement, $test,
-              $direction, TRUE),
-          );
-          // Create table row for theming
-          $table[$test .'_'. $measurement .'_'. $direction] = array(
-            'data' => array($header) + $row,
-            'class' => $test .'_'. $measurement .' '. $test .'_'. $measurement
-              .'_'. $direction,
-          );
-        }
-
-        if (($timeseries = $values['timeseries']) && is_array($timeseries)
-          && $values['statistics']['max'] > 0) {
-          $data_table = array();
-          $i = 1;
-          ksort($timeseries);
-
-          $time_range = array_keys($timeseries);
-          $max = max($time_range);
-          $min = min($time_range);
-          $end = ($max > $end) ? $max : $end;
-          $start = ($start == 0 || $min < $start) ? $min : $start;
-
-          foreach ($timeseries as $timestamp => $value) {
-            $time = _ecenter_network_timestamp_to_local($timestamp);
-            $data_table[] = array(
-              array('data' => $time, 'header' => TRUE),
-              theme($value_suggestions, $value, $test, $measurement, FALSE)
-            );
-          }
-          $data_tables[$test][$measurement][$direction] = $data_table;
-          $data_tables[$test][$measurement]['start'] = $start;
-          $data_tables[$test][$measurement]['end'] = $end;
-        }
-      }
-    }
-  }
-
-  if (!empty($table)) {
-    // Sort table
-    ksort($table);
-
-    $headers = array(
-      array('data' => 'Measurement', 'class' => 'result-header',),
-      t('Average'), t('Max'), t('Min'),
-    );
-    $vars['table'] = theme('jqplot_table', $headers, $table,
-      array('class' => 'end-to-end-table'));
-    $vars['data_tables'] = theme('ecenter_network_end_to_end_tables',
-      $data_tables);
-  }
-  else {
-    $vars['table'] = '<p>'. t('No end-to-end results available.') .'</p>';
-  }
-}
-
-/**
  * Theme end to end data tables for plotting
  */
 function theme_ecenter_network_end_to_end_tables($tables) {
@@ -413,119 +413,6 @@ function theme_ecenter_network_end_to_end_tables($tables) {
     }
   }
   return $output;
-}
-
-/**
- * Implementation of hook_ecenter_network_plot_options_alter().
- */
-function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurement, $type) {
-  $options['series'] = array(
-    array('label' => t('Forward'),),
-    array('label' => t('Reverse'),),
-  );
-  $line_options = array(
-    'highlighter' => array(
-      'show' => TRUE,
-      'sizeAdjust' => 0,
-      'lineWidthAdjust' => 0,
-      'tooltipLocation' => 'n',
-      'tooltipOffset' => 10,
-      'tooltipSeparator' => ': ',
-    ),
-    'cursor' => array(
-      'show' => TRUE,
-      'showTooltip' => FALSE,
-      'zoom' => TRUE,
-      'clickReset' => TRUE,
-    ),
-  );
-  switch ($measurement) {
-    case 'throughput':
-      $options['axes']['yaxis']['label'] = t('mbps');
-      $options['seriesDefaults']['renderer'] = '$.jqplot.BarRenderer';
-      $options['seriesDefaults']['rendererOptions'] = array(
-        'barWidth' => 7,
-      );
-      return;
-    case 'max_delay':
-    case 'min_delay':
-    case 'maxRtt':
-    case 'minRtt':
-    case 'medianRtt':
-    case 'meanRtt':
-    case 'maxIpd':
-    case 'minIpd':
-    case 'medianIpd':
-    case 'meanIpd':
-      $options += $line_options;
-      $options['axes']['yaxis']['min'] = 0;
-      $options['axes']['yaxis']['label'] = t('milliseconds');
-      $options['axes']['yaxis']['tickOptions']['formatString'] = '%01.1f';
-      $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%dms</span>';
-      return;
-    case 'loss':
-      $options += $line_options;
-      $options['axes']['yaxis']['min'] = 0;
-      $options['axes']['yaxis']['label'] = t('loss');
-      $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%d</span>';
-      return;
-    case 'utilization':
-      $options += $line_options;
-      $options['axes']['yaxis']['label'] = t('% utilization');
-      $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%d%</span>';
-      return;
-  }
-}
-
-/**
- * Get plot options template
- */
-function _ecenter_network_plot_options_template() {
-  return array( 
-    'seriesDefaults' => array(
-      'lineWidth' => 1.5,
-      'shadow' => FALSE,
-      'fill' => FALSE,
-      'markerOptions' => array(
-        'size' => 3,
-        'shadow' => FALSE,
-      ),
-    ),
-    'legend' => array(
-      'location' => 'se',
-      'xoffset' => 1,
-      'yoffset' => 1,
-    ),
-    'seriesColors' => array('#035dc5', '#a71932', '#133f52', '#e34605', '#672b18', '#049e33',  '#650fc2',),
-    'axes' => array(
-      'xaxis' => array(
-        'autoscale' => TRUE,
-        'numberTicks' => 9,
-        'renderer' => '$.jqplot.DateAxisRenderer',
-        'tickOptions' => array(
-          'formatString' => "%H:%M",
-        ),
-        'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
-      ),
-      'yaxis' => array(
-        'autoscale' => TRUE,
-        'numberTicks' => 4,
-        'tickOptions' => array(
-          'formatString' => '%d',
-        ),
-        'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
-        'labelOptions' => array(
-          'fontSize' => '11px',
-        ),
-      ),
-    ),
-    'grid' => array(
-      'shadow' => FALSE,
-      'borderWidth' => 0,
-      'background' => '#ffffff',
-      'gridLineColor' => '#cccccc',
-    ),
-  );
 }
 
 /**
@@ -643,3 +530,117 @@ function theme_ecenter_network_hop_option($hop) {
       return check_plain($hop['hub_name']) .' ('. check_plain($hop['hub']) .' - '. check_plain($hop['ip_noted']) .')';
   }
 }
+
+/**
+ * Get plot options template
+ */
+function _ecenter_network_plot_options_template() {
+  return array( 
+    'seriesDefaults' => array(
+      'lineWidth' => 1.5,
+      'shadow' => FALSE,
+      'fill' => FALSE,
+      'markerOptions' => array(
+        'size' => 3,
+        'shadow' => FALSE,
+      ),
+    ),
+    'legend' => array(
+      'location' => 'se',
+      'xoffset' => 1,
+      'yoffset' => 1,
+    ),
+    'seriesColors' => array('#035dc5', '#a71932', '#133f52', '#e34605', '#672b18', '#049e33',  '#650fc2',),
+    'axes' => array(
+      'xaxis' => array(
+        'autoscale' => TRUE,
+        'numberTicks' => 9,
+        'renderer' => '$.jqplot.DateAxisRenderer',
+        'tickOptions' => array(
+          'formatString' => "%H:%M",
+        ),
+        'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
+      ),
+      'yaxis' => array(
+        'autoscale' => TRUE,
+        'numberTicks' => 4,
+        'tickOptions' => array(
+          'formatString' => '%d',
+        ),
+        'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
+        'labelOptions' => array(
+          'fontSize' => '11px',
+        ),
+      ),
+    ),
+    'grid' => array(
+      'shadow' => FALSE,
+      'borderWidth' => 0,
+      'background' => '#ffffff',
+      'gridLineColor' => '#cccccc',
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_ecenter_network_plot_options_alter().
+ */
+function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurement, $type) {
+  $options['series'] = array(
+    array('label' => t('Forward'),),
+    array('label' => t('Reverse'),),
+  );
+  $line_options = array(
+    'highlighter' => array(
+      'show' => TRUE,
+      'sizeAdjust' => 0,
+      'lineWidthAdjust' => 0,
+      'tooltipLocation' => 'n',
+      'tooltipOffset' => 10,
+      'tooltipSeparator' => ': ',
+    ),
+    'cursor' => array(
+      'show' => TRUE,
+      'showTooltip' => FALSE,
+      'zoom' => TRUE,
+      'clickReset' => TRUE,
+    ),
+  );
+  switch ($measurement) {
+    case 'throughput':
+      $options['axes']['yaxis']['label'] = t('mbps');
+      $options['seriesDefaults']['renderer'] = '$.jqplot.BarRenderer';
+      $options['seriesDefaults']['rendererOptions'] = array(
+        'barWidth' => 7,
+      );
+      return;
+    case 'max_delay':
+    case 'min_delay':
+    case 'maxRtt':
+    case 'minRtt':
+    case 'medianRtt':
+    case 'meanRtt':
+    case 'maxIpd':
+    case 'minIpd':
+    case 'medianIpd':
+    case 'meanIpd':
+      $options += $line_options;
+      $options['axes']['yaxis']['min'] = 0;
+      $options['axes']['yaxis']['label'] = t('milliseconds');
+      $options['axes']['yaxis']['tickOptions']['formatString'] = '%01.1f';
+      $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%dms</span>';
+      return;
+    case 'loss':
+      $options += $line_options;
+      $options['axes']['yaxis']['min'] = 0;
+      $options['axes']['yaxis']['label'] = t('loss');
+      $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%d</span>';
+      return;
+    case 'utilization':
+      $options += $line_options;
+      $options['axes']['yaxis']['label'] = t('% utilization');
+      $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%d%</span>';
+      return;
+  }
+}
+

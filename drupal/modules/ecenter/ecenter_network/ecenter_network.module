@@ -245,7 +245,6 @@ function _ecenter_network_select_form() {
   $form['network_wrapper']['query'] = array(
     '#prefix' => '<div id="query-wrapper">',
     '#suffix' => '</div>',
-    '#value' => '<p id="instructions">'. t('Select source and destination by clicking sites on the map, or specify below.') .'</p>',
   );
 
   // Source IP
@@ -326,6 +325,12 @@ function _ecenter_network_select_form() {
     '#default_value' => NULL,
   );
 
+  $form['network_wrapper']['query']['help'] = array(
+    '#value' => '<p id="instructions">'. 
+      t('Select source and destination by clicking sites on the map, or 
+         specify above.') .'</p>',
+  );
+
   $form['network_wrapper']['query']['date_description'] = array(
     '#prefix' => '<div id="date-description-wrapper"><p>',
     '#suffix' => '</p></div>',
@@ -333,7 +338,7 @@ function _ecenter_network_select_form() {
 
   if ($user->uid) {
     $form['network_wrapper']['query']['date_description']['#value'] .=  
-      t('Results are adjusted to your local timezone (@tz). <span class="profile">[!link]</span>', 
+      t('Results are adjusted to your local timezone (@tz). <span class="profile-link">!link</span>', 
         array(
           '@tz' => str_replace('_', ' ', date_default_timezone_name(TRUE)), 
           '!link' => l('Update my timezone', 'user/'. $user->uid .'/edit')
@@ -358,11 +363,12 @@ function _ecenter_network_select_form() {
 
   // Data results display
   $form['results_wrapper'] = array(
-    '#prefix' => '<div id="results-wrapper" class="clear-block">',
+    '#prefix' => '<div id="results-wrapper" class="clearfix">',
     '#suffix' => '</div>',
   );
   $form['results_wrapper']['results'] = array(
-    '#value' => '&nbsp;',
+    '#prefix' => '<div id="results">',
+    '#suffix' => '</div>',
   );
 
   // For ahah helper
@@ -439,16 +445,19 @@ function ecenter_network_select_form(&$form_state) {
 
     // If we've got the data (at bare minimum, a traceroute), delegate to rendering function
     if ($data) {
-      drupal_add_js(array('ecenterNetwork' => array('tracerouteData' => $data['traceroute']['diff'])), 'setting');
-      drupal_add_js(array('ecenterNetwork' => array('tracerouteMaxLength' => $data['traceroute']['traceroute_max'])), 'setting');
-      $form['results_wrapper']['results']['#value'] = theme('ecenter_network_data', $data, $params);
-      $form['results_wrapper']['recent']['#value'] = theme('ecenter_network_recent_queries', TRUE);
+      drupal_add_js(array('ecenterNetwork' => array('tracerouteData' => 
+        $data['traceroute']['diff'])), 'setting');
+      drupal_add_js(array('ecenterNetwork' => array('tracerouteMaxLength' => 
+        $data['traceroute']['traceroute_max'])), 'setting');
+      $form['results_wrapper']['results']['#value'] =
+        theme('ecenter_network_data', $data, $params);
+      $form['results_wrapper']['recent']['#value'] =
+        theme('ecenter_network_recent_queries', TRUE);
     }
     else {
-      watchdog('ecenter', 'Query returned no results: <code>@query</code>', array('@query' => $query), WATCHDOG_INFO);
-      $form['results_wrapper']['results']['#value'] = '<p>'. t('Whoops! No data was available for this query. If you believe there should be data for this query, send the site administrator feedback along with executed query, provided below:') .'</p>';
-      $form['results_wrapper']['results']['#value'] .= '<pre>'. $query .'</pre>';
-      $form['results_wrapper']['results']['#value'] .= '<p>'. l(t('Permalink'), 'network', array('query' => $query_params)) .'</p>';
+      $form['results_wrapper']['results']['#value'] = '<p>'. t('Whoops! No data was available for this query. If you believe there should be data for this query, send the site administrator feedback along with executed query, provided below.') .'</p>';
+      $form['results_wrapper']['results']['#value'] .=
+        '<p>'. l(t('Permalink'), 'network', array('query' => $params)) .'</p>';
     }
   }
   else {
@@ -457,7 +466,9 @@ function ecenter_network_select_form(&$form_state) {
   return $form;
 }
 
-// foo..
+/**
+ * Display ecenter data 
+ */
 function ecenter_network_display_data() {
   if ($_GET['modal']) {
     modalframe_child_js();
@@ -476,7 +487,6 @@ function ecenter_network_display_data() {
 function ecenter_network_select_form_submit($form, &$form_state) {
   // Do what AHAH helper does on an AJAX call, to make form constructor a 
   // little less crazy
-  
   $inc = variable_get('ecenter_network_time_increment', 10);
 
   if ($form_state['values']['network_wrapper']['query']['recent_select'] 
@@ -502,7 +512,7 @@ function ecenter_network_select_form_submit($form, &$form_state) {
 
     $start = date_format($day, 'Y-m-d H:i:s');
     $end = date_format(date_modify($day, '+1 day'), 'Y-m-d h:i:s');
-
+ 
   }
 
   $form_state['values']['network_wrapper']['query']['start'] = $start;
@@ -511,6 +521,8 @@ function ecenter_network_select_form_submit($form, &$form_state) {
   // @TODO Set request variables -- seems hackish at this point
   $_REQUEST['network_wrapper']['query']['start']['date'] = $start;
   $_REQUEST['network_wrapper']['query']['end']['date'] = $end;
+
+  //dpm($form_state['values']);
   
   $form_state['storage'] = $form_state['values'];
   $form_state['rebuild'] = TRUE;
@@ -570,7 +582,7 @@ function ecenter_network_get_client($status_check = FALSE) {
  * @return
  *   An array of parsed data
  */
-function ecenter_network_get_data($src, $dst, $start, $end, $debug_url = FALSE) {
+function ecenter_network_get_data($src, $dst, $start, $end) {
   global $user;
   static $results = array();
 
@@ -599,9 +611,11 @@ function ecenter_network_get_data($src, $dst, $start, $end, $debug_url = FALSE) 
         $results[$query] = $data;
       }
       else { // Note that the static variable is NOT set in this case
-        drupal_set_message(t('Request (@url) failed with code @code (@response).', 
+        watchdog('ecenter_network', 
+          'Request (@url) failed with code @code (@response).', 
           array('@url' => $result['url'], '@code' => $result['code'], 
-          '@response' => $result['response'])));
+          '@response' => $result['response']), WATCHDOG_WARNING);
+        return NULL;
       }
     }
 

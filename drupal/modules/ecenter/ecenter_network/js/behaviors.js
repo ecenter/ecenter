@@ -126,8 +126,17 @@ $.fn.ecenter_network.plugins.ajax = function() {
  * Trigger form submission when destination value is provided and date changes.
  */
 $.fn.ecenter_network.plugins.date = function() {
-  $('#recent-select input, #date-select input', this.el).bind('change', function() {
+  // @TODO This is a little DRY violation, maybe delegate instead?
+  $('#recent-select input', this.el).bind('change', function() {
     var dst = $('#dst-wrapper input', this.el);
+    $('#date-select input').val('');
+    if (dst.val()) {
+      dst.data('autocomplete')._trigger('change');
+    }
+  });
+  $('#date-select input', this.el).bind('change', function() {
+    var dst = $('#dst-wrapper input', this.el);
+    $('#recent-select input').attr('checked', false);
     if (dst.val()) {
       dst.data('autocomplete')._trigger('change');
     }
@@ -140,36 +149,27 @@ $.fn.ecenter_network.plugins.date = function() {
  */
 $.fn.ecenter_network.plugins.change = function() {
   var self = this;
-
-  var processed = $('#src-wrapper select').data('ecenterProcessed');
-
-  // Clear out old results when destination select changes
-  if (!processed) {
-    $('#src-wrapper select', this.el).bind('change', function(e) {
-      // Add overlay.
-      $(self.el).addClass('data-loading').css('position', 'relative');
-
-      var overlay = $('#loading-overlay')
-      overlay.css({
-        'position' : 'absolute',
-        'top' : 0,
-        'left' : 0,
-        'width' : $('#network-wrapper', self.el).outerWidth(),
-        'height' : $('#network-wrapper', self.el).height(),
-        'z-index' : 5,
-        'display' : 'none',
-      });
-      $(self.el).prepend(overlay);
-      overlay.fadeIn('slow');
-
-      $(this).data('ecenterProcessed', true);
-    });
-  }
-
+ 
   var processed = $('#dst-wrapper select').data('ecenterProcessed');
 
+  if (!$('#src-wrapper input').val()) {
+    $('#dst-wrapper input, #dst-wrapper button')
+      .attr('disabled', 'disabled')
+      .addClass('disabled');
+  } else {
+    $('#dst-wrapper input, #dst-wrapper button')
+      .removeAttr('disabled')
+      .removeClass('disabled');
+  }
+ 
   // Clear out old results when destination select changes
   if (!processed) {
+    $('#src-wrapper button.clear-value').bind('click', function(e) {
+      $('#results').remove();
+      var input = $('#edit-network-wrapper-query-dst-wrapper-dst-wrapper input');
+      input.val('');
+      input.data('autocomplete')._trigger('change');
+    });
     $('#dst-wrapper select', this.el).bind('change', function(e) {
       $('#results', self.el).slideUp(600, function() {
         $(this).remove();

@@ -156,6 +156,9 @@
     cursor: default;
     text-decoration: none !important;
   }
+  &.disabled {
+    .vertical_glass_gradient(@color_grey_80; @color_grey_73; @color_grey_80);
+  }
 }
 // For making buttons look like links
 .button_link {
@@ -817,6 +820,9 @@ a {
   input, button {
     .round_corner;
   }
+  input.disabled {
+    background-color: @color_grey_87;
+  }
   textarea {
     font-family: @font_liberation_mono;
   }
@@ -930,6 +936,7 @@ a {
 } // }}}
 .ui-datepicker { // jQuery UI Datepicker {{{
   font-size: .8em;
+  z-index: 10;
 } // }}}
 #content table.mceLayout { // TinyMCE {{{
   border: 1px solid #aaa;
@@ -1104,6 +1111,9 @@ a {
       &:hover {
         button.ui-button, input {
           border-color: @color_grey_40;
+          &.disabled {
+            border-color: @color_grey_67;
+          }
         }
       }
     } // }}}

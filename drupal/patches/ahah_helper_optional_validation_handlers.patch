@@ -1,0 +1,19 @@
+diff --git a/ahah_helper.module b/ahah_helper.module
+index 4a5855d..7e422a5 100644
+--- a/ahah_helper.module
++++ b/ahah_helper.module
+@@ -166,10 +166,10 @@ function ahah_helper_render($form_item_to_render = FALSE) {
+   // without using a button, you generally don't want any validation to kick
+   // in. A typical example is adding new fields, possibly even required ones.
+   // You don't want errors to be thrown at the user until they actually submit
+-  // their values. (Well, actually you want to be smart about this: sometimes
+-  // you do want instant validation, but that's an even bigger pain to solve
+-  // here so I'll leave that for later…)
+-  if (!isset($_POST['op'])) {
++  // their values. 
++  // This behavior can be disabled with the custom '#ahah_enable_handlers' 
++  // form property.
++  if (empty($form['#ahah_enable_handlers']) && !isset($_POST['op'])) {
+     // For the default "{$form_id}_validate" and "{$form_id}_submit" handlers.
+     $form['#validate'] = NULL;
+     $form['#submit'] = NULL;

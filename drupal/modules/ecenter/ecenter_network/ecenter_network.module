@@ -415,7 +415,6 @@ function ecenter_network_select_form(&$form_state) {
   $form['network_wrapper']['query']['src_wrapper']['src']['#options'] += $src_options;
   if (!empty($src)) {
     $form['network_wrapper']['query']['src_wrapper']['src']['#default_value'] = $src;
-    $form['network_wrapper']['query']['src_wrapper']['src']['#disabled'] = TRUE;
     list($src_type, $src_value) = explode(':', $src, 2);
     if ($src_type == 'hub') {
       $src_value = $sources['hubs'][$src_value]['ip_noted'];

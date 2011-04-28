@@ -225,10 +225,14 @@ function _ecenter_network_select_form() {
   $preset = openlayers_preset_load('ecenter_network');
   $map = openlayers_render_map($preset->data, $preset->name);
 
+  // Cache build time
   $form['build_time'] = array(
     '#type' => 'value',
     '#value' => time(),
   );
+
+  // Don't disable submit or validate callbacks
+  $form['#ahah_enable_handlers'] = TRUE;
 
   // Network map
   $form['network_wrapper'] = array(

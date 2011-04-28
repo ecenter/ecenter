@@ -505,12 +505,11 @@ function ecenter_network_select_form_submit($form, &$form_state) {
   }
   else if ($form_state['values']['network_wrapper']['query']['date_select']) {
     $date = $form_state['values']['network_wrapper']['query']['date_select'];
-
     $tz = date_default_timezone_name(TRUE);
-    $day = date_make_date($date, timezone_open($tz));
-
+    $day = date_create($date, timezone_open($tz));
+    
     $start = date_format($day, 'Y-m-d H:i:s');
-    $end_date = date_modify($day, '+24 hours');
+    $end_date = date_modify($day, '+2 hours');
     $end = date_format($end_date, 'Y-m-d h:i:s');
   }
 

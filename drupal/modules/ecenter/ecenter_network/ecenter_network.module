@@ -509,7 +509,7 @@ function ecenter_network_select_form_submit($form, &$form_state) {
     $day = date_create($date, timezone_open($tz));
     
     $start = date_format($day, 'Y-m-d H:i:s');
-    $end_date = date_modify($day, '+2 hours');
+    $end_date = date_modify($day, '+24 hours');
     $end = date_format($end_date, 'Y-m-d h:i:s');
   }
 
@@ -520,8 +520,6 @@ function ecenter_network_select_form_submit($form, &$form_state) {
   $_REQUEST['network_wrapper']['query']['start']['date'] = $start;
   $_REQUEST['network_wrapper']['query']['end']['date'] = $end;
 
-  //dpm($form_state['values']);
-  
   $form_state['storage'] = $form_state['values'];
   $form_state['rebuild'] = TRUE;
 }

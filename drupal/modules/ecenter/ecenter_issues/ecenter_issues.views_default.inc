@@ -6,7 +6,6 @@
 function ecenter_issues_views_default_views() {
   $views = array();
 
-  // Exported view: ecenter_issues
   $view = new view;
   $view->name = 'ecenter_issues';
   $view->description = 'E-Center issues';

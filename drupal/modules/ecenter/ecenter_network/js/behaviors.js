@@ -172,7 +172,6 @@ $.fn.ecenter_network.plugins.change = function() {
       input.data('autocomplete')._trigger('change');
     });
     $('#src-wrapper select').bind('change', function(e) {
-      console.log('oh hai');
       var overlay = $('#loading-overlay');
       overlay.css({
         'position' : 'absolute',
@@ -183,7 +182,6 @@ $.fn.ecenter_network.plugins.change = function() {
         'z-index' : 5,
       });
       $('button', overlay).css({'display' : 'none'});
-      //$(self.el).prepend(overlay);
       overlay.fadeIn('slow');
     });
   }
@@ -214,9 +212,7 @@ $.fn.ecenter_network.plugins.change = function() {
         'z-index' : 5,
         'display' : 'none',
       });
-      $(self.el).prepend(overlay);
       overlay.fadeIn('slow');
-
       $(this).data('ecenterProcessed', true);
     });
   }

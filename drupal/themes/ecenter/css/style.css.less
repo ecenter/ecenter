@@ -935,8 +935,35 @@ a {
   }
 } // }}}
 .ui-datepicker { // jQuery UI Datepicker {{{
-  font-size: .8em;
-  z-index: 10;
+  .round_corner;
+  font-size: .8em !important;
+  z-index: 10 !important;
+  background-color: @color_white !important;
+  border: 1px solid #aaa !important;
+  padding: 1px 5px !important;
+  table {
+    th {
+      background-color: #ccc;
+    }
+    td, th {
+      border: 2px solid @color_white;
+      text-align: center !important;
+      padding: 1px !important;
+    }
+    td {
+      background-color: #ddd;
+      :hover {
+        background-color: #ccc;
+      }
+      &.ui-datepicker-unselectable {
+        background-color: #eee;
+      }
+      a {
+        text-align: center !important;
+        padding: 0 !important;
+      }
+    }
+  }
 } // }}}
 #content table.mceLayout { // TinyMCE {{{
   border: 1px solid #aaa;

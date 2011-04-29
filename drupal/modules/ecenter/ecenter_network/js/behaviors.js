@@ -107,7 +107,9 @@ $.fn.ecenter_network.plugins.ajax = function() {
     },
     'ajaxSuccess' : function(e) {
       $(el).removeClass('data-loading');
-      $('#loading-overlay', self.el).fadeOut('fast');
+      overlay = $('#loading-overlay', self.el)
+        .fadeOut('fast');
+      $('button', overlay).css({'display' : 'inline'});
     },
     'ajaxError' : function(e) {
       var dst = $('#dst-wrapper select');
@@ -117,7 +119,9 @@ $.fn.ecenter_network.plugins.ajax = function() {
       $('#dst-wrapper input').val('');
 
       $(el).removeClass('data-loading');
-      $('#loading-overlay', self.el).fadeOut('fast');
+      overlay = $('#loading-overlay', self.el)
+        .fadeOut('fast');
+      $('button', overlay).css({'display' : 'inline'});
     }
   });
 }
@@ -149,8 +153,6 @@ $.fn.ecenter_network.plugins.date = function() {
  */
 $.fn.ecenter_network.plugins.change = function() {
   var self = this;
- 
-  var processed = $('#dst-wrapper select').data('ecenterProcessed');
 
   if (!$('#src-wrapper input').val()) {
     $('#dst-wrapper input, #dst-wrapper button')
@@ -161,15 +163,35 @@ $.fn.ecenter_network.plugins.change = function() {
       .removeAttr('disabled')
       .removeClass('disabled');
   }
- 
-  // Clear out old results when destination select changes
+
+  var processed = $('#src-wrapper select').data('ecenterProcessed');
   if (!processed) {
     $('#src-wrapper button.clear-value').bind('click', function(e) {
-      $('#results').remove();
-      var input = $('#edit-network-wrapper-query-dst-wrapper-dst-wrapper input');
+      var input = $('#dst-wrapper input');
       input.val('');
       input.data('autocomplete')._trigger('change');
     });
+    $('#src-wrapper select').bind('change', function(e) {
+      console.log('oh hai');
+      var overlay = $('#loading-overlay');
+      overlay.css({
+        'position' : 'absolute',
+        'top' : 0,
+        'left' : 0,
+        'width' : $('#network-wrapper', self.el).outerWidth(),
+        'height' : $('#network-wrapper', self.el).height(),
+        'z-index' : 5,
+      });
+      $('button', overlay).css({'display' : 'none'});
+      //$(self.el).prepend(overlay);
+      overlay.fadeIn('slow');
+    });
+  }
+
+  var processed = $('#dst-wrapper select').data('ecenterProcessed');
+ 
+  // Clear out old results when destination select changes
+  if (!processed) {
     $('#dst-wrapper select', this.el).bind('change', function(e) {
       $('#results', self.el).slideUp(600, function() {
         $(this).remove();
@@ -182,7 +204,7 @@ $.fn.ecenter_network.plugins.change = function() {
       // Add overlay.
       $(self.el).addClass('data-loading').css('position', 'relative');
 
-      var overlay = $('#loading-overlay')
+      var overlay = $('#loading-overlay');
       overlay.css({
         'position' : 'absolute',
         'top' : 0,

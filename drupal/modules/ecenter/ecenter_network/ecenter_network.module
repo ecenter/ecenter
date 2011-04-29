@@ -721,7 +721,7 @@ function ecenter_network_get_node($ip) {
 /**
  * Parse Data Retrieval Sevice data
  *
- * Compatible with 3.0 version of DRS. Several portions of the parser are 
+ * Compatible with 3.0 version of DRS. Several portions of the parser are
  * computationally
  *
  * @param $response
@@ -853,7 +853,7 @@ function ecenter_network_parse_response($response) {
 }
 
 /**
- * Filter traceroute results: Hops without 
+ * Filter traceroute results
  */
 function _ecenter_network_filter_traceroute($hop) {
   return (!empty($hop['data']['snmp']));

@@ -91,6 +91,8 @@ function _ecenter_core_modules() {
     'ecenter_network',
     'ecenter_test',
     'wysiwyyg',
+    'gravatar',
+    'semanticviews',
   );
 }
 

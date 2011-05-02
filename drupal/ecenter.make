@@ -61,6 +61,9 @@ projects[filefield][version] = "3.9"
 projects[geoip][subdir] = "contrib"
 projects[geoip][version] = "1.4"
 
+projects[gravatar][subdir] = "contrib"
+projects[gravatar][version] = "1.10"
+
 projects[homebox][subdir] = "contrib"
 projects[homebox][version] = "2.1"
 
@@ -93,6 +96,9 @@ projects[markdown][version] = "1.2"
 
 projects[pathologic][subdir] = "contrib"
 projects[pathologic][version] = "3.4"
+
+projects[semanticviews][subdir] = "contrib"
+projects[semanticviews][version] = "1.1"
 
 projects[syntaxhighlighter][subdir] = "contrib"
 projects[syntaxhighlighter][version] = "1.26"

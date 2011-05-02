@@ -378,10 +378,6 @@ function _ecenter_network_select_form() {
     '#prefix' => '<div id="results-wrapper" class="clearfix">',
     '#suffix' => '</div>',
   );
-  $form['results_wrapper']['results'] = array(
-    '#prefix' => '<div id="results">',
-    '#suffix' => '</div>',
-  );
 
   // For ahah helper
   $form['#tree'] = TRUE;
@@ -472,7 +468,7 @@ function ecenter_network_select_form(&$form_state) {
     }
   }
   else {
-    $form['results_wrapper']['results']['#value'] = theme('ecenter_network_recent_queries');
+    $form['results_wrapper']['#value'] = theme('ecenter_network_recent_queries');
   }
   return $form;
 }
@@ -983,6 +979,10 @@ function ecenter_network_openlayers_presets() {
       'openlayers_behavior_fullscreen' => array(
         'activated' => 0,
       ),
+      /*'openlayers_behavior_zoomtolayer' => array(
+        'zoomtolayer' => 'ecenter_network_sites',
+        'point_zoom_level' => '5',
+      ),*/
       'ecenter_network_behavior_select' => array(
         'layers' => array(
           'ecenter_network_sites' => 'ecenter_network_sites',

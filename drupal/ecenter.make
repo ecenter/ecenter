@@ -221,9 +221,9 @@ libraries[syntaxhighlighter][download][url] = "http://alexgorbatchev.com/SyntaxH
 libraries[syntaxhighlighter][directory_name] = "syntaxhighlighter"
 
 ; GeoIP
-libraries[geoip][download][type] = "get"
-libraries[geoip][download][url] = "http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz"
-libraries[geoip][directory_name] = "geoip"
+;libraries[geoip][download][type] = "get"
+;libraries[geoip][download][url] = "http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz"
+;libraries[geoip][directory_name] = "geoip"
 
 ; OpenID Selector
 libraries[openid_selector][download][type] = "get"

@@ -164,11 +164,17 @@ function ecenter_profile_tasks(&$task, $url) {
 
 /**
  * Finished callback for the modules install batch.
- *
- * Advance installer task to language import.
  */
 function _ecenter_profile_batch_finished($success, $results) {
   variable_set('install_task', 'ecenter-configure');
+
+  // For some very obscure reason, features install doesn't set this properly
+  // despite being properly exported by Strongarm.
+  variable_set('openlayers_source',
+    'profiles/ecenter/libraries/openlayers/build/OpenLayers.js');
+
+  // Adminrole installation fails
+  module_enable('adminrole');
 }
 
 /**
@@ -267,6 +273,11 @@ function _ecenter_system_theme_data() {
   db_query("DELETE FROM {system} WHERE type = 'theme'");
   foreach ($themes as $theme) {
     $theme->owner = !isset($theme->owner) ? '' : $theme->owner;
-    db_query("INSERT INTO {system} (name, owner, info, type, filename, status, throttle, bootstrap) VALUES ('%s', '%s', '%s', '%s', '%s', %d, %d, %d)", $theme->name, $theme->owner, serialize($theme->info), 'theme', $theme->filename, isset($theme->status) ? $theme->status : 0, 0, 0);
+    db_query("INSERT INTO {system}
+      (name, owner, info, type, filename, status, throttle, bootstrap)
+      VALUES ('%s', '%s', '%s', '%s', '%s', %d, %d, %d)",
+      $theme->name, $theme->owner, serialize($theme->info), 'theme',
+      $theme->filename, isset($theme->status) ? $theme->status : 0,
+      0, 0);
   }
 }

@@ -295,8 +295,6 @@ function ecenter_issues_views_default_views() {
   $handler->display->display_options['filters']['uid']['field'] = 'uid';
   $handler->display->display_options['filters']['uid']['value'] = '';
   $handler->display->display_options['filters']['uid']['exposed'] = TRUE;
-  $handler->display->display_options['filters']['uid']['expose']['operator'] = 'uid_op';
-  $handler->display->display_options['filters']['uid']['expose']['limit_operators'] = array();
   $handler->display->display_options['filters']['uid']['expose']['label'] = 'Issue author';
   $handler->display->display_options['filters']['uid']['expose']['identifier'] = 'uid';
   $handler->display->display_options['filters']['uid']['expose']['reduce'] = 0;
@@ -306,8 +304,6 @@ function ecenter_issues_views_default_views() {
   $handler->display->display_options['filters']['field_query_src_hub_value']['field'] = 'field_query_src_hub_value';
   $handler->display->display_options['filters']['field_query_src_hub_value']['relationship'] = 'field_issue_query_nid';
   $handler->display->display_options['filters']['field_query_src_hub_value']['exposed'] = TRUE;
-  $handler->display->display_options['filters']['field_query_src_hub_value']['expose']['operator'] = 'field_query_src_hub_value_op';
-  $handler->display->display_options['filters']['field_query_src_hub_value']['expose']['limit_operators'] = array();
   $handler->display->display_options['filters']['field_query_src_hub_value']['expose']['label'] = 'Source';
   $handler->display->display_options['filters']['field_query_src_hub_value']['expose']['identifier'] = 'src_hub';
   $handler->display->display_options['filters']['field_query_src_hub_value']['expose']['optional'] = TRUE;
@@ -319,8 +315,6 @@ function ecenter_issues_views_default_views() {
   $handler->display->display_options['filters']['field_query_dst_hub_value']['field'] = 'field_query_dst_hub_value';
   $handler->display->display_options['filters']['field_query_dst_hub_value']['relationship'] = 'field_issue_query_nid';
   $handler->display->display_options['filters']['field_query_dst_hub_value']['exposed'] = TRUE;
-  $handler->display->display_options['filters']['field_query_dst_hub_value']['expose']['operator'] = 'field_query_dst_hub_value_op';
-  $handler->display->display_options['filters']['field_query_dst_hub_value']['expose']['limit_operators'] = array();
   $handler->display->display_options['filters']['field_query_dst_hub_value']['expose']['label'] = 'Destination';
   $handler->display->display_options['filters']['field_query_dst_hub_value']['expose']['identifier'] = 'dst_hub';
   $handler->display->display_options['filters']['field_query_dst_hub_value']['expose']['optional'] = TRUE;

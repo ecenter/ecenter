@@ -137,8 +137,8 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
           // Create table row for theming
           $table[$test .'_'. $measurement .'_'. $direction] = array(
             'data' => array($header) + $row,
-            'class' => $test .'_'. $measurement .' '. $test .'_'. $measurement
-              .'_'. $direction,
+            'class' => $test .'-'. $measurement .' '. $test .'-'. $measurement
+              .'-'. $direction,
           );
         }
 

@@ -111,6 +111,22 @@ $.fn.ecenter_network.plugins.ajax = function() {
       .fadeOut('fast', function() {
         $('button', overlay).css({'display' : 'inline'});
       });
+
+      // Zoom to correct level for sites layer
+      var dst = $('#dst-wrapper input');
+      if (!dst.val()) {
+        var ol = $('#openlayers-map-auto-id-0').data('openlayers');
+        var map = ol.openlayers;
+        var layer = map.getLayersBy('drupalID', 'ecenter_network_sites').pop(); 
+
+        // Zoom to extent
+        layerextent = layer.getDataExtent();
+
+        // Check for valid layer extent
+        if (layerextent != null) {
+          map.zoomToExtent(layerextent);
+        }
+      }
     },
     'ajaxError' : function(e) {
       var dst = $('#dst-wrapper select');
@@ -123,6 +139,19 @@ $.fn.ecenter_network.plugins.ajax = function() {
       overlay = $('#loading-overlay', self.el)
         .fadeOut('fast');
       $('button', overlay).css({'display' : 'inline'});
+
+      // Zoom to correct level for sites layer
+      var ol = $('#openlayers-map-auto-id-0').data('openlayers');
+      var map = ol.openlayers;
+      var layer = map.getLayersBy('drupalID', 'ecenter_network_sites').pop(); 
+
+      // Zoom to extent
+      layerextent = layer.getDataExtent();
+
+      // Check for valid layer extent
+      if (layerextent != null) {
+        map.zoomToExtent(layerextent);
+      }
     }
   });
 }

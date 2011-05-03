@@ -463,9 +463,9 @@ $.fn.ecenter_network.plugins.traceroute = function() {
           }
 
           $('circle', group).each(function() {
-            this.setAttribute('stroke', '#555555');
+            this.setAttribute('stroke', '#333333');
           });
-          $('.hub-label text', group).each(function() {
+          $('.hub_label text', group).each(function() {
             this.setAttribute('fill', '#000000');
           });
           $('.label text', group).each(function() {
@@ -501,11 +501,11 @@ $.fn.ecenter_network.plugins.traceroute = function() {
           $('circle', group).each(function() {
             this.setAttribute('stroke', '#aaaaaa');
           });
-          $('.hub-label text', group).each(function() {
-            this.setAttribute('fill', '#000000');
+          $('.hub_label text', group).each(function() {
+            this.setAttribute('fill', '#444444');
           });
           $('.label text', group).each(function() {
-            this.setAttribute('fill', '#555555');
+            this.setAttribute('fill', '#000000');
           });
           $('.background rect', group).each(function() {
             this.setAttribute('fill', '#ffffff');

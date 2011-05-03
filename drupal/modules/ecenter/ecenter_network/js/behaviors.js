@@ -477,7 +477,6 @@ $.fn.ecenter_network.plugins.traceroute = function() {
         });
       },
       'mouseleave' : function(e, stop_highlight) {
-
         $('g.node', e.currentTarget).each(function(e) {
           var group = this;
           var hop_id = $(this).attr('hop_id');

@@ -108,8 +108,9 @@ $.fn.ecenter_network.plugins.ajax = function() {
     'ajaxSuccess' : function(e) {
       $(el).removeClass('data-loading');
       overlay = $('#loading-overlay', self.el)
-        .fadeOut('fast');
-      $('button', overlay).css({'display' : 'inline'});
+      .fadeOut('fast', function() {
+        $('button', overlay).css({'display' : 'inline'});
+      });
     },
     'ajaxError' : function(e) {
       var dst = $('#dst-wrapper select');
@@ -239,6 +240,22 @@ $.fn.ecenter_network.plugins.map = function() {
           control.select(feature);
           Drupal.ecenterSelect.over.call(control, feature); // Highlight
         }
+        
+        if (layer.selectedFeatures.length == 0) {
+          var input = $('#src-wrapper input', this.el);
+          input.val('');
+          input.data('autocomplete')._trigger('change');
+        }
+        else if (layer.selectedFeatures.length == 1) {
+          var input = $('#src-wrapper input', this.el);
+          input.val(feature.ecenterID);
+          input.data('autocomplete')._trigger('change');
+        }
+        else if (layer.selectedFeatures.length > 1) {
+          var input = $('#dst-wrapper input', this.el);
+          input.val(feature.ecenterID);
+          input.data('autocomplete')._trigger('change');
+        }
       }
     });
 
@@ -322,18 +339,6 @@ $.fn.ecenter_network.plugins.map = function() {
 
     // Bind to feature select: Set value, then call autocomplete's change function
     $(id).live('featureClick', function(e, feature, layer) {
-      if (layer.drupalID == 'ecenter_network_sites') {
-        if (layer.selectedFeatures.length == 1) {
-          var input = $('#edit-network-wrapper-query-src-wrapper-src-wrapper input');
-          input.val(feature.ecenterID);
-          input.data('autocomplete')._trigger('change');
-        }
-        else if (layer.selectedFeatures.length > 1) {
-          var input = $('#edit-network-wrapper-query-dst-wrapper-dst-wrapper input');
-          input.val(feature.ecenterID);
-          input.data('autocomplete')._trigger('change');
-        }
-      }
     });
   }
 }

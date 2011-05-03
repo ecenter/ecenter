@@ -257,6 +257,15 @@ $.fn.ecenter_network.plugins.map = function() {
   for (key in maps) {
     var id = '#' + maps[key].id;
 
+    // Persist selection after zooming or panning
+    var ol = $(id).data('openlayers');
+    var map = ol.openlayers;
+    map.events.on({
+      moveend: function(e) {
+        $.fn.ecenter_network.plugins.draw_map();
+      }
+    });
+
     $(id).live('featureClick', function(e, feature, layer, control) {
       if (layer.drupalID == 'ecenter_network_sites') {
         // Toggle click state

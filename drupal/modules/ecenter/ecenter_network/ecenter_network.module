@@ -953,7 +953,7 @@ function ecenter_network_openlayers_presets() {
 
   $items = array();
   $openlayers_presets = new stdClass;
-  $openlayers_presets->disabled = FALSE; /* Edit this to true to make a default openlayers_presets disabled initially */
+  $openlayers_presets->disabled = FALSE; 
   $openlayers_presets->api_version = 1;
   $openlayers_presets->name = 'ecenter_network';
   $openlayers_presets->title = 'E-Center Network';
@@ -979,10 +979,6 @@ function ecenter_network_openlayers_presets() {
       'openlayers_behavior_fullscreen' => array(
         'activated' => 0,
       ),
-      /*'openlayers_behavior_zoomtolayer' => array(
-        'zoomtolayer' => 'ecenter_network_sites',
-        'point_zoom_level' => '5',
-      ),*/
       'ecenter_network_behavior_select' => array(
         'layers' => array(
           'ecenter_network_sites' => 'ecenter_network_sites',

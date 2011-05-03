@@ -455,12 +455,17 @@ $.fn.ecenter_network.plugins.traceroute = function() {
   var traceroutes = $('#traceroute', this.el).data('traceroute');
   if (!traceroutes && Drupal.settings.ecenterNetwork && Drupal.settings.ecenterNetwork.tracerouteData) {
     $('<div id="traceroute-wrapper">')
-      .prependTo($('#results-wrapper'));
+      .prependTo($('#results'));
     $('<div id="traceroute"></div>')
       .appendTo($('#traceroute-wrapper'))
       .traceroute(Drupal.settings.ecenterNetwork.tracerouteData);
     
     var traceroutes = $('#traceroute', this.el).data('traceroute');
+    
+    if (!traceroutes) {
+      return;
+    }
+
     var traceroute = traceroutes['default'].svg;
 
     $('.match, .diff', traceroute.root()).

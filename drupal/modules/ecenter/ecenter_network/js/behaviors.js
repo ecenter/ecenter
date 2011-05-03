@@ -414,23 +414,15 @@ $.fn.ecenter_network.plugins.draw_map = function() {
  * Create traceroute visualization using traceroute jQuery plugin.
  */
 $.fn.ecenter_network.plugins.traceroute = function() {
-  var el = this.el;
-  var trace_el = $('#traceroute-wrapper', this.el);
-
-  if (!trace_el.length && Drupal.settings.ecenterNetwork && Drupal.settings.ecenterNetwork.tracerouteData) {
-    var traceroutes = $('#traceroute').data('traceroute');
+  var traceroutes = $('#traceroute', this.el).data('traceroute');
+  if (!traceroutes && Drupal.settings.ecenterNetwork && Drupal.settings.ecenterNetwork.tracerouteData) {
     $('<div id="traceroute-wrapper">')
-      .prependTo($('#hop-wrapper'));
-
+      .prependTo($('#results-wrapper'));
     $('<div id="traceroute"></div>')
       .appendTo($('#traceroute-wrapper'))
       .traceroute(Drupal.settings.ecenterNetwork.tracerouteData);
-
-    var traceroutes = $('#traceroute').data('traceroute');
-    if (!traceroutes) {
-      return;
-    }
-
+    
+    var traceroutes = $('#traceroute', this.el).data('traceroute');
     var traceroute = traceroutes['default'].svg;
 
     $('.match, .diff', traceroute.root()).

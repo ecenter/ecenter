@@ -1236,10 +1236,13 @@ function ecenter_network_layers_sites() {
 function _ecenter_network_layers_sites_rejigger(&$features) {
   foreach ($features as $k => $feature) {
     switch ($feature['extra']['ecenterID']) {
-      case 'SLAC':
       case 'PPPL':
         $features[$k]['style']['labelYOffset'] = -20;
         $features[$k]['style']['labelXOffset'] = -5;
+        break;
+      case 'SLAC':
+        $features[$k]['style']['labelYOffset'] = -5;
+        $features[$k]['style']['labelXOffset'] = -30;
         break;
       case 'ANL':
         $features[$k]['style']['labelYOffset'] = -20;
@@ -1251,21 +1254,36 @@ function _ecenter_network_layers_sites_rejigger(&$features) {
       case 'NERSC':
         $lat = $features[$k]['extra']['coords']['lat'] + 0.4;
         $lon = $features[$k]['extra']['coords']['lon'] - 0.4;
-        $features[$k]['style']['labelXOffset'] = -5;
+        $features[$k]['style']['labelXOffset'] = -37;
+        $features[$k]['style']['labelYOffset'] = 5;
         $features[$k]['wkt'] = "POINT({$lon} {$lat})";
         break;
       case 'LBL':
         $features[$k]['style']['labelXOffset'] = 24;
         $features[$k]['style']['labelYOffset'] = 5;
         $lat = $features[$k]['extra']['coords']['lat'] + .25;
-        $lon = $features[$k]['extra']['coords']['lon'] + .5;
+        $lon = $features[$k]['extra']['coords']['lon'] + .8;
         $features[$k]['wkt'] = "POINT({$lon} {$lat})";
         break;
       case 'LLNL':
-        $features[$k]['style']['labelXOffset'] = 27;
-        $features[$k]['style']['labelYOffset'] = -5;
-        $lat = $features[$k]['extra']['coords']['lat'] - .25;
-        $lon = $features[$k]['extra']['coords']['lon'] + .35;
+        $features[$k]['style']['labelXOffset'] = 15;
+        $features[$k]['style']['labelYOffset'] = -15;
+        $lat = $features[$k]['extra']['coords']['lat'] - .7;
+        $lon = $features[$k]['extra']['coords']['lon'] + .15;
+        $features[$k]['wkt'] = "POINT({$lon} {$lat})";
+        break;
+      case 'JGI':
+        $features[$k]['style']['labelXOffset'] = 5;
+        $features[$k]['style']['labelYOffset'] = 15;
+        $lat = $features[$k]['extra']['coords']['lat'] + .7;
+        $lon = $features[$k]['extra']['coords']['lon'] + .1;
+        $features[$k]['wkt'] = "POINT({$lon} {$lat})";
+        break;
+      case 'SNLL':
+        $features[$k]['style']['labelXOffset'] = 30;
+        $features[$k]['style']['labelYOffset'] = 0;
+        $lat = $features[$k]['extra']['coords']['lat'] - .2;
+        $lon = $features[$k]['extra']['coords']['lon'] + .45;
         $features[$k]['wkt'] = "POINT({$lon} {$lat})";
         break;
       default:

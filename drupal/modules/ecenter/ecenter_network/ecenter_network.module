@@ -420,8 +420,8 @@ function ecenter_network_select_form(&$form_state) {
 
   $sources = ecenter_network_get_hops();
   $src_options[0] = '';
-  foreach ($sources['combined'] as $key => $hop) {
-    $src_options[$key] = theme('ecenter_network_hop_option', $hop);
+  foreach ($sources['hubs'] as $key => $hop) {
+    $src_options['hub:'. $key] = theme('ecenter_network_hop_option', $hop);
   }
   $form['network_wrapper']['query']['src_wrapper']['src']['#options'] += $src_options;
   if (!empty($src)) {
@@ -432,8 +432,8 @@ function ecenter_network_select_form(&$form_state) {
     }
     $destinations = ecenter_network_get_hops($src_value);
     $dst_options[0] = '';
-    foreach ($destinations['combined'] as $key => $hop) {
-      $dst_options[$key] = theme('ecenter_network_hop_option', $hop);
+    foreach ($destinations['hubs'] as $key => $hop) {
+      $dst_options['hub:'. $key] = theme('ecenter_network_hop_option', $hop);
     }
     $form['network_wrapper']['query']['dst_wrapper']['dst']['#options'] += $dst_options;
     $form['network_wrapper']['query']['dst_wrapper']['dst']['#disabled'] = FALSE;

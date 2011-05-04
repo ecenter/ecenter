@@ -107,7 +107,7 @@ $.fn.ecenter_network.plugins.ajax = function() {
     },
     'ajaxSuccess' : function(e) {
       $(el).removeClass('data-loading');
-      overlay = $('#loading-overlay', self.el)
+      var overlay = $('#loading-overlay', self.el)
       .fadeOut('fast', function() {
         $('button', overlay).css({'display' : 'inline'});
       });
@@ -136,7 +136,7 @@ $.fn.ecenter_network.plugins.ajax = function() {
       $('#dst-wrapper input').val('');
 
       $(el).removeClass('data-loading');
-      overlay = $('#loading-overlay', self.el)
+      var overlay = $('#loading-overlay', self.el)
         .fadeOut('fast');
       $('button', overlay).css({'display' : 'inline'});
 
@@ -175,6 +175,48 @@ $.fn.ecenter_network.plugins.date = function() {
       dst.data('autocomplete')._trigger('change');
     }
   });
+
+  $.fn.ecenter_network.plugins.date.setTimezone();
+}
+
+
+$.fn.ecenter_network.plugins.date.setTimezone = function() {
+  var date_string = Date();
+
+  var matches = Date().match(/\(([A-Z]{3,5})\)/);
+  var abbr = matches ? matches[1] : false;
+  
+  var now = new Date();
+  var offset = now.getTimezoneOffset() * -60;
+
+  var jan = new Date(now.getFullYear(), 0, 1, 12, 0, 0, 0);
+  var jul = new Date(now.getFullYear(), 6, 1, 12, 0, 0, 0);
+  var stOffset = jan.getTimezoneOffset() * -60;
+  var dstOffset = jul.getTimezoneOffset() * -60;
+  var maxOffset = Math.max(stOffset, dstOffset);
+
+  // UTC offset is same in Jan and July -- no DST in locale
+  if (stOffset == dstOffset) {
+    var dst = '';
+  }
+  // Current offset and maxoffset match, meaning it is DST
+  else if (maxOffset == offset) {
+    var dst = 1;
+  }
+  else {
+    dst = 0;
+  }
+
+  console.log(abbr);
+
+  var path = 'ecenter/timezone/' + abbr + '/' + offset + '/' + dst;
+  $.getJSON(Drupal.settings.basePath, { q: path, date: date_string }, function (data) {
+    if (data) {
+      var tz_select = $("edit-network-wrapper-query-timezone-name-wrapper input");
+      tz_select.val(data);
+    }
+  });
+  
 }
 
 /**

@@ -25,6 +25,20 @@ function ecenter_core_theme() {
 }
 
 /**
+ * Implementation of hook_menu().
+ */
+function ecenter_core_menu() {
+  $items = array();
+  $items['ecenter/timezone'] = array(
+    'title' => 'E-Center user\'s timezone',
+    'page callback' => 'ecenter_core_timezone',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
  * Implementation of hook_init().
  */
 function ecenter_core_init() {
@@ -67,6 +81,38 @@ function ecenter_core_form_alter(&$form, &$form_state, $form_id) {
     case 'search_block_form':
       unset($form['search_block_form']['#title']);
   }
+}
+
+/**
+ * Timezone callback (similar to date_timezone's user_timezone function
+ * but with GeoIP location, etc)
+ */
+function ecenter_core_timezone($abbr = '', $offset = -1, $dst = NULL) {
+  // An abbreviation of "0" passed in the callback arguments should be 
+  // interpreted as the empty string.
+  $abbr = $abbr ? $abbr : '';
+  $timezone = timezone_name_from_abbr($abbr, intval($offset), $dst);
+  // The client date is passed in for debugging purposes.
+  $date = isset($_GET['date']) ? $_GET['date'] : '';
+  dpm($offset, $abbr);
+  global $_REQUEST;
+  dpm($_REQUEST);
+  dpm($_SERVER);
+
+  if ($_SERVER['HTTP_X_FORWARDED_FOR']) {
+    $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+  } 
+  else {
+    $ip = $_SERVER['REMOTE_ADDR'];
+  }
+
+  dpm($ip);
+  dpm(geoip_city($ip), 'siddy!');
+  $geo = geoip_city('131.225.70.2');
+  dpm($geo);
+  
+  return $timezone;
+  drupal_json($timezone);
 }
 
 /**

@@ -143,7 +143,7 @@ function ecenter_network_init() {
     $compression = variable_get('jquery_update_compression_type', 'none');
     $min = ($compression != 'none') ? '.'. $compression : '';
 
-    // Force load OL
+    // Openlayers
     openlayers_include();
     drupal_add_js(drupal_get_path('module', 'openlayers') .
       '/includes/layer_types/js/raw.js');
@@ -154,14 +154,15 @@ function ecenter_network_init() {
     drupal_add_js(drupal_get_path('module', 'ecenter_network')
       .'/openlayers/ecenter_network_behavior_select.js');
 
-    // Force version 1.8, load libraries for datepicker and combobox
+    // jQuery UI: Force version 1.8, load libraries for datepicker and combobox
     jquery_ui_add(array('ui.widget', 'ui.mouse', 'ui.button', 'ui.position', 'ui.autocomplete', 'ui.datepicker'), '1.8');
 
+    // jqPlot
     $jq_path = _jqplot_get_path();
     $tablechart_path = _jqplot_get_tablechart_path();
+    drupal_add_css($jq_path .'/jquery.jqplot.css');
     drupal_add_js($jq_path .'/excanvas.min.js');
     drupal_add_js($jq_path .'/jquery.jqplot.js');
-
     drupal_add_js($jq_path .'/plugins/jqplot.dateAxisRenderer'. $min .'.js');
     drupal_add_js($jq_path .'/plugins/jqplot.highlighter'. $min .'.js');
     drupal_add_js($jq_path .'/plugins/jqplot.cursor'. $min .'.js');
@@ -172,14 +173,20 @@ function ecenter_network_init() {
     drupal_add_js($tablechart_path .'/jquery.tablechart.js');
     drupal_add_js(drupal_get_path('module', 'jqplot') .'/js/jqplot-behaviors.js');
 
-    drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.metadata.js');
+    // SVG
     drupal_add_css(libraries_get_path('jquery-svg') .'/jquery.svg.css');
     drupal_add_js(libraries_get_path('jquery-svg') .'/jquery.svg.js');
+
+    // Traceroute
     drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.traceroute.js');
+
+    // Timezone handling
+    drupal_add_js(drupal_get_path('module', 'date_timezone') .'/date_timezone.js');
+
+    // Page behaviors
     drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/behaviors.js');
 
-    drupal_add_css($jq_path .'/jquery.jqplot.css');
-
+    // Advanced help styling
     drupal_add_css(drupal_get_path('module', 'advanced_help') .'/help-icon.css');
 
     // @TODO overhaul
@@ -335,6 +342,15 @@ function _ecenter_network_select_form() {
     '#default_value' => NULL,
   );
 
+  $timezone = $user->timezone_name ? $user->timezone_name : variable_get('date_default_timezone_name', NULL);
+  $form['network_wrapper']['query']['timezone_name'] = array(
+    '#type' => 'combobox',
+    '#title' => t('Display timezone'),
+    '#default_value' => $timezone,
+    '#options' => date_timezone_names(),
+    '#description' => t("The timezone used in results. Default timezone is determined from your system time."),
+  );
+
   $form['network_wrapper']['query']['help'] = array(
     '#value' => '<p id="instructions">'. 
       t('Select source and destination by clicking sites on the map, or 
@@ -345,24 +361,6 @@ function _ecenter_network_select_form() {
     '#prefix' => '<div id="date-description-wrapper"><p>',
     '#suffix' => '</p></div>',
   );
-
-  if ($user->uid) {
-    $form['network_wrapper']['query']['date_description']['#value'] .=  
-      t('Results are adjusted to your local timezone (@tz). <span class="profile-link">!link</span>', 
-        array(
-          '@tz' => str_replace('_', ' ', date_default_timezone_name(TRUE)), 
-          '!link' => l('Update my timezone', 'user/'. $user->uid .'/edit')
-        )
-      );
-  }
-  else {
-    $form['network_wrapper']['query']['date_description']['#value'] .= '<p>'. 
-      t('The query date and time is expressed in site\'s default timezone (@tz).',
-        array(
-          '@tz' => str_replace('_', ' ', date_default_timezone_name(TRUE)), 
-        )
-      ) .'</p>';
-  }
 
   // Submit button
   $form['network_wrapper']['submit'] = array(

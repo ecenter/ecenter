@@ -6,7 +6,7 @@ use namespace::autoclean;
 
 use FindBin qw($RealBin);
 use lib  "$FindBin::Bin";
-
+use Data::Dumper;
 use Log::Log4perl qw(get_logger);
 
 use Ecenter::Types;
@@ -16,7 +16,7 @@ extends 'Ecenter::Client';
 
 =head1 NAME
 
- E-Center::DataClient -    client for the DRS data call
+ Ecenter::DataClient -    client for the DRS data call
 
 =head1 DESCRIPTION
 
@@ -25,7 +25,7 @@ client for the DRS data call
 =head1 SYNOPSIS 
  
     ## initiate remote query object for the DRS  based on url provided
-    my $data= E-Center::DataClient( {  url => 'http://xenmon.fnal.gov:8055' } );
+    my $data= Ecenter::DataClient->new( {  url => 'http://xenmon.fnal.gov:8055' } );
     
     ## send request for all data between two hubs
     my $data_hashref = $data->get_data({src_hub => 'FNAL', dst_hub => 'LBL', 
@@ -100,7 +100,7 @@ sub get_data {
         unless   $self->url; 
     my $url_params = $self->url . '/data.json?'; 
     foreach my $key (qw/data_type start end timeout resolution src_hub src_ip dst_hub dst_ip/) {
-       $url_params .=   ($url_params  =~ /\?$/?$self->$key:'&' . $self->$key)
+       $url_params .=   ($url_params  =~ /\?$/?$key . '=' . $self->$key:'&' . $key . '='. $self->$key)
             if $self->$key;
     }
     $self->send_request($url_params);

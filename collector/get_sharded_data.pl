@@ -93,33 +93,7 @@ use Ecenter::Client;
 use Ecenter::Data::Snmp;
 use DateTime;
 
-our %ESNET_HUB = (
-        "sunn-cr1" => "SUNN", 
-        "ornl-rt1" =>  "ORNL",
-        "chic-cr1"  =>  "CHIC", 
-        "bnl-mr2"   => "BNL", 
-        "pnwg-cr1"  =>  "PNWG", 
-        "wash-cr1"  => "WASH",
-        "pantex-rt1" => "PANTEX",
-        "bois-cr1"  => "BOIS",
-        "atla-cr1"  => "ATLA",
-        "denv-cr2"  => "DENV",
-        "albu-cr1"  =>  "ALBU",
-        "clev-cr1"  =>  "CLEV",
-        "elpa-cr1"    => "ELPA",
-        "bost-cr1"    =>  "BOST",
-        "losa-sdn1"   =>  "LOSA",
-        "inl-rt1"     => "INL",
-        "ameslab-rt1" => "AMES",
-        "sdsc-sdn2"   =>  "SDSC",
-        "aofa-cr2"  =>  "NEWY",
-        "nash-cr1"  => "NASH",
-        "hous-cr1"  => "HOUS",
-        "kans-cr1"  => "KANS",
-        "lasv-rt1"  => "LASV",
-        "srs-rt1"   =>  "SRS",
-	);
-
+ 
 # Maximum working threads
 my $MAX_THREADS = 10;
 local $SIG{CHLD} = 'IGNORE';
@@ -281,7 +255,8 @@ sub parse_topo {
 	        next;
 	    }
 	    my $net_ip = Net::Netmask->new("$ip_addr:$netmask");
-	    $ip_name ||= $ip_addr;
+	    $ip_name ||= $ip_addr; 
+	    $logger->info(" Address: $ip_addr  = $ip_name");
 	    update_create_fixed($dbh->resultset('Node'),
 		    					      {ip_addr =>  \"=inet6_pton('$ip_addr')"},
 		    					      {ip_addr => \"inet6_pton('$ip_addr')",
@@ -314,19 +289,24 @@ sub parse_topo {
 # assign HUB names to the end site nodes
 #
 sub set_end_sites {
-   my ($dbh, $pm ) = @_;
-   my $dbi =  db_connect(\%OPTIONS); 
-   my $now_time = strftime('%Y-%m-%d %H:%M:%S', localtime());
-   my $hub = Ecenter::Data::Hub->new;
-   foreach my $hub_name ( $hub->get_hub_blocks ) {
+    my ($dbh, $pm ) = @_;
+    my $dbi =  db_connect(\%OPTIONS); 
+    my $now_time = strftime('%Y-%m-%d %H:%M:%S', localtime());
+    my $hub = Ecenter::Data::Hub->new;
+    foreach my $hub_name ( $hub->get_hub_blocks ) {
       $hub->hub_name($hub_name);
+      my $aliases =   $hub->get_aliases();
+      my $alias_sql = " n.nodename like '%$hub_name%'"; 
+      if($aliases && @{$aliases}) {
+          map { $alias_sql .= " OR  n.nodename like '%$_%'"} @{$aliases};
+      }
       my %subnets =  %{$hub->get_ips()};
       my ($l2_port) =   $dbh->resultset('L2Port')->search({'hub.hub_name' => $hub_name}, {join => 'hub', limit => 1});
       unless($l2_port && $l2_port->l2_urn) {
           $logger->error("NO ports available - check topology info or hub_name:$hub_name");
           next;
       }
-       $logger->debug(" LT_urn: " . $l2_port->l2_urn);
+      $logger->debug(" LT_urn: " . $l2_port->l2_urn);
       foreach my $subnet (keys %subnets) {
          my $sql = qq|select n.ip_noted, n.ip_addr 
 	              from 
@@ -335,7 +315,7 @@ sub set_end_sites {
 	              where 
 		            llm.l2_l3_map is NULL and 
 			   ( (inet6_mask(ip_addr,$subnets{$subnet}) =  inet6_mask(inet6_pton('$subnet'), $subnets{$subnet})
-			     )  OR  n.nodename like '%$hub_name%')|;
+			     )  OR  $alias_sql)|;
 	 $logger->debug("SQL::: $sql"); 
          my $nodes =  $dbi->selectall_hashref($sql, 'ip_noted');;
 	 # found all ips for the endsite, lets mark them with made up urns and hub names

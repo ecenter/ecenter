@@ -27,7 +27,7 @@ use JSON::XS qw(encode_json decode_json);
 
 my $REG_IP = qr/^[\d\.]+|[a-f\d\:]+$/i;
 my $REG_DATE = qr/^\d{4}\-\d{2}\-\d{2}\s+\d{2}\:\d{2}\:\d{2}$/;
-my @HEALTH_NAMES = qw/nasa.gov pnl.gov llnl.gov pnnl.gov pppl.gov anl.gov lbl.gov bnl.gov dmz.net nersc.gov ornl.gov slac.stanford.edu es.net/;
+my @HEALTH_NAMES = qw/nasa.gov pnl.gov llnl.gov   pppl.gov anl.gov lbl.gov bnl.gov dmz.net nersc.gov jgi.doe.gov snll.gov ornl.gov slac.stanford.edu es.net/;
 my $TABLEMAP = { bwctl      => {table => 'BwctlData',  class => 'Bwctl',      data => [qw/throughput/]},
    		 owamp      => {table => 'OwampData',  class => 'Owamp',      data => [qw/sent loss min_delay max_delay duplicates/]},
     		 pinger     => {table => 'PingerData', class => 'PingER',     data => [qw/meanRtt maxRtt medianRtt maxIpd meanIpd minIpd minRtt iqrIpd lossPercent/]},
@@ -73,7 +73,13 @@ any ['get'] =>  "/destination/:ip.:format" =>
        sub {
  	       return process_source(src_ip => params->{ip});
        };
-## get all hubs for src_ip/dst_ip
+       
+## get all hubs for src_hub
+any ['get'] =>  "/hubs/:src_hub.:format" => 
+       sub {
+ 	       return   process_source(src_hub => params->{src_hub});
+       };
+## get all hubs  
 any ['get'] =>  "/hub.:format" => 
        sub {
  	       return   database('ecenter')->selectall_hashref( qq|select distinct hub_name, longitude, latitude from  hub|, 'hub_name');
@@ -217,29 +223,47 @@ sub get_health {
 # return list of destinations for the source ip or just list of source ips, or even detailes of some IP
 #
 sub process_source {
-    my %params = validate(@_, {node_ip => {type => SCALAR, regex => $REG_IP, optional => 1},
+    my %params = validate(@_, {node_ip => {type => SCALAR, regex => $REG_IP, optional => 1},  
+                               src_hub => {type => SCALAR, regex =>   qr/^\w+$/i, optional => 1},
                                src_ip => {type => SCALAR, regex => $REG_IP, optional => 1},
 			      }); 
     my @hubs =(); 
     my $hash_ref;
-    if( %params && $params{src_ip}) {
-         $hash_ref =  database('ecenter')->selectall_hashref(
-            qq|select distinct n.ip_noted, n.netmask, n.nodename, h.hub_name, h.hub, h.longitude, h.latitude  from
-     	           metadata m 
-	      join eventtype e on(e.ref_id=m.eventtype_id)
-     	      join node n on(m.dst_ip = n.ip_addr)
-         join l2_l3_map llm on(n.ip_addr = llm.ip_addr) 
-         join l2_port l2p on(llm.l2_urn =l2p.l2_urn) 
-         join hub h using(hub) 
-     	where m.dst_ip is not NULL  and e.service_type = 'traceroute' and m.src_ip = inet6_pton('$params{src_ip}')|, 'ip_noted');
-    } elsif(%params && $params{node_ip}) {
-          return database('ecenter')->selectrow_hashref(
-            qq|select distinct n.ip_noted, n.netmask, n.nodename, h.hub_name, h.hub, h.longitude, h.latitude  from
-     	          node n
-         join l2_l3_map llm on(n.ip_addr = llm.ip_addr) 
-         join l2_port l2p on(llm.l2_urn =l2p.l2_urn) 
-         join hub h using(hub) 
-     	where n.ip_noted = '$params{node_ip}'|);
+    if( %params) {
+        if($params{src_ip}) {
+            $hash_ref =  database('ecenter')->selectall_hashref(
+               qq|select distinct n.ip_noted, n.netmask, n.nodename, h.hub_name, h.hub, h.longitude, h.latitude  from
+     	              metadata m 
+		 join eventtype e on(e.ref_id=m.eventtype_id)
+     		 join node n on(m.dst_ip = n.ip_addr)
+            join l2_l3_map llm on(n.ip_addr = llm.ip_addr) 
+            join l2_port l2p on(llm.l2_urn =l2p.l2_urn) 
+            join hub h using(hub) 
+     	    where m.dst_ip is not NULL  and e.service_type = 'traceroute' and m.src_ip = inet6_pton('$params{src_ip}')|, 'ip_noted');
+        } elsif($params{node_ip}) {
+            return database('ecenter')->selectrow_hashref(
+               qq|select distinct n.ip_noted, n.netmask, n.nodename, h.hub_name, h.hub, h.longitude, h.latitude  from
+     	             node n
+            join l2_l3_map llm on(n.ip_addr = llm.ip_addr) 
+            join l2_port l2p on(llm.l2_urn =l2p.l2_urn) 
+            join hub h using(hub) 
+     	    where n.ip_noted = '$params{node_ip}'|);
+	} elsif($params{src_hub}) {
+	   $hash_ref =  database('ecenter')->selectall_hashref(
+               qq|select distinct n.ip_noted, n.netmask, n.nodename, h.hub_name, h.hub, h.longitude, h.latitude  from
+     	              metadata m 
+		 join eventtype e on(e.ref_id=m.eventtype_id)
+     		 join node n on(m.dst_ip = n.ip_addr)
+            join l2_l3_map llm on(n.ip_addr = llm.ip_addr) 
+            join l2_port l2p on(llm.l2_urn =l2p.l2_urn) 
+            join hub h on(h.hub = l2p.hub)
+	    join node n_src on(m.src_ip = n_src.ip_addr)
+            join l2_l3_map llm_src on(n_src.ip_addr = llm_src.ip_addr) 
+            join l2_port l2p_src on(llm_src.l2_urn =l2p_src.l2_urn) 
+            join hub h_src on(h_src.hub = l2p_src.hub)
+     	    where m.dst_ip is not NULL  and e.service_type = 'traceroute' and h_src.hub_name = | . 
+	    database('ecenter')->quote($params{src_hub}) . 'GROUP by hub_name', 'ip_noted');
+	}
     } else {
         $hash_ref =  database('ecenter')->selectall_hashref(
 	      qq| select  n.ip_noted, n.netmask,  n.nodename,  h.hub_name, h.hub, h.longitude, h.latitude   from 

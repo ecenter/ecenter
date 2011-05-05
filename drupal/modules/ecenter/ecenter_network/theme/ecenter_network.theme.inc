@@ -532,6 +532,56 @@ function theme_ecenter_network_hop_option($hop) {
 }
 
 /**
+ * Theme health display
+ */
+function template_preprocess_ecenter_network_health(&$vars) {
+  $data = $vars['data'];
+ 
+  // Convert times
+  $vars['start'] = _ecenter_network_utc_to_local($vars['start'], 'Y-m-d H:i');
+  $vars['end'] = _ecenter_network_utc_to_local($vars['end'], 'Y-m-d H:i');
+
+  // Metadata count
+  $header = array(t('Hub'));
+  $header_created = FALSE;    
+  $rows = array();
+  
+  foreach ($data['metadata'] as $hub => $measurements) {
+    $row = array(
+      array(
+        'data' => $hub,
+        'header' => TRUE,
+      ),
+    );
+    foreach ($measurements as $key => $values) {
+      if (!$header_created) {
+        $header[] = t($key);
+      }
+      $row[] = $values['metadata_count'];
+    }
+    $rows[] = $row;
+    $header_created = TRUE;
+  }
+  $vars['health_table'] = theme('table', $header, $rows);
+
+  // Period table
+  $header = array(t('Measurement'), t('Start'), t('End'));
+  $rows = array();
+  
+  foreach ($data['time_period'] as $measurement => $period) {
+    $rows[] = array(
+      array(
+        'data' => t($measurement),
+        'header' => TRUE,
+      ),
+      _ecenter_network_timestamp_to_local($period['start'], 'Y-m-d H:i'),
+      _ecenter_network_timestamp_to_local($period['end'], 'Y-m-d H:i'),
+    );
+  }
+  $vars['period_table'] = theme('table', $header, $rows);
+}
+
+/**
  * Get plot options template
  */
 function _ecenter_network_plot_options_template() {

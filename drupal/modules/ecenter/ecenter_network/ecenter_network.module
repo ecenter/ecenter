@@ -29,6 +29,7 @@ function ecenter_network_menu() {
   );
 
   $items['network/health'] = array(
+    'title' => 'Network health', 
     'page callback' => 'ecenter_network_health',
     'page arguments' => array(),
     'access arguments' => array('access ecenter network'),
@@ -128,6 +129,14 @@ function ecenter_network_theme() {
       'arguments' => array(
         'value' => NULL,
         'units' => NULL,
+      ),
+    ) + $options,
+    'ecenter_network_health' => array(
+      'template' => 'ecenter-network-health',
+      'arguments' => array(
+        'data' => NULL,
+        'start' => NULL,
+        'end' => NULL,
       ),
     ) + $options,
   );

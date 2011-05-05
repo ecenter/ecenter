@@ -170,8 +170,16 @@ class Ecenter_Data_Service_Client {
    * @return
    *   An array of hops.
    */
-  public function getHops($src_ip = '') {
-    $q = (!empty($src_ip)) ? 'destination/' . $src_ip : 'source';
+  public function getHops($src = FALSE, $src_type = 'hub') {
+    if ($src && $src_type == 'hub') {
+      $q = 'hubs/' . $src;
+    }
+    else if ($src) {
+      $q = 'destination/' . $src;
+    }
+    else {
+      $q = 'source';
+    }
     return $this->query($q);
   }
 

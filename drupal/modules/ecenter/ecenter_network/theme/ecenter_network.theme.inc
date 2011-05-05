@@ -52,7 +52,7 @@ function template_preprocess_ecenter_network_data(&$vars) {
       '#id' => 'ecenter-permalink',
       '#type' => 'textfield',
       '#size' => 115,
-      '#attributes' => array('readonly' => 1),
+      '#attributes' => array('readonly' => 'readonly'),
       '#value' => urldecode(url('network',
         array('query' => $vars['params'], 'absolute' => TRUE,)
       )),
@@ -137,8 +137,8 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
           // Create table row for theming
           $table[$test .'_'. $measurement .'_'. $direction] = array(
             'data' => array($header) + $row,
-            'class' => $test .'_'. $measurement .' '. $test .'_'. $measurement
-              .'_'. $direction,
+            'class' => $test .'-'. $measurement .' '. $test .'-'. $measurement
+              .'-'. $direction,
           );
         }
 
@@ -524,11 +524,61 @@ function theme_ecenter_network_utilization_table($table, $hop) {
  */
 function theme_ecenter_network_hop_option($hop) {
   switch ($hop['type']) {
-    case 'hub':
-      return check_plain($hop['hub_name']);
     case 'ip':
       return check_plain($hop['hub_name']) .' ('. check_plain($hop['hub']) .' - '. check_plain($hop['ip_noted']) .')';
+    default:
+      return check_plain($hop['hub_name']);
   }
+}
+
+/**
+ * Theme health display
+ */
+function template_preprocess_ecenter_network_health(&$vars) {
+  $data = $vars['data'];
+ 
+  // Convert times
+  $vars['start'] = _ecenter_network_utc_to_local($vars['start'], 'Y-m-d H:i');
+  $vars['end'] = _ecenter_network_utc_to_local($vars['end'], 'Y-m-d H:i');
+
+  // Metadata count
+  $header = array(t('Hub'));
+  $header_created = FALSE;    
+  $rows = array();
+  
+  foreach ($data['metadata'] as $hub => $measurements) {
+    $row = array(
+      array(
+        'data' => $hub,
+        'header' => TRUE,
+      ),
+    );
+    foreach ($measurements as $key => $values) {
+      if (!$header_created) {
+        $header[] = t($key);
+      }
+      $row[] = $values['metadata_count'];
+    }
+    $rows[] = $row;
+    $header_created = TRUE;
+  }
+  $vars['health_table'] = theme('table', $header, $rows);
+
+  // Period table
+  $header = array(t('Measurement'), t('Start'), t('End'));
+  $rows = array();
+  
+  foreach ($data['time_period'] as $measurement => $period) {
+    $rows[] = array(
+      array(
+        'data' => t($measurement),
+        'header' => TRUE,
+      ),
+      _ecenter_network_timestamp_to_local($period['start'], 'Y-m-d H:i'),
+      _ecenter_network_timestamp_to_local($period['end'], 'Y-m-d H:i'),
+    );
+  }
+  $vars['period_table'] = theme('table', $header, $rows);
 }
 
 /**

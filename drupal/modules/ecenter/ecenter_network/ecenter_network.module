@@ -29,6 +29,7 @@ function ecenter_network_menu() {
   );
 
   $items['network/health'] = array(
+    'title' => 'Network health', 
     'page callback' => 'ecenter_network_health',
     'page arguments' => array(),
     'access arguments' => array('access ecenter network'),
@@ -130,6 +131,14 @@ function ecenter_network_theme() {
         'units' => NULL,
       ),
     ) + $options,
+    'ecenter_network_health' => array(
+      'template' => 'ecenter-network-health',
+      'arguments' => array(
+        'data' => NULL,
+        'start' => NULL,
+        'end' => NULL,
+      ),
+    ) + $options,
   );
   return $registry;
 }
@@ -143,7 +152,7 @@ function ecenter_network_init() {
     $compression = variable_get('jquery_update_compression_type', 'none');
     $min = ($compression != 'none') ? '.'. $compression : '';
 
-    // Force load OL
+    // Openlayers
     openlayers_include();
     drupal_add_js(drupal_get_path('module', 'openlayers') .
       '/includes/layer_types/js/raw.js');
@@ -154,14 +163,15 @@ function ecenter_network_init() {
     drupal_add_js(drupal_get_path('module', 'ecenter_network')
       .'/openlayers/ecenter_network_behavior_select.js');
 
-    // Force version 1.8, load libraries for datepicker and combobox
+    // jQuery UI: Force version 1.8, load libraries for datepicker and combobox
     jquery_ui_add(array('ui.widget', 'ui.mouse', 'ui.button', 'ui.position', 'ui.autocomplete', 'ui.datepicker'), '1.8');
 
+    // jqPlot
     $jq_path = _jqplot_get_path();
     $tablechart_path = _jqplot_get_tablechart_path();
+    drupal_add_css($jq_path .'/jquery.jqplot.css');
     drupal_add_js($jq_path .'/excanvas.min.js');
     drupal_add_js($jq_path .'/jquery.jqplot.js');
-
     drupal_add_js($jq_path .'/plugins/jqplot.dateAxisRenderer'. $min .'.js');
     drupal_add_js($jq_path .'/plugins/jqplot.highlighter'. $min .'.js');
     drupal_add_js($jq_path .'/plugins/jqplot.cursor'. $min .'.js');
@@ -172,14 +182,20 @@ function ecenter_network_init() {
     drupal_add_js($tablechart_path .'/jquery.tablechart.js');
     drupal_add_js(drupal_get_path('module', 'jqplot') .'/js/jqplot-behaviors.js');
 
-    drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.metadata.js');
+    // SVG
     drupal_add_css(libraries_get_path('jquery-svg') .'/jquery.svg.css');
     drupal_add_js(libraries_get_path('jquery-svg') .'/jquery.svg.js');
+
+    // Traceroute
     drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.traceroute.js');
+
+    // Timezone handling
+    drupal_add_js(drupal_get_path('module', 'date_timezone') .'/date_timezone.js');
+
+    // Page behaviors
     drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/behaviors.js');
 
-    drupal_add_css($jq_path .'/jquery.jqplot.css');
-
+    // Advanced help styling
     drupal_add_css(drupal_get_path('module', 'advanced_help') .'/help-icon.css');
 
     // @TODO overhaul
@@ -199,15 +215,31 @@ function ecenter_network_health() {
   $client = ecenter_network_get_client('503');
   
   extract(_ecenter_network_extract_query());
-  
-  if (!$start) {
-    $start = '2011-03-05 01:00:00';
+
+  if (!$start || !$end) {
+    $inc = 30;
+    module_load_include('inc', 'date_api', 'date_api_elements');
+    $now = time();
+    $start = date_make_date($now);
+    $end = date_make_date($now);
+    date_modify($start, '-24 hours');
+    
+    $utc = timezone_open('UTC');
+    date_timezone_set($start, $utc);
+    date_timezone_set($end, $utc);
+
+    date_increment_round($start, $inc);
+    date_increment_round($end, $inc);
+
+    $start = date_format($start, 'Y-m-d H:i:s');
+    $end = date_format($end, 'Y-m-d H:i:s');
   }
-  if (!$end) {
-    $end = '2011-03-06 01:00:00';
+
+  $response = $client->getHealth($start, $end);
+  if ($response['code'] == 200) {
+    return theme('ecenter_network_health', $response['response'], $start, $end);
   }
-  dpm($client->getHealth($start, $end));
-  return 'testing stub';
+  return 'this should be an error message';
 }
 
 /**
@@ -225,10 +257,14 @@ function _ecenter_network_select_form() {
   $preset = openlayers_preset_load('ecenter_network');
   $map = openlayers_render_map($preset->data, $preset->name);
 
+  // Cache build time
   $form['build_time'] = array(
     '#type' => 'value',
     '#value' => time(),
   );
+
+  // Don't disable submit or validate callbacks
+  $form['#ahah_enable_handlers'] = TRUE;
 
   // Network map
   $form['network_wrapper'] = array(
@@ -256,7 +292,6 @@ function _ecenter_network_select_form() {
     '#title' => t('Source'),
     '#type' => 'combobox',
     '#cols' => 50,
-    '#required' => TRUE,
     '#options' => array('' => t('Select a source')),
     '#prefix' => '<div class="src-wrapper">',
     '#suffix' => '</div>',
@@ -276,7 +311,6 @@ function _ecenter_network_select_form() {
     '#title' => t('Destination'),
     '#type' => 'combobox',
     '#cols' => 50,
-    '#required' => FALSE,
     '#disabled' => TRUE,
     '#options' => array('' => t('Select a destination')),
     '#prefix' => '<div class="dst-wrapper">',
@@ -304,7 +338,7 @@ function _ecenter_network_select_form() {
 
   $form['network_wrapper']['query']['recent_select'] = array(
     '#type' => 'radios',
-    '#title' => t('Show results from'),
+    '#title' => t('Show recent results'),
     '#prefix' => '<div id="recent-select">',
     '#suffix' => '</div>',
     '#options' => array(
@@ -315,14 +349,31 @@ function _ecenter_network_select_form() {
     ),
     '#default_value' => 3,
   );
+
+  $form['network_wrapper']['query']['date_separator'] = array(
+    '#type' => 'markup',
+    '#prefix' => '<div id="or-wrapper">',
+    '#suffix' => '</div>',
+    '#value' =>  t('Or'),
+  );
+
   $form['network_wrapper']['query']['date_select'] = array(
     '#type' => 'date_popup',
-    '#title' => t('Specific day'),
+    '#title' => t('Specify day'),
     '#prefix' => '<div id="date-select">',
     '#suffix' => '</div>',
     '#date_format' => 'Y-m-d',
     '#granularity' => array('year', 'month', 'day'),
     '#default_value' => NULL,
+  );
+
+  $timezone = $user->timezone_name ? $user->timezone_name : variable_get('date_default_timezone_name', NULL);
+  $form['network_wrapper']['query']['timezone_name'] = array(
+    '#type' => 'combobox',
+    '#title' => t('Display timezone'),
+    '#default_value' => $timezone,
+    '#options' => date_timezone_names(),
+    '#description' => t("The timezone used in results. Default timezone is determined from your system time."),
   );
 
   $form['network_wrapper']['query']['help'] = array(
@@ -336,24 +387,6 @@ function _ecenter_network_select_form() {
     '#suffix' => '</p></div>',
   );
 
-  if ($user->uid) {
-    $form['network_wrapper']['query']['date_description']['#value'] .=  
-      t('Results are adjusted to your local timezone (@tz). <span class="profile-link">!link</span>', 
-        array(
-          '@tz' => str_replace('_', ' ', date_default_timezone_name(TRUE)), 
-          '!link' => l('Update my timezone', 'user/'. $user->uid .'/edit')
-        )
-      );
-  }
-  else {
-    $form['network_wrapper']['query']['date_description']['#value'] .= '<p>'. 
-      t('The query date and time is expressed in site\'s default timezone (@tz).',
-        array(
-          '@tz' => str_replace('_', ' ', date_default_timezone_name(TRUE)), 
-        )
-      ) .'</p>';
-  }
-
   // Submit button
   $form['network_wrapper']['submit'] = array(
     '#type' => 'submit',
@@ -364,10 +397,6 @@ function _ecenter_network_select_form() {
   // Data results display
   $form['results_wrapper'] = array(
     '#prefix' => '<div id="results-wrapper" class="clearfix">',
-    '#suffix' => '</div>',
-  );
-  $form['results_wrapper']['results'] = array(
-    '#prefix' => '<div id="results">',
     '#suffix' => '</div>',
   );
 
@@ -407,23 +436,24 @@ function ecenter_network_select_form(&$form_state) {
       _ecenter_network_utc_to_local($end);
   }
 
+  // Clear time selection if there's a query
+  if (!empty($start) || !empty($end)) {
+    $form['network_wrapper']['query']['recent_select']['#default_value'] = NULL;
+  }
+
   $sources = ecenter_network_get_hops();
   $src_options[0] = '';
-  foreach ($sources['combined'] as $key => $hop) {
-    $src_options[$key] = theme('ecenter_network_hop_option', $hop);
+  foreach ($sources['hubs'] as $key => $hop) {
+    $src_options['hub:'. $key] = theme('ecenter_network_hop_option', $hop);
   }
   $form['network_wrapper']['query']['src_wrapper']['src']['#options'] += $src_options;
   if (!empty($src)) {
     $form['network_wrapper']['query']['src_wrapper']['src']['#default_value'] = $src;
-    $form['network_wrapper']['query']['src_wrapper']['src']['#disabled'] = TRUE;
     list($src_type, $src_value) = explode(':', $src, 2);
-    if ($src_type == 'hub') {
-      $src_value = $sources['hubs'][$src_value]['ip_noted'];
-    }
-    $destinations = ecenter_network_get_hops($src_value);
+    $destinations = ecenter_network_get_hops($src_value, $src_type);
     $dst_options[0] = '';
-    foreach ($destinations['combined'] as $key => $hop) {
-      $dst_options[$key] = theme('ecenter_network_hop_option', $hop);
+    foreach ($destinations['hubs'] as $key => $hop) {
+      $dst_options['hub:'. $key] = theme('ecenter_network_hop_option', $hop);
     }
     $form['network_wrapper']['query']['dst_wrapper']['dst']['#options'] += $dst_options;
     $form['network_wrapper']['query']['dst_wrapper']['dst']['#disabled'] = FALSE;
@@ -461,13 +491,13 @@ function ecenter_network_select_form(&$form_state) {
     }
   }
   else {
-    $form['results_wrapper']['results']['#value'] = theme('ecenter_network_recent_queries');
+    $form['results_wrapper']['#value'] = theme('ecenter_network_recent_queries');
   }
   return $form;
 }
 
 /**
- * Display ecenter data 
+ * Display ecenter data
  */
 function ecenter_network_display_data() {
   if ($_GET['modal']) {
@@ -485,13 +515,13 @@ function ecenter_network_display_data() {
  * Default submit handler for network form
  */
 function ecenter_network_select_form_submit($form, &$form_state) {
-  // Do what AHAH helper does on an AJAX call, to make form constructor a 
+  // Do what AHAH helper does on an AJAX call, to make form constructor a
   // little less crazy
   $inc = variable_get('ecenter_network_time_increment', 10);
 
-  if ($form_state['values']['network_wrapper']['query']['recent_select'] 
+  if ($form_state['values']['network_wrapper']['query']['recent_select']
     && !$form_state['values']['network_wrapper']['query']['date_select']) {
-    
+
     $date = $form_state['values']['build_time'];
     $offset = 3600 * $form_state['values']['network_wrapper']['query']['recent_select'];
     $tz = timezone_open('UTC');
@@ -505,25 +535,21 @@ function ecenter_network_select_form_submit($form, &$form_state) {
     $end = date_format($end, 'Y-m-d H:i:s');
   }
   else if ($form_state['values']['network_wrapper']['query']['date_select']) {
-    $date = $form_state['values']['network_wrapper']['query']['date_selector'];
-
-    $tz = date_default_timezone_name(TRUE);
-    $day = date_create($date, timezone_open($tz));
+    $date = $form_state['values']['network_wrapper']['query']['date_select'];
+    $day = date_create($date, timezone_open('UTC'));
 
     $start = date_format($day, 'Y-m-d H:i:s');
-    $end = date_format(date_modify($day, '+1 day'), 'Y-m-d h:i:s');
- 
+    $end_date = date_modify($day, '+24 hours');
+    $end = date_format($end_date, 'Y-m-d H:i:s');
   }
 
   $form_state['values']['network_wrapper']['query']['start'] = $start;
   $form_state['values']['network_wrapper']['query']['end'] = $end;
-  
+
   // @TODO Set request variables -- seems hackish at this point
   $_REQUEST['network_wrapper']['query']['start']['date'] = $start;
   $_REQUEST['network_wrapper']['query']['end']['date'] = $end;
 
-  //dpm($form_state['values']);
-  
   $form_state['storage'] = $form_state['values'];
   $form_state['rebuild'] = TRUE;
 }
@@ -649,12 +675,14 @@ function ecenter_network_get_data($src, $dst, $start, $end) {
  * Get hops
  *
  * @param $src
- *   (optional) Source IP address to determine potential destinations.  If
-     not supplied, list all potential source hops.
+ *   (optional) Source (hub name or IP) to determine potential destinations. 
+ *   If not supplied, list all potential source hops.
+ * @param $src_type
+ *   (optional) Source type ('hub' or 'ip')
  * @return
  *   An array of hop objects.
  */
-function ecenter_network_get_hops($src = NULL) {
+function ecenter_network_get_hops($src = NULL, $src_type = 'hub') {
   static $hops = array();
   $src_key = (!empty($src)) ? $src : 'sources';
 
@@ -665,7 +693,7 @@ function ecenter_network_get_hops($src = NULL) {
     }
     else {
       $client = ecenter_network_get_client();
-      $result = $client->getHops($src);
+      $result = $client->getHops($src, $src_type);
       if ($result['code'] == 200) {
         $data = ecenter_network_parse_hops($result['response']);
         $hops[$src_key] = $data;
@@ -721,7 +749,7 @@ function ecenter_network_get_node($ip) {
 /**
  * Parse Data Retrieval Sevice data
  *
- * Compatible with 3.0 version of DRS. Several portions of the parser are 
+ * Compatible with 3.0 version of DRS. Several portions of the parser are
  * computationally
  *
  * @param $response
@@ -815,7 +843,7 @@ function ecenter_network_parse_response($response) {
       // Filter out hops which don't have SNMP data
       // @TODO may require differentiation between no SNMP data and no 
       // *available* SNMP data. 
-      //$traceroute = array_filter($traceroute, '_ecenter_network_filter_traceroute');
+      $traceroute = array_filter($traceroute, '_ecenter_network_filter_traceroute');
       $parsed_data['traceroute'][$direction] = $traceroute;
     }
   }
@@ -853,7 +881,7 @@ function ecenter_network_parse_response($response) {
 }
 
 /**
- * Filter traceroute results: Hops without 
+ * Filter traceroute results
  */
 function _ecenter_network_filter_traceroute($hop) {
   return (!empty($hop['data']['snmp']));
@@ -950,7 +978,7 @@ function ecenter_network_openlayers_presets() {
 
   $items = array();
   $openlayers_presets = new stdClass;
-  $openlayers_presets->disabled = FALSE; /* Edit this to true to make a default openlayers_presets disabled initially */
+  $openlayers_presets->disabled = FALSE; 
   $openlayers_presets->api_version = 1;
   $openlayers_presets->name = 'ecenter_network';
   $openlayers_presets->title = 'E-Center Network';
@@ -1157,18 +1185,15 @@ function ecenter_network_layers_sites() {
   extract(_ecenter_network_extract_query());
   $sources = ecenter_network_get_hops();
 
+  // Calculate destinations
   if (!empty($src)) {
     list($src_type, $src_value) = explode(':', $src, 2);
+    $hops = ecenter_network_get_hops($src_value, $src_type);
     if ($src_type == 'hub') {
-      $hop = $sources['hubs'][$src_value];
-      $src_ip = $sources['hubs'][$src_value]['ip_noted'];
-      $hops = ecenter_network_get_hops($src_ip);
-      $hops['hubs'][$src_value] = $hop; 
+      array_unshift($hops['hubs'], $sources['hubs'][$src_value]);
     }
-    else {
-      $hop = $sources['hubs'][$sources['hops'][$src_value]['hub_name']];
-      $hops = ecenter_network_get_hops($src_value);
-      $hops['hubs'][$src_value] = $hop; 
+    else if ($src_type == 'ip') {
+      array_unshift($hops['hubs'], $sources['hops'][$src_value]);
     }
   }
   else {
@@ -1186,7 +1211,6 @@ function ecenter_network_layers_sites() {
     'projection' => array('900913'),
   );
 
-
   if (!empty($src) && !empty($dst) && !empty($start) && !empty($end)) {
     $data = ecenter_network_get_data($src, $dst, $start, $end);
   }
@@ -1197,16 +1221,16 @@ function ecenter_network_layers_sites() {
         'wkt' => "POINT({$hub['longitude']} {$hub['latitude']})",
         'projection' => "4326",
         'style' => array(
-          'pointRadius' => 6,
+          'pointRadius' => 5,
           'fillColor' => '#ffffff',
           'fillOpacity' => 1,
           'strokeColor' => '#4682b4',
           'strokeWidth' => 3,
           'strokeOpacity' => 1,
           'label' => $hub['hub_name'],
-          'labelYOffset' => 18,
+          'labelYOffset' => 17,
           'fontWeight' => 'bold',
-          'fontSize' => '15px',
+          'fontSize' => '14px',
           'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',
           'fontColor' => '#4682B4',
         ),
@@ -1230,10 +1254,13 @@ function ecenter_network_layers_sites() {
 function _ecenter_network_layers_sites_rejigger(&$features) {
   foreach ($features as $k => $feature) {
     switch ($feature['extra']['ecenterID']) {
-      case 'SLAC':
       case 'PPPL':
         $features[$k]['style']['labelYOffset'] = -20;
         $features[$k]['style']['labelXOffset'] = -5;
+        break;
+      case 'SLAC':
+        $features[$k]['style']['labelYOffset'] = -5;
+        $features[$k]['style']['labelXOffset'] = -30;
         break;
       case 'ANL':
         $features[$k]['style']['labelYOffset'] = -20;
@@ -1245,21 +1272,36 @@ function _ecenter_network_layers_sites_rejigger(&$features) {
       case 'NERSC':
         $lat = $features[$k]['extra']['coords']['lat'] + 0.4;
         $lon = $features[$k]['extra']['coords']['lon'] - 0.4;
-        $features[$k]['style']['labelXOffset'] = -5;
+        $features[$k]['style']['labelXOffset'] = -37;
+        $features[$k]['style']['labelYOffset'] = 5;
         $features[$k]['wkt'] = "POINT({$lon} {$lat})";
         break;
       case 'LBL':
         $features[$k]['style']['labelXOffset'] = 24;
         $features[$k]['style']['labelYOffset'] = 5;
         $lat = $features[$k]['extra']['coords']['lat'] + .25;
-        $lon = $features[$k]['extra']['coords']['lon'] + .5;
+        $lon = $features[$k]['extra']['coords']['lon'] + .8;
         $features[$k]['wkt'] = "POINT({$lon} {$lat})";
         break;
       case 'LLNL':
-        $features[$k]['style']['labelXOffset'] = 27;
-        $features[$k]['style']['labelYOffset'] = -5;
-        $lat = $features[$k]['extra']['coords']['lat'] - .25;
-        $lon = $features[$k]['extra']['coords']['lon'] + .35;
+        $features[$k]['style']['labelXOffset'] = 15;
+        $features[$k]['style']['labelYOffset'] = -15;
+        $lat = $features[$k]['extra']['coords']['lat'] - .7;
+        $lon = $features[$k]['extra']['coords']['lon'] + .15;
+        $features[$k]['wkt'] = "POINT({$lon} {$lat})";
+        break;
+      case 'JGI':
+        $features[$k]['style']['labelXOffset'] = 5;
+        $features[$k]['style']['labelYOffset'] = 15;
+        $lat = $features[$k]['extra']['coords']['lat'] + .7;
+        $lon = $features[$k]['extra']['coords']['lon'] + .1;
+        $features[$k]['wkt'] = "POINT({$lon} {$lat})";
+        break;
+      case 'SNLL':
+        $features[$k]['style']['labelXOffset'] = 30;
+        $features[$k]['style']['labelYOffset'] = 0;
+        $lat = $features[$k]['extra']['coords']['lat'] - .2;
+        $lon = $features[$k]['extra']['coords']['lon'] + .45;
         $features[$k]['wkt'] = "POINT({$lon} {$lat})";
         break;
       default:
@@ -1308,11 +1350,11 @@ function ecenter_network_layers_traceroute() {
             'wkt' => "POINT({$hop['longitude']} {$hop['latitude']})",
             'projection' => "4326",
             'style' => array(
-              'pointRadius' => 6,
+              'pointRadius' => 5,
               'fillColor' => '#ffffff',
               'strokeColor' => '#0000ff',
-              'strokeWidth' => 2,
-              'fillOpacity' => 0.75,
+              'strokeWidth' => 3,
+              'fillOpacity' => 1,
               'label' => $hop['hub'],
               'labelYOffset' => -16,
               'fontWeight' => 'bold',
@@ -1546,4 +1588,14 @@ function _ecenter_network_extract_query() {
     );
   }
   return $vars;
+}
+
+/**
+ * Implementation of template_preprocess_page().
+ */
+function ecenter_network_preprocess_page(&$vars) {
+  // Add body class to weathermap
+  if (arg(0) == 'network' && !arg(1)) {
+    $vars['body_classes'] .= ' page-network-weathermap';
+  }
 }

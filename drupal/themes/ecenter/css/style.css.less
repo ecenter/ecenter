@@ -156,6 +156,9 @@
     cursor: default;
     text-decoration: none !important;
   }
+  &.disabled {
+    .vertical_glass_gradient(@color_grey_80; @color_grey_73; @color_grey_80);
+  }
 }
 // For making buttons look like links
 .button_link {
@@ -817,6 +820,9 @@ a {
   input, button {
     .round_corner;
   }
+  input.disabled {
+    background-color: @color_grey_87;
+  }
   textarea {
     font-family: @font_liberation_mono;
   }
@@ -929,7 +935,35 @@ a {
   }
 } // }}}
 .ui-datepicker { // jQuery UI Datepicker {{{
-  font-size: .8em;
+  .round_corner;
+  font-size: .8em !important;
+  z-index: 10 !important;
+  background-color: @color_white !important;
+  border: 1px solid #aaa !important;
+  padding: 1px 5px !important;
+  table {
+    th {
+      background-color: #ccc;
+    }
+    td, th {
+      border: 2px solid @color_white;
+      text-align: center !important;
+      padding: 1px !important;
+    }
+    td {
+      background-color: #ddd;
+      :hover {
+        background-color: #ccc;
+      }
+      &.ui-datepicker-unselectable {
+        background-color: #eee;
+      }
+      a {
+        text-align: center !important;
+        padding: 0 !important;
+      }
+    }
+  }
 } // }}}
 #content table.mceLayout { // TinyMCE {{{
   border: 1px solid #aaa;
@@ -951,7 +985,7 @@ a {
     font-size: 10px;
   }
 } // }}}
-.page-network { // Network diagnostic display {{{
+.page-network-weathermap { // Network diagnostic display {{{
   #content, #network-wrapper { // Content {{{
     padding: 0;
     width: 975px;
@@ -968,6 +1002,7 @@ a {
     .hide;
   } // }}}
   #network-wrapper { // {{{
+    position: relative;
     border-bottom: 1px solid @color_grey_60;
     background-color: @color_grey_87;
   } // }}}
@@ -1047,7 +1082,7 @@ a {
     #recent-select {
       .box;
       width: 300px;
-      margin-bottom: 2em;
+      margin-bottom: 1em;
       margin-top: .75em;
       .form-option {
         float: left;
@@ -1055,6 +1090,19 @@ a {
         margin-right: 10px;
         label { font-weight: normal; }
       }
+    }
+    #or-wrapper {
+      .box;
+      width: 280px;
+      font-weight: bold;
+      margin-bottom: 1em;
+      font-size: @font_size_14;
+      line-height: 1;
+      padding: 3px 0;
+      text-transform: uppercase;
+      text-align: center;
+      border-top: 1px solid #aaa;
+      border-bottom: 1px solid #aaa;
     }
     #src-wrapper, #dst-wrapper, #date-select { // {{{
       .box;
@@ -1104,6 +1152,9 @@ a {
       &:hover {
         button.ui-button, input {
           border-color: @color_grey_40;
+          &.disabled {
+            border-color: @color_grey_67;
+          }
         }
       }
     } // }}}
@@ -1129,7 +1180,7 @@ a {
       color: #888;
     }
   } // }}}
-  #results { // {{{
+  #results-wrapper { // {{{
     .page_padding;
     position: relative;
     z-index: 10;

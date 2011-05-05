@@ -19,9 +19,13 @@ projects[advanced_help][version] = "1.2"
 projects[ahah_helper][subdir] = "contrib"
 projects[ahah_helper][version] = "2.1"
 
-; Allow ahah_helper to manipulate all Drupal javascript settings
-; (may cause instability for untested modules)
-projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/buildsystem/raw/drupal/patches/ahah_helper_js_settings.patch"
+; AHAH Helper patches - could cause instability in untested modules
+; Update Javascript settings
+projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/ahah_helper_js_settings.patch"
+; Fixed form ID variable assignment
+projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/ahah_helper_form_id.patch"
+; Make removal of submit and validation handlers optional
+projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/ahah_helper_optional_validation_handlers.patch"
 
 projects[beautytips][subdir] = "contrib"
 projects[beautytips][version] = "2.0"
@@ -57,6 +61,9 @@ projects[filefield][version] = "3.9"
 projects[geoip][subdir] = "contrib"
 projects[geoip][version] = "1.4"
 
+projects[gravatar][subdir] = "contrib"
+projects[gravatar][version] = "1.10"
+
 projects[homebox][subdir] = "contrib"
 projects[homebox][version] = "2.1"
 
@@ -90,6 +97,9 @@ projects[markdown][version] = "1.2"
 projects[pathologic][subdir] = "contrib"
 projects[pathologic][version] = "3.4"
 
+projects[semanticviews][subdir] = "contrib"
+projects[semanticviews][version] = "1.1"
+
 projects[syntaxhighlighter][subdir] = "contrib"
 projects[syntaxhighlighter][version] = "1.26"
 
@@ -112,12 +122,12 @@ projects[markdownify][type] = "module"
 projects[jquery_ui][subdir] = "contrib"
 projects[jquery_ui][version] = "1.4"
 ; Handle multiple jQuery UI versions
-projects[jquery_ui][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/ecenter-1.0-alpha3/raw/drupal/patches/jquery_ui_multiple_versions.patch"
+projects[jquery_ui][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/jquery_ui_multiple_versions.patch"
 
 projects[jquery_update][subdir] = "contrib"
 projects[jquery_update][version] = "1.1"
 ; Patch for jQuery 1.4.4, required by jqPlot and jQuery UI 1.8.x
-projects[jquery_update][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/ecenter-1.0-alpha3/raw/drupal/patches/jquery_update_jquery-1.4.4.patch"
+projects[jquery_update][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/jquery_update_jquery-1.4.4.patch"
 
 projects[less][subdir] = "contrib"
 projects[less][version] = "2.6"
@@ -143,7 +153,7 @@ projects[vertical_tabs][version] = "1.0-rc1"
 projects[views][subdir] = "contrib"
 projects[views][version] = "3.x-dev"
 projects[views][patch][] = "http://drupal.org/files/issues/844910-views.dont-add-field-in-orderby_0.patch"
-projects[views][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/ecenter-1.0-alpha3/raw/drupal/patches/views_groupwise_max.patch"
+projects[views][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/views_groupwise_max.patch"
 
 projects[wysiwyg][subdir] = "contrib"
 projects[wysiwyg][version] = "2.2"
@@ -217,9 +227,9 @@ libraries[syntaxhighlighter][download][url] = "http://alexgorbatchev.com/SyntaxH
 libraries[syntaxhighlighter][directory_name] = "syntaxhighlighter"
 
 ; GeoIP
-libraries[geoip][download][type] = "get"
-libraries[geoip][download][url] = "http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz"
-libraries[geoip][directory_name] = "geoip"
+;libraries[geoip][download][type] = "get"
+;libraries[geoip][download][url] = "http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz"
+;libraries[geoip][directory_name] = "geoip"
 
 ; OpenID Selector
 libraries[openid_selector][download][type] = "get"

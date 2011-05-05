@@ -25,12 +25,13 @@ function ecenter_blog_views_default_views() {
   $handler->display->display_options['exposed_form']['type'] = 'basic';
   $handler->display->display_options['pager']['type'] = 'full';
   $handler->display->display_options['style_plugin'] = 'default';
-  $handler->display->display_options['row_plugin'] = 'fields';
+  $handler->display->display_options['row_plugin'] = 'node';
+  $handler->display->display_options['row_options']['links'] = 1;
+  $handler->display->display_options['row_options']['comments'] = 0;
   /* Field: Node: Title */
   $handler->display->display_options['fields']['title']['id'] = 'title';
   $handler->display->display_options['fields']['title']['table'] = 'node';
   $handler->display->display_options['fields']['title']['field'] = 'title';
-  $handler->display->display_options['fields']['title']['label'] = '';
   $handler->display->display_options['fields']['title']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['title']['alter']['make_link'] = 0;
   $handler->display->display_options['fields']['title']['alter']['absolute'] = 0;
@@ -68,58 +69,12 @@ function ecenter_blog_views_default_views() {
   /* Display: Archive page */
   $handler = $view->new_display('page', 'Archive page', 'archive_page');
   $handler->display->display_options['display_description'] = 'Main archive';
-  $handler->display->display_options['defaults']['style_plugin'] = FALSE;
-  $handler->display->display_options['style_plugin'] = 'semanticviews_default';
-  $handler->display->display_options['style_options']['row']['class'] = 'row';
-  $handler->display->display_options['defaults']['style_options'] = FALSE;
-  $handler->display->display_options['defaults']['row_plugin'] = FALSE;
-  $handler->display->display_options['row_plugin'] = 'semanticviews_fields';
-  $handler->display->display_options['row_options']['skip_blank'] = 0;
-  $handler->display->display_options['row_options']['semantic_html'] = array(
-    'title' => array(
-      'element_type' => 'h3',
-      'class' => 'title',
-      'label_element_type' => 'label',
-      'label_class' => '',
-    ),
-  );
-  $handler->display->display_options['defaults']['row_options'] = FALSE;
-  $handler->display->display_options['defaults']['arguments'] = FALSE;
-  /* Argument: Taxonomy: Term */
-  $handler->display->display_options['arguments']['name']['id'] = 'name';
-  $handler->display->display_options['arguments']['name']['table'] = 'term_data';
-  $handler->display->display_options['arguments']['name']['field'] = 'name';
-  $handler->display->display_options['arguments']['name']['default_action'] = 'default';
-  $handler->display->display_options['arguments']['name']['style_plugin'] = 'default_summary';
-  $handler->display->display_options['arguments']['name']['default_argument_type'] = 'fixed';
-  $handler->display->display_options['arguments']['name']['default_argument_options']['argument'] = 'news';
-  $handler->display->display_options['arguments']['name']['validate_type'] = 'taxonomy_term';
-  $handler->display->display_options['arguments']['name']['validate_options']['vids'] = array(
-    2 => 2,
-  );
-  $handler->display->display_options['arguments']['name']['validate_options']['type'] = 'name';
-  $handler->display->display_options['arguments']['name']['validate_options']['transform'] = 0;
-  $handler->display->display_options['arguments']['name']['validate_fail'] = 'ignore';
-  $handler->display->display_options['arguments']['name']['glossary'] = 0;
-  $handler->display->display_options['arguments']['name']['ignorecase'] = 0;
-  $handler->display->display_options['arguments']['name']['limit'] = '0';
-  $handler->display->display_options['arguments']['name']['transform_dash'] = 0;
-  $handler->display->display_options['arguments']['name']['break_phrase'] = 0;
-  $handler->display->display_options['arguments']['name']['add_table'] = 0;
-  $handler->display->display_options['arguments']['name']['require_value'] = 0;
-  $handler->display->display_options['path'] = 'blog/%';
+  $handler->display->display_options['path'] = 'blog';
 
   /* Display: News block */
   $handler = $view->new_display('block', 'News block', 'block_news');
   $handler->display->display_options['defaults']['title'] = FALSE;
   $handler->display->display_options['title'] = 'E-Center News';
-  $handler->display->display_options['defaults']['use_more'] = FALSE;
-  $handler->display->display_options['use_more'] = TRUE;
-  $handler->display->display_options['use_more_text'] = 'More E-Center news';
-  $handler->display->display_options['defaults']['pager'] = FALSE;
-  $handler->display->display_options['pager']['type'] = 'some';
-  $handler->display->display_options['pager']['options']['items_per_page'] = '3';
-  $handler->display->display_options['pager']['options']['offset'] = '0';
   $handler->display->display_options['defaults']['fields'] = FALSE;
   /* Field: Node: Post date */
   $handler->display->display_options['fields']['created']['id'] = 'created';
@@ -143,32 +98,6 @@ function ecenter_blog_views_default_views() {
   $handler->display->display_options['fields']['created']['hide_empty'] = 0;
   $handler->display->display_options['fields']['created']['empty_zero'] = 0;
   $handler->display->display_options['fields']['created']['date_format'] = 'medium';
-  /* Field: Content: Authors (field_blog_post_authors) */
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['id'] = 'field_blog_post_authors_uid';
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['table'] = 'node_data_field_blog_post_authors';
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['field'] = 'field_blog_post_authors_uid';
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['label'] = 'by';
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['alter']['alter_text'] = 0;
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['alter']['absolute'] = 0;
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['alter']['external'] = 0;
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['alter']['trim'] = 0;
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['alter']['nl2br'] = 0;
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['alter']['word_boundary'] = 1;
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['alter']['ellipsis'] = 1;
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['alter']['strip_tags'] = 0;
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['alter']['html'] = 0;
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['element_type'] = 'span';
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['element_label_type'] = 'span';
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['element_label_colon'] = 0;
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['element_wrapper_type'] = 'span';
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['element_default_classes'] = 1;
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['hide_empty'] = 0;
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['empty_zero'] = 0;
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['link_to_node'] = 0;
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['label_type'] = 'custom';
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['multiple']['group'] = 0;
-  $handler->display->display_options['fields']['field_blog_post_authors_uid']['multiple']['multiple_reversed'] = 0;
   /* Field: Node: New comments */
   $handler->display->display_options['fields']['new_comments']['id'] = 'new_comments';
   $handler->display->display_options['fields']['new_comments']['table'] = 'node';
@@ -302,29 +231,42 @@ function ecenter_blog_views_default_views() {
   );
   $handler->display->display_options['filters']['tid']['reduce_duplicates'] = 0;
   $handler->display->display_options['filters']['tid']['vid'] = '2';
+
+  /* Display: Feed */
+  $handler = $view->new_display('feed', 'Feed', 'feed_1');
+  $handler->display->display_options['pager']['type'] = 'some';
+  $handler->display->display_options['style_plugin'] = 'rss';
+  $handler->display->display_options['style_options']['mission_description'] = FALSE;
+  $handler->display->display_options['row_plugin'] = 'node_rss';
+  $handler->display->display_options['row_options']['item_length'] = 'fulltext';
+  $handler->display->display_options['path'] = 'blog/feed';
+  $handler->display->display_options['displays'] = array(
+    'archive_page' => 'archive_page',
+    'default' => 0,
+    'block_news' => 0,
+  );
   $translatables['ecenter_blog'] = array(
     t('Defaults'),
     t('more'),
     t('Apply'),
     t('Reset'),
-    t('Sort By'),
+    t('Sort by'),
     t('Asc'),
     t('Desc'),
     t('Items per page'),
     t('- All -'),
     t('Offset'),
+    t('Title'),
     t('Archive page'),
     t('Main archive'),
-    t('All'),
     t('News block'),
     t('E-Center News'),
-    t('More E-Center news'),
-    t('by'),
     t('[new_comments] new comment(s)'),
     t('.'),
     t(','),
     t('More &raquo;'),
     t('[body] [view_node]'),
+    t('Feed'),
   );
 
   $views[$view->name] = $view;

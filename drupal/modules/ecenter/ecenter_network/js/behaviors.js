@@ -107,7 +107,26 @@ $.fn.ecenter_network.plugins.ajax = function() {
     },
     'ajaxSuccess' : function(e) {
       $(el).removeClass('data-loading');
-      $('#loading-overlay', self.el).fadeOut('fast');
+      var overlay = $('#loading-overlay', self.el)
+      .fadeOut('fast', function() {
+        $('button', overlay).css({'display' : 'inline'});
+      });
+
+      // Zoom to correct level for sites layer
+      var dst = $('#dst-wrapper input');
+      if (!dst.val()) {
+        var ol = $('#openlayers-map-auto-id-0').data('openlayers');
+        var map = ol.openlayers;
+        var layer = map.getLayersBy('drupalID', 'ecenter_network_sites').pop(); 
+
+        // Zoom to extent
+        layerextent = layer.getDataExtent();
+
+        // Check for valid layer extent
+        if (layerextent != null) {
+          map.zoomToExtent(layerextent);
+        }
+      }
     },
     'ajaxError' : function(e) {
       var dst = $('#dst-wrapper select');
@@ -117,7 +136,22 @@ $.fn.ecenter_network.plugins.ajax = function() {
       $('#dst-wrapper input').val('');
 
       $(el).removeClass('data-loading');
-      $('#loading-overlay', self.el).fadeOut('fast');
+      var overlay = $('#loading-overlay', self.el)
+        .fadeOut('fast');
+      $('button', overlay).css({'display' : 'inline'});
+
+      // Zoom to correct level for sites layer
+      var ol = $('#openlayers-map-auto-id-0').data('openlayers');
+      var map = ol.openlayers;
+      var layer = map.getLayersBy('drupalID', 'ecenter_network_sites').pop(); 
+
+      // Zoom to extent
+      layerextent = layer.getDataExtent();
+
+      // Check for valid layer extent
+      if (layerextent != null) {
+        map.zoomToExtent(layerextent);
+      }
     }
   });
 }
@@ -126,12 +160,63 @@ $.fn.ecenter_network.plugins.ajax = function() {
  * Trigger form submission when destination value is provided and date changes.
  */
 $.fn.ecenter_network.plugins.date = function() {
-  $('#recent-select input, #date-select input', this.el).bind('change', function() {
+  // @TODO This is a little DRY violation, maybe delegate instead?
+  $('#recent-select input', this.el).bind('change', function() {
     var dst = $('#dst-wrapper input', this.el);
+    $('#date-select input').val('');
     if (dst.val()) {
       dst.data('autocomplete')._trigger('change');
     }
   });
+  $('#date-select input', this.el).bind('change', function() {
+    var dst = $('#dst-wrapper input', this.el);
+    $('#recent-select input').attr('checked', false);
+    if (dst.val()) {
+      dst.data('autocomplete')._trigger('change');
+    }
+  });
+
+  $.fn.ecenter_network.plugins.date.setTimezone();
+}
+
+
+$.fn.ecenter_network.plugins.date.setTimezone = function() {
+  var date_string = Date();
+
+  var matches = Date().match(/\(([A-Z]{3,5})\)/);
+  var abbr = matches ? matches[1] : false;
+  
+  var now = new Date();
+  var offset = now.getTimezoneOffset() * -60;
+
+  var jan = new Date(now.getFullYear(), 0, 1, 12, 0, 0, 0);
+  var jul = new Date(now.getFullYear(), 6, 1, 12, 0, 0, 0);
+  var stOffset = jan.getTimezoneOffset() * -60;
+  var dstOffset = jul.getTimezoneOffset() * -60;
+  var maxOffset = Math.max(stOffset, dstOffset);
+
+  // UTC offset is same in Jan and July -- no DST in locale
+  if (stOffset == dstOffset) {
+    var dst = '';
+  }
+  // Current offset and maxoffset match, meaning it is DST
+  else if (maxOffset == offset) {
+    var dst = 1;
+  }
+  else {
+    dst = 0;
+  }
+
+  console.log(abbr);
+
+  var path = 'ecenter/timezone/' + abbr + '/' + offset + '/' + dst;
+  $.getJSON(Drupal.settings.basePath, { q: path, date: date_string }, function (data) {
+    if (data) {
+      var tz_select = $("edit-network-wrapper-query-timezone-name-wrapper input");
+      tz_select.val(data);
+    }
+  });
+  
 }
 
 /**
@@ -141,15 +226,25 @@ $.fn.ecenter_network.plugins.date = function() {
 $.fn.ecenter_network.plugins.change = function() {
   var self = this;
 
+  if (!$('#src-wrapper input').val()) {
+    $('#dst-wrapper input, #dst-wrapper button')
+      .attr('disabled', 'disabled')
+      .addClass('disabled');
+  } else {
+    $('#dst-wrapper input, #dst-wrapper button')
+      .removeAttr('disabled')
+      .removeClass('disabled');
+  }
+
   var processed = $('#src-wrapper select').data('ecenterProcessed');
-
-  // Clear out old results when destination select changes
   if (!processed) {
-    $('#src-wrapper select', this.el).bind('change', function(e) {
-      // Add overlay.
-      $(self.el).addClass('data-loading').css('position', 'relative');
-
-      var overlay = $('#loading-overlay')
+    $('#src-wrapper button.clear-value').bind('click', function(e) {
+      var input = $('#dst-wrapper input');
+      input.val('');
+      input.data('autocomplete')._trigger('change');
+    });
+    $('#src-wrapper select').bind('change', function(e) {
+      var overlay = $('#loading-overlay');
       overlay.css({
         'position' : 'absolute',
         'top' : 0,
@@ -157,17 +252,14 @@ $.fn.ecenter_network.plugins.change = function() {
         'width' : $('#network-wrapper', self.el).outerWidth(),
         'height' : $('#network-wrapper', self.el).height(),
         'z-index' : 5,
-        'display' : 'none',
       });
-      $(self.el).prepend(overlay);
+      $('button', overlay).css({'display' : 'none'});
       overlay.fadeIn('slow');
-
-      $(this).data('ecenterProcessed', true);
     });
   }
 
   var processed = $('#dst-wrapper select').data('ecenterProcessed');
-
+ 
   // Clear out old results when destination select changes
   if (!processed) {
     $('#dst-wrapper select', this.el).bind('change', function(e) {
@@ -182,7 +274,7 @@ $.fn.ecenter_network.plugins.change = function() {
       // Add overlay.
       $(self.el).addClass('data-loading').css('position', 'relative');
 
-      var overlay = $('#loading-overlay')
+      var overlay = $('#loading-overlay');
       overlay.css({
         'position' : 'absolute',
         'top' : 0,
@@ -192,9 +284,7 @@ $.fn.ecenter_network.plugins.change = function() {
         'z-index' : 5,
         'display' : 'none',
       });
-      $(self.el).prepend(overlay);
       overlay.fadeIn('slow');
-
       $(this).data('ecenterProcessed', true);
     });
   }
@@ -209,6 +299,15 @@ $.fn.ecenter_network.plugins.map = function() {
   for (key in maps) {
     var id = '#' + maps[key].id;
 
+    // Persist selection after zooming or panning
+    var ol = $(id).data('openlayers');
+    var map = ol.openlayers;
+    map.events.on({
+      moveend: function(e) {
+        $.fn.ecenter_network.plugins.draw_map();
+      }
+    });
+
     $(id).live('featureClick', function(e, feature, layer, control) {
       if (layer.drupalID == 'ecenter_network_sites') {
         // Toggle click state
@@ -220,6 +319,22 @@ $.fn.ecenter_network.plugins.map = function() {
         } else {
           control.select(feature);
           Drupal.ecenterSelect.over.call(control, feature); // Highlight
+        }
+        
+        if (layer.selectedFeatures.length == 0) {
+          var input = $('#src-wrapper input', this.el);
+          input.val('');
+          input.data('autocomplete')._trigger('change');
+        }
+        else if (layer.selectedFeatures.length == 1) {
+          var input = $('#src-wrapper input', this.el);
+          input.val(feature.ecenterID);
+          input.data('autocomplete')._trigger('change');
+        }
+        else if (layer.selectedFeatures.length > 1) {
+          var input = $('#dst-wrapper input', this.el);
+          input.val(feature.ecenterID);
+          input.data('autocomplete')._trigger('change');
         }
       }
     });
@@ -304,18 +419,6 @@ $.fn.ecenter_network.plugins.map = function() {
 
     // Bind to feature select: Set value, then call autocomplete's change function
     $(id).live('featureClick', function(e, feature, layer) {
-      if (layer.drupalID == 'ecenter_network_sites') {
-        if (layer.selectedFeatures.length == 1) {
-          var input = $('#edit-network-wrapper-query-src-wrapper-src-wrapper input');
-          input.val(feature.ecenterID);
-          input.data('autocomplete')._trigger('change');
-        }
-        else if (layer.selectedFeatures.length > 1) {
-          var input = $('#edit-network-wrapper-query-dst-wrapper-dst-wrapper input');
-          input.val(feature.ecenterID);
-          input.data('autocomplete')._trigger('change');
-        }
-      }
     });
   }
 }
@@ -391,19 +494,16 @@ $.fn.ecenter_network.plugins.draw_map = function() {
  * Create traceroute visualization using traceroute jQuery plugin.
  */
 $.fn.ecenter_network.plugins.traceroute = function() {
-  var el = this.el;
-  var trace_el = $('#traceroute-wrapper', this.el);
-
-  if (!trace_el.length && Drupal.settings.ecenterNetwork && Drupal.settings.ecenterNetwork.tracerouteData) {
-    var traceroutes = $('#traceroute').data('traceroute');
+  var traceroutes = $('#traceroute', this.el).data('traceroute');
+  if (!traceroutes && Drupal.settings.ecenterNetwork && Drupal.settings.ecenterNetwork.tracerouteData) {
     $('<div id="traceroute-wrapper">')
-      .prependTo($('#hop-wrapper'));
-
+      .prependTo($('#results'));
     $('<div id="traceroute"></div>')
       .appendTo($('#traceroute-wrapper'))
       .traceroute(Drupal.settings.ecenterNetwork.tracerouteData);
-
-    var traceroutes = $('#traceroute').data('traceroute');
+    
+    var traceroutes = $('#traceroute', this.el).data('traceroute');
+    
     if (!traceroutes) {
       return;
     }
@@ -448,9 +548,9 @@ $.fn.ecenter_network.plugins.traceroute = function() {
           }
 
           $('circle', group).each(function() {
-            this.setAttribute('stroke', '#555555');
+            this.setAttribute('stroke', '#333333');
           });
-          $('.hub-label text', group).each(function() {
+          $('.hub_label text', group).each(function() {
             this.setAttribute('fill', '#000000');
           });
           $('.label text', group).each(function() {
@@ -462,7 +562,6 @@ $.fn.ecenter_network.plugins.traceroute = function() {
         });
       },
       'mouseleave' : function(e, stop_highlight) {
-
         $('g.node', e.currentTarget).each(function(e) {
           var group = this;
           var hop_id = $(this).attr('hop_id');
@@ -486,11 +585,11 @@ $.fn.ecenter_network.plugins.traceroute = function() {
           $('circle', group).each(function() {
             this.setAttribute('stroke', '#aaaaaa');
           });
-          $('.hub-label text', group).each(function() {
-            this.setAttribute('fill', '#000000');
+          $('.hub_label text', group).each(function() {
+            this.setAttribute('fill', '#444444');
           });
           $('.label text', group).each(function() {
-            this.setAttribute('fill', '#555555');
+            this.setAttribute('fill', '#000000');
           });
           $('.background rect', group).each(function() {
             this.setAttribute('fill', '#ffffff');

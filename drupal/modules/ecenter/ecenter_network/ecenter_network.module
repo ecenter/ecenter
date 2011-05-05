@@ -1589,3 +1589,13 @@ function _ecenter_network_extract_query() {
   }
   return $vars;
 }
+
+/**
+ * Implementation of template_preprocess_page().
+ */
+function ecenter_network_preprocess_page(&$vars) {
+  // Add body class to weathermap
+  if (arg(0) == 'network' && !arg(1)) {
+    $vars['body_classes'] .= ' page-network-weathermap';
+  }
+}

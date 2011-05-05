@@ -427,10 +427,7 @@ function ecenter_network_select_form(&$form_state) {
   if (!empty($src)) {
     $form['network_wrapper']['query']['src_wrapper']['src']['#default_value'] = $src;
     list($src_type, $src_value) = explode(':', $src, 2);
-    if ($src_type == 'hub') {
-      $src_value = $sources['hubs'][$src_value]['ip_noted'];
-    }
-    $destinations = ecenter_network_get_hops($src_value);
+    $destinations = ecenter_network_get_hops($src_value, $src_type);
     $dst_options[0] = '';
     foreach ($destinations['hubs'] as $key => $hop) {
       $dst_options['hub:'. $key] = theme('ecenter_network_hop_option', $hop);
@@ -655,12 +652,14 @@ function ecenter_network_get_data($src, $dst, $start, $end) {
  * Get hops
  *
  * @param $src
- *   (optional) Source IP address to determine potential destinations.  If
-     not supplied, list all potential source hops.
+ *   (optional) Source (hub name or IP) to determine potential destinations. 
+ *   If not supplied, list all potential source hops.
+ * @param $src_type
+ *   (optional) Source type ('hub' or 'ip')
  * @return
  *   An array of hop objects.
  */
-function ecenter_network_get_hops($src = NULL) {
+function ecenter_network_get_hops($src = NULL, $src_type = 'hub') {
   static $hops = array();
   $src_key = (!empty($src)) ? $src : 'sources';
 
@@ -671,7 +670,7 @@ function ecenter_network_get_hops($src = NULL) {
     }
     else {
       $client = ecenter_network_get_client();
-      $result = $client->getHops($src);
+      $result = $client->getHops($src, $src_type);
       if ($result['code'] == 200) {
         $data = ecenter_network_parse_hops($result['response']);
         $hops[$src_key] = $data;
@@ -1163,18 +1162,15 @@ function ecenter_network_layers_sites() {
   extract(_ecenter_network_extract_query());
   $sources = ecenter_network_get_hops();
 
+  // Calculate destinations
   if (!empty($src)) {
     list($src_type, $src_value) = explode(':', $src, 2);
+    $hops = ecenter_network_get_hops($src_value, $src_type);
     if ($src_type == 'hub') {
-      $hop = $sources['hubs'][$src_value];
-      $src_ip = $sources['hubs'][$src_value]['ip_noted'];
-      $hops = ecenter_network_get_hops($src_ip);
-      $hops['hubs'][$src_value] = $hop; 
+      array_unshift($hops['hubs'], $sources['hubs'][$src_value]);
     }
-    else {
-      $hop = $sources['hubs'][$sources['hops'][$src_value]['hub_name']];
-      $hops = ecenter_network_get_hops($src_value);
-      $hops['hubs'][$src_value] = $hop; 
+    else if ($src_type == 'ip') {
+      array_unshift($hops['hubs'], $sources['hops'][$src_value]);
     }
   }
   else {
@@ -1191,7 +1187,6 @@ function ecenter_network_layers_sites() {
     'layer_type' => 'openlayers_layer_type_raw',
     'projection' => array('900913'),
   );
-
 
   if (!empty($src) && !empty($dst) && !empty($start) && !empty($end)) {
     $data = ecenter_network_get_data($src, $dst, $start, $end);

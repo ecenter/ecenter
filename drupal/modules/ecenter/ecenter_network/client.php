@@ -172,10 +172,13 @@ class Ecenter_Data_Service_Client {
    */
   public function getHops($src = FALSE, $src_type = 'hub') {
     if ($src && $src_type == 'hub') {
-      $q = (!empty($src)) ? 'hubs/' . $src : 'source';
+      $q = 'hubs/' . $src;
     }
     else if ($src) {
-      $q = (!empty($src)) ? 'destination/' . $src : 'source';
+      $q = 'destination/' . $src;
+    }
+    else {
+      $q = 'source';
     }
     return $this->query($q);
   }

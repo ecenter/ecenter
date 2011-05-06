@@ -1,6 +1,6 @@
 use warnings;
 use strict;    
-use Test::More tests => 7;
+use Test::More tests => 8;
 use Log::Log4perl qw(:easy);
 use English qw( -no_match_vars );
 use_ok('Ecenter::TopoClient');
@@ -24,7 +24,7 @@ map {  ok($obj1->meta->find_attribute_by_name($_)->get_value($obj1), " Check $_"
 ok($obj1->url  eq 'url_value_id', " URL check ...  ");
 ok($obj1->can('get_hubs'), " Check get_hubs ");
 ok($obj1->can('get_nodes'), " Check get_nodes ");
-
+ok($obj1->can('get_destination_hubs'), " Check get_destination_hubs ");
 #11
 
 

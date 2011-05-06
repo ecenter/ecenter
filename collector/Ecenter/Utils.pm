@@ -194,8 +194,9 @@ sub get_ip_name {
     if($unt_test =~ /^([\d\.]+|[\dabcdef\:]+)$/i) {
         if(!Net::CIDR::cidrlookup( $unt_test, ( "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16" ) ) &&
            (is_ipv4($unt_test)  ||  &Net::IPv6Addr::is_ipv6( $unt_test ))) {
-	    $logger->debug(" Its IP: $unt_test  "); 
-            return ($unt_test, gethostbyaddr(Socket::inet_aton($unt_test), Socket::AF_INET));
+	    my $ip_resolved =  gethostbyaddr(Socket::inet_aton($unt_test), Socket::AF_INET);
+	    $logger->info(" Its IP: $unt_test , name= $ip_resolved");    
+            return ($unt_test, $ip_resolved );
 	 } else {
 	    return;
 	 }

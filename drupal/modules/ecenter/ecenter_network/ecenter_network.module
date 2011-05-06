@@ -369,21 +369,18 @@ function _ecenter_network_select_form() {
     '#default_value' => NULL,
   );
 
-  $timezone = $user->timezone_name ? $user->timezone_name : variable_get('date_default_timezone_name', NULL);
   $form['network_wrapper']['query']['timezone_name'] = array(
     '#type' => 'combobox',
     '#title' => t('Timezone'),
     '#prefix' => '<div id="timezone-select">',
     '#suffix' => '</div>',
-    '#default_value' => $timezone,
+    '#default_value' => NULL,
     '#options' => date_timezone_names(),
   );
 
   $form['network_wrapper']['query']['help'] = array('#value' => 
-    '<p class="instructions">'. t("The timezone used in results. Default 
-    timezone is determined from your system time.") .'</p>'.
-    '<p class="instructions">'. t('Select source and destination 
-    by clicking sites on the map, or specify above.') .'</p>',
+    '<p class="instructions">'. t("The timezone used to display results. Default 
+    timezone is determined from your system time and location.") .'</p>',
   );
 
   $form['network_wrapper']['query']['date_description'] = array(
@@ -417,6 +414,7 @@ function _ecenter_network_select_form() {
  * primarily processes the form.
  */
 function ecenter_network_select_form(&$form_state) {
+  global $user;
 
   // Bail if the service is down
   ecenter_network_get_client('503');
@@ -439,6 +437,15 @@ function ecenter_network_select_form(&$form_state) {
     $form['network_wrapper']['query']['end']['#default_value'] = 
       _ecenter_network_utc_to_local($end);
   }
+
+  if (empty($timezone)) {
+    $user_timezone = $user->timezone_name ? $user->timezone_name 
+      : variable_get('date_default_timezone_name', NULL);
+  }
+  else {
+    $user_timezone = $timezone;
+  }
+  $form['network_wrapper']['query']['timezone_name']['#default_value'] = $user_timezone;
 
   // Clear time selection if there's a query
   if (!empty($start) || !empty($end)) {
@@ -475,6 +482,7 @@ function ecenter_network_select_form(&$form_state) {
       'dst' => $dst,
       'start' => $start,
       'end' => $end,
+      'timezone' => $timezone,
     );
 
     // If we've got the data (at bare minimum, a traceroute), delegate to rendering function
@@ -989,7 +997,7 @@ function ecenter_network_openlayers_presets() {
   $openlayers_presets->description = 'E-Center network weathermap';
   $openlayers_presets->data = array(
     'width' => '660px',
-    'height' => '390px',
+    'height' => '360px',
     'image_path' => 'http://js.mapbox.com/theme/dark/',
     'css_path' => '',
     'proxy_host' => '',
@@ -1523,8 +1531,10 @@ function ecenter_network_refresh_map($preset, $id = NULL) {
  * @return string
  *   Formatted, converted date
  */
-function _ecenter_network_local_to_utc($date, $format = 'Y-m-d H:i:s') {
-  $tz = date_default_timezone_name(TRUE);
+function _ecenter_network_local_to_utc($date, $format = 'Y-m-d H:i:s', $tz = '') {
+  if (empty($tz)) {
+    $tz = date_default_timezone_name(TRUE);
+  }
   $adjusted = date_create($date, timezone_open($tz));
   date_timezone_set($adjusted, timezone_open('UTC'));
   return date_format($adjusted, $format);
@@ -1540,8 +1550,10 @@ function _ecenter_network_local_to_utc($date, $format = 'Y-m-d H:i:s') {
  * @return string
  *   Formatted, converted date
  */
-function _ecenter_network_utc_to_local($date, $format = 'Y-m-d H:i:s') {
-  $tz = date_default_timezone_name(TRUE);
+function _ecenter_network_utc_to_local($date, $format = 'Y-m-d H:i:s', $tz = '') {
+  if (empty($tz)) {
+    $tz = date_default_timezone_name(TRUE);
+  }
   $adjusted = date_create($date, timezone_open('UTC'));
   date_timezone_set($adjusted, timezone_open($tz));
   return date_format($adjusted, $format);
@@ -1557,9 +1569,14 @@ function _ecenter_network_utc_to_local($date, $format = 'Y-m-d H:i:s') {
  * @return string
  *   Formatted, converted date
  */
-function _ecenter_network_timestamp_to_local($date, $format = 'Y-m-d H:i:s') {
-  $tz = date_default_timezone_name(TRUE);
+function _ecenter_network_timestamp_to_local($date, $format = 'Y-m-d H:i:s', $tz = '') {
+  if (empty($tz)) {
+    $tz = date_default_timezone_name(TRUE);
+  }
   $adjusted = date_make_date($date, timezone_open('UTC'), DATE_UNIX);
+  if (empty($tz)) {
+    $tz = date_default_timezone_name(TRUE);
+  }
   date_timezone_set($adjusted, timezone_open($tz));
   return date_format($adjusted, $format);
 }
@@ -1577,20 +1594,24 @@ function _ecenter_network_timestamp_to_local($date, $format = 'Y-m-d H:i:s') {
 function _ecenter_network_extract_query() {
   if ($_REQUEST['form_id'] == 'ecenter_network_select_form') {
     $vars = array(
-      'src'   => $_REQUEST['network_wrapper']['query']['src_wrapper']['src'],
-      'dst'   => $_REQUEST['network_wrapper']['query']['dst_wrapper']['dst'],
+      'src' => $_REQUEST['network_wrapper']['query']['src_wrapper']['src'],
+      'dst' => $_REQUEST['network_wrapper']['query']['dst_wrapper']['dst'],
       'start' => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['start']['date']),
-      'end'   => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['end']['date']),
+      'end' => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['end']['date']),
+      'timezone' => $_REQUEST['network_wrapper']['query']['timezone_name'],
     );
   }
   else {
     $vars = array(
-      'src'   => $_REQUEST['src'],
-      'dst'   => $_REQUEST['dst'],
+      'src' => $_REQUEST['src'],
+      'dst' => $_REQUEST['dst'] ,
       'start' => $_REQUEST['start'],
-      'end'   => $_REQUEST['end'],
+      'end' => $_REQUEST['end'],
+      'timezone' => $_REQUEST['timezone'],
     );
   }
+  
+
   return $vars;
 }
 

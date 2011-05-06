@@ -642,7 +642,15 @@ $.fn.ecenter_network.plugins.chart = function() {
       control.callbacks.out.call(control, feature);
     }
   });
+}
 
+$.fn.ecenter_network.plugins.end_to_end = function() {
+  $('#end-to-end-results tbody tr', this.el).hover(function(e) {
+    var class_list = $(this).attr('class').split(/\s+/);
+    //$(class_list[0];
+  }, function(e) {
+    console.log('out', this);
+  });
 }
 
 /**
@@ -661,6 +669,7 @@ $.fn.ecenter_network.defaults = {
     $.fn.ecenter_network.plugins.change,
     $.fn.ecenter_network.plugins.traceroute,
     $.fn.ecenter_network.plugins.draw_map,
+    $.fn.ecenter_network.plugins.end_to_end
   ]
 };
 

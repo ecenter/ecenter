@@ -8,7 +8,6 @@
         select = this.element.hide(),
         selected = select.children( ":selected" ),
         value = selected.val() ? selected.text() : "";
-      console.log('self fooo', self);
       var input = $( "<input>" )
         .insertAfter( select )
         .val( value )

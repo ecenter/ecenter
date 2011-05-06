@@ -855,7 +855,7 @@ function ecenter_network_parse_response($response) {
       // Filter out hops which don't have SNMP data
       // @TODO may require differentiation between no SNMP data and no 
       // *available* SNMP data. 
-      $traceroute = array_filter($traceroute, '_ecenter_network_filter_traceroute');
+      //$traceroute = array_filter($traceroute, '_ecenter_network_filter_traceroute');
       $parsed_data['traceroute'][$direction] = $traceroute;
     }
   }

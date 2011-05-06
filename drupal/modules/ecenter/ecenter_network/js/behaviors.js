@@ -29,7 +29,7 @@ $.fn.tablechart.defaults.attachMethod = function(container) {
  * Drupal behavior to attach network weathermap behaviors
  */
 Drupal.behaviors.EcenterNetwork = function(context) {
-  $('#ecenter-network-select-form').ecenter_network();
+  $('#ecenter-network-select-form').ecenter_network(); 
 }
 
 /**
@@ -176,11 +176,16 @@ $.fn.ecenter_network.plugins.date = function() {
     }
   });
 
-  $.fn.ecenter_network.plugins.date.setTimezone();
+  $.fn.ecenter_network.plugins.date.setTimezone.call(this);
 }
 
 
+/**
+ * Set timezone
+ */
 $.fn.ecenter_network.plugins.date.setTimezone = function() {
+  self = this;
+
   var date_string = Date();
 
   var matches = Date().match(/\(([A-Z]{3,5})\)/);
@@ -207,16 +212,13 @@ $.fn.ecenter_network.plugins.date.setTimezone = function() {
     dst = 0;
   }
 
-  console.log(abbr);
-
   var path = 'ecenter/timezone/' + abbr + '/' + offset + '/' + dst;
   $.getJSON(Drupal.settings.basePath, { q: path, date: date_string }, function (data) {
     if (data) {
-      var tz_select = $("edit-network-wrapper-query-timezone-name-wrapper input");
-      tz_select.val(data);
+      var elements = $('#edit-network-wrapper-query-timezone-name-wrapper', self.el)
+      .children('select, input').val(data);
     }
   });
-  
 }
 
 /**

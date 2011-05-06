@@ -4,6 +4,9 @@
  * E-Center theme CSS style
  */
 
+// Debugging
+.krumo-root { width: 600px; }
+
 /* --- Less CSS Variables --- */
 /* Variables: Measurements {{{ */
 @default_corner_radius: 5px;
@@ -1090,6 +1093,10 @@ a {
         label { font-weight: normal; }
       }
     }
+    #date-select {
+      .box;
+      margin-bottom: 1em;
+    }
     #or-wrapper {
       .box;
       width: 280px;
@@ -1103,7 +1110,7 @@ a {
       border-top: 1px solid #aaa;
       border-bottom: 1px solid #aaa;
     }
-    #src-wrapper, #dst-wrapper, #date-select { // {{{
+    #src-wrapper, #dst-wrapper, #date-select, #timezone-select { // {{{
       .box;
       width: 300px;
       .form-item {
@@ -1120,7 +1127,7 @@ a {
         .box;
         width: 140px;
       }
-      .dst-wrapper input, .src-wrapper input {
+      input.ui-widget {
         .round_corner(5px; 0; 0; 5px;);
         border-right: none;
       }
@@ -1157,7 +1164,7 @@ a {
         }
       }
     } // }}}
-    #date-description-wrapper, #instructions { // {{{
+    #date-description-wrapper, .instructions { // {{{
       width: 285px;
       float: left;
       margin-top: .75em;

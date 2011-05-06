@@ -372,16 +372,18 @@ function _ecenter_network_select_form() {
   $timezone = $user->timezone_name ? $user->timezone_name : variable_get('date_default_timezone_name', NULL);
   $form['network_wrapper']['query']['timezone_name'] = array(
     '#type' => 'combobox',
-    '#title' => t('Display timezone'),
+    '#title' => t('Timezone'),
+    '#prefix' => '<div id="timezone-select">',
+    '#suffix' => '</div>',
     '#default_value' => $timezone,
     '#options' => date_timezone_names(),
-    '#description' => t("The timezone used in results. Default timezone is determined from your system time."),
   );
 
-  $form['network_wrapper']['query']['help'] = array(
-    '#value' => '<p id="instructions">'. 
-      t('Select source and destination by clicking sites on the map, or 
-         specify above.') .'</p>',
+  $form['network_wrapper']['query']['help'] = array('#value' => 
+    '<p class="instructions">'. t("The timezone used in results. Default 
+    timezone is determined from your system time.") .'</p>'.
+    '<p class="instructions">'. t('Select source and destination 
+    by clicking sites on the map, or specify above.') .'</p>',
   );
 
   $form['network_wrapper']['query']['date_description'] = array(
@@ -987,7 +989,7 @@ function ecenter_network_openlayers_presets() {
   $openlayers_presets->description = 'E-Center network weathermap';
   $openlayers_presets->data = array(
     'width' => '660px',
-    'height' => '360px',
+    'height' => '390px',
     'image_path' => 'http://js.mapbox.com/theme/dark/',
     'css_path' => '',
     'proxy_host' => '',

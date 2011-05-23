@@ -6,7 +6,6 @@
 function ecenter_issues_views_default_views() {
   $views = array();
 
-  // Exported view: ecenter_issues
   $view = new view;
   $view->name = 'ecenter_issues';
   $view->description = 'E-Center issues';
@@ -257,27 +256,26 @@ function ecenter_issues_views_default_views() {
   $handler->display->display_options['fields']['new_comments']['hide_empty'] = 1;
   $handler->display->display_options['fields']['new_comments']['empty_zero'] = 0;
   $handler->display->display_options['fields']['new_comments']['link_to_comment'] = 1;
-  /* Sort criterion: Node: Last comment time */
-  $handler->display->display_options['sorts']['last_comment_timestamp']['id'] = 'last_comment_timestamp';
-  $handler->display->display_options['sorts']['last_comment_timestamp']['table'] = 'node_comment_statistics';
-  $handler->display->display_options['sorts']['last_comment_timestamp']['field'] = 'last_comment_timestamp';
-  $handler->display->display_options['sorts']['last_comment_timestamp']['order'] = 'DESC';
-  $handler->display->display_options['sorts']['last_comment_timestamp']['exposed'] = TRUE;
-  $handler->display->display_options['sorts']['last_comment_timestamp']['expose']['label'] = 'Node: Last comment time';
-  $handler->display->display_options['sorts']['last_comment_timestamp']['granularity'] = 'minute';
   /* Sort criterion: Node: Post date */
   $handler->display->display_options['sorts']['created']['id'] = 'created';
   $handler->display->display_options['sorts']['created']['table'] = 'node';
   $handler->display->display_options['sorts']['created']['field'] = 'created';
   $handler->display->display_options['sorts']['created']['order'] = 'DESC';
   $handler->display->display_options['sorts']['created']['exposed'] = TRUE;
-  $handler->display->display_options['sorts']['created']['expose']['label'] = 'Node: Post date';
+  $handler->display->display_options['sorts']['created']['expose']['label'] = 'Created date';
+  /* Sort criterion: Node: Last comment time */
+  $handler->display->display_options['sorts']['last_comment_timestamp']['id'] = 'last_comment_timestamp';
+  $handler->display->display_options['sorts']['last_comment_timestamp']['table'] = 'node_comment_statistics';
+  $handler->display->display_options['sorts']['last_comment_timestamp']['field'] = 'last_comment_timestamp';
+  $handler->display->display_options['sorts']['last_comment_timestamp']['order'] = 'DESC';
+  $handler->display->display_options['sorts']['last_comment_timestamp']['exposed'] = TRUE;
+  $handler->display->display_options['sorts']['last_comment_timestamp']['expose']['label'] = 'Last comment time';
+  $handler->display->display_options['sorts']['last_comment_timestamp']['granularity'] = 'minute';
   /* Sort criterion: Node: Updated date */
   $handler->display->display_options['sorts']['changed']['id'] = 'changed';
   $handler->display->display_options['sorts']['changed']['table'] = 'node';
   $handler->display->display_options['sorts']['changed']['field'] = 'changed';
   $handler->display->display_options['sorts']['changed']['order'] = 'DESC';
-  $handler->display->display_options['sorts']['changed']['exposed'] = TRUE;
   $handler->display->display_options['sorts']['changed']['expose']['label'] = 'Node: Updated date';
   /* Filter: Node: Published */
   $handler->display->display_options['filters']['status']['id'] = 'status';
@@ -297,9 +295,7 @@ function ecenter_issues_views_default_views() {
   $handler->display->display_options['filters']['uid']['field'] = 'uid';
   $handler->display->display_options['filters']['uid']['value'] = '';
   $handler->display->display_options['filters']['uid']['exposed'] = TRUE;
-  $handler->display->display_options['filters']['uid']['expose']['operator'] = 'uid_op';
-  $handler->display->display_options['filters']['uid']['expose']['limit_operators'] = array();
-  $handler->display->display_options['filters']['uid']['expose']['label'] = 'Poster';
+  $handler->display->display_options['filters']['uid']['expose']['label'] = 'Issue author';
   $handler->display->display_options['filters']['uid']['expose']['identifier'] = 'uid';
   $handler->display->display_options['filters']['uid']['expose']['reduce'] = 0;
   /* Filter: Content: Source Hub (field_query_src_hub) */
@@ -308,8 +304,6 @@ function ecenter_issues_views_default_views() {
   $handler->display->display_options['filters']['field_query_src_hub_value']['field'] = 'field_query_src_hub_value';
   $handler->display->display_options['filters']['field_query_src_hub_value']['relationship'] = 'field_issue_query_nid';
   $handler->display->display_options['filters']['field_query_src_hub_value']['exposed'] = TRUE;
-  $handler->display->display_options['filters']['field_query_src_hub_value']['expose']['operator'] = 'field_query_src_hub_value_op';
-  $handler->display->display_options['filters']['field_query_src_hub_value']['expose']['limit_operators'] = array();
   $handler->display->display_options['filters']['field_query_src_hub_value']['expose']['label'] = 'Source';
   $handler->display->display_options['filters']['field_query_src_hub_value']['expose']['identifier'] = 'src_hub';
   $handler->display->display_options['filters']['field_query_src_hub_value']['expose']['optional'] = TRUE;
@@ -321,8 +315,6 @@ function ecenter_issues_views_default_views() {
   $handler->display->display_options['filters']['field_query_dst_hub_value']['field'] = 'field_query_dst_hub_value';
   $handler->display->display_options['filters']['field_query_dst_hub_value']['relationship'] = 'field_issue_query_nid';
   $handler->display->display_options['filters']['field_query_dst_hub_value']['exposed'] = TRUE;
-  $handler->display->display_options['filters']['field_query_dst_hub_value']['expose']['operator'] = 'field_query_dst_hub_value_op';
-  $handler->display->display_options['filters']['field_query_dst_hub_value']['expose']['limit_operators'] = array();
   $handler->display->display_options['filters']['field_query_dst_hub_value']['expose']['label'] = 'Destination';
   $handler->display->display_options['filters']['field_query_dst_hub_value']['expose']['identifier'] = 'dst_hub';
   $handler->display->display_options['filters']['field_query_dst_hub_value']['expose']['optional'] = TRUE;
@@ -331,18 +323,48 @@ function ecenter_issues_views_default_views() {
 
   /* Display: Page */
   $handler = $view->new_display('page', 'Page', 'page_1');
+  $handler->display->display_options['defaults']['use_ajax'] = FALSE;
+  $handler->display->display_options['defaults']['exposed_form'] = FALSE;
+  $handler->display->display_options['exposed_form']['type'] = 'better_exposed_filters';
+  $handler->display->display_options['exposed_form']['options']['submit_button'] = 'Filter results';
+  $handler->display->display_options['exposed_form']['options']['reset_button'] = TRUE;
+  $handler->display->display_options['exposed_form']['options']['sort_asc_label'] = 'Oldest';
+  $handler->display->display_options['exposed_form']['options']['sort_desc_label'] = 'Most recent';
+  $handler->display->display_options['exposed_form']['options']['bef'] = array(
+    'uid' => array(
+      'bef_format' => 'default',
+      'more_options' => array(
+        'bef_select_all_none' => '',
+        'bef_filter_description' => '',
+      ),
+    ),
+  );
+  $handler->display->display_options['exposed_block'] = TRUE;
   $handler->display->display_options['path'] = 'issues';
   $handler->display->display_options['menu']['type'] = 'normal';
   $handler->display->display_options['menu']['title'] = 'View issues';
   $handler->display->display_options['menu']['weight'] = '15';
   $handler->display->display_options['menu']['name'] = 'primary-links';
+
+  /* Display: Feed */
+  $handler = $view->new_display('feed', 'Feed', 'feed_1');
+  $handler->display->display_options['pager']['type'] = 'some';
+  $handler->display->display_options['style_plugin'] = 'rss';
+  $handler->display->display_options['style_options']['mission_description'] = FALSE;
+  $handler->display->display_options['row_plugin'] = 'node_rss';
+  $handler->display->display_options['row_options']['item_length'] = 'fulltext';
+  $handler->display->display_options['path'] = 'issues/feed';
+  $handler->display->display_options['displays'] = array(
+    'page_1' => 'page_1',
+    'default' => 0,
+  );
   $translatables['ecenter_issues'] = array(
     t('Defaults'),
     t('Network issues'),
     t('more'),
     t('Apply'),
     t('Reset'),
-    t('Sort By'),
+    t('Sort by'),
     t('Asc'),
     t('Desc'),
     t('Items per page'),
@@ -356,13 +378,17 @@ function ecenter_issues_views_default_views() {
     t(','),
     t('Last comment'),
     t('new comments'),
-    t('Node: Last comment time'),
-    t('Node: Post date'),
+    t('Created date'),
+    t('Last comment time'),
     t('Node: Updated date'),
-    t('Poster'),
+    t('Issue author'),
     t('Source'),
     t('Destination'),
     t('Page'),
+    t('Filter results'),
+    t('Oldest'),
+    t('Most recent'),
+    t('Feed'),
   );
 
   $views[$view->name] = $view;

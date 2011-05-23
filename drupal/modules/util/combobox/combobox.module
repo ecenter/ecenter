@@ -35,6 +35,7 @@ function combobox_elements() {
       '#multiple' => FALSE,
       '#attributes' => array('class' => 'form-combobox'),
       '#process' => array('form_expand_ahah'),
+      '#clear_button' => FALSE,
     ),
   );
 }
@@ -61,7 +62,12 @@ function theme_combobox($element) {
 
   // A dummy settings array is required, otherwise Drupal's array_merge behavior
   // while adding settings will mess up the data structure.
-  drupal_add_js(array('Combobox' => array($element['#id'])), 'setting');
+  drupal_add_js(array('Combobox' => array(
+    $element['#id'] => array(
+      'id' => $element['#id'],
+      'show_clear_button' => $element['#clear_button'],
+    )
+  )), 'setting');
 
   // "Borrowed" from the theme_select function
   $select = '';

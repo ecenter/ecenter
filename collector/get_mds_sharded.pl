@@ -104,8 +104,10 @@ my $MAX_THREADS = 10;
 #
 #    pattern to match on hLS names
  
-#our $HOST_MATCH = qr/((es|deemz)\.net|\w+\.gov|slac\.stanford\.edu)/i;
-our $HOST_MATCH = qr/nersc\.gov/i;
+our $HOST_MATCH = qr/((es|deemz)\.net|\w+\.gov|slac\.stanford\.edu)/i;
+#our $HOST_MATCH = qr/nersc\.gov/i;
+#our $HOST_MATCH = qr/((es|deemz)\.net|ornl.gov)/i;
+
 our $SERVICE_MATCH = qr/pinger|bwctl|owamp|traceroute/xim;
 
 our %SERVICE_PARAM = ( service => [qw/accessPoint address/], 
@@ -224,11 +226,14 @@ my %e2e_threads= ();
 foreach my $hls (@hlses) {
     $logger->debug("LSS INDEX BEFORE:	$hls"); 
     $logger->info("CHECKING HLS: $hls");  
-    #  if($hls !~ /(anl|ornl|lbl|lbnl|jlab|bnl)\.gov|es\.net|\w+.edu|dmz\.net|[\w\-]+\.org/) {
-    if($hls = ~ m|http://([\d\.]+)/|) {
-        my $ip = $1;
-     
+    my ($ip,   $part) =  $hls =~ m|^http://([\d\.]+)(\:\d+/.*)$|;
+    if($ip) {
+        my ($ip_addr2,  $hostname) = get_ip_name($ip);
+	$hls = "http://$hostname$part" 
+	    if $hostname; 
+	$logger->info("CHECKING HLS AGAIN: $hls"); 
     }
+    #  if($hls !~ /(anl|ornl|lbl|lbnl|jlab|bnl)\.gov|es\.net|\w+.edu|dmz\.net|[\w\-]+\.org/) {
     next unless(  $hls =~ $HOST_MATCH );
     
     ### run query/echo/ping async
@@ -268,7 +273,7 @@ sub remote_ls {
     my $dbh =  Ecenter::DB->connect('DBI:mysql:' . $OPTIONS{db},  $OPTIONS{user}, $OPTIONS{password}, {RaiseError => 1, PrintError => 1});
     $dbh->storage->debug(1) if $OPTIONS{debug};
     try {	      
-    	$logger->debug("\t\thLS:\t$accessPoint");
+    	$logger->info("\t\thLS:\t$accessPoint");
     	my ($ip_addr,$ip_name) = get_ip_name($accessPoint);		   
     	if($ip_addr) {
     	    my $echo_service = perfSONAR_PS::Client::Echo->new( $accessPoint );
@@ -401,10 +406,10 @@ sub get_fromHLS {
 	        $param_exist{$param} ||=   extract( find( $m1, "./*[local-name()='subject']//*[local-name()='$try']", 1 ), 0 );
 	    }
         }
-	 unless($param_exist{service} && $param_exist{service} =~ /^http/) {
-	    $logger->error("TID= $$  !!!! URL is missing in MD or its not http --- url=$param_exist{service} ");
+	if(!$param_exist{service} || $param_exist{service} !~ /^http/) {
+	    $logger->error("TID= $$  !!!! URL is missing in MD or its not http --- url=$param_exist{service} " . $m1->toString);
 	    next;
-	 }
+	}
 	$param_exist{is_alive} = 1;
 	$param_exist{updated} =  $now_str;
 	#if(!$param_exist{type} || $param_exist{type} =~ /^(MA|MP|TS)$/i) {
@@ -416,6 +421,7 @@ sub get_fromHLS {
 	#$param_exist{type} ||= 'N/A';
 	$param_exist{name} ||= 'N/A';
 	my ( $ip_noted , $nodename) = get_ip_name(  $param_exist{service} );
+	$param_exist{service} = "http://$nodename" if $nodename;
 	unless($ip_noted) {
 	    $logger->error("TID= $$  !!!! Unable to extract IP from $param_exist{service}   ");
 	    next;

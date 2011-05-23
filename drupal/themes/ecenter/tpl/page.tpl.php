@@ -62,7 +62,7 @@
     </div>
     <?php endif; ?>
 
-    <div id="content">
+    <div id="content" class="clearfix">
       <?php if ($breadcrumb): ?>
         <?php print $breadcrumb; ?>
       <?php endif; ?>

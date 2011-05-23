@@ -25,6 +25,20 @@ function ecenter_core_theme() {
 }
 
 /**
+ * Implementation of hook_menu().
+ */
+function ecenter_core_menu() {
+  $items = array();
+  $items['ecenter/timezone'] = array(
+    'title' => 'E-Center user\'s timezone',
+    'page callback' => 'ecenter_core_timezone',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
  * Implementation of hook_init().
  */
 function ecenter_core_init() {
@@ -67,6 +81,42 @@ function ecenter_core_form_alter(&$form, &$form_state, $form_id) {
     case 'search_block_form':
       unset($form['search_block_form']['#title']);
   }
+}
+
+/**
+ * Timezone callback (similar to date_timezone's user_timezone function
+ * but with GeoIP location, etc)
+ */
+function ecenter_core_timezone($abbr = '', $offset = -1, $dst = NULL) {
+  require_once('timezone.php');
+  global $_REQUEST;
+  $now = date_create();
+
+  // Geolocate based on client IP
+  if ($_SERVER['HTTP_X_FORWARDED_FOR']) {
+    $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+  } 
+  else {
+    $ip = $_SERVER['REMOTE_ADDR'];
+  }
+  $city = geoip_city($ip);
+  
+  if ($city) {
+    $ip_tz_name = get_time_zone($city->country_code, $city->region);
+    $ip_tz = timezone_open($ip_tz_name);
+    $ip_offset = timezone_offset_get($ip_tz, $now);
+
+    // If client offset and IP offset match, our work is done
+    if ($ip_offset == $offset) {
+      return drupal_json($ip_tz_name);
+    }
+  }
+
+  // If geolocated TZ is not same as client timezone, return best guess for
+  // client timezone.
+  $abbr = $abbr ? $abbr : '';
+  $client_tz_name = timezone_name_from_abbr($abbr, intval($offset), $dst);
+  return drupal_json($client_tz_name);
 }
 
 /**

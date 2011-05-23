@@ -4,6 +4,9 @@
  * E-Center theme CSS style
  */
 
+// Debugging
+.krumo-root { width: 600px; }
+
 /* --- Less CSS Variables --- */
 /* Variables: Measurements {{{ */
 @default_corner_radius: 5px;
@@ -18,6 +21,10 @@
 @color_yellow:    #ffffaa;
 @color_dark_red:  #700707;
 @color_light_red: #ffa4a4;
+
+@color_red: #d92020;
+@color_green: #00ff00;
+@color_orange: #f68104;
 
 @color_white:   #ffffff;
 @color_grey_93: #eeeeee;
@@ -155,6 +162,9 @@
     border: 1px solid @color_grey_20;
     cursor: default;
     text-decoration: none !important;
+  }
+  &.disabled {
+    .vertical_glass_gradient(@color_grey_80; @color_grey_73; @color_grey_80);
   }
 }
 // For making buttons look like links
@@ -431,7 +441,6 @@ a {
   }
 } // }}}
 #page-wrapper { // Page wrapper {{{
-  .shadow(0; 5px; 3px; @color_grey_20;);
   background-color: @color_grey_87;
 } // }}}
 #content { // Content {{{
@@ -482,35 +491,43 @@ a {
 /* Tables {{{ */
   table {
     border-collapse: collapse;
-  }
-  table thead th {
-    font-weight: bold;
-    font-size: 0.875em;
-    color: @color_grey_40;
-  }
-  table thead th.empty {
-    border-bottom: 1px solid #fff;
-  }
-  table tbody th {
-    font-weight: normal;
-    background-color: @color_grey_93;
-    color: @color_grey_33;
-  }
-  table td, table th {
-    text-align: left;
-    padding: 2px 11px 2px 11px;
-    border: 2px solid @color_white;
-  }
-  table td {
-    font-weight: bold;
-    background-color: @color_grey_87;
-    color: @color_grey_27;
-    line-height: 1.5;
-  }
-  table tr:hover td, table tbody tr:hover th {
-    background-color: @color_grey_80;
-    color: @color_black;
-  }
+    thead th {
+      font-weight: bold;
+      font-size: 0.875em;
+      color: @color_grey_40;
+    }
+    thead th.empty {
+      border-bottom: 1px solid #fff;
+    }
+    tbody th {
+      font-weight: normal;
+      background-color: @color_grey_93;
+      color: @color_grey_33;
+    }
+    td, th {
+      text-align: left;
+      padding: 2px 11px 2px 11px;
+      border: 2px solid @color_white;
+    }
+    td {
+      font-weight: bold;
+      background-color: @color_grey_87;
+      color: @color_grey_27;
+      line-height: 1.5;
+    }
+    tr:hover td, tbody tr:hover th {
+      background-color: @color_grey_80;
+      color: @color_black;
+    }
+    table {
+      margin: 0;
+      td, th {
+        padding-left: 0;
+        border: none;
+        background-color: transparent;
+      }
+    }
+  } 
   /* }}} */
   /* Lists {{{ */
   ul, ol {
@@ -647,58 +664,70 @@ a {
 .comment-wrapper-title {
   border-bottom: 1px solid #999;
 }
-#comments .box {
-  float: none;
+#comments {
+  .box {
+    float: none;
+    h2, .box-title {
+      font-size: 1.2em;
+      line-height: 1.25;
+      margin-bottom: 1em;
+      border-bottom: 1px solid #999;
+    }
+  }
+  .picture {
+    float: left;
+    margin-right: 5px;
+    img {
+      height: 30px;
+      width: 30px;
+    }
+  }
+  .comment-title {
+    display: none;
+  }
+  .comment {
+    margin-bottom: 1.5em;
+    border-bottom: 1px solid #ccc;
+    .content {
+      font-size: .875em;
+      margin-left: 30px;
+      margin-bottom: .75em;
+    }
+  }
+  .indented {
+    margin-left: 30px;
+  }
+  .links {
+    margin-left: 30px;
+    li {
+      list-style-type: none;
+      float: left;
+      margin: 0;
+      a {
+        .box;
+        .button;
+        font-size: @font_size_13;
+        line-height: 1;
+        margin-right: 4px;
+      }
+    }
+  }
 }
-#comments .comment {
-  margin-bottom: 3em;
-}
-#comments .picture {
-  float: left;
-}
-#comments .comment-title {
-  display: none;
-}
-#comments .comment .content {
-  font-size: .875em;
-  margin-left: 38px;
-  margin-bottom: .75em;
-}
-#comments .links {
-  margin-left: 38px;
-}
-#comments .links li {
-  list-style-type: none;
-  float: left;
-  margin: 0;
-}
-#comments .links li a {
-  .box;
-  .button;
-  font-size: @font_size_13;
-  line-height: 1;
-  margin-right: 4px;
-}
-#comment-form .form-item {
-  margin-bottom: .5em;
-}
-#comment-form label {
-  float: left;
-  width: 110px;
-  font-size: .875em;
-  line-height: 1.9;
-}
-#comment-form #edit-comment-wrapper .resizable-textarea {
-  width: 500px;
-}
-#comment-form #edit-comment-wrapper .grippie {
-  margin-left: 110px;
-}
-#comments .box h2 {
-  font-size: 1.2em;
-  line-height: 1.25;
-  margin-bottom: .5em;
-  border-bottom: 1px solid #999;
+#comment-form {
+  .form-item {
+    margin-bottom: .5em;
+  }
+  label {
+    float: left;
+    width: 110px;
+    font-size: .875em;
+  }
+  #edit-comment-wrapper .resizable-textarea {
+    width: 500px;
+  }
+  #edit-comment-wrapper .grippie {
+    margin-left: 110px;
+  }
 }
 /* }}} */
 /* oEmbed {{{ */
@@ -804,6 +833,9 @@ a {
   }
   input, button {
     .round_corner;
+  }
+  input.disabled {
+    background-color: @color_grey_87;
   }
   textarea {
     font-family: @font_liberation_mono;
@@ -917,7 +949,35 @@ a {
   }
 } // }}}
 .ui-datepicker { // jQuery UI Datepicker {{{
-  font-size: .8em;
+  .round_corner;
+  font-size: .8em !important;
+  z-index: 10 !important;
+  background-color: @color_white !important;
+  border: 1px solid #aaa !important;
+  padding: 1px 5px !important;
+  table {
+    th {
+      background-color: #ccc;
+    }
+    td, th {
+      border: 2px solid @color_white;
+      text-align: center !important;
+      padding: 1px !important;
+    }
+    td {
+      background-color: #ddd;
+      :hover {
+        background-color: #ccc;
+      }
+      &.ui-datepicker-unselectable {
+        background-color: #eee;
+      }
+      a {
+        text-align: center !important;
+        padding: 0 !important;
+      }
+    }
+  }
 } // }}}
 #content table.mceLayout { // TinyMCE {{{
   border: 1px solid #aaa;
@@ -939,7 +999,7 @@ a {
     font-size: 10px;
   }
 } // }}}
-.page-network { // Network diagnostic display {{{
+.page-network-weathermap { // Network diagnostic display {{{
   #content, #network-wrapper { // Content {{{
     padding: 0;
     width: 975px;
@@ -956,6 +1016,7 @@ a {
     .hide;
   } // }}}
   #network-wrapper { // {{{
+    position: relative;
     border-bottom: 1px solid @color_grey_60;
     background-color: @color_grey_87;
   } // }}}
@@ -1035,7 +1096,7 @@ a {
     #recent-select {
       .box;
       width: 300px;
-      margin-bottom: 2em;
+      margin-bottom: 1em;
       margin-top: .75em;
       .form-option {
         float: left;
@@ -1044,7 +1105,24 @@ a {
         label { font-weight: normal; }
       }
     }
-    #src-wrapper, #dst-wrapper, #date-select { // {{{
+    #date-select {
+      .box;
+      margin-bottom: 1em;
+    }
+    #or-wrapper {
+      .box;
+      width: 280px;
+      font-weight: bold;
+      margin-bottom: 1em;
+      font-size: @font_size_14;
+      line-height: 1;
+      padding: 3px 0;
+      text-transform: uppercase;
+      text-align: center;
+      border-top: 1px solid #aaa;
+      border-bottom: 1px solid #aaa;
+    }
+    #src-wrapper, #dst-wrapper, #date-select, #timezone-select { // {{{
       .box;
       width: 300px;
       .form-item {
@@ -1061,7 +1139,7 @@ a {
         .box;
         width: 140px;
       }
-      .dst-wrapper input, .src-wrapper input {
+      input.ui-widget {
         .round_corner(5px; 0; 0; 5px;);
         border-right: none;
       }
@@ -1092,10 +1170,13 @@ a {
       &:hover {
         button.ui-button, input {
           border-color: @color_grey_40;
+          &.disabled {
+            border-color: @color_grey_67;
+          }
         }
       }
     } // }}}
-    #date-description-wrapper, #instructions { // {{{
+    #date-description-wrapper, .instructions { // {{{
       width: 285px;
       float: left;
       margin-top: .75em;
@@ -1117,14 +1198,13 @@ a {
       color: #888;
     }
   } // }}}
-  #results { // {{{
+  #results-wrapper { // {{{
     .page_padding;
     position: relative;
     z-index: 10;
     background-color: @color_white;
   } // }}}
   #recent-queries { // {{{
-    .page_padding;
     font-size: @font_size_18;
     fieldset {
       .fieldset-title {
@@ -1621,3 +1701,40 @@ body.modal {
   }
 }
 /* }}} */
+/* Network health {{{ */
+#content table.network-health {
+  td {
+    background-color: @color_grey_93;
+  }
+  thead {
+    th {
+      font-size: .825em;
+      text-align: center;
+    }
+  }
+  tbody {
+    td {
+      width: 65px;
+    }
+  }
+  table {
+    font-size: .825em;
+  }
+  .marker {
+    width: 12px;
+    height: 12px;
+    margin: 0 auto;
+    border: 1px solid @color_grey_40;
+    &.critical {
+      background-color: @color_red;
+    }
+    &.marginal {
+      background-color: @color_orange;
+    }
+    &.normal {
+      background-color: @color_green;
+    }
+  }
+}
+/* }}} */
+

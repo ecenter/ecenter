@@ -22,7 +22,8 @@ function template_preprocess_ecenter_network_data(&$vars) {
   // Generate date range -- internal date is stored as UTC
   $dates = array();
   foreach (array('start', 'end') as $val) {
-    $dates[$val] = _ecenter_network_utc_to_local($vars['params'][$val], 'M j, Y H:i');
+    $dates[$val] = _ecenter_network_utc_to_local($vars['params'][$val], 
+      'M j, Y H:i', $vars['params']['timezone']);
   }
 
   $vars['title'] = t('<span class="src-dst">@src_hub_name (@src_hub) to
@@ -40,49 +41,50 @@ function template_preprocess_ecenter_network_data(&$vars) {
 
   // Set title
   drupal_set_title(t('E-Center Network Query | ') . $vars['title']);
-  
-  if (!$_GET['modal']) {
-    // Generate permalink
-    $vars['permalink'] = l(t('Permanent link (bookmark and share results)'), 'network', array(
-      'query' => $vars['params'],
-      'absolute' => TRUE,
-      'attributes' => array('title' => $vars['title']),
-    ));
-    $permalink_field['permalink'] = array(
-      '#id' => 'ecenter-permalink',
-      '#type' => 'textfield',
-      '#size' => 115,
-      '#attributes' => array('readonly' => 1),
-      '#value' => urldecode(url('network',
-        array('query' => $vars['params'], 'absolute' => TRUE,)
-      )),
+
+  // Links and issue queries shouldn't take timezone argument 
+  unset($vars['params']['timezone']);
+
+  // Generate permalink
+  $vars['permalink'] = l(t('Permanent link (bookmark and share results)'), 'network', array(
+    'query' => $vars['params'],
+    'absolute' => TRUE,
+    'attributes' => array('title' => $vars['title']),
+  ));
+  $permalink_field['permalink'] = array(
+    '#id' => 'ecenter-permalink',
+    '#type' => 'textfield',
+    '#size' => 115,
+    '#attributes' => array('readonly' => 'readonly'),
+    '#value' => urldecode(url('network',
+      array('query' => $vars['params'], 'absolute' => TRUE,)
+    )),
+  );
+  $vars['permalink_field'] = drupal_render($permalink_field);
+
+  // Generate issue link -- encode params for use with custom ecenter_issues
+  // module
+  if (module_exists('ecenter_issues') && user_access('create issue content')) {
+    $issue_params = array();
+    foreach ($vars['params'] as $key=>$param) {
+      $issue_params[] = "$key=$param";
+    }
+    $issue_query = urlencode(implode('&', $issue_params));
+
+    $vars['issuelink'] = l('Create issue from these results', 'node/add/issue',
+      array(
+        'query' => array('query' => $issue_query),
+      )
     );
-    $vars['permalink_field'] = drupal_render($permalink_field);
 
-    // Generate issue link -- encode params for use with custom ecenter_issues
-    // module
-    if (module_exists('ecenter_issues') && user_access('create issue content')) {
-      $issue_params = array();
-      foreach ($vars['params'] as $key=>$param) {
-        $issue_params[] = "$key=$param";
+    $query = ecenter_issues_get_query_node($vars['params']);
+    if ($query->nid) {
+      $issue_links = array();
+      $issues = ecenter_issues_get_query_issues($query);
+      foreach ($issues as $issue) {
+        $issue_links[] = l($issue->title, 'node/'. $issue->nid) . t(' by ') . $issue->name;
       }
-      $issue_query = urlencode(implode('&', $issue_params));
-
-      $vars['issuelink'] = l('Create issue from these results', 'node/add/issue',
-        array(
-          'query' => array('query' => $issue_query),
-        )
-      );
-
-      $query = ecenter_issues_get_query_node($vars['params']);
-      if ($query->nid) {
-        $issue_links = array();
-        $issues = ecenter_issues_get_query_issues($query);
-        foreach ($issues as $issue) {
-          $issue_links[] = l($issue->title, 'node/'. $issue->nid) . t(' by ') . $issue->name;
-        }
-        $vars['issues'] = '<label>'. t('Issues from this query: ') .'</label>'. implode(', ', $issue_links);
-      }
+      $vars['issues'] = '<label>'. t('Issues from this query: ') .'</label>'. implode(', ', $issue_links);
     }
   }
 
@@ -92,6 +94,99 @@ function template_preprocess_ecenter_network_data(&$vars) {
 
   // Per-hop measurements
   $vars['hops'] = theme('ecenter_network_hops', $vars['data']['hops']);
+}
+
+/**
+ * Theme end to end data table
+ */
+function template_preprocess_ecenter_network_end_to_end(&$vars) {
+  $data = $vars['data'];
+  $statistics_table = array();
+  $data_tables = array();
+
+  foreach ($data as $test => $directions) {
+    $start = 0;
+    $end = 0;
+
+    foreach ($directions as $direction => $measurements) {
+      foreach ($measurements as $measurement => $values) {
+        // Suggestion array to format values
+        $value_suggestions = array(
+          'ecenter_network_format_'. $test .'_'. $measurement,
+          'ecenter_network_format_'. $test,
+          'ecenter_network_format_default',
+        );
+
+        // Process stats table
+        if (($statistics = $values['statistics']) && is_array($statistics)) {
+          // Suggestion array to format value labels
+          $label_suggestions = array(
+            'ecenter_network_format_'. $test .'_'. $measurement .'_label',
+            'ecenter_network_format_'. $test .'_label',
+            'ecenter_network_format_default_label',
+          );
+
+          $row = array();
+          foreach ($statistics as $key => $value) {
+            $row[$key] = array('data' => theme($value_suggestions, $value,
+              $test, $measurement), 'class' => $key);
+          }
+          $header = array(
+            'header' => TRUE,
+            'data' => theme($label_suggestions, $measurement, $test,
+              $direction, TRUE),
+          );
+          // Create table row for theming
+          $table[$test .'_'. $measurement .'_'. $direction] = array(
+            'data' => array($header) + $row,
+            'class' => $test .'-'. $measurement .' '. $test .'-'. $measurement
+              .'-'. $direction,
+          );
+        }
+
+        if (($timeseries = $values['timeseries']) && is_array($timeseries)
+          && $values['statistics']['max'] > 0) {
+          $data_table = array();
+          $i = 1;
+          ksort($timeseries);
+
+          $time_range = array_keys($timeseries);
+          $max = max($time_range);
+          $min = min($time_range);
+          $end = ($max > $end) ? $max : $end;
+          $start = ($start == 0 || $min < $start) ? $min : $start;
+
+          foreach ($timeseries as $timestamp => $value) {
+            $time = _ecenter_network_timestamp_to_local($timestamp);
+            $data_table[] = array(
+              array('data' => $time, 'header' => TRUE),
+              theme($value_suggestions, $value, $test, $measurement, FALSE)
+            );
+          }
+          $data_tables[$test][$measurement][$direction] = $data_table;
+          $data_tables[$test][$measurement]['start'] = $start;
+          $data_tables[$test][$measurement]['end'] = $end;
+        }
+      }
+    }
+  }
+
+  if (!empty($table)) {
+    // Sort table
+    ksort($table);
+
+    $headers = array(
+      array('data' => 'Measurement', 'class' => 'result-header',),
+      t('Average'), t('Max'), t('Min'),
+    );
+    $vars['table'] = theme('jqplot_table', $headers, $table,
+      array('class' => 'end-to-end-table'));
+    $vars['data_tables'] = theme('ecenter_network_end_to_end_tables',
+      $data_tables);
+  }
+  else {
+    $vars['table'] = '<p>'. t('No end-to-end results available.') .'</p>';
+  }
 }
 
 /**
@@ -268,99 +363,6 @@ function theme_ecenter_network_hops($hops = array()) {
 }
 
 /**
- * Theme end to end data table
- */
-function template_preprocess_ecenter_network_end_to_end(&$vars) {
-  $data = $vars['data'];
-  $statistics_table = array();
-  $data_tables = array();
-
-  foreach ($data as $test => $directions) {
-    $start = 0;
-    $end = 0;
-
-    foreach ($directions as $direction => $measurements) {
-      foreach ($measurements as $measurement => $values) {
-        // Suggestion array to format values
-        $value_suggestions = array(
-          'ecenter_network_format_'. $test .'_'. $measurement,
-          'ecenter_network_format_'. $test,
-          'ecenter_network_format_default',
-        );
-
-        // Process stats table
-        if (($statistics = $values['statistics']) && is_array($statistics)) {
-          // Suggestion array to format value labels
-          $label_suggestions = array(
-            'ecenter_network_format_'. $test .'_'. $measurement .'_label',
-            'ecenter_network_format_'. $test .'_label',
-            'ecenter_network_format_default_label',
-          );
-
-          $row = array();
-          foreach ($statistics as $key => $value) {
-            $row[$key] = array('data' => theme($value_suggestions, $value,
-              $test, $measurement), 'class' => $key);
-          }
-          $header = array(
-            'header' => TRUE,
-            'data' => theme($label_suggestions, $measurement, $test,
-              $direction, TRUE),
-          );
-          // Create table row for theming
-          $table[$test .'_'. $measurement .'_'. $direction] = array(
-            'data' => array($header) + $row,
-            'class' => $test .'_'. $measurement .' '. $test .'_'. $measurement
-              .'_'. $direction,
-          );
-        }
-
-        if (($timeseries = $values['timeseries']) && is_array($timeseries)
-          && $values['statistics']['max'] > 0) {
-          $data_table = array();
-          $i = 1;
-          ksort($timeseries);
-
-          $time_range = array_keys($timeseries);
-          $max = max($time_range);
-          $min = min($time_range);
-          $end = ($max > $end) ? $max : $end;
-          $start = ($start == 0 || $min < $start) ? $min : $start;
-
-          foreach ($timeseries as $timestamp => $value) {
-            $time = _ecenter_network_timestamp_to_local($timestamp);
-            $data_table[] = array(
-              array('data' => $time, 'header' => TRUE),
-              theme($value_suggestions, $value, $test, $measurement, FALSE)
-            );
-          }
-          $data_tables[$test][$measurement][$direction] = $data_table;
-          $data_tables[$test][$measurement]['start'] = $start;
-          $data_tables[$test][$measurement]['end'] = $end;
-        }
-      }
-    }
-  }
-
-  if (!empty($table)) {
-    // Sort table
-    ksort($table);
-
-    $headers = array(
-      array('data' => 'Measurement', 'class' => 'result-header',),
-      t('Average'), t('Max'), t('Min'),
-    );
-    $vars['table'] = theme('jqplot_table', $headers, $table,
-      array('class' => 'end-to-end-table'));
-    $vars['data_tables'] = theme('ecenter_network_end_to_end_tables',
-      $data_tables);
-  }
-  else {
-    $vars['table'] = '<p>'. t('No end-to-end results available.') .'</p>';
-  }
-}
-
-/**
  * Theme end to end data tables for plotting
  */
 function theme_ecenter_network_end_to_end_tables($tables) {
@@ -413,119 +415,6 @@ function theme_ecenter_network_end_to_end_tables($tables) {
     }
   }
   return $output;
-}
-
-/**
- * Implementation of hook_ecenter_network_plot_options_alter().
- */
-function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurement, $type) {
-  $options['series'] = array(
-    array('label' => t('Forward'),),
-    array('label' => t('Reverse'),),
-  );
-  $line_options = array(
-    'highlighter' => array(
-      'show' => TRUE,
-      'sizeAdjust' => 0,
-      'lineWidthAdjust' => 0,
-      'tooltipLocation' => 'n',
-      'tooltipOffset' => 10,
-      'tooltipSeparator' => ': ',
-    ),
-    'cursor' => array(
-      'show' => TRUE,
-      'showTooltip' => FALSE,
-      'zoom' => TRUE,
-      'clickReset' => TRUE,
-    ),
-  );
-  switch ($measurement) {
-    case 'throughput':
-      $options['axes']['yaxis']['label'] = t('mbps');
-      $options['seriesDefaults']['renderer'] = '$.jqplot.BarRenderer';
-      $options['seriesDefaults']['rendererOptions'] = array(
-        'barWidth' => 7,
-      );
-      return;
-    case 'max_delay':
-    case 'min_delay':
-    case 'maxRtt':
-    case 'minRtt':
-    case 'medianRtt':
-    case 'meanRtt':
-    case 'maxIpd':
-    case 'minIpd':
-    case 'medianIpd':
-    case 'meanIpd':
-      $options += $line_options;
-      $options['axes']['yaxis']['min'] = 0;
-      $options['axes']['yaxis']['label'] = t('milliseconds');
-      $options['axes']['yaxis']['tickOptions']['formatString'] = '%01.1f';
-      $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%dms</span>';
-      return;
-    case 'loss':
-      $options += $line_options;
-      $options['axes']['yaxis']['min'] = 0;
-      $options['axes']['yaxis']['label'] = t('loss');
-      $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%d</span>';
-      return;
-    case 'utilization':
-      $options += $line_options;
-      $options['axes']['yaxis']['label'] = t('% utilization');
-      $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%d%</span>';
-      return;
-  }
-}
-
-/**
- * Get plot options template
- */
-function _ecenter_network_plot_options_template() {
-  return array( 
-    'seriesDefaults' => array(
-      'lineWidth' => 1.5,
-      'shadow' => FALSE,
-      'fill' => FALSE,
-      'markerOptions' => array(
-        'size' => 3,
-        'shadow' => FALSE,
-      ),
-    ),
-    'legend' => array(
-      'location' => 'se',
-      'xoffset' => 1,
-      'yoffset' => 1,
-    ),
-    'seriesColors' => array('#035dc5', '#a71932', '#133f52', '#e34605', '#672b18', '#049e33',  '#650fc2',),
-    'axes' => array(
-      'xaxis' => array(
-        'autoscale' => TRUE,
-        'numberTicks' => 9,
-        'renderer' => '$.jqplot.DateAxisRenderer',
-        'tickOptions' => array(
-          'formatString' => "%H:%M",
-        ),
-        'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
-      ),
-      'yaxis' => array(
-        'autoscale' => TRUE,
-        'numberTicks' => 4,
-        'tickOptions' => array(
-          'formatString' => '%d',
-        ),
-        'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
-        'labelOptions' => array(
-          'fontSize' => '11px',
-        ),
-      ),
-    ),
-    'grid' => array(
-      'shadow' => FALSE,
-      'borderWidth' => 0,
-      'background' => '#ffffff',
-      'gridLineColor' => '#cccccc',
-    ),
-  );
 }
 
 /**
@@ -637,17 +526,213 @@ function theme_ecenter_network_utilization_table($table, $hop) {
  */
 function theme_ecenter_network_hop_option($hop) {
   switch ($hop['type']) {
-    case 'hub':
-      return check_plain($hop['hub_name']);
     case 'ip':
       return check_plain($hop['hub_name']) .' ('. check_plain($hop['hub']) .' - '. check_plain($hop['ip_noted']) .')';
+    default:
+      return check_plain($hop['hub_name']);
   }
 }
 
 /**
- * Theme E-center network health display
+ * Theme health display
  */
-function theme_ecenter_network_health($data) {
-  dpm($data);
-  return 'stub';  
+function template_preprocess_ecenter_network_health(&$vars) {
+  drupal_add_js(drupal_get_path('module', 'ecenter_network') .
+    '/js/behaviors-health.js');
+
+  $data = $vars['data'];
+
+  $sources = ecenter_network_get_hops();
+  $metadata = array_intersect_key($data['metadata'], $sources['hubs']);
+
+  // Convert times
+  $vars['start'] = _ecenter_network_utc_to_local($vars['start'], 'Y-m-d H:i');
+  $vars['end'] = _ecenter_network_utc_to_local($vars['end'], 'Y-m-d H:i');
+
+  // Metadata count
+  $header = array(t('Hub'));
+  $header_created = FALSE;    
+  $rows = array();
+  
+  foreach ($metadata as $hub => $measurements) {
+    $row = array(
+      array(
+        'data' => $hub,
+        'header' => TRUE,
+      ),
+    );
+    foreach ($measurements as $key => $values) {
+      if (!$header_created) {
+        $header[] = t($key);
+      }
+
+      $metadata_count = $values['metadata_count'];
+      unset($values['metadata_count']);
+
+      $cached_data_count = 0;
+      foreach ($values as $month => $month_data) {
+        $cached_data_count += $month_data['cached_data_count'];
+      }
+
+      $row[] = theme('ecenter_network_health_row', $metadata_count, $cached_data_count);
+    }
+    $rows[] = $row;
+    $header_created = TRUE;
+  }
+  $vars['health_table'] = theme('table', $header, $rows, array('class' => 'network-health'));
+
+  // Period table
+  $header = array(t('Measurement'), t('Start'), t('End'));
+  $rows = array();
+  
+  foreach ($data['time_period'] as $measurement => $period) {
+    $rows[] = array(
+      array(
+        'data' => t($measurement),
+        'header' => TRUE,
+      ),
+      _ecenter_network_timestamp_to_local($period['start'], 'Y-m-d H:i'),
+      _ecenter_network_timestamp_to_local($period['end'], 'Y-m-d H:i'),
+    );
+  }
+  $vars['period_table'] = theme('table', $header, $rows);
 }
+
+function theme_ecenter_network_health_row($metadata_count = 0, $cached_data_count = 0) {
+  $rows = array(
+    'metadata_count' => array(
+      array('data' => t('Metadata'), 'header' => TRUE),
+      $metadata_count,
+    ),
+    'cached_data_count' => array(
+      array('data' => t('Cached data'), 'header' => TRUE),
+      $cached_data_count,
+    ),
+  );
+
+  if ($metadata_count == 0) {
+    $class = 'critical';
+  }
+  else if ($cached_data_count == 0) {
+    $class = 'marginal';
+  }
+  else {
+    $class = 'normal';
+  }
+
+  return theme('table', array(), $rows, array('class' => $class));
+}
+
+/**
+ * Get plot options template
+ */
+function _ecenter_network_plot_options_template() {
+  return array( 
+    'seriesDefaults' => array(
+      'lineWidth' => 1.5,
+      'shadow' => FALSE,
+      'fill' => FALSE,
+      'markerOptions' => array(
+        'size' => 3,
+        'shadow' => FALSE,
+      ),
+    ),
+    'legend' => array(
+      'location' => 'se',
+      'xoffset' => 1,
+      'yoffset' => 1,
+    ),
+    'seriesColors' => array('#035dc5', '#a71932', '#133f52', '#e34605', '#672b18', '#049e33',  '#650fc2',),
+    'axes' => array(
+      'xaxis' => array(
+        'autoscale' => TRUE,
+        'numberTicks' => 9,
+        'renderer' => '$.jqplot.DateAxisRenderer',
+        'tickOptions' => array(
+          'formatString' => "%H:%M",
+        ),
+        'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
+      ),
+      'yaxis' => array(
+        'autoscale' => TRUE,
+        'numberTicks' => 4,
+        'tickOptions' => array(
+          'formatString' => '%d',
+        ),
+        'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
+        'labelOptions' => array(
+          'fontSize' => '11px',
+        ),
+      ),
+    ),
+    'grid' => array(
+      'shadow' => FALSE,
+      'borderWidth' => 0,
+      'background' => '#ffffff',
+      'gridLineColor' => '#cccccc',
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_ecenter_network_plot_options_alter().
+ */
+function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurement, $type) {
+  $options['series'] = array(
+    array('label' => t('Forward'),),
+    array('label' => t('Reverse'),),
+  );
+  $line_options = array(
+    'highlighter' => array(
+      'show' => TRUE,
+      'sizeAdjust' => 0,
+      'lineWidthAdjust' => 0,
+      'tooltipLocation' => 'n',
+      'tooltipOffset' => 10,
+      'tooltipSeparator' => ': ',
+    ),
+    'cursor' => array(
+      'show' => TRUE,
+      'showTooltip' => FALSE,
+      'zoom' => TRUE,
+      'clickReset' => TRUE,
+    ),
+  );
+  switch ($measurement) {
+    case 'throughput':
+      $options['axes']['yaxis']['label'] = t('mbps');
+      $options['seriesDefaults']['renderer'] = '$.jqplot.BarRenderer';
+      $options['seriesDefaults']['rendererOptions'] = array(
+        'barWidth' => 7,
+      );
+      return;
+    case 'max_delay':
+    case 'min_delay':
+    case 'maxRtt':
+    case 'minRtt':
+    case 'medianRtt':
+    case 'meanRtt':
+    case 'maxIpd':
+    case 'minIpd':
+    case 'medianIpd':
+    case 'meanIpd':
+      $options += $line_options;
+      $options['axes']['yaxis']['min'] = 0;
+      $options['axes']['yaxis']['label'] = t('milliseconds');
+      $options['axes']['yaxis']['tickOptions']['formatString'] = '%01.1f';
+      $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%dms</span>';
+      return;
+    case 'loss':
+      $options += $line_options;
+      $options['axes']['yaxis']['min'] = 0;
+      $options['axes']['yaxis']['label'] = t('loss');
+      $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%d</span>';
+      return;
+    case 'utilization':
+      $options += $line_options;
+      $options['axes']['yaxis']['label'] = t('% utilization');
+      $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%d%</span>';
+      return;
+  }
+}
+

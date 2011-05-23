@@ -105,7 +105,7 @@ sub get_datums {
         $end_time   =  $datum->timestamp if  $datum->timestamp > $end_time;
         $start_time =  $datum->timestamp if  $datum->timestamp < $start_time;
     }
-    if($type =~ /^owamp|pinger|bwctl|snmp$/) {
+    if($type =~ /^owamp|pinger|snmp$/) {
         @{$result} = @{refactor_result($results_raw, $type, $resolution)} if $results_raw && @{$results_raw};
     } else {
         @{$result} =  @{$results_raw};
@@ -146,7 +146,7 @@ sub refactor_result {
 	        $result->[$j][1]{capacity} =  $data_raw->[$i][1]{capacity};
 	        map {$result->[$j][1]{$_} += $data_raw->[$i][1]{$_}?$data_raw->[$i][1]{$_}:0 }   qw/errors drops/;
 	    } else {
-	        map {$result->[$j][1]{$_}  += $data_raw->[$i][1]{$_}?$data_raw->[$i][1]{$_}:0}  keys %{$data_raw->[$i][1]};
+	        map {$result->[$j][1]{$_}  += $data_raw->[$i][1]{$_}?$data_raw->[$i][1]{$_}:0} grep(!/timestamp/, keys %{$data_raw->[$i][1]});
 	    }	
  
 	    if( $j > $old_j || $i == ($count-1) ) {
@@ -155,7 +155,7 @@ sub refactor_result {
 		#                                  ($result->[$old_j][1]{$_}/$count_j):
 		#				     $result->[$old_j][1]{$_}; } 
 		#			        keys %{$data_raw->[$i][1]};
-		$result->[$old_j][0] = ($result->[$old_j][0] &&  $count_j)?int($result->[$old_j][0]/$count_j):$result->[$old_j][0];
+		$result->[$old_j][0] = int(($result->[$old_j][0] &&  $count_j)?($result->[$old_j][0]/$count_j):$result->[$old_j][0]);
 	        if($type eq 'snmp') { 
 		    $result->[$old_j][1]{utilization} /=    $count_j  if $result->[$old_j][1]{utilization} &&  $count_j;
 	        } else {
@@ -164,9 +164,8 @@ sub refactor_result {
 		 				     $result->[$old_j][1]{$_}  } 
 		 			        keys %{$data_raw->[$i][1]}; 
 		}
-		$count_j = 0; 
- 
-	        $old_j = $j; 
+		$count_j = 0;
+	        $old_j = $j;
 	    }
 	    $count_j++;       
 	    #debug "REFACTOR: i=$i j=$j old_j=$old_j count_j=$count_j  raw=$data_raw->[$i][0]  result=$result->[$old_j][0] new=$result->[$j][0] ";
@@ -195,8 +194,9 @@ sub get_ip_name {
     if($unt_test =~ /^([\d\.]+|[\dabcdef\:]+)$/i) {
         if(!Net::CIDR::cidrlookup( $unt_test, ( "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16" ) ) &&
            (is_ipv4($unt_test)  ||  &Net::IPv6Addr::is_ipv6( $unt_test ))) {
-	    $logger->debug(" Its IP: $unt_test  "); 
-            return ($unt_test, gethostbyaddr(Socket::inet_aton($unt_test), Socket::AF_INET));
+	    my $ip_resolved =  gethostbyaddr(Socket::inet_aton($unt_test), Socket::AF_INET);
+	    $logger->info(" Its IP: $unt_test , name= $ip_resolved");    
+            return ($unt_test, $ip_resolved );
 	 } else {
 	    return;
 	 }

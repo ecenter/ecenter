@@ -142,7 +142,7 @@ after 'get_data' => sub  {
     foreach my $key_id  (keys %{$metaids}) {
 	foreach my $id ( keys %{$metaids->{$key_id}{data}}) {
 	   foreach my $timev   (sort {$a <=> $b} keys %{$metaids->{$key_id}{data}{$id}}) {
-	            push   @data,  [$timev ,  $metaids->{$key_id}{data}{$id}{$timev}];
+	            push   @data,  [$timev,  $metaids->{$key_id}{data}{$id}{$timev}];
 	    }  
 	   
 	 } 

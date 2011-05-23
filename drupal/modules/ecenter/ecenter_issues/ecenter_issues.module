@@ -21,45 +21,11 @@
 include_once('ecenter_issues.features.inc');
 
 /**
- * Implementation of hook_theme().
- */
-function ecenter_issues_theme() {
-  $registry = array(
-    'ecenter_issues_data_link' => array(
-      'arguments' => array(
-        'path' => NULL,
-        'params' => NULL,
-        'title' => NULL,
-      )
-    ),
-    'ecenter_issues_formatter_query_link' => array(
-      'arguments' => array('element' => NULL),
-    ),
-  );
-  return $registry;
-}
-
-/**
  * Implementation of hook_perm().
  */
 function ecenter_issues_perm() {
   return array('access ecenter issue query values');
 }
-
-
-/**
-* Implementation of hook_field_formatter_info().
-*/
-function ecenter_issues_field_formatter_info() {
-  return array(
-    'query_link' => array(
-      'label' => t('E-Center Query Link'),
-      'field types' => array('nodereference'),
-      'multiple values' => CONTENT_HANDLE_CORE,
-    ),
-  );
-}
-
 
 /**
  * Implementation of hook_init().
@@ -70,19 +36,6 @@ function ecenter_issues_init() {
   }
   if (arg(0) == 'issues' || $node->type == 'issue') {
     drupal_add_css(drupal_get_path('module', 'ecenter_issues') .'/css/ecenter-issues.css');
-  }
-}
-
-/**
- * Implementation of hook_nodeapi().
- */
-function ecenter_issues_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
-  if ($node->type == 'issue' && $op == 'load') {
-    $query = ecenter_issues_get_node_query($node);
-    $node->ecenter_query_modal_link = theme('ecenter_issues_data_link', 'network', 
-      array('query' => $query + array('modal' => TRUE), 
-      'attributes' => array('class' => 'issue-modalframe')),
-      'View query results');
   }
 }
 
@@ -155,28 +108,7 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
           '@end' => $params['end'],
         )
       );
-
-      $data_link = theme('ecenter_issues_data_link', 'network',
-        array('query' => $params + array('modal' => TRUE), 
-        'attributes' => array('class' => 'issue-modalframe')), 
-        t('View query results'));
     }
-    // Editing
-    else {
-      $query = ecenter_issues_get_node_query($form['#node']);
-      $data_link = theme('ecenter_issues_data_link', 'network',
-        array('query' => $query + array('modal' => TRUE), 
-        'attributes' => array('class' => 'issue-modalframe')), 
-        t('View query results'));
-    }
-
-    // Make 
-    $form['data_link'] = array(
-      '#prefix' => '<div class="data-link">',
-      '#suffix' => '</div>',
-      '#value' => $data_link,
-      '#weight' => -100,
-    );
   }
 
   if (!user_access('access ecenter issue query values') 
@@ -240,7 +172,12 @@ function ecenter_issues_issue_add_data($form, &$form_state) {
 }
 
 /**
- * ecenter_issues_get_query_node
+ * Get query node based on parameters 
+ *
+ * @param $params
+ *   Array of parameters ('src', 'dst', 'start', 'end')
+ * @return
+ *   Node object
  */
 function ecenter_issues_get_query_node($params) {
   list($src_type, $src_value) = explode(':', $params['src'], 2);
@@ -343,33 +280,4 @@ function ecenter_issues_get_node_query($node) {
     'end' => date_format($end, 'Y-m-d H:i:s'),
   );
   return $query;
-}
-
-function theme_ecenter_issues_data_link($path, $params, $title = NULL) {
-  list($src_type, $src_value) = explode(':', $params['query']['src'], 2);
-  list($dst_type, $dst_value) = explode(':', $params['query']['dst'], 2);
-
-  if ($params['query']['modal']) {
-    modalframe_parent_js();
-    drupal_add_js(drupal_get_path('module', 'ecenter_issues') .'/js/behaviors.js');
-  }
-
-  // Default title
-  $title = (!$title) ? t('@src to @dst, @start - @end (@tz)',
-    array(
-      '@src' => $src_value, 
-      '@dst' => $dst_value,
-      '@start' => $params['start'],
-      '@end' => $params['end'],
-    )
-  ) : $title;
-
-  return l($title, $path, $params);
-}
-
-function theme_ecenter_issues_formatter_query_link($element) {
-  modalframe_parent_js();
-  drupal_add_js(drupal_get_path('module', 'ecenter_issues') .'/js/behaviors.js');
-  $node = node_load($element['#node']->nid);
-  return $node->ecenter_query_modal_link;
 }

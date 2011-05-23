@@ -6,7 +6,7 @@ use namespace::autoclean;
 
 use FindBin qw($RealBin);
 use lib  "$FindBin::Bin";
-
+use Data::Dumper;
 use Log::Log4perl qw(get_logger);
 
 use Ecenter::Types;
@@ -16,7 +16,7 @@ extends 'Ecenter::Client';
 
 =head1 NAME
 
-E-Center::TopoClient -    client for the DRS  /hub and /[source|destination] calls
+Ecenter::TopoClient -    client for the DRS  /hub and /[source|destination] calls
 
 =head1 DESCRIPTION
 
@@ -25,7 +25,7 @@ client for the DRS data consumer, /hub and /[source|destination] calls
 =head1 SYNOPSIS 
  
     ## initiate remote query object for the DRS  based on url provided
-    my $topo_client = E-Center::TopoClient( {  url => 'http://xenmon.fnal.gov:8055' } );
+    my $topo_client = Ecenter::TopoClient->( {  url => 'http://xenmon.fnal.gov:8055' } );
     
     ## send request to get list of all HUBs ( like FNAL, LBL ...etc)
     my $hubs_hashref = $topo_client->get_hubs();
@@ -67,6 +67,7 @@ Hash ref to the returned nodes list ( source or destinations depending on the re
 
 has  'hubs'    => (is => 'rw', isa => 'HashRef',  weak_ref => 1);
 has  'src_ip'  =>  (is => 'rw', isa => 'Ecenter::Types::IPAddr');
+has  'src_hub'  =>  (is => 'rw', isa => 'Str');
 #
 has 'nodes'  => (is => 'rw', isa => 'HashRef', weak_ref => 1);
 
@@ -75,7 +76,29 @@ sub BUILD {
     $self->logger(get_logger(__PACKAGE__)); 
     map {$self->$_($args->{$_}) if $self->can($_)}  keys %$args if $args && ref $args eq ref {};
 }
+=head2 get_destination_hubs
 
+get list of the HUBs ( as Hashref ) for some source hub ( based on the available traceroutes)
+
+=cut
+
+sub get_destination_hubs { 
+    my ( $self, $params ) = @_;
+    map {$self->$_($params->{$_}) if $self->can($_)} keys %$params if $params && ref $params eq ref {};
+    
+    $self->logger->logdie('Missing DRS url or/and src_hub parameter')
+        unless   $self->url &&  $self->src_hub; 
+    my $url_params = $self->url . '/hubs/' . $self->src_hub . '.json';
+    $self->send_request($url_params);
+     if($self->data && !($self->data->{status} &&  $self->data->{status} eq 'error')) {
+        $self->hubs($self->data);
+    }
+    else {
+        $self->hubs({});
+    } 
+    $self->logger->debug(" DRS response::", sub{Dumper($self->data)});
+    return $self->data;
+}
 =head2 get_hubs
 
 get list of the HUBs ( as Hashref )

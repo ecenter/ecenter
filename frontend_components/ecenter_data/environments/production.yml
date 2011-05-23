@@ -8,8 +8,8 @@ route_cache: 1
 auto_reload: 0
 port: 8055
 gearman:
-   server: localhost
-   port: 10221
+   servers: 
+       localhost: ['10121', '10131']
 plugins:
    DBIC:
      dbix:

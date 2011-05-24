@@ -8,7 +8,7 @@ use Pod::Usage;
 use Log::Log4perl qw(:easy);
 use Getopt::Long;
 
-use Ecenter::DataClient;
+use DRS::DataClient;
 use Data::Dumper;
 use DBI;
 use POSIX qw(strftime);
@@ -16,6 +16,8 @@ use Ecenter::Utils;
 use DateTime::Format::MySQL;
 
 local $SIG{CHLD} = 'IGNORE';
+
+local $| = 1;
 
 my %OPTIONS;
 

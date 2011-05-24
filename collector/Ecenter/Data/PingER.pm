@@ -91,7 +91,7 @@ after 'get_metadata' => sub  {
     } 
     my $params = $self->subject?{subject => $self->subject}:{src_name => $self->src_name, dst_name => $self->dst_name};
     $params->{parameters}{packetSize} = $self->packetsize if $self->packetsize;
-    $self->logger->info(" -------------------METADATA REQUEST:: ", sub{ Dumper  $params } );    
+    $self->logger->debug(" -------------------METADATA REQUEST:: ", sub{ Dumper  $params } );    
     eval {
         my $result = $self->ma->metadataKeyRequest($params);
         $metaids = $self->ma->getMetaData($result);
@@ -123,7 +123,7 @@ after 'get_data' => sub  {
     } 
    
     $self->get_metadata() unless $self->meta_keys;
-    $self->logger->info(" -------------------METADATA :: ", sub{ Dumper $self->meta_keys } );
+    $self->logger->debug(" -------------------METADATA :: ", sub{ Dumper $self->meta_keys } );
     unless($self->meta_keys) {
           $self->logger->error(" No metadata returned !!! ");
 	  return;
@@ -138,7 +138,7 @@ after 'get_data' => sub  {
     my $dresult = $self->ma->setupDataRequest( $request );
     my $metaids    = $self->ma->getData($dresult);   
     my @data = ();
-    $self->logger->info(" DATA :: ", sub{ Dumper $metaids  } );
+    $self->logger->debug(" DATA :: ", sub{ Dumper $metaids  } );
     foreach my $key_id  (keys %{$metaids}) {
 	foreach my $id ( keys %{$metaids->{$key_id}{data}}) {
 	   foreach my $timev   (sort {$a <=> $b} keys %{$metaids->{$key_id}{data}{$id}}) {

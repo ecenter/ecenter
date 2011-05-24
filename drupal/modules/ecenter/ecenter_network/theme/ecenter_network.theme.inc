@@ -580,22 +580,6 @@ function template_preprocess_ecenter_network_health(&$vars) {
     $header_created = TRUE;
   }
   $vars['health_table'] = theme('table', $header, $rows, array('class' => 'network-health'));
-
-  // Period table
-  $header = array(t('Measurement'), t('Start'), t('End'));
-  $rows = array();
-  
-  foreach ($data['time_period'] as $measurement => $period) {
-    $rows[] = array(
-      array(
-        'data' => t($measurement),
-        'header' => TRUE,
-      ),
-      _ecenter_network_timestamp_to_local($period['start'], 'Y-m-d H:i'),
-      _ecenter_network_timestamp_to_local($period['end'], 'Y-m-d H:i'),
-    );
-  }
-  $vars['period_table'] = theme('table', $header, $rows);
 }
 
 function theme_ecenter_network_health_row($metadata_count = 0, $cached_data_count = 0) {

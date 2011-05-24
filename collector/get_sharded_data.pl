@@ -29,7 +29,7 @@ debugging info logged
 
 print usage info
 
-=item --[pinger|owamp|bwctl|traceroute]
+=item --[pinger|owamp|bwctl|hop]
 
 setting any of these flags will force collection of the corresponded data from the all known remote MAs 
 
@@ -70,6 +70,7 @@ Default: from /etc/my_ecenter
 use FindBin qw($Bin);
 use lib ($Bin,  "$Bin/client_lib", "$Bin/ps_trunk/perfSONAR_PS-PingER/lib");
 use forks;
+use forks::shared;
 
 use Pod::Usage;
 use Log::Log4perl qw(:easy);
@@ -99,7 +100,7 @@ my $MAX_THREADS = 10;
 local $SIG{CHLD} = 'IGNORE';
 my %OPTIONS;
 
-my @E2E = qw/pinger owamp bwctl traceroute/;
+my @E2E = qw/pinger owamp bwctl hop/;
 my @string_option_keys = qw/password user db procs past/;
 GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
@@ -122,8 +123,8 @@ pod2usage(-verbose => 2)
 $MAX_THREADS = $OPTIONS{procs} if $OPTIONS{procs}  && $OPTIONS{procs}  < 40;
 # number days back from now for the snmp data
 my $PAST_START =  $OPTIONS{past}?$OPTIONS{past}:7;
-# snmp data cache request time limit - one week back - epoch
-$PAST_START = (time() - $PAST_START *24*3600);
+# snmp data cache request time limit - one day back - epoch
+$PAST_START = (time() - $PAST_START*24*3600);
 
 #my $pm  =   new Parallel::ForkManager($MAX_THREADS);
 my $pm = '';
@@ -163,7 +164,7 @@ foreach my $service ( qw/ps2/ ) {
 	    parse_topo($dbh, $res);
 	}
 	get_snmp($dbh, $pm) if $OPTIONS{snmp};
-	set_end_sites($dbh, $pm);
+	set_end_sites($dbh, $pm) unless @E2E;
     }
     catch perfSONAR_PS::Error   with {
         $logger->error( shift);
@@ -317,7 +318,7 @@ sub set_end_sites {
 			   ( (inet6_mask(ip_addr,$subnets{$subnet}) =  inet6_mask(inet6_pton('$subnet'), $subnets{$subnet})
 			     )  OR  $alias_sql)|;
 	 $logger->debug("SQL::: $sql"); 
-         my $nodes =  $dbi->selectall_hashref($sql, 'ip_noted');;
+         my $nodes =  $dbi->selectall_hashref($sql, 'ip_noted');
 	 # found all ips for the endsite, lets mark them with made up urns and hub names
 	 foreach my $ip (keys %$nodes) {
 	    $logger->debug("Checking::: $ip");
@@ -337,54 +338,94 @@ sub set_end_sites {
 #  send async request to get remote data from e2e MAs
 #
 sub get_e2e {
-    my ($pm, $PAST_START, $e2e) = @_; 
-    my @metadata = $dbh->resultset('Metadata')->search({'eventtype.service_type' => $e2e, 'service.is_alive' => 1 },
+    my ($pm, $PAST_START, $e2e) = @_;
+    my $type = $e2e;
+    $type = 'traceroute' if $e2e eq 'hop';
+    my @metadata = $dbh->resultset('Metadata')->search({'eventtype.service_type' => $type, 'service.is_alive' => 1 },
                                                         { 'join' => {'eventtype' =>  'service'},
 						          '+select' => [qw/eventtype.ref_id service.service inet6_ntop(me.src_ip) inet6_ntop(me.dst_ip)/],
 						        }
 						    );
 				
-     my $table_name = ucfirst($e2e); 
      my $now_table = strftime('%Y%m', localtime());
+     my $table_name = ucfirst($e2e);
+     
+     my $dbi1 =  db_connect(\%OPTIONS);
+     my $hosts  =  $dbi1->selectall_hashref('select ip_noted, nodename from node','ip_noted');
+     $dbi1->disconnect if $dbi1;
      foreach my $md (@metadata) {
          #my $pid = $pm->start and next;
-	 
-	 pool_control($MAX_THREADS,undef); 
-	 threads->new({'context' => 'scalar'}, 
+	 ###next unless  $md->eventtype->service->service =~ /bnl|anl/;
+	 pool_control($MAX_THREADS,undef);
+	 threads->new({'context' => 'scalar'},
 	                          sub { 
-	    
-	     my $last_time = $dbh->resultset("${table_name}Data$now_table")->find( { metaid => $md->metaid },
-	    						      {  limit => 1,  order_by => { -desc => 'timestamp'} }
-	    						    );
-	     ###$logger->debug("MD::", sub{Dumper($md->eventtype->service)});  
-             my $secs_past = $last_time && ($last_time->timestamp >  $PAST_START)?$last_time->timestamp:$PAST_START;
-    	     my $e2e_data = [];
+	    my $dbh =  Ecenter::DB->connect('DBI:mysql:' . $OPTIONS{db},  $OPTIONS{user}, $OPTIONS{password},
+                                    {RaiseError => 1, PrintError => 1});
+            $dbh->storage->debug(1)  if $OPTIONS{debug} || $OPTIONS{v};
+            my $dbi =  db_connect(\%OPTIONS);
+	    my $last_time = $dbi->selectall_hashref( "select metaid, timestamp from $e2e\_data_$now_table where metaid='" . 
+	                             $md->metaid . "' ORDER BY timestamp DESC LIMIT 1", 'metaid');
+	    # my $last_time = $dbh->resultset("${table_name}Data$now_table")->search( { metaid => $md->metaid },
+	    #						      {   order_by => { -desc => 'timestamp'} }
+	    #						    )->single;
+	     $logger->error("NO Service for MD::", sub{Dumper($md )}) unless $md->eventtype && $md->eventtype->service && $md->eventtype->service->service;  
+             my $secs_past = $last_time && $last_time->{$md->metaid}{timestamp} && $last_time->{$md->metaid}{timestamp} >  $PAST_START?
+	                         $last_time->{$md->metaid}{timestamp}:$PAST_START;
+    	     my $e2e_data = []; 
+	     $dbi->disconnect if $dbi;
 	     eval {
-		$e2e_data =   Ecenter::Client->new({ type    => $e2e,  
-	                                        	   url     => $md->eventtype->service->service,
-	                                        	   start   =>   $secs_past,
-    	    			                	   end     => time(),
-							   resolution => 100000,
-							   args => {
-						        	subject => $md->subject
-							  }
-	    			  })->get_data;
+		$e2e_data =   Ecenter::Client->new({ type    => $type,  
+	                                             url     => $md->eventtype->service->service,
+	                                             start   => $secs_past,
+    	    			                     end     => time(),
+						     resolution => 100000,
+						     args => {
+						        subject => $md->subject
+						     }
+	    		      })->get_data;
 	     };
-	     if($EVAL_ERROR) {
+	     if($EVAL_ERROR) { 
+	        $dbh->storage->disconnect if $dbh;
 		$logger->error("Data ::Failed - $EVAL_ERROR");
 		##$pm->finish;
 		return;
 	     }
-    	     $logger->debug("Data :: ", sub{Dumper(  $e2e_data )});
+    	     ##$logger->debug("Data :: ", sub{Dumper(  $e2e_data )});
     	     ##$pm->finish unless   $e2e_data  && @{  $e2e_data };
-	     return unless   $e2e_data  && @{  $e2e_data };
-    	     foreach my $data (@{ $e2e_data }) { 
-    		 $dbh->resultset("${table_name}Data$now_table")->update_or_create({ metaid =>  $md->metaid,
+	     unless($e2e_data  && @{  $e2e_data }) {
+	        $logger->error(" No Data for $type: start=$secs_past " . $md->eventtype->service->service . ' md=' . $md->subject);
+	        $dbh->storage->disconnect if $dbh;
+		return;
+	     }
+    	     foreach my $data (@{ $e2e_data }) {
+	         if($type eq 'traceroute' ) {
+		     my  $ip_noted  =  $data->[1]->{ip_noted};
+		     delete $data->[1]->{ip_noted};
+		     my $nodename = '';
+		     unless(exists $hosts->{$ip_noted}) {
+		        ($ip_noted, $nodename) =   get_ip_name( $ip_noted );
+			$hosts->{$ip_noted}{nodename} = $nodename if $nodename && $nodename =~ /^[a-z]+/;
+		     }
+		     ##$logger->info("Data[1]:: ", sub{Dumper( $data->[1] )});
+		     $nodename = $hosts->{$ip_noted} && $hosts->{$ip_noted}{nodename}?$hosts->{$ip_noted}{nodename}:$ip_noted;
+		     $dbh->resultset('Node')->find_or_create(
+    		         		   {ip_addr =>   $data->[1]->{hop_ip},
+    		      	 		    nodename =>  $nodename,
+    		      	 		    ip_noted =>  $ip_noted});
+					    
+		 }
+		 eval {
+    		     $dbh->resultset("${table_name}Data$now_table")->update_or_create({ metaid =>  $md->metaid,
     	    									   timestamp => $data->[0],
     	    									   %{$data->[1]},
     	    									},
     	    									{ key => 'meta_time'});
-    	    }
+		};
+		if($EVAL_ERROR) {
+		   $logger->error("$EVAL_ERROR  -- n\ Failed Data[1]:: ", sub{Dumper( $data->[1] )});
+		}
+    	    } 
+	    $dbh->storage->disconnect if $dbh;
 	});
 	##$pm->finish;
     }

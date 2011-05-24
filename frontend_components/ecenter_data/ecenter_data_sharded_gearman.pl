@@ -25,6 +25,8 @@ use Gearman::Client;
 use NetAddr::IP::Util qw(inet_n2ad ipv6_n2x isIPv4);
 use JSON::XS qw(encode_json decode_json);
 
+
+my $DAYS7_SECS = 604800;
 my $REG_IP = qr/^[\d\.]+|[a-f\d\:]+$/i;
 my $REG_DATE = qr/^\d{4}\-\d{2}\-\d{2}\s+\d{2}\:\d{2}\:\d{2}$/;
 my @HEALTH_NAMES = qw/nasa.gov pnl.gov llnl.gov   pppl.gov anl.gov lbl.gov bnl.gov dmz.net nersc.gov jgi.doe.gov snll.gov ornl.gov slac.stanford.edu es.net/;
@@ -151,10 +153,10 @@ sub _params_to_date {
 	} 
     qw/owamp pinger snmp bwctl traceroute/;
 	      
-    if(  ($params{end}-$params{start}) < 3600*12) {
+    if(  ($params{end}-$params{start}) <   $DAYS7_SECS) {
 	    my $median = $params{start} + int(($params{end}-$params{start})/2);
-	    $params{bwctl}{start} = $median - 6*3600; # 6 hours
-	    $params{bwctl}{end}   = $median + 6*3600; # 6 hours
+	    $params{bwctl}{start} = $median -  $DAYS7_SECS; # 7 days
+	    $params{bwctl}{end}   = $median +  $DAYS7_SECS; #  7 days
     }
     return \%params;
 }
@@ -170,8 +172,9 @@ sub get_health {
 				     data    => {type => SCALAR, regex => qr/^(snmp|traceroute|bwctl|owamp|pinger)$/i, optional => 1}, 
 				  });
     debug Dumper(@_);
-    my @dates =  map{$_ => $req_params{$_} } grep($req_params{$_}, qw/start end/);
-    my $params  =  _params_to_date( @dates  );
+    my $params  =  {};
+    $params->{end}  =  $req_params{end}?DateTime::Format::MySQL->parse_datetime( $req_params{end} )->epoch:time();
+    $params->{start}  = $req_params{start}?DateTime::Format::MySQL->parse_datetime($req_params{start})->epoch:$params->{end} - 24*3600;
     my @services = ();
     my %health = ();
     
@@ -199,12 +202,12 @@ sub get_health {
     	    my @mds=  @{database('ecenter')->selectall_arrayref($e2e_sql)}; 
     	    ##debug " MDS::" . Dumper \@mds;
     	    $health{metadata}{$site}{$type}{metadata_count} = scalar @mds;
-    	    $health{time_period}{$type}{start} =   $params->{$type}{start};
-    	    $health{time_period}{$type}{end} =   $params->{$type}{end};
+    	    $health{time_period}{$type}{start} =   $params->{start};
+    	    $health{time_period}{$type}{end} =   $params->{end};
     	    if(@mds) {
     		my $md_ins = join("','", map {$_->[0]} @mds);
     		my $table = $type eq 'traceroute'?'hop':$type;
-    		my $shards = _get_shards({data => $table,start => $params->{$type}{start},end => $params->{$type}{end}});
+    		my $shards = _get_shards({data => $table, start => $params->{start},end => $params->{end}});
     		foreach my $shard (sort  { $a <=> $b } keys %$shards) {
     		   my $sql = qq|select count(*) from  $shards->{$shard}{table}{dbi}  
     				 where metaid in  ('$md_ins') and  timestamp >=  $shards->{$shard}{start} and  timestamp <= $shards->{$shard}{end} |;
@@ -679,10 +682,11 @@ sub _get_shards {
     for ( my $i = $startTime; $i <= $endTime; $i += 86400 ) {
         my $date_fmt = strftime "%Y%m",  localtime($i);
         my $end_i = $i + 86400;
+	debug "time_i=$i startime=$startTime end_time=$endTime  ";
 	$list->{$date_fmt}{table}{dbic} = "\u$param->{data}Data$date_fmt";
         $list->{$date_fmt}{table}{dbi}  = "$param->{data}\_data_$date_fmt";
-	$list->{$date_fmt}{start} = $i;
-	$list->{$date_fmt}{end} =  ($endTime<$end_i)?$endTime:$end_i;
+	$list->{$date_fmt}{start} = $startTime;
+	$list->{$date_fmt}{end}   = ($endTime<$end_i)?$endTime:$end_i;
     }
    
     # check if table is there if required via - existing parameter

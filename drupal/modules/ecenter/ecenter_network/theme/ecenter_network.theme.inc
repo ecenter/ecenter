@@ -22,7 +22,8 @@ function template_preprocess_ecenter_network_data(&$vars) {
   // Generate date range -- internal date is stored as UTC
   $dates = array();
   foreach (array('start', 'end') as $val) {
-    $dates[$val] = _ecenter_network_utc_to_local($vars['params'][$val], 'M j, Y H:i');
+    $dates[$val] = _ecenter_network_utc_to_local($vars['params'][$val], 
+      'M j, Y H:i', $vars['params']['timezone']);
   }
 
   $vars['title'] = t('<span class="src-dst">@src_hub_name (@src_hub) to
@@ -40,49 +41,50 @@ function template_preprocess_ecenter_network_data(&$vars) {
 
   // Set title
   drupal_set_title(t('E-Center Network Query | ') . $vars['title']);
-  
-  if (!$_GET['modal']) {
-    // Generate permalink
-    $vars['permalink'] = l(t('Permanent link (bookmark and share results)'), 'network', array(
-      'query' => $vars['params'],
-      'absolute' => TRUE,
-      'attributes' => array('title' => $vars['title']),
-    ));
-    $permalink_field['permalink'] = array(
-      '#id' => 'ecenter-permalink',
-      '#type' => 'textfield',
-      '#size' => 115,
-      '#attributes' => array('readonly' => 'readonly'),
-      '#value' => urldecode(url('network',
-        array('query' => $vars['params'], 'absolute' => TRUE,)
-      )),
+
+  // Links and issue queries shouldn't take timezone argument 
+  unset($vars['params']['timezone']);
+
+  // Generate permalink
+  $vars['permalink'] = l(t('Permanent link (bookmark and share results)'), 'network', array(
+    'query' => $vars['params'],
+    'absolute' => TRUE,
+    'attributes' => array('title' => $vars['title']),
+  ));
+  $permalink_field['permalink'] = array(
+    '#id' => 'ecenter-permalink',
+    '#type' => 'textfield',
+    '#size' => 115,
+    '#attributes' => array('readonly' => 'readonly'),
+    '#value' => urldecode(url('network',
+      array('query' => $vars['params'], 'absolute' => TRUE,)
+    )),
+  );
+  $vars['permalink_field'] = drupal_render($permalink_field);
+
+  // Generate issue link -- encode params for use with custom ecenter_issues
+  // module
+  if (module_exists('ecenter_issues') && user_access('create issue content')) {
+    $issue_params = array();
+    foreach ($vars['params'] as $key=>$param) {
+      $issue_params[] = "$key=$param";
+    }
+    $issue_query = urlencode(implode('&', $issue_params));
+
+    $vars['issuelink'] = l('Create issue from these results', 'node/add/issue',
+      array(
+        'query' => array('query' => $issue_query),
+      )
     );
-    $vars['permalink_field'] = drupal_render($permalink_field);
 
-    // Generate issue link -- encode params for use with custom ecenter_issues
-    // module
-    if (module_exists('ecenter_issues') && user_access('create issue content')) {
-      $issue_params = array();
-      foreach ($vars['params'] as $key=>$param) {
-        $issue_params[] = "$key=$param";
+    $query = ecenter_issues_get_query_node($vars['params']);
+    if ($query->nid) {
+      $issue_links = array();
+      $issues = ecenter_issues_get_query_issues($query);
+      foreach ($issues as $issue) {
+        $issue_links[] = l($issue->title, 'node/'. $issue->nid) . t(' by ') . $issue->name;
       }
-      $issue_query = urlencode(implode('&', $issue_params));
-
-      $vars['issuelink'] = l('Create issue from these results', 'node/add/issue',
-        array(
-          'query' => array('query' => $issue_query),
-        )
-      );
-
-      $query = ecenter_issues_get_query_node($vars['params']);
-      if ($query->nid) {
-        $issue_links = array();
-        $issues = ecenter_issues_get_query_issues($query);
-        foreach ($issues as $issue) {
-          $issue_links[] = l($issue->title, 'node/'. $issue->nid) . t(' by ') . $issue->name;
-        }
-        $vars['issues'] = '<label>'. t('Issues from this query: ') .'</label>'. implode(', ', $issue_links);
-      }
+      $vars['issues'] = '<label>'. t('Issues from this query: ') .'</label>'. implode(', ', $issue_links);
     }
   }
 
@@ -535,8 +537,14 @@ function theme_ecenter_network_hop_option($hop) {
  * Theme health display
  */
 function template_preprocess_ecenter_network_health(&$vars) {
+  drupal_add_js(drupal_get_path('module', 'ecenter_network') .
+    '/js/behaviors-health.js');
+
   $data = $vars['data'];
- 
+
+  $sources = ecenter_network_get_hops();
+  $metadata = array_intersect_key($data['metadata'], $sources['hubs']);
+
   // Convert times
   $vars['start'] = _ecenter_network_utc_to_local($vars['start'], 'Y-m-d H:i');
   $vars['end'] = _ecenter_network_utc_to_local($vars['end'], 'Y-m-d H:i');
@@ -546,7 +554,7 @@ function template_preprocess_ecenter_network_health(&$vars) {
   $header_created = FALSE;    
   $rows = array();
   
-  foreach ($data['metadata'] as $hub => $measurements) {
+  foreach ($metadata as $hub => $measurements) {
     $row = array(
       array(
         'data' => $hub,
@@ -557,12 +565,21 @@ function template_preprocess_ecenter_network_health(&$vars) {
       if (!$header_created) {
         $header[] = t($key);
       }
-      $row[] = $values['metadata_count'];
+
+      $metadata_count = $values['metadata_count'];
+      unset($values['metadata_count']);
+
+      $cached_data_count = 0;
+      foreach ($values as $month => $month_data) {
+        $cached_data_count += $month_data['cached_data_count'];
+      }
+
+      $row[] = theme('ecenter_network_health_row', $metadata_count, $cached_data_count);
     }
     $rows[] = $row;
     $header_created = TRUE;
   }
-  $vars['health_table'] = theme('table', $header, $rows);
+  $vars['health_table'] = theme('table', $header, $rows, array('class' => 'network-health'));
 
   // Period table
   $header = array(t('Measurement'), t('Start'), t('End'));
@@ -579,6 +596,31 @@ function template_preprocess_ecenter_network_health(&$vars) {
     );
   }
   $vars['period_table'] = theme('table', $header, $rows);
+}
+
+function theme_ecenter_network_health_row($metadata_count = 0, $cached_data_count = 0) {
+  $rows = array(
+    'metadata_count' => array(
+      array('data' => t('Metadata'), 'header' => TRUE),
+      $metadata_count,
+    ),
+    'cached_data_count' => array(
+      array('data' => t('Cached data'), 'header' => TRUE),
+      $cached_data_count,
+    ),
+  );
+
+  if ($metadata_count == 0) {
+    $class = 'critical';
+  }
+  else if ($cached_data_count == 0) {
+    $class = 'marginal';
+  }
+  else {
+    $class = 'normal';
+  }
+
+  return theme('table', array(), $rows, array('class' => $class));
 }
 
 /**

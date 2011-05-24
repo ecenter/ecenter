@@ -88,31 +88,35 @@ function ecenter_core_form_alter(&$form, &$form_state, $form_id) {
  * but with GeoIP location, etc)
  */
 function ecenter_core_timezone($abbr = '', $offset = -1, $dst = NULL) {
-  // An abbreviation of "0" passed in the callback arguments should be 
-  // interpreted as the empty string.
-  $abbr = $abbr ? $abbr : '';
-  $timezone = timezone_name_from_abbr($abbr, intval($offset), $dst);
-  // The client date is passed in for debugging purposes.
-  $date = isset($_GET['date']) ? $_GET['date'] : '';
-  dpm($offset, $abbr);
+  require_once('timezone.php');
   global $_REQUEST;
-  dpm($_REQUEST);
-  dpm($_SERVER);
+  $now = date_create();
 
+  // Geolocate based on client IP
   if ($_SERVER['HTTP_X_FORWARDED_FOR']) {
     $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
   } 
   else {
     $ip = $_SERVER['REMOTE_ADDR'];
   }
-
-  dpm($ip);
-  dpm(geoip_city($ip), 'siddy!');
-  $geo = geoip_city('131.225.70.2');
-  dpm($geo);
+  $city = geoip_city($ip);
   
-  return $timezone;
-  drupal_json($timezone);
+  if ($city) {
+    $ip_tz_name = get_time_zone($city->country_code, $city->region);
+    $ip_tz = timezone_open($ip_tz_name);
+    $ip_offset = timezone_offset_get($ip_tz, $now);
+
+    // If client offset and IP offset match, our work is done
+    if ($ip_offset == $offset) {
+      return drupal_json($ip_tz_name);
+    }
+  }
+
+  // If geolocated TZ is not same as client timezone, return best guess for
+  // client timezone.
+  $abbr = $abbr ? $abbr : '';
+  $client_tz_name = timezone_name_from_abbr($abbr, intval($offset), $dst);
+  return drupal_json($client_tz_name);
 }
 
 /**

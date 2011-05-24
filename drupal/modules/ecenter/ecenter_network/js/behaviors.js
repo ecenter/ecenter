@@ -29,7 +29,7 @@ $.fn.tablechart.defaults.attachMethod = function(container) {
  * Drupal behavior to attach network weathermap behaviors
  */
 Drupal.behaviors.EcenterNetwork = function(context) {
-  $('#ecenter-network-select-form').ecenter_network();
+  $('#ecenter-network-select-form').ecenter_network(); 
 }
 
 /**
@@ -113,8 +113,9 @@ $.fn.ecenter_network.plugins.ajax = function() {
       });
 
       // Zoom to correct level for sites layer
+      var src = $('#src-wrapper input');
       var dst = $('#dst-wrapper input');
-      if (!dst.val()) {
+      if (src.val() && !dst.val()) {
         var ol = $('#openlayers-map-auto-id-0').data('openlayers');
         var map = ol.openlayers;
         var layer = map.getLayersBy('drupalID', 'ecenter_network_sites').pop(); 
@@ -176,47 +177,49 @@ $.fn.ecenter_network.plugins.date = function() {
     }
   });
 
-  $.fn.ecenter_network.plugins.date.setTimezone();
+  $.fn.ecenter_network.plugins.date.setTimezone.call(this);
 }
 
 
+/**
+ * Set timezone
+ */
 $.fn.ecenter_network.plugins.date.setTimezone = function() {
-  var date_string = Date();
+  self = this;
+  if (!$('#timezone-select', self.el).val()) {
+    var date_string = Date();
 
-  var matches = Date().match(/\(([A-Z]{3,5})\)/);
-  var abbr = matches ? matches[1] : false;
-  
-  var now = new Date();
-  var offset = now.getTimezoneOffset() * -60;
+    var matches = Date().match(/\(([A-Z]{3,5})\)/);
+    var abbr = matches ? matches[1] : false;
+    
+    var now = new Date();
+    var offset = now.getTimezoneOffset() * -60;
 
-  var jan = new Date(now.getFullYear(), 0, 1, 12, 0, 0, 0);
-  var jul = new Date(now.getFullYear(), 6, 1, 12, 0, 0, 0);
-  var stOffset = jan.getTimezoneOffset() * -60;
-  var dstOffset = jul.getTimezoneOffset() * -60;
-  var maxOffset = Math.max(stOffset, dstOffset);
+    var jan = new Date(now.getFullYear(), 0, 1, 12, 0, 0, 0);
+    var jul = new Date(now.getFullYear(), 6, 1, 12, 0, 0, 0);
+    var stOffset = jan.getTimezoneOffset() * -60;
+    var dstOffset = jul.getTimezoneOffset() * -60;
+    var maxOffset = Math.max(stOffset, dstOffset);
 
-  // UTC offset is same in Jan and July -- no DST in locale
-  if (stOffset == dstOffset) {
-    var dst = '';
-  }
-  // Current offset and maxoffset match, meaning it is DST
-  else if (maxOffset == offset) {
-    var dst = 1;
-  }
-  else {
-    dst = 0;
-  }
-
-  console.log(abbr);
-
-  var path = 'ecenter/timezone/' + abbr + '/' + offset + '/' + dst;
-  $.getJSON(Drupal.settings.basePath, { q: path, date: date_string }, function (data) {
-    if (data) {
-      var tz_select = $("edit-network-wrapper-query-timezone-name-wrapper input");
-      tz_select.val(data);
+    // UTC offset is same in Jan and July -- no DST in locale
+    if (stOffset == dstOffset) {
+      var dst = '';
     }
-  });
-  
+    // Current offset and maxoffset match, meaning it is DST
+    else if (maxOffset == offset) {
+      var dst = 1;
+    }
+    else {
+      dst = 0;
+    }
+
+    var path = 'ecenter/timezone/' + abbr + '/' + offset + '/' + dst;
+    $.getJSON(Drupal.settings.basePath, { q: path, date: date_string }, function (data) {
+      if (data) {
+        $('#timezone-select input, #timezone-select select', self.el).val(data);
+      }
+    });
+  }
 }
 
 /**
@@ -639,7 +642,15 @@ $.fn.ecenter_network.plugins.chart = function() {
       control.callbacks.out.call(control, feature);
     }
   });
+}
 
+$.fn.ecenter_network.plugins.end_to_end = function() {
+  $('#end-to-end-results tbody tr', this.el).hover(function(e) {
+    var class_list = $(this).attr('class').split(/\s+/);
+    //$(class_list[0];
+  }, function(e) {
+    console.log('out', this);
+  });
 }
 
 /**
@@ -658,6 +669,7 @@ $.fn.ecenter_network.defaults = {
     $.fn.ecenter_network.plugins.change,
     $.fn.ecenter_network.plugins.traceroute,
     $.fn.ecenter_network.plugins.draw_map,
+    $.fn.ecenter_network.plugins.end_to_end
   ]
 };
 

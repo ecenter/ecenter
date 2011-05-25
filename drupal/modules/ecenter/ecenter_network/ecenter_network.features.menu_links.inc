@@ -45,6 +45,7 @@ function ecenter_network_menu_default_menu_links() {
   );
   // Translatables
   // Included for use with string extractors like potx.
+  t('Dashboard');
   t('Health status');
   t('Network tools');
 

@@ -11,7 +11,25 @@ function ecenter_network_menu_default_menu_links() {
     'menu_name' => 'primary-links',
     'link_path' => 'network',
     'router_path' => 'network',
-    'link_title' => 'Explore network data',
+    'link_title' => 'Network tools',
+    'options' => array(
+      'attributes' => array(
+        'title' => '',
+      ),
+    ),
+    'module' => 'menu',
+    'hidden' => '0',
+    'external' => '0',
+    'has_children' => '1',
+    'expanded' => '0',
+    'weight' => '-48',
+  );
+  // Exported menu link: primary-links:network/health
+  $menu_links['primary-links:network/health'] = array(
+    'menu_name' => 'primary-links',
+    'link_path' => 'network/health',
+    'router_path' => 'network/health',
+    'link_title' => 'Health status',
     'options' => array(
       'attributes' => array(
         'title' => '',
@@ -22,11 +40,14 @@ function ecenter_network_menu_default_menu_links() {
     'external' => '0',
     'has_children' => '0',
     'expanded' => '0',
-    'weight' => '0',
+    'weight' => '-49',
+    'parent_path' => 'network',
   );
   // Translatables
   // Included for use with string extractors like potx.
-  t('Explore network data');
+  t('Dashboard');
+  t('Health status');
+  t('Network tools');
 
 
   return $menu_links;

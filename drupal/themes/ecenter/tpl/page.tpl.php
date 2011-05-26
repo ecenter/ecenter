@@ -48,10 +48,22 @@
 
 <div id="page-wrapper">
 
-  <?php if (!empty($tabs)): ?>
-    <div id="tasks" class="clearfix">
-      <?php print $tabs; ?>
-    </div>
+  <?php if (!empty($breadcrumb) || !empty($page_type) || !empty($tabs)): ?>
+  <div id="page-meta" class="clearfix">
+    <?php if ($breadcrumb): ?>
+      <?php print $breadcrumb; ?>
+    <?php endif; ?>
+    
+    <?php if (!empty($tabs)): ?>
+      <div id="tasks">
+        <?php print $tabs; ?>
+      </div>
+    <?php endif; ?>
+    
+    <?php if ($page_type): ?>
+      <div class="page-type"><?php print $page_type; ?></div>
+    <?php endif; ?>
+  </div>
   <?php endif; ?>
 
   <div id="content-wrapper" class="clearfix">
@@ -63,9 +75,6 @@
     <?php endif; ?>
 
     <div id="content" class="clearfix">
-      <?php if ($breadcrumb): ?>
-        <?php print $breadcrumb; ?>
-      <?php endif; ?>
       <?php if (!empty($help)): print $help; endif; ?>
 
       <?php if (!empty($title)): ?><h1 class="title" id="page-title"><?php print $title; ?></h1><?php endif; ?>

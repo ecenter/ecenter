@@ -21,41 +21,36 @@ function ecenter_editing_form_alter(&$form, &$form_state, $form_id) {
     return;
   }
 
-  //dpm($form);
-
   $node = $form['#node'];
 
   // Universal overrides
 
   // Override revision log to be more wiki-like
   unset($form['revision_information']['#title']);
+  
   $form['revision_information']['#type'] = 'markup';
   $form['revision_information']['#collapsible'] = FALSE;
-
   $form['revision_information']['log']['#title'] = t('Revision message');
-  $form['revision_information']['log']['#rows'] = 1;
+  $form['revision_information']['log']['#rows'] = 5;
+  $form['revision_information']['log']['#cols'] = 50;
   $form['revision_information']['log']['#description'] = t(
     'Provide a short description of the changes made to this @type.',
     array('@type' => drupal_strtolower(node_get_types('name', $node)))
   );
 
   // Remove options for internal Drupal workflow states
-  $form['options']['promote']['#type'] = 'value';
-  $form['options']['sticky']['#type'] = 'value';
+  $form['options']['promote']['#access'] = FALSE;
+  $form['options']['sticky']['#access'] = FALSE;
 
   // Remove summary / teaser silliness
-  $form['body_field']['teaser_include']['#type'] = 'value';
+  $form['body_field']['teaser_include']['#access'] = FALSE;
 
   _ecenter_editing_process_field_image($form['field_image']);
 
   // Node type specific overrides
   switch ($node->type) {
     case 'wiki':
-      $form['revision_information']['revision']['#type'] = 'value';
-      $form['revision_information']['log']['#required'] = TRUE;
-      break;
-    case 'issue':
-      $form['revision_information']['#type'] = 'value';
+      $form['revision_information']['revision']['#access'] = FALSE;
       break;
   }
 }

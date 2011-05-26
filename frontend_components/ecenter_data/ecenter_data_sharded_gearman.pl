@@ -166,9 +166,9 @@ sub _params_to_date {
 #
 
 sub get_health {
-    my %req_params =  validate(@_, { start  => {type => SCALAR, regex => $REG_DATE, optional => 1},
-    	                             end    => {type => SCALAR, regex => $REG_DATE, optional => 1},
-    	                             hub    => {type => SCALAR, regex => qr/^\w+$/i,optional => 1},
+    my %req_params =  validate(@_, { start   => {type => SCALAR, regex => $REG_DATE, optional => 1},
+    	                             end     => {type => SCALAR, regex => $REG_DATE, optional => 1}, 
+				     src_hub => {type => SCALAR, regex => qr/^\w+$/i,optional => 1},
 				     data    => {type => SCALAR, regex => qr/^(snmp|traceroute|bwctl|owamp|pinger)$/i, optional => 1}, 
 				  });
     debug Dumper(@_);
@@ -176,12 +176,17 @@ sub get_health {
     $params->{end}  =  $req_params{end}?DateTime::Format::MySQL->parse_datetime( $req_params{end} )->epoch:time();
     $params->{start}  = $req_params{start}?DateTime::Format::MySQL->parse_datetime($req_params{start})->epoch:$params->{end} - 24*3600;
     my @services = ();
-    my %health = ();
-    
-    my $hub_sql = $req_params{hub}?' AND hub_name =' . database('ecenter')->quote($req_params{hub}):' AND 1';
-    my $hhub_sql = qq|select distinct hub_name from  hub where 1 $hub_sql|;
-    debug " E2E SQL:: $hhub_sql";
-    my $hubs =  database('ecenter')->selectall_hashref( qq|select distinct hub_name from  hub where 1 $hub_sql|, 'hub_name');
+    my %health = (); 
+    $health{start} =   $params->{start};
+    $health{end} =   $params->{end};
+    my $hub_sql =  ' AND 1';
+    if( $req_params{src_hub} ) { 
+        $hub_sql =  ' AND h.hub_name =' . database('ecenter')->quote($req_params{src_hub});
+        my $hub_check = database('ecenter')->selectall_hashref(qq|select distinct h.hub_name from  hub h where  $hub_sql|);
+        return { error => "\usrc_hub -  $req_params{src_hub} is invalid" } 
+            if $hub_check &&  ref $hub_check  eq ref {};
+    }
+    my $hubs =  database('ecenter')->selectall_hashref( qq|select distinct hub_name from  hub where 1 $hub_sql |, 'hub_name');
     foreach my $site  ( sort  keys %{$hubs} ) {
         next if $req_params{hub} && $req_params{hub} ne $site;
 	$hub_sql =  ' AND hub_name =' . database('ecenter')->quote($site);
@@ -202,8 +207,6 @@ sub get_health {
     	    my @mds=  @{database('ecenter')->selectall_arrayref($e2e_sql)}; 
     	    ##debug " MDS::" . Dumper \@mds;
     	    $health{metadata}{$site}{$type}{metadata_count} = scalar @mds;
-    	    $health{time_period}{$type}{start} =   $params->{start};
-    	    $health{time_period}{$type}{end} =   $params->{end};
     	    if(@mds) {
     		my $md_ins = join("','", map {$_->[0]} @mds);
     		my $table = $type eq 'traceroute'?'hop':$type;
@@ -316,7 +319,7 @@ sub process_data {
    my $task_set;
    my %params = ();
    eval {
-     %params = validate(@_, { data_type  => {type => SCALAR, regex => qr/^(snmp|bwctl|owamp|pinger)$/i, optional => 1}, 
+     %params = validate(@_, { data_type  => {type => SCALAR, regex => qr/^(snmp|bwctl|owamp|pinger|traceroute)$/i, optional => 1}, 
                               id	 => {type => SCALAR, regex => qr/^\d+$/, optional => 1}, 
                               src_ip	 => {type => SCALAR, regex => $REG_IP,   optional => 1}, 
 			      src_hub	 => {type => SCALAR, regex => qr/^\w+$/i,   optional => 1}, 
@@ -401,7 +404,7 @@ sub process_data {
     return $data unless $traceroute->{direct_traceroute}{hop_ips} || $traceroute->{reverse_traceroute}{hop_ips};
     $task_set = $g_client->new_task_set; 
     $data->{snmp} = {};
-    if(!$params{data} || $params{data} =~ /^snmp$/i) {
+    if(!$params{data_type} || $params{data_type} =~ /^snmp$/i) {
         eval {
 	    get_snmp($task_set, $data->{snmp}, \%allhops, \%params);
         }; 
@@ -415,8 +418,8 @@ sub process_data {
     my %directions = (direct => ['src_ip', 'dst_ip'], reverse => ['dst_ip', 'src_ip'] );
     
     my @data_keys = ();
-    if($params{data}) {
-        @data_keys = ($params{data}) if  $params{data} =~ /^bwctl|owamp|pinger$/i;
+    if($params{data_type}) {
+        @data_keys = ($params{data_type}) if  $params{data_type} =~ /^bwctl|owamp|pinger$/i;
     } else {
         @data_keys =  qw/bwctl owamp pinger/;
     }

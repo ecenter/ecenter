@@ -87,6 +87,13 @@ __PACKAGE__->add_columns(
     is_nullable   => 0,
   },
 );
+__PACKAGE__->belongs_to(
+  "node",
+  "Ecenter::DB::Result::Node",
+  { ip_addr => "ip_addr" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+);
+
 __PACKAGE__->set_primary_key("service");
 
 =head1 RELATIONS

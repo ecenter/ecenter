@@ -343,7 +343,6 @@ function ecenter_core_strongarm() {
     'toggle_primary_links' => 1,
     'toggle_secondary_links' => 1,
     'toggle_node_info_blog_post' => 1,
-    'toggle_node_info_issue' => 1,
     'toggle_node_info_network_query' => 1,
     'toggle_node_info_page' => 1,
     'default_logo' => 1,
@@ -352,6 +351,7 @@ function ecenter_core_strongarm() {
     'default_favicon' => 1,
     'favicon_path' => '',
     'favicon_upload' => '',
+    'toggle_node_info_conversation' => 1,
   );
 
   $export['theme_settings'] = $strongarm;

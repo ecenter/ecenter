@@ -19,9 +19,9 @@ function ecenter_issues_ctools_plugin_api() {
 function ecenter_issues_node_info() {
   $items = array(
     'issue' => array(
-      'name' => t('Issue'),
+      'name' => t('Network issue'),
       'module' => 'features',
-      'description' => t('An issue related to network performance.  Issues are automatically versioned, but the interface is hidden from the user.  Issues support comments.'),
+      'description' => t('A network issue is a discussion about any DOE enterprise network related topic, such as a performance problem or general question. Network issues can be associated with diagnostic results. Network issues support conversations with threaded comments.'),
       'has_title' => '1',
       'title_label' => t('Subject'),
       'has_body' => '1',

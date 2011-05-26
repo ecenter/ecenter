@@ -27,17 +27,23 @@ function ecenter_core_context_default_contexts() {
           'region' => 'header',
           'weight' => 0,
         ),
-        'menu-primary-links' => array(
-          'module' => 'menu',
-          'delta' => 'primary-links',
+        'menu_block-1' => array(
+          'module' => 'menu_block',
+          'delta' => 1,
           'region' => 'navigation',
           'weight' => 0,
+        ),
+        'menu_block-2' => array(
+          'module' => 'menu_block',
+          'delta' => 2,
+          'region' => 'navigation',
+          'weight' => 1,
         ),
         'search-0' => array(
           'module' => 'search',
           'delta' => 0,
           'region' => 'navigation',
-          'weight' => 1,
+          'weight' => 2,
         ),
         'ecenter_core-sponsors' => array(
           'module' => 'ecenter_core',

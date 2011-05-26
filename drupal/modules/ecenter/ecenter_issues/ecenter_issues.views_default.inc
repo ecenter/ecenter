@@ -6,22 +6,22 @@
 function ecenter_issues_views_default_views() {
   $views = array();
 
+  // Exported view: ecenter_issues
   $view = new view;
   $view->name = 'ecenter_issues';
   $view->description = 'E-Center issues';
   $view->tag = 'ecenter';
+  $view->view_php = '';
   $view->base_table = 'node';
-  $view->human_name = '';
-  $view->core = 0;
-  $view->api_version = '3.0-alpha1';
+  $view->is_cacheable = FALSE;
+  $view->api_version = 3.0-alpha1;
   $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
-
-  /* Display: Defaults */
+  
+/* Display: Defaults */
   $handler = $view->new_display('default', 'Defaults', 'default');
   $handler->display->display_options['title'] = 'Network issues';
   $handler->display->display_options['access']['type'] = 'none';
   $handler->display->display_options['cache']['type'] = 'none';
-  $handler->display->display_options['query']['type'] = 'views_query';
   $handler->display->display_options['exposed_form']['type'] = 'basic';
   $handler->display->display_options['exposed_form']['options']['reset_button'] = TRUE;
   $handler->display->display_options['pager']['type'] = 'full';
@@ -320,8 +320,8 @@ function ecenter_issues_views_default_views() {
   $handler->display->display_options['filters']['field_query_dst_hub_value']['expose']['optional'] = TRUE;
   $handler->display->display_options['filters']['field_query_dst_hub_value']['expose']['single'] = TRUE;
   $handler->display->display_options['filters']['field_query_dst_hub_value']['case'] = 0;
-
-  /* Display: Page */
+  
+/* Display: Page */
   $handler = $view->new_display('page', 'Page', 'page_1');
   $handler->display->display_options['defaults']['use_ajax'] = FALSE;
   $handler->display->display_options['defaults']['exposed_form'] = FALSE;
@@ -339,16 +339,14 @@ function ecenter_issues_views_default_views() {
       ),
     ),
   );
-  $handler->display->display_options['exposed_block'] = TRUE;
   $handler->display->display_options['path'] = 'issues';
   $handler->display->display_options['menu']['type'] = 'normal';
   $handler->display->display_options['menu']['title'] = 'View issues';
   $handler->display->display_options['menu']['weight'] = '15';
   $handler->display->display_options['menu']['name'] = 'primary-links';
-
-  /* Display: Feed */
+  
+/* Display: Feed */
   $handler = $view->new_display('feed', 'Feed', 'feed_1');
-  $handler->display->display_options['pager']['type'] = 'some';
   $handler->display->display_options['style_plugin'] = 'rss';
   $handler->display->display_options['style_options']['mission_description'] = FALSE;
   $handler->display->display_options['row_plugin'] = 'node_rss';
@@ -357,38 +355,6 @@ function ecenter_issues_views_default_views() {
   $handler->display->display_options['displays'] = array(
     'page_1' => 'page_1',
     'default' => 0,
-  );
-  $translatables['ecenter_issues'] = array(
-    t('Defaults'),
-    t('Network issues'),
-    t('more'),
-    t('Apply'),
-    t('Reset'),
-    t('Sort by'),
-    t('Asc'),
-    t('Desc'),
-    t('Items per page'),
-    t('- All -'),
-    t('Offset'),
-    t('Query'),
-    t('By'),
-    t('Last updated'),
-    t('[comment_count] comments'),
-    t('.'),
-    t(','),
-    t('Last comment'),
-    t('new comments'),
-    t('Created date'),
-    t('Last comment time'),
-    t('Node: Updated date'),
-    t('Issue author'),
-    t('Source'),
-    t('Destination'),
-    t('Page'),
-    t('Filter results'),
-    t('Oldest'),
-    t('Most recent'),
-    t('Feed'),
   );
 
   $views[$view->name] = $view;

@@ -72,11 +72,15 @@ function theme_ecenter_test_html() {
 }
 
 function theme_ecenter_test_combobox() {
+  $options = array();
+  for ($i = 0; $i < 500; $i++) {
+    $options[] = 'Option '. $i;
+  }
   $form = array(
     'options' => array(
       '#id' => 'options',
       '#type' => 'combobox',
-      '#options' => array(0 => '---', t('First option'), t('Second option'), t('Third option')),
+      '#options' => $options,
       '#default_value' => 0,
     ),
   );

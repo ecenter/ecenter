@@ -15,7 +15,7 @@ function editor_tinymce_markdown_install() {
   );
 
   // Get format ID
-  $format = db_fetch_result(db_query(
+  $format = db_result(db_query(
     'SELECT format FROM {filter_formats} WHERE name = "WYSIWYG Markdown"' 
   ));
 
@@ -24,11 +24,11 @@ function editor_tinymce_markdown_install() {
 
   // Create filter configuration
   $modules = array(
-    'markdown', 'wysiwyg_filter', 'syntaxhighlighter', 'oembed', 'pathologic',
+    'pathologic', 'markdown', 'wysiwyg_filter', 'syntaxhighlighter', 'oembed',
   );
   foreach ($modules as $weight => $module) {
     db_query(
-      'INSERT INTO {filters} (fid, module, weight) VALUES (%d, "%s", %d)', 
+      'INSERT INTO {filters} (format, module, weight) VALUES (%d, "%s", %d)', 
       $format, $module, $weight
     );
   }
@@ -37,15 +37,18 @@ function editor_tinymce_markdown_install() {
   $valid_elements = '@[class],
 a[href],
 div,p,pre,table,thead,tbody,tr,th,td,
-img[src|title|alt|width|height],
+h2,h3,h4,h5,h6,
+img[src|title|a1lt|width|height],
 br,span,em,strong,cite,code,blockquote,ul,ol,li,dl,dt,dd';
-  variable_set('wysiwyg_filter_valid_classes_'. $format, 'content-*');
+  variable_set('wysiwyg_filter_valid_classes_'. $format, array('content-*'));
+  variable_set('wysiwyg_filter_valid_ids_'. $format, array());
+  variable_set('wysiwyg_filter_style_urls_'. $format, array());
   variable_set('wysiwyg_filter_valid_elements_raw_'. $format, $valid_elements);
   variable_set('wysiwyg_filter_valid_elements_parsed_'. $format,
     wysiwyg_filter_parse_valid_elements($valid_elements));
 
 
-  variable_set('wysiwyg_filter_allow_comments_'. $format, FALSE);
+  variable_set('wysiwyg_filter_allow_comments_'. $format, '0');
   variable_set('wysiwyg_filter_no_follow_domains_'. $format, NULL);
   variable_set('wysiwyg_filter_no_follow_policy_'. $format, 'whitelist');
   variable_set('wysiwyg_filter_styles_border-1_'. $format, array(
@@ -225,12 +228,27 @@ function editor_tinymce_markdown_uninstall() {
   $format = variable_get('editor_tinymce_markdown_format', NULL);
 
   db_query("DELETE FROM {wysiwyg} WHERE format=%d", $format);
-  db_query("DELETE FROM {filters} WHERE fid=%d", $format);
+  db_query("DELETE FROM {filters} WHERE format=%d", $format);
   db_query("DELETE FROM {filter_formats} WHERE format=%d", $format);
 
   variable_del('wysiwyg_filter_valid_classes_'. $format);
-  // ...
-  //
+  variable_del('wysiwyg_filter_valid_ids_'. $format);
+  variable_del('wysiwyg_filter_style_urls_'. $format);
+  variable_del('wysiwyg_filter_valid_elements_raw_'. $format);
+  variable_del('wysiwyg_filter_valid_elements_parsed_'. $format);
+  variable_del('wysiwyg_filter_allow_comments_'. $format);
+  variable_del('wysiwyg_filter_no_follow_domains_'. $format);
+  variable_del('wysiwyg_filter_no_follow_policy_'. $format);
+  variable_del('wysiwyg_filter_styles_border-1_'. $format);
+  variable_del('wysiwyg_filter_styles_border-2_'. $format);
+  variable_del('wysiwyg_filter_styles_box_'. $format);
+  variable_del('wysiwyg_filter_styles_dimension_'. $format);
+  variable_del('wysiwyg_filter_styles_layout_'. $format);
+  variable_del('wysiwyg_filter_styles_list_'. $format);
+  variable_del('wysiwyg_filter_styles_positioning_'. $format);
+  variable_del('wysiwyg_filter_styles_table_'. $format);
+  variable_del('wysiwyg_filter_styles_text_'. $format);
+  variable_del('wysiwyg_filter_styles_user_'. $format);
 
   variable_del('editor_tinymce_markdown_format');
 }

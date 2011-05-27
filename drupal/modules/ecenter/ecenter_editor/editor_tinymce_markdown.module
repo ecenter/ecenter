@@ -57,7 +57,7 @@ function editor_tinymce_markdown_markdownify_html2markdown_postprocess_alter(&$o
 // Disable some form settings
 function editor_tinymce_markdown_form_alter(&$form, $form_state, $form_id) {
   if ($form_id == 'filter_admin_format_form') {
-    if (($format = variable_get('editor_tinymce_markdown_format', NULL)))
+    if (($format = variable_get('editor_tinymce_markdown_format', NULL))
       && $form['format']['#value'] == $format) {
       drupal_set_message(t('This input format is for use with the TinyMCE
         Markdown module. Changing the enabled filters have may undesireable
@@ -66,7 +66,7 @@ function editor_tinymce_markdown_form_alter(&$form, $form_state, $form_id) {
   }
   
   if ($form_id == 'filter_admin_order') {
-    if (($format = variable_get('editor_tinymce_markdown_format', NULL)))
+    if (($format = variable_get('editor_tinymce_markdown_format', NULL))
       && $form['format']['#value'] == $format) {
       drupal_set_message(t('This input format is for use with the TinyMCE
         Markdown module. Changing the filter order may have undesirable 

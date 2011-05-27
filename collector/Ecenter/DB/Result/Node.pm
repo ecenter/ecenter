@@ -75,6 +75,13 @@ __PACKAGE__->has_many(
 );
 
 __PACKAGE__->has_many(
+  "services",
+  "Ecenter::DB::Result::Service",
+  { "foreign.ip_addr" => "self.ip_addr" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+__PACKAGE__->has_many(
   "src_ips",
   "Ecenter::DB::Result::Metadata",
   { "foreign.src_ip" => "self.ip_addr" },

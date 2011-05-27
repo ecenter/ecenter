@@ -4,11 +4,11 @@ warnings: 0
 debug: 1
 show_errors: 1
 auto_reload: 0
-time_slice_secs: 20000
+time_slice_secs: 200000
 port: 8098
 gearman:
-   server: localhost
-   port: 10131
+   servers: 
+       localhost: ['10121', '10131']
 plugins:
    DBIC:
      dbix:

@@ -1,0 +1,19 @@
+/* $Id$ */
+#linkit form > div > fieldset,
+#linkit form > div > fieldset > .fieldset-wrapper {
+  border: none;
+  padding: 0;
+}
+#linkit input#edit-link {
+  width: 97%;
+}
+#linkit .notice {
+  display: block;
+  font-size: 85%;
+  padding: 5px;
+  background-color: #ffffaa;
+  margin-bottom: 1.5em;
+}
+#linkit .description {
+  font-size: 85%;
+}

@@ -116,7 +116,7 @@ projects[editor_tinymce_markdown][type] = "module"
 projects[markdownify][subdir] = "ecenter-contrib"
 projects[markdownify][download][type] = "git"
 projects[markdownify][download][url] = "git://github.com/ecenter/markdownify"
-projects[markdownify][branch] = "master"
+projects[markdownify][branch] = "6.x-1.0-dev"
 projects[markdownify][type] = "module"
 
 projects[jquery_ui][subdir] = "contrib"

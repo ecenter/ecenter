@@ -206,6 +206,16 @@ function ecenter_issues_get_query_node($params) {
   return node_load($nid);
 }
 
+/**
+ * Get issues for a query
+ *
+ * @TODO Support more flexibility than exact matching used here
+ * 
+ * @param $node
+ *   A query node object
+ * @return
+ *   An array of issue objects
+ */
 function ecenter_issues_get_query_issues($node) {
   $query_field = content_fields('field_issue_query');
   $query_db_info = content_database_info($query_field);

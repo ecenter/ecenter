@@ -2,9 +2,9 @@
 /**
  * Implementation of hook_wysiwyg_editor_settings_alter.
  */
-function editor_tinymce_markdown_wysiwyg_editor_settings_alter(&$settings, $context) {
-  if ($context['profile']->format == variable_get('editor_tinymce_markdown_format', NULL)) {
-    drupal_add_css(drupal_get_path('module', 'editor_tinymce_markdown') 
+function ecenter_editor_wysiwyg_editor_settings_alter(&$settings, $context) {
+  if ($context['profile']->format == variable_get('ecenter_editor_format', NULL)) {
+    drupal_add_css(drupal_get_path('module', 'ecenter_editor') 
       .'/css/tinymce.css');
 
     // Reorder buttons to put links at the front
@@ -15,15 +15,15 @@ function editor_tinymce_markdown_wysiwyg_editor_settings_alter(&$settings, $cont
   }
 }
 
-function editor_tinymce_markdown_markdownify_html2markdown_postprocess_alter(&$output, $post) {
+function ecenter_editor_markdownify_html2markdown_postprocess_alter(&$output, $post) {
   // Output breaks added by Tinymce as newlines
   $output = str_replace(array('<br />', '<br>', '<br _moz_dirty="">'), "\r\n", $output);
 }
 
 // Disable some form settings
-function editor_tinymce_markdown_form_alter(&$form, $form_state, $form_id) {
+function ecenter_editor_form_alter(&$form, $form_state, $form_id) {
   if ($form_id == 'filter_admin_format_form') {
-    if (($format = variable_get('editor_tinymce_markdown_format', NULL))
+    if (($format = variable_get('ecenter_editor_format', NULL))
       && $form['format']['#value'] == $format) {
       drupal_set_message(t('This input format is for use with the TinyMCE
         Markdown module. Changing the enabled filters have may undesireable
@@ -32,7 +32,7 @@ function editor_tinymce_markdown_form_alter(&$form, $form_state, $form_id) {
   }
   
   if ($form_id == 'filter_admin_order') {
-    if (($format = variable_get('editor_tinymce_markdown_format', NULL))
+    if (($format = variable_get('ecenter_editor_format', NULL))
       && $form['format']['#value'] == $format) {
       drupal_set_message(t('This input format is for use with the TinyMCE
         Markdown module. Changing the filter order may have undesirable 
@@ -41,7 +41,7 @@ function editor_tinymce_markdown_form_alter(&$form, $form_state, $form_id) {
   }
 
   if ($form_id == 'wysiwyg_profile_form') {
-    if (($format = variable_get('editor_tinymce_markdown_format', NULL))
+    if (($format = variable_get('ecenter_editor_format', NULL))
       && $form['format']['#value'] == $format) {
 
       drupal_set_message(t('This WYSWYG profile is managed by the TinyMCE
@@ -72,9 +72,9 @@ function editor_tinymce_markdown_form_alter(&$form, $form_state, $form_id) {
 /**
  * Implementation of hook_init().
  */
-function editor_tinymce_markdown_init() {
+function ecenter_editor_init() {
   if (arg(0) == 'admin' && arg(1) == 'linkit' && arg(2) == 'dashboard') {
-    drupal_add_css(drupal_get_path('module', 'editor_tinymce_markdown') 
+    drupal_add_css(drupal_get_path('module', 'ecenter_editor') 
       .'/css/linkit.css');
   }
 }

@@ -1,12 +1,12 @@
 <?php
 /**
- * @file editor_tinymce_markdown.install
+ * @file ecenter_editor.install
  */
 
 /**
  * Implementation of hook_install().
  */
-function editor_tinymce_markdown_install() {
+function ecenter_editor_install() {
   module_load_include('inc', 'wysiwyg_filter');
 
   // Create filter format
@@ -20,7 +20,7 @@ function editor_tinymce_markdown_install() {
   ));
 
   // Set variables
-  variable_set('editor_tinymce_markdown_format', $format);
+  variable_set('ecenter_editor_format', $format);
 
   // Create filter configuration
   $modules = array(
@@ -223,9 +223,9 @@ Quiet=content-quiet',
 /**
  * Implementation of hook_uninstall().
  */
-function editor_tinymce_markdown_uninstall() {
+function ecenter_editor_uninstall() {
   // Clean up 
-  $format = variable_get('editor_tinymce_markdown_format', NULL);
+  $format = variable_get('ecenter_editor_format', NULL);
 
   db_query("DELETE FROM {wysiwyg} WHERE format=%d", $format);
   db_query("DELETE FROM {filters} WHERE format=%d", $format);
@@ -250,5 +250,5 @@ function editor_tinymce_markdown_uninstall() {
   variable_del('wysiwyg_filter_styles_text_'. $format);
   variable_del('wysiwyg_filter_styles_user_'. $format);
 
-  variable_del('editor_tinymce_markdown_format');
+  variable_del('ecenter_editor_format');
 }

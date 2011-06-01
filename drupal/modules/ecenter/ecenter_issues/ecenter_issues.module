@@ -52,6 +52,14 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
   // Munge issue node form
   if ($form_id == 'issue_node_form') {
 
+    $form['og_nodeapi']['#group'] = NULL;
+    $form['revision_information']['#group'] = NULL;
+
+    // If no initial groups, collapse fieldset
+    if (empty($form['og_initial_groups']['#value'])) {
+      $form['og_nodeapi']['#collapsed'] = TRUE;
+    }
+
     drupal_add_css(drupal_get_path('module', 'ecenter_issues') .'/css/ecenter-issues.css');
 
     // Apply always

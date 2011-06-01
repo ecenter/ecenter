@@ -1,3 +1,29 @@
 <?php
 
 include_once('ecenter_wiki.features.inc');
+
+/**
+ * Implementation of hook_form_alter().
+ */
+function ecenter_wiki_form_alter(&$form, &$form_state, $form_id) {
+  // Munge issue node form
+  if ($form_id == 'wiki_node_form') {
+    $form['og_nodeapi']['#group'] = NULL;
+   
+    // If no initial groups, collapse fieldset
+    if (empty($form['og_initial_groups']['#value'])) {
+      $form['og_nodeapi']['#collapsed'] = TRUE;
+    }
+
+    $form['revision_information']['#group'] = NULL;
+    $form['revision_information']['revision']['#access'] = FALSE;
+    $form['revision_information']['log']['#title'] = t('Revision message');
+    $form['revision_information']['log']['#rows'] = 4;
+    $form['revision_information']['log']['#cols'] = 50;
+    $form['revision_information']['log']['#description'] = t(
+      'Provide a short description of the changes made to this @type.',
+      array('@type' => drupal_strtolower(node_get_types('name', $node)))
+    );
+
+  }
+}

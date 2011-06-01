@@ -1,7 +1,7 @@
 <?php
 // $Id$;
 /**
- * @file ecenter_editing.install
+ * @file ecenter_forms.install
  */
 
 /**
@@ -9,10 +9,10 @@
  *
  * Simply set thumbnail size.
  */
-function ecenter_editing_install() {
+function ecenter_forms_install() {
   variable_set('imagefield_thumb_size', '60x60');
 }
 
-function ecenter_editing_uninstall() {
+function ecenter_forms_uninstall() {
   variable_del('imagefield_thumb_size');
 }

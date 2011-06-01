@@ -9,7 +9,7 @@
 /**
  * Implementation hook_form_alter().
  */
-function ecenter_editing_form_alter(&$form, &$form_state, $form_id) {
+function ecenter_forms_form_alter(&$form, &$form_state, $form_id) {
   // Node forms
   if ($form['#id'] == 'node-form') {
     // Remove options for internal Drupal workflow states

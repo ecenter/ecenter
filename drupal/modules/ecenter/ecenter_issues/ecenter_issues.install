@@ -1,0 +1,12 @@
+<?php
+/**
+ * @file ecenter_issues.install
+ */
+
+/**
+ * Implementation of hook_install().
+ */
+function ecenter_issues_install() {
+  db_query("UPDATE {system} SET weight = 500 WHERE name = 'ecenter_issues'");
+}
+

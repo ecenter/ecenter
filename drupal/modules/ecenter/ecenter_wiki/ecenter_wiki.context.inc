@@ -10,18 +10,28 @@ function ecenter_wiki_context_default_contexts() {
   $context->api_version = 3;
   $context->name = 'ecenter_wiki';
   $context->description = '';
-  $context->tag = 'ecenter';
+  $context->tag = 'e-center';
   $context->conditions = array(
     'node' => array(
       'values' => array(
         'wiki' => 'wiki',
       ),
       'options' => array(
-        'node_form' => '1',
+        'node_form' => '0',
       ),
     ),
   );
   $context->reactions = array(
+    'block' => array(
+      'blocks' => array(
+        'views-ecenter_wiki_revisions-block' => array(
+          'module' => 'views',
+          'delta' => 'ecenter_wiki_revisions-block',
+          'region' => 'right',
+          'weight' => 0,
+        ),
+      ),
+    ),
     'breadcrumb' => 'wiki',
     'menu' => 'wiki',
   );
@@ -29,7 +39,7 @@ function ecenter_wiki_context_default_contexts() {
 
   // Translatables
   // Included for use with string extractors like potx.
-  t('ecenter');
+  t('e-center');
 
   $export['ecenter_wiki'] = $context;
   return $export;

@@ -24,7 +24,7 @@ function ecenter_editor_install() {
 
   // Create filter configuration
   $modules = array(
-    'pathologic', 'markdown', 'wysiwyg_filter', 'syntaxhighlighter', 'oembed',
+    'markdown', 'wysiwyg_filter', 'syntaxhighlighter', 'oembed', 'pathologic', 'tableofcontents',
   );
   foreach ($modules as $weight => $module) {
     db_query(
@@ -49,8 +49,8 @@ br,span,em,strong,cite,code,blockquote,ul,ol,li,dl,dt,dd';
 
 
   variable_set('wysiwyg_filter_allow_comments_'. $format, '0');
-  variable_set('wysiwyg_filter_no_follow_domains_'. $format, NULL);
-  variable_set('wysiwyg_filter_no_follow_policy_'. $format, 'whitelist');
+  variable_set('wysiwyg_filter_nofollow_domains_'. $format, NULL);
+  variable_set('wysiwyg_filter_nofollow_policy_'. $format, 'whitelist');
   variable_set('wysiwyg_filter_styles_border-1_'. $format, array(
     'border-color' => 0,
     'border-top-color' => 0,
@@ -101,6 +101,25 @@ br,span,em,strong,cite,code,blockquote,ul,ol,li,dl,dt,dd';
     'min-height' => 0,
     'min-width' => 0,
     'width' => 0,
+  ));
+  variable_set('wysiwyg_filter_styles_font_'. $format, array(
+    'font' => 0,
+    'font-family' => 0,
+    'font-size' => 0,
+    'font-size-adjust' => 0,
+    'font-stretch' => 0,
+    'font-style' => 0,
+    'font-variant' => 0,
+    'font-weight' => 0,
+  ));
+  variable_set('wysiwyg_filter_styles_color_'. $format, array(
+    'color' => 0,
+    'background' => 0,
+    'background-color' => 0,
+    'background-image' => 0,
+    'background-repeat' => 0,
+    'background-attachment' => 0,
+    'background-position' => 0,
   ));
   variable_set('wysiwyg_filter_styles_layout_'. $format, array(
     'clear' => 0,
@@ -153,6 +172,44 @@ br,span,em,strong,cite,code,blockquote,ul,ol,li,dl,dt,dd';
     'zoom' => 0,
   ));
 
+  // Table of contents options
+  variable_set('tableofcontents_allowed_tags_'. $format, 
+    '<em> <i> <strong> <b> <u> <del> <ins> <sub> <sup> <cite> <strike> <s> <tt> <span> <font> <abbr> <acronym> <dfn> <q> <bdo> <big> <small>');
+  variable_set('tableofcontents_allow_override_'. $format, 0);
+  variable_set('tableofcontents_attachments_'. $format, 0);
+  variable_set('tableofcontents_automatic_'. $format, 1);
+  variable_set('tableofcontents_back_to_top_'. $format, 'Back to top');
+  variable_set('tableofcontents_back_to_top_anchor_'. $format, 'content');
+  variable_set('tableofcontents_back_to_top_location_'. $format, 'bottom');
+  variable_set('tableofcontents_collapsed_'. $format, 0);
+  variable_set('tableofcontents_comments_'. $format, 0);
+  variable_set('tableofcontents_comments_level_'. $format, '3');
+  variable_set('tableofcontents_hide_show_'. $format, 0);
+  variable_set('tableofcontents_hide_table_'. $format, 0);
+  variable_set('tableofcontents_identifier_introducer_'. $format, 'header');
+  variable_set('tableofcontents_id_generator_'. $format, 'title');
+  variable_set('tableofcontents_id_separator_'. $format, '-');
+  variable_set('tableofcontents_id_stripping_'. $format, array(
+    'periods' => 'periods',
+    'colons' => 'colons',
+    'digits' => 0,
+    'dashes' => 0,
+    'underscores' => 0,
+  ));
+  variable_set('tableofcontents_list_type_'. $format, 'ul');
+  variable_set('tableofcontents_maxlevel_'. $format, '6');
+  variable_set('tableofcontents_minlevel_'. $format, '2');
+  variable_set('tableofcontents_min_limit_'. $format, '5');
+  variable_set('tableofcontents_numbering_'. $format, '0');
+  variable_set('tableofcontents_number_end_letter_'. $format, '.');
+  variable_set('tableofcontents_number_headers_'. $format, 0);
+  variable_set('tableofcontents_number_mode_'. $format, '0');
+  variable_set('tableofcontents_number_separator_'. $format, '.');
+  variable_set('tableofcontents_number_start_letter_'. $format, '');
+  variable_set('tableofcontents_remove_teaser_'. $format, 0);
+  variable_set('tableofcontents_scroll_back_to_top_'. $format, 1);
+  variable_set('tableofcontents_title_'. $format, 'Table of Contents');
+  
   // WYSIWYG editor configuration 
   $settings = array(
     'default' => 1,
@@ -189,7 +246,7 @@ br,span,em,strong,cite,code,blockquote,ul,ol,li,dl,dt,dd';
     ),
     'toolbar_loc' => 'top',
     'toolbar_align' => 'left',
-    'path_loc' => 'bottoms',
+    'path_loc' => 'bottom',
     'resizing' => 1,
     'verify_html' => 0,
     'preformatted' => 1,
@@ -198,8 +255,8 @@ br,span,em,strong,cite,code,blockquote,ul,ol,li,dl,dt,dd';
     'remove_linebreaks' => 0,
     'paste_auto_cleanup_on_paste' => 1,
     'block_formats' => 'p,h2,h3,h4,h5,h6,pre,div',
-    'css_setting' => 'theme',
-    'css_path' => NULL,
+    'css_setting' => 'self',
+    'css_path' => '%b%t/css/editor.css',
     'css_classes' => 'Align center=content-align-center
 Align right=content-align-right
 Float left=content-float-left
@@ -237,11 +294,12 @@ function ecenter_editor_uninstall() {
   variable_del('wysiwyg_filter_valid_elements_raw_'. $format);
   variable_del('wysiwyg_filter_valid_elements_parsed_'. $format);
   variable_del('wysiwyg_filter_allow_comments_'. $format);
-  variable_del('wysiwyg_filter_no_follow_domains_'. $format);
-  variable_del('wysiwyg_filter_no_follow_policy_'. $format);
+  variable_del('wysiwyg_filter_nofollow_domains_'. $format);
+  variable_del('wysiwyg_filter_nofollow_policy_'. $format);
   variable_del('wysiwyg_filter_styles_border-1_'. $format);
   variable_del('wysiwyg_filter_styles_border-2_'. $format);
   variable_del('wysiwyg_filter_styles_box_'. $format);
+  variable_del('wysiwyg_filter_styles_color_'. $format);
   variable_del('wysiwyg_filter_styles_dimension_'. $format);
   variable_del('wysiwyg_filter_styles_layout_'. $format);
   variable_del('wysiwyg_filter_styles_list_'. $format);
@@ -249,6 +307,36 @@ function ecenter_editor_uninstall() {
   variable_del('wysiwyg_filter_styles_table_'. $format);
   variable_del('wysiwyg_filter_styles_text_'. $format);
   variable_del('wysiwyg_filter_styles_user_'. $format);
+
+  variable_del('tableofcontents_allowed_tags_'. $format);
+  variable_del('tableofcontents_allowed_override_'. $format);
+  variable_del('tableofcontents_attachments_'. $format);
+  variable_del('tableofcontents_automatic_'. $format);
+  variable_del('tableofcontents_back_to_top_'. $format); 
+  variable_del('tableofcontents_back_to_top_anchor_'. $format); 
+  variable_del('tableofcontents_back_to_top_location_'. $format); 
+  variable_del('tableofcontents_collapsed_'. $format); 
+  variable_del('tableofcontents_comments_'. $format);
+  variable_del('tableofcontents_comments_level_'. $format);
+  variable_del('tableofcontents_hide_show_'. $format);
+  variable_del('tableofcontents_hide_table_'. $format);
+  variable_del('tableofcontents_identifier_introducer_'. $format);
+  variable_del('tableofcontents_id_generator_'. $format);
+  variable_del('tableofcontents_id_separator_'. $format);
+  variable_del('tableofcontents_id_stripping_'. $format);
+  variable_del('tableofcontents_list_type_'. $format); 
+  variable_del('tableofcontents_maxlevel_'. $format);
+  variable_del('tableofcontents_minlevel_'. $format);
+  variable_del('tableofcontents_min_limit_'. $format);
+  variable_del('tableofcontents_numbering_'. $format);
+  variable_del('tableofcontents_number_end_letter_'. $format);
+  variable_del('tableofcontents_number_headers_'. $format);
+  variable_del('tableofcontents_number_mode_'. $format);
+  variable_del('tableofcontents_number_separator_'. $format);
+  variable_del('tableofcontents_number_start_letter_'. $format);
+  variable_del('tableofcontents_remove_teaser_'. $format);
+  variable_del('tableofcontents_scroll_back_to_top_'. $format);
+  variable_del('tableofcontents_title_'. $format);
 
   variable_del('ecenter_editor_format');
 }

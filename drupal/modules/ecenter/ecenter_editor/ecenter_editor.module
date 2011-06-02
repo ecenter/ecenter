@@ -1,4 +1,13 @@
 <?php
+/** 
+ * @file ecenter_editor.module
+ *
+ * This module forcibly installs an input format, WYSIWYG profile, and 
+ * configuration for enabled filters. We use this "brute force" approach
+ * because of the difficulty in exporting WYSIWYG profiles and input formats
+ * to code.
+ */
+
 /**
  * Implementation of hook_wysiwyg_editor_settings_alter.
  */

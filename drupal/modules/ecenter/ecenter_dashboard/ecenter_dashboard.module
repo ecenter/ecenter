@@ -1,3 +1,59 @@
 <?php
 
 include_once('ecenter_dashboard.features.inc');
+
+/**
+ * Implementation of hook_menu().
+ */
+function ecenter_dashboard_menu() {
+  $items['ecenter-dashboard'] = array(
+    'page callback' => 'theme',
+    'page arguments' => array('ecenter_dashboard'),
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function ecenter_dashboard_theme() {
+  return array(
+    'ecenter_dashboard' => array(
+      'template' => 'ecenter-dashboard',
+      'arguments' => array(),
+    ),
+  );
+}
+
+/**
+ * E-Center dashboard callback 
+ */
+function template_preprocess_ecenter_dashboard(&$vars) {
+  global $user;
+
+  if ($user->uid) {
+    $vars['main_content'] = array(
+      array(
+        'title' => t('Activity'),
+        'content' => 'stub',
+        //'content' => views_embed_view('ecenter_heartbeat_my_activity', 'block_1'),
+      ),
+    );
+    $vars['secondary_content'] = array(
+      array(
+        'title' => t('Recent comments'),
+        'content' => views_embed_view('comments_recent', 'block'),
+      ),
+    );
+  }
+  else {
+    // Anonymous...
+  }
+
+  $block = module_invoke('heartbeat', 'block', 'view', 'privateheartbeat'); 
+  dpm($block);
+
+  dpm($vars);
+}

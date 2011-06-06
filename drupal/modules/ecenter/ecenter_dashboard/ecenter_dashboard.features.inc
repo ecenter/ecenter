@@ -93,6 +93,7 @@ function ecenter_dashboard_heartbeat_message_info() {
 /**
  * Implementation of hook_rules_defaults().
  */
+/*
 function ecenter_dashboard_rules_defaults() {
   return array(
     'rules' => array(
@@ -548,3 +549,4 @@ function ecenter_dashboard_rules_defaults() {
     ),
   );
 }
+*/

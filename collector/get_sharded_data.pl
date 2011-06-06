@@ -356,6 +356,10 @@ sub get_e2e {
      foreach my $md (@metadata) {
          #my $pid = $pm->start and next;
 	 ###next unless  $md->eventtype->service->service =~ /bnl|anl/;
+	 unless($md->eventtype && $md->eventtype->service && $md->eventtype->service->service) {
+             $logger->error("NO Service for MD::", sub{Dumper($md )});
+	     next;
+	 }
 	 pool_control($MAX_THREADS,undef);
 	 threads->new({'context' => 'scalar'},
 	                          sub { 
@@ -368,8 +372,7 @@ sub get_e2e {
 	    # my $last_time = $dbh->resultset("${table_name}Data$now_table")->search( { metaid => $md->metaid },
 	    #						      {   order_by => { -desc => 'timestamp'} }
 	    #						    )->single;
-	     $logger->error("NO Service for MD::", sub{Dumper($md )}) unless $md->eventtype && $md->eventtype->service && $md->eventtype->service->service;  
-             my $secs_past = $last_time && $last_time->{$md->metaid}{timestamp} && $last_time->{$md->metaid}{timestamp} >  $PAST_START?
+	     my $secs_past = ($last_time && $last_time->{$md->metaid}{timestamp} && $last_time->{$md->metaid}{timestamp} >  $PAST_START)?
 	                         $last_time->{$md->metaid}{timestamp}:$PAST_START;
     	     my $e2e_data = []; 
 	     $dbi->disconnect if $dbi;
@@ -378,7 +381,7 @@ sub get_e2e {
 	                                             url     => $md->eventtype->service->service,
 	                                             start   => $secs_past,
     	    			                     end     => time(),
-						     resolution => 100000,
+						     resolution => 10000,
 						     args => {
 						        subject => $md->subject
 						     }

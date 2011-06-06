@@ -10,6 +10,8 @@ use DateTime;
 use DateTime::Format::MySQL;
 use Ecenter::Exception;
 use Ecenter::DB;
+use Ecenter::Utils;
+use Ecenter::ADS::Detector::APD;
 
  # for simple SQL stuff
 
@@ -19,8 +21,9 @@ use Params::Validate qw(:all);
 # for complex SQL stuff
 use Dancer::Plugin::Database;
 use Dancer::Logger;
+
 use Log::Log4perl qw(:easy); 
-use Ecenter::Utils;
+
 use Gearman::Client;
 use NetAddr::IP::Util qw(inet_n2ad ipv6_n2x isIPv4);
 use JSON::XS qw(encode_json decode_json);
@@ -53,11 +56,17 @@ our  $logger = Log::Log4perl->get_logger(__PACKAGE__);
    ecenter_data.pl - standalone RESTfull service, provides interface for the Ecenter data and dispatch
 
 =cut
+##  ADS service, too much data, need to POST
+
+any ['post'] =>  "/ads/algo.:format" => 
+       sub {
+	       return  detect_anomaly(algo => params->{algo}, params('query'));
+       };
 
 ##  status URL
 any ['get'] =>  "/status.:format" => 
        sub {
- 	       return  { status => 'ok'}
+ 	       return  { status => 'ok' }
        };
 # health service
 any ['get'] =>  "/health.:format" => 
@@ -159,6 +168,38 @@ sub _params_to_date {
 	    $params{bwctl}{end}   = $median +  $DAYS7_SECS; #  7 days
     }
     return \%params;
+}
+
+#
+# return hash with anomalies found
+#
+#
+
+sub detect_anomaly {
+    my %req_params =  validate(@_, { algo => {type => SCALAR, regex => qr/^apd|spd$/i},
+                                     data => {type => SCALAR},
+				     data_type   => {type => SCALAR, regex => qr/^owamp|bwctl|pinger$/i},
+				     sensitivity => {type => SCALAR, regex => qr/^\d+$/i,     default => 2, optional => 1},
+				     elevation1  => {type => SCALAR, regex => qr/^[\.\d]+$/i, default => .2, optional => 1},
+				     elevation2  => {type => SCALAR, regex => qr/^[\.\d]+$/i, default => .4, optional => 1},
+				     swc         => {type => SCALAR, regex => qr/^\d+$/i,     default => 20, optional => 1},
+				   });
+    my $data_request = decode_json $req_params{data};
+    delete $req_params{data};
+    unless($data_request && ref $data_request eq ref {} && %{$data_request}) {
+        return error "Data is not supplied or malformatted";
+    }
+    my $algo = "\U$req_params{algo}";
+    delete $req_params{algo};
+    my $ads = ("Ecenter::ADS::Detector::$algo")->new({ data => $data_request, %req_params });
+    my $results = {};
+    eval {
+        $results = $ads->process_data();
+    };
+    if(!$results || $EVAL_ERROR) {
+       error "ADS failed with: $EVAL_ERROR";
+    }
+    return $results;
 }
 #
 # return hash with error string for each non-healthy part of the data service
@@ -357,16 +398,18 @@ sub process_data {
     if($params{src_ip}) {
         $trace_cond->{direct_traceroute}{src}  = qq|  md.src_ip =  inet6_pton('$params{src_ip}')|;
         $trace_cond->{reverse_traceroute}{src} = qq|  md.dst_ip  =  inet6_pton('$params{src_ip}') |;
-    } else {
-        $trace_cond->{direct_traceroute}{src}  = qq| n_src.nodename like   '%$params{src_hub}%'  |;
-        $trace_cond->{reverse_traceroute}{src} = qq| n_src.nodename like   '%$params{dst_hub}%' |;
+    } 
+    if ($params{src_hub}) {
+        $trace_cond->{direct_traceroute}{src}  = qq| hb1.hub =   '$params{src_hub}'  |;
+        $trace_cond->{reverse_traceroute}{src} = qq| hb2.hub =   '$params{src_hub}'  |;
     }
     if($params{dst_ip}) {
         $trace_cond->{direct_traceroute}{dst}   =   qq|  md.dst_ip =  inet6_pton('$params{dst_ip}') |;
         $trace_cond->{reverse_traceroute}{dst}  =   qq|  md.src_ip =  inet6_pton('$params{dst_ip}')  |; 
-    } else {
-        $trace_cond->{direct_traceroute}{dst}   = qq|  n_dst.nodename like   '%$params{dst_hub}%' |;
-        $trace_cond->{reverse_traceroute}{dst}  = qq| n_dst.nodename like    '%$params{src_hub}%' |;
+    } 
+    if ($params{dst_hub}) {
+        $trace_cond->{direct_traceroute}{dst}   = qq|   hb2.hub =   '$params{dst_hub}' |;
+        $trace_cond->{reverse_traceroute}{dst}  = qq|   hb1.hub =   '$params{dst_hub}'  |;
     }
     ################ starting the client
     #
@@ -426,13 +469,22 @@ sub process_data {
     # my @data_keys = qw/owamp/;
     my %e2e_mds = ();
     map {$data->{$_} = {}} @data_keys;
+    
+    
     foreach my $dir (keys %directions) {
-	my $e2e_sql = qq|select   md.metaid, n_src.ip_noted as src_ip, md.subject, e.service_type as type,  n_dst.ip_noted  as dst_ip, 
+	my $e2e_sql = qq|select   md.metaid, n_src.ip_noted as src_ip, md.subject, e.service_type as type, hb1.hub as src_hub, hb2.hub as dst_hub,
+	                          n_dst.ip_noted  as dst_ip, 
                                                               n_src.nodename as src_name, n_dst.nodename as dst_name, s.service
 	                                        	   from 
 						        	      metadata md
 					        		join  node n_src on(md.src_ip = n_src.ip_addr) 
 								join  node n_dst on(md.dst_ip = n_dst.ip_addr) 
+								join l2_l3_map    llm1 on( n_src.ip_addr=llm1.ip_addr) 
+     	                                                        join l2_port      l2p1 on(llm1.l2_urn =l2p1.l2_urn) 
+     	                                                        join hub         hb1  on(hb1.hub =l2p1.l2_urn)
+								join l2_l3_map    llm2 on( n_dst.ip_addr=llm2.ip_addr) 
+     	                                                        join l2_port      l2p2 on(llm2.l2_urn =l2p2.l2_urn) 
+     	                                                        join hub         hb2  on(hb2.hub =l2p2.l2_urn)
 								join eventtype e on(md.eventtype_id = e.ref_id)
 								join service s  on (e.service = s.service)
 							  where  
@@ -523,6 +575,9 @@ sub get_e2e{
 								         $logger->error("FAILED: datum malformed", sub{Dumper($datum)});
 									 next;
 								     }
+								     $datum->[1]->{src_hub} = $md_href->{src_hub};
+								     $datum->[1]->{dst_hub} = $md_href->{dst_hub};
+								     
 				                                     $data_hr->{$md_row->{src_ip}}{$md_row->{dst_ip}}{$datum->[0]} = $datum->[1];
 								 }
 								 $logger->debug("DATA for $type: md=$metaid times=$st_time - $end_time :::" . scalar(@{$returned->{data}}));
@@ -544,12 +599,18 @@ sub get_e2e{
 # 
 sub  get_traceroute_mds {
     my ($trace_cond) = @_;
-    my  $cmd =   qq|select  distinct md.metaid as metaid, md.src_ip, md.dst_ip, md.subject, 
+    my  $cmd =   qq|select  distinct md.metaid as metaid, md.src_ip, md.dst_ip, md.subject, hb1.hub as src_hub, hb2.hub as dst_hub,
                              s.service  from 
 	                                                    metadata md 
 	                                               join eventtype e on(md.eventtype_id = e.ref_id)  
 						       join node n_src  on(md.src_ip = n_src.ip_addr)
-						       join node n_dst  on(md.dst_ip = n_dst.ip_addr)  
+						       join node n_dst  on(md.dst_ip = n_dst.ip_addr) 
+						       join l2_l3_map	llm1 on( n_src.ip_addr=llm1.ip_addr) 
+     	                                               join l2_port	l2p1 on(llm1.l2_urn =l2p1.l2_urn) 
+     	                                               join hub         hb1  on(hb1.hub =l2p1.l2_urn)
+						       join l2_l3_map	llm2 on( n_dst.ip_addr=llm2.ip_addr) 
+     	                                               join l2_port	l2p2 on(llm2.l2_urn =l2p2.l2_urn) 
+     	                                               join hub         hb2  on(hb2.hub =l2p2.l2_urn)
 						       join service s   on(s.service = e.service)
 						    where  
 						         e.service_type = 'traceroute' and  

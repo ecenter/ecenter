@@ -56,9 +56,9 @@ function template_preprocess_ecenter_network_data(&$vars) {
     '#type' => 'textfield',
     '#size' => 115,
     '#attributes' => array('readonly' => 'readonly'),
-    '#value' => urldecode(url('network',
+    '#value' => url('network', 
       array('query' => $vars['params'], 'absolute' => TRUE,)
-    )),
+    ),
   );
   $vars['permalink_field'] = drupal_render($permalink_field);
 

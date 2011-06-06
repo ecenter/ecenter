@@ -43,8 +43,22 @@ function ecenter_issues_init() {
  * Implementation of hook_form_alter().
  */
 function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
-
+  // Hide query data from users without permission
+  if (!user_access('access ecenter issue query values') 
+    && $form_id == 'network_query_node_form') {
+    $form['field_query_data']['#access'] = FALSE;
+  }
+ 
+  // Munge issue node form
   if ($form_id == 'issue_node_form') {
+
+    $form['og_nodeapi']['#group'] = NULL;
+    $form['revision_information']['#group'] = NULL;
+
+    // If no initial groups, collapse fieldset
+    if (empty($form['og_initial_groups']['#value'])) {
+      $form['og_nodeapi']['#collapsed'] = TRUE;
+    }
 
     drupal_add_css(drupal_get_path('module', 'ecenter_issues') .'/css/ecenter-issues.css');
 
@@ -61,21 +75,7 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
     $form['revision_information']['#access'] = FALSE;
 
     // If new, populate values and do additional checking
-    if (!$form['#node']->nid) {
-      // No query string provided
-      if (empty($_REQUEST['query'])) {
-        $form = array(
-          'error' => array(
-            '#value' => t('At this time, issues may only be created after
-              running a traceroute. Please visit the
-              <a href="@network">weathermap</a> and try again.', array(
-                '@network' => url('weathermap'))
-              )
-            ),
-        );
-        return;
-      }
-
+    if (!$form['#node']->nid && !empty($_REQUEST['query'])) {
       $params = ecenter_issues_parse_params($_REQUEST['query']);
       $data = ecenter_network_get_data($params['src'], $params['dst'],
         $params['start'], $params['end']);
@@ -109,11 +109,6 @@ function ecenter_issues_form_alter(&$form, &$form_state, $form_id) {
         )
       );
     }
-  }
-
-  if (!user_access('access ecenter issue query values') 
-    && $form_id == 'network_query_node_form') {
-    $form['field_query_data']['#access'] = FALSE;
   }
 }
 
@@ -219,6 +214,16 @@ function ecenter_issues_get_query_node($params) {
   return node_load($nid);
 }
 
+/**
+ * Get issues for a query
+ *
+ * @TODO Support more flexibility than exact matching used here
+ * 
+ * @param $node
+ *   A query node object
+ * @return
+ *   An array of issue objects
+ */
 function ecenter_issues_get_query_issues($node) {
   $query_field = content_fields('field_issue_query');
   $query_db_info = content_database_info($query_field);

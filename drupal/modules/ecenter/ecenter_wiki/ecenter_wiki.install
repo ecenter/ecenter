@@ -1,0 +1,11 @@
+<?php
+/**
+ * @file ecenter_wiki.install
+ */
+
+/**
+ * Implementation of hook_install().
+ */
+function ecenter_wiki_install() {
+  db_query("UPDATE {system} SET weight = 500 WHERE name = 'ecenter_wiki'");
+}

@@ -1616,7 +1616,6 @@ function _ecenter_network_extract_query() {
       'timezone' => $_REQUEST['timezone'],
     );
   }
-  
 
   return $vars;
 }

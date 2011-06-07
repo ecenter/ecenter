@@ -2,7 +2,8 @@ package Ecenter::ADS::Detector;
 
 use Moose;
 use namespace::autoclean;
- 
+use Data::Dumper;
+
 use Log::Log4perl qw(get_logger);
 use English qw( -no_match_vars );
 
@@ -60,6 +61,7 @@ sub BUILD {
     my ($self, $args) = @_;
     $self->logger(get_logger(__PACKAGE__));
     map {$self->$_($args->{$_}) if $self->can($_)}  keys %$args if $args && ref $args eq ref {};
+    $self->results({});
 }
 
 =head1 process_data
@@ -97,11 +99,14 @@ sub parse_data {
         }
     }
     foreach my $name (@{$METRIC->{$self->data_type}}) {
-	foreach my $key (keys   %{$parsed_data->{$name}}) { 
-	    @{$parsed_data->{$name}{$key}} =  sort {$a->[0] <=> $b->[0] } map {[$_ =>  $parsed_data->{$name}{$key}{$_} ]} 
-	                                        keys %{$parsed_data->{$name}{$key}};
+	foreach my $key (keys   %{$parsed_data->{$name}}) {
+	    my %tmp =  %{$parsed_data->{$name}{$key}};
+	    $parsed_data->{$name}{$key} = [];
+	    @{$parsed_data->{$name}{$key}} =  sort {$a->[0] <=> $b->[0] } map {[$_ , $tmp{$_} ]} 
+	                                        keys %tmp;
         }
     }
+    $self->logger->debug("Parsed Data", sub{Dumper($parsed_data)});
     return $self->parsed_data($parsed_data);
 }
 =head1 add_results

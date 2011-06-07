@@ -3,9 +3,12 @@ package Ecenter::ADS::Detector::APD;
 use Moose;
 use namespace::autoclean;
 
+use Data::Dumper;
 use English qw( -no_match_vars );
 use List::Util qw[min max];
 
+ 
+use Log::Log4perl qw(get_logger);
 extends 'Ecenter::ADS::Detector';
 
 =head1 NAME
@@ -39,11 +42,11 @@ logging  agent via C<Log::Log4perl>
 
 
 =cut
-has algo        =>  (is => 'rw', isa => 'Str', default => 'apd');
+has algo        =>  (is => 'rw', isa => 'Str', required => 1);
 has elevation1  =>  (is => 'rw', isa => 'Num', default => .2);
 has elevation2  =>  (is => 'rw', isa => 'Num', default => .4);
 has swc         =>  (is => 'rw', isa => 'Int', default => 20);
-has sensitivity =>  (is => 'rw', isa => 'Int', default => 2);
+has sensitivity =>  (is => 'rw', isa => 'Num', default => 2);
  
 my $ANA_METRIC = {owamp =>  'max_delay', bwctl => 'throughput'};
  
@@ -64,7 +67,7 @@ after 'process_data' => sub {
     map {$self->$_($args->{$_}) if $self->can($_)}  keys %$args if $args && ref $args eq ref {};
     my $data_ip = $self->parse_data->{$ANA_METRIC->{$self->data_type}};
     foreach my $key (keys %$data_ip) {
-	my @data = @{$data_ip->{$key}};
+	my @data = map {$_->[1]} @{$data_ip->{$key}};
 	my $data_size = scalar @data;
 	next unless $data_size;
 
@@ -78,29 +81,31 @@ after 'process_data' => sub {
 	#buffers
 	my (@warning,@critical);
 	#take the first $self->swc number data as normal status
-	my @normal = map {$_->[1]} @data[0..min($self->swc, $data_size)];
+	my @normal =  @data[0..(min($self->swc, $data_size -1))];
 	#main apd(or spd) algorithm
+	 $self->logger->debug("Normal::", sub{Dumper(\@normal)});
+	 
 	#detection analysis on the data begin with index $self->swc 
 	for (my $i = $self->swc; $i < $data_size; $i++){
     	    if($timer==0){
     	    	($mean,$sigma)=$self->_getstat(\@normal);
     	    	if($self->algo eq 'spd'){
     	    	    ($cu,$wu,$wl,$cl)=$self->_getthreshold($mean, $sigma);
-    	    	}else{
+    	    	} else{
     	    	    $self->sensitivity($self->_newsensitivity($i, $sigma, \@data, $data_size));
     	    	    ($cu,$wu,$wl,$cl)=$self->_getthreshold($mean, $sigma);
     	    	}
     	    } else{
     	    	$timer--;
     	    }
-    	    if($data[$i]->[1]>$cu || $data[$i]->[1]<$cl){
+    	    if($data[$i]>$cu || $data[$i]<$cl){
     	    	push(@critical,$data[$i]);
     	    	$tricnt++;
-    	    } elsif($data[$i]->[1]>$wu || $data[$i]->[1]<$wl){
-    	    	push(@warning,$data[$i]->[1]);
+    	    } elsif($data[$i]>$wu || $data[$i]<$wl){
+    	    	push(@warning,$data[$i]);
     	    	$tricnt++;
     	    } else {
-    	    	$normal[$p]=$data[$i]->[1];
+    	    	$normal[$p]=$data[$i];
     	    	$p++;
     	    	if($p==$self->swc){ $p=0;}
     	    	$tricnt=max($tricnt-1,0);
@@ -111,20 +116,24 @@ after 'process_data' => sub {
     	    	@critical = ();
     	    }
             my %response = ( anomaly_type => 'plateau', 
-			     timestamp    => $data[$i]->[0],
-			     value        => $data[$i]->[1] );
-    	    if($tricnt==$tri_duration){
+			     timestamp    => $data_ip->{$key}->[$i][0],
+			     value        => $data[$i]  );
+	   $self->logger->debug("Tricnt=$tricnt Tri_duration=$tri_duration Sen=" . $self->sensitivity . " Data=$data[$i]");
+	   if($tricnt==$tri_duration){
+	        $self->logger->debug("Critical::" . $data_ip->{$key}->[$i][0]  . " value=" . $data[$i] );
     	    	$tricnt=0;
-    	    	$status{critical}{$data[$i]->[0]}= \(%response, 'anomaly_value' => 'critical'); #   src:dst => timestamp
+    	    	$status{critical}{$data_ip->{$key}->[$i][0]}= \(%response, 'anomaly_value' => 'critical'); #   src:dst => timestamp
     	    	($cu,$wu,$wl,$cl)=$self->_elevation(\@critical,\@warning,\@ele);
     	    	$timer=$self->swc;
     	    	$self->_cp_warning_normal(\$p, \@normal,\@warning);
     	    	@warning = ();
     	    } elsif ($tricnt> .75*$tri_duration){
-    	    	$status{warning}{$data[$i]->[0]}= \(%response, 'anomaly_value' => 'warning'); #   src:dst => timestamp
+	        $self->logger->debug("Warning::" . $data_ip->{$key}->[$i][0] . " value=" . $data[$i]);
+    	    	$status{warning}{$data_ip->{$key}->[$i][0]}= \(%response, 'anomaly_value' => 'warning'); #   src:dst => timestamp
     	    }
 	    
 	}
+	$self->logger->debug("Results Data $key - ", sub{Dumper( \%status )});
 	$self->add_result($tri_duration, $key, \@ele,  \%status );
     }
     return $self->results;
@@ -146,19 +155,29 @@ sub _newsensitivity {
     my $newsigma=0;
     my $mmean=0;
     my $ns;
-    if(($cp+$self->swc)> $data_size){
+    if(($cp+$self->swc)>= $data_size){
     	return 2;
     }
     for(my $k=0;$k<$self->swc;$k++){
-    	$mmean+=$data->[$cp+$k]->[1];
+    	$mmean+=$data->[$cp+$k];
     }
     $mmean/=$self->swc;
     for(my $k=0;$k<$self->swc;$k++){
-    	$newsigma+=($mmean-$data->[$k+$cp]->[1])*($mmean-$data->[$k+$cp]->[1]);
+    	$newsigma+=($mmean-$data->[$k+$cp])*($mmean-$data->[$k+$cp]);
     }
     $newsigma=sqrt($newsigma/($self->swc-1));
     $ns=min(5, .4*($newsigma/$sigma)*($newsigma/$sigma)+2);
     return $ns;
+}
+#compute trigger elevation 
+#Output:  elevated (upper_threshold2,upper_threshold1,lower_threshold1,lower_threshold2)
+sub _elevation{
+    my ($self, $critical,$warning,$ele)=@_;
+    my $max=max(@$critical,@$warning);
+    my $min=min(@$critical,@$warning);
+    my @up=($$ele[0]+1,$$ele[1]+1);
+    my @down=(1-$ele->[0],1-$ele->[1]);
+    return ($max*$up[1],$max*$up[0],$min*$down[0],$min*$down[1]);
 }
 #compute the threshold based on the mean,standard_deviation and sensitivity
 #Output:  upper_threshold2,upper_threshold1,lower_threshold1,lower_threshold2

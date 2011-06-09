@@ -16,7 +16,7 @@ function ecenter_preprocess_node(&$vars) {
   if ($vars['build_mode'] == 'ecenter_activity') {
     $node = $vars['node'];
     $author = user_load($node->uid);
-    
+
     $vars['action'] = ($node->changed > $node->created) ? t('updated by') : t('created by');
     $vars['node_type'] = node_get_types('name', $node->type);
 
@@ -31,15 +31,15 @@ function ecenter_preprocess_node(&$vars) {
       $vars['comment_mode'] = TRUE;
       if (user_access('access comments')) {
         $query = "
-          SELECT c.cid as cid, 
-            c.pid, c.nid, c.subject, c.comment, c.format, 
-            c.timestamp, c.name, c.mail, c.homepage, u.uid, 
-            u.name AS registered_name, u.signature, u.signature_format, 
-            u.picture, u.data, c.thread, c.status 
-          FROM {comments} c 
-          INNER JOIN 
-            {users} u ON c.uid = u.uid 
-          WHERE 
+          SELECT c.cid as cid,
+            c.pid, c.nid, c.subject, c.comment, c.format,
+            c.timestamp, c.name, c.mail, c.homepage, u.uid,
+            u.name AS registered_name, u.signature, u.signature_format,
+            u.picture, u.data, c.thread, c.status
+          FROM {comments} c
+          INNER JOIN
+            {users} u ON c.uid = u.uid
+          WHERE
             c.nid = %d
             AND c.status = %d
           ORDER BY
@@ -54,9 +54,9 @@ function ecenter_preprocess_node(&$vars) {
         $vars['message'] = _ecenter_trim($last_comment->comment);
         $vars['action'] = t('commented on');
       }
-    } 
+    }
     else {
-      $date = $node->changed; 
+      $date = $node->changed;
       $vars['comment_mode'] = FALSE;
       $vars['message'] = _ecenter_trim($node->body);
       $vars['name_plain'] = $author->name;
@@ -65,17 +65,17 @@ function ecenter_preprocess_node(&$vars) {
 
     if ($date > ($now - 3600)) { // Last hour
       $diff = ceil($diff / 60);
-      $vars['date'] = format_plural($diff, 
+      $vars['date'] = format_plural($diff,
         '!minutes minute ago',
         '!minutes minutes ago',
         array('!minutes' => $diff)
       );
-    }  
+    }
     else if ($date > ($now - 86400)) { // Last day
       $diff = ceil($diff / 3600);
-      $vars['date'] = format_plural($diff, 
+      $vars['date'] = format_plural($diff,
         '!hours hour ago',
-        '!hours hours ago', 
+        '!hours hours ago',
         array('!hours' => $diff)
       );
     }
@@ -83,20 +83,20 @@ function ecenter_preprocess_node(&$vars) {
       $diff = ceil($diff / 86400);
       $vars['date'] = format_plural($diff,
         '!days day ago',
-        '!days days ago', 
+        '!days days ago',
         array('!days' => $diff)
       );
     }
     else if ($date > ($now - 2592000)) { // Last month
       $week = ceil($diff / 604800);
       $days = floor((604800 * $week - $diff) / 86400);
-      $vars['date'] = format_plural($week, 
-        '!weeks week', 
-        '!weeks weeks', 
+      $vars['date'] = format_plural($week,
+        '!weeks week',
+        '!weeks weeks',
         array('!weeks' => $week)
       );
       if ($days) {
-        $vars['date'] .= ', '. format_plural($days, 
+        $vars['date'] .= ', '. format_plural($days,
           '!days day ',
           '!days days ',
           array('!days' => $days)
@@ -126,21 +126,21 @@ function ecenter_preprocess_node(&$vars) {
 
 /**
  * @function _ecenter_trim
- * 
+ *
  * Safely trim text
  *
  * @TODO configurable breakpoints?
- * 
+ *
  * @param $text
  *   String to trim
  * @param $size
  *   Maximum length to trim to
  * @return
- *   $text trimmed to a maximum length of $size (or shorter) 
+ *   $text trimmed to a maximum length of $size (or shorter)
  */
 function _ecenter_trim($text, $size = 140, $suffix = ' ...') {
   $text = filter_xss($text, array('a', 'em', 'strong', 'cite', 'code'));
-  
+
   if ($size >= drupal_strlen($text)) {
     return _filter_htmlcorrector($text);
   }
@@ -150,8 +150,8 @@ function _ecenter_trim($text, $size = 140, $suffix = ' ...') {
   $max_rpos = strlen($text);
   $min_rpos = $max_rpos;
   $break_points[] = array(
-    '</a>' => 0, 
-    '</em>' => 0, 
+    '</a>' => 0,
+    '</em>' => 0,
     '</strong>' => 0,
     '</cite>' => 0,
     '</code>' => 0,

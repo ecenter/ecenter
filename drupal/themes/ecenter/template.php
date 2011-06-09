@@ -20,12 +20,8 @@ function ecenter_preprocess_node(&$vars) {
     $vars['action'] = ($node->changed > $node->created) ? t('updated by') : t('created by');
     $vars['node_type'] = node_get_types('name', $node->type);
 
-    // @TODO handle commenting shiz
-
-    // Fancy date formatting
-    $now = time();
-
-    // Which sort 'won'?
+    // If comment timestamp newer than updated, we'll display a special
+    // 'commented' message, otherwise that the node was created/updated
     if ($node->last_comment_timestamp > $node->changed) {
       $date = $node->last_comment_timestamp;
       $vars['comment_mode'] = TRUE;
@@ -61,52 +57,8 @@ function ecenter_preprocess_node(&$vars) {
       $vars['message'] = _ecenter_trim($node->body);
       $vars['name_plain'] = $author->name;
     }
-    $diff = $now - $date;
 
-    if ($date > ($now - 3600)) { // Last hour
-      $diff = ceil($diff / 60);
-      $vars['date'] = format_plural($diff,
-        '!minutes minute ago',
-        '!minutes minutes ago',
-        array('!minutes' => $diff)
-      );
-    }
-    else if ($date > ($now - 86400)) { // Last day
-      $diff = ceil($diff / 3600);
-      $vars['date'] = format_plural($diff,
-        '!hours hour ago',
-        '!hours hours ago',
-        array('!hours' => $diff)
-      );
-    }
-    else if ($date > ($now - 604800)) { // Last week
-      $diff = ceil($diff / 86400);
-      $vars['date'] = format_plural($diff,
-        '!days day ago',
-        '!days days ago',
-        array('!days' => $diff)
-      );
-    }
-    else if ($date > ($now - 2592000)) { // Last month
-      $week = ceil($diff / 604800);
-      $days = floor((604800 * $week - $diff) / 86400);
-      $vars['date'] = format_plural($week,
-        '!weeks week',
-        '!weeks weeks',
-        array('!weeks' => $week)
-      );
-      if ($days) {
-        $vars['date'] .= ', '. format_plural($days,
-          '!days day ',
-          '!days days ',
-          array('!days' => $days)
-        );
-      }
-      $vars['date'] .= ' '. t('ago');
-    }
-    else {
-      $vars['date'] = format_date($date, 'custom', 'M j, Y');
-    }
+    $vars['date'] = _ecenter_format_date($date);
 
     if (!empty($node->og_groups)) {
       $group_links = array();
@@ -122,6 +74,61 @@ function ecenter_preprocess_node(&$vars) {
       $vars['message'] = (!empty($last_log)) ? $last_log : t('No log message.');
     }
   }
+}
+
+/**
+ * Fancy format a date
+ */
+function _ecenter_format_date($timestamp) {
+  $now = time();
+  $diff = $now - $timestamp;
+
+  if ($timestamp > ($now - 3600)) { // Last hour
+    $diff = ceil($diff / 60);
+    $date = format_plural($diff,
+      '!minutes minute ago',
+      '!minutes minutes ago',
+      array('!minutes' => $diff)
+    );
+  }
+  else if ($timestamp > ($now - 86400)) { // Last day
+    $diff = ceil($diff / 3600);
+    $date = format_plural($diff,
+      '!hours hour ago',
+      '!hours hours ago',
+      array('!hours' => $diff)
+    );
+  }
+  else if ($timestamp > ($now - 604800)) { // Last week
+    $diff = ceil($diff / 86400);
+    $date = format_plural($diff,
+      '!days day ago',
+      '!days days ago',
+      array('!days' => $diff)
+    );
+  }
+  else if ($timestamp > ($now - 2592000)) { // Last month
+    $week = ceil($diff / 604800);
+    $days = floor((604800 * $week - $diff) / 86400);
+    $date = format_plural($week,
+      '!weeks week',
+      '!weeks weeks',
+      array('!weeks' => $week)
+    );
+    if ($days) {
+      $date .= ', '. format_plural($days,
+        '!days day ',
+        '!days days ',
+        array('!days' => $days)
+      );
+    }
+    $date .= ' '. t('ago');
+  }
+  else {
+    $date = format_date($timestamp, 'custom', 'M j, Y');
+  }
+
+  return $date;
 }
 
 /**

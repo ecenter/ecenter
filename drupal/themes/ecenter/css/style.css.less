@@ -669,6 +669,7 @@ a {
 /* --- Content styling --- */
 /* Nodes {{{ */
 .node {
+  margin-bottom: 1.5em;
   .picture {
     .box;
     margin-right: 5px;
@@ -1695,6 +1696,35 @@ td.jqplot-table-legend > div {
     img {
       width: 35px;
       height: 35px;
+    }
+  }
+}
+
+.view-ecenter-dashboard-activity {
+  font-size: @font_size_15;
+  .meta {
+    border-bottom: 1px solid @color_grey_80;
+    a {
+      font-weight: bold;
+    }
+  }
+  .picture {
+    float: left;
+  }
+  .details, .meta {
+    margin-left: 35px;
+  }
+  .details {
+    font-size: @font_size_13;
+  }
+  .date {
+    font-size: @font_size_14;
+    color: @color_grey_33;
+    float: right;
+  }
+  .message {
+    .text {
+      font-style: italic;
     }
   }
 }

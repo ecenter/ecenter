@@ -33,34 +33,59 @@ function ecenter_dashboard_theme() {
  */
 function template_preprocess_ecenter_dashboard(&$vars) {
   global $user;
-
+  
   if ($user->uid) {
     $vars['main_content'] = array(
-      'site-centric' => array(
-        'subject' => t('Site-centric view'),
-        'content' => '<em>Placeholder for site-centric view</em>',
+      'placeholder' => array(
+        'content' => 'Placeholder for site-centric view',
       ),
       'activity' => array(
         'subject' => t('Site activity'),
-        'description' => t('Public activity on the site and in your groups.'),
-        'content' => views_embed_view('ecenter_dashboard_activity', 'block_1'),
+        'description' => t('Activity on the site and in your groups'),
+        'content' => views_embed_view('ecenter_dashboard_activity', 'block_personal'),
       ),
     );
     $vars['secondary_content'] = array(
+      'tools' => array(
+        'subject' => t('Tools'),
+        'content' => theme('links', menu_navigation_links('menu-action-links')),
+      ),
       'hot-comments' => array(
         'subject' => t('Hot conversations'),
-        'description' => t('The most active public conversations in the past 2 weeks.'),
+        'description' => t('The most active public conversations in the past 2 weeks'),
         'content' => views_embed_view('ecenter_dashboard_hot_comments', 'block_1'),
       ),
       'hot-content' => array(
         'subject' => t('Most popular content'),
-        'description' => t('The most popular content in the past month.'),
+        'description' => t('The most popular content in the past month'),
         'content' => views_embed_view('ecenter_dashboard_hot_content', 'block_1'),
       ),
     );
   }
   else {
-    // Anonymous...
+    $vars['main_content'] = array(
+      'placeholder' => array(
+        'content' => 'Placeholder for welcome text, video, etc',
+      ),
+      'activity' => array(
+        'subject' => t('Site activity'),
+        'description' => t('All public activity'),
+        'content' => views_embed_view('ecenter_dashboard_activity', 'block_public'),
+      ),
+    );
+    $vars['secondary_content'] = array(
+      'login' => module_invoke('user', 'block', 'view', 0),
+      'hot-comments' => array(
+        'subject' => t('Hot conversations'),
+        'description' => t('The most active public conversations in the past 2 weeks'),
+        'content' => views_embed_view('ecenter_dashboard_hot_comments', 'block_1'),
+      ),
+      'hot-content' => array(
+        'subject' => t('Most popular content'),
+        'description' => t('The most popular content in the past month'),
+        'content' => views_embed_view('ecenter_dashboard_hot_content', 'block_1'),
+      ),
+    );
   }
 
 }

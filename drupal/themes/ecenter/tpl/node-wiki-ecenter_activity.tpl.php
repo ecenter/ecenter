@@ -1,4 +1,4 @@
-<div class="node">
+<div class="node <?php print $classes; ?>">
   <div class="picture-wrapper"><?php print $picture; ?></div>
   <div class="meta">
     <span class="date"><?php print $date; ?></span>
@@ -10,7 +10,6 @@
     </span>
     <span class="action"><?php print $action; ?></span>
     <span class="name"><?php print $name; ?></span>
-    <span class="picture"><?php // print $picture; ?></span>
   </div>
   <div class="details">
     <span class="message">
@@ -19,7 +18,10 @@
     </span>
   </div>
 
-  <div class="test">
-    <?php print $test; ?>
+  <?php if ($groups): ?>
+  <div class="groups">
+    <label><?php print format_plural(count($node->og_groups), 'Group:', ' Groups:'); ?></label>
+    <?php print $groups; ?>
   </div>
+  <?php endif; ?>
 </div>

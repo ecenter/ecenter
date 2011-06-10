@@ -17,9 +17,13 @@ function ecenter_preprocess_node(&$vars) {
 
   if ($vars['build_mode'] == 'ecenter_activity') {
     $node = $vars['node'];
-
     $vars['action'] = ($node->changed > $node->created) ? t('updated by') : t('created by');
     $vars['node_type'] = node_get_types('name', $node->type);
+
+    // Node classes
+    $classes = array(
+      $node->type,
+    );
 
     if (!empty($node->og_groups)) {
       $group_links = array();
@@ -62,9 +66,6 @@ function ecenter_preprocess_node(&$vars) {
         $author = user_load($last_comment->uid);
         $vars['message'] = _ecenter_trim($last_comment->comment);
         $vars['action'] = t('commented on');
-        if ($user->uid == $author->uid) {
-          $author->name = t('You');
-        }
       }
     }
     else {
@@ -76,16 +77,19 @@ function ecenter_preprocess_node(&$vars) {
       // @TODO Instead of trimming body, we might want to use pre-processed
       // body value to avoid build mode wrangling.
       $vars['message'] = _ecenter_trim($node->body);
-      if ($user->uid == $author->uid) {
-        $author->name = t('you');
-      }
+    }
+
+    // If message is for 'you'
+    if ($user->uid && $user->uid == $author->uid) {
+      $author->name = ($vars['comment_mode']) ? t('You') : t('you');
+      $classes[] = 'self-author'; 
     }
 
     $vars['name'] = theme('username', $author);
     $vars['picture'] = theme('user_picture', $author);
     $vars['name_plain'] = check_plain($author->name);
-
     $vars['date'] = _ecenter_format_date($date);
+    $vars['classes'] = implode($classes, ' ');
 
   }
 }

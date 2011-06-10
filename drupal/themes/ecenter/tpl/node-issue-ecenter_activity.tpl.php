@@ -1,4 +1,4 @@
-<div class="node">
+<div class="node <?php print $classes; ?>">
   <div class="picture-wrapper"><?php print $picture; ?></div>
   <?php if ($comment_mode): ?>
     <div class="meta">
@@ -17,6 +17,14 @@
         <span class="text"><?php print $message; ?></span>
       </span>
     </div>
+
+    <?php if ($groups): ?>
+    <div class="groups">
+      <label><?php print format_plural(count($node->og_groups), 'Group:', ' Groups:'); ?></label>
+      <?php print $groups; ?>
+    </div>
+    <?php endif; ?>
+
   <?php else: ?>
     <div class="meta">
       <span class="date"><?php print $date; ?></span>
@@ -28,18 +36,21 @@
       </span>
       <span class="action"><?php print $action; ?></span>
       <span class="name"><?php print $name; ?></span>
-      <?php if ($groups): ?>
-      <span class="groups">
-        <?php print format_plural(count($node->og_groups), 'in group', 'in groups'); ?>
-        <?php print $groups; ?>
-      </span>
-      <?php endif; ?>
     </div>
+
     <div class="details">
       <span class="message">
         <label><?php print t('@user wrote:', array('@user' => $name_plain)); ?></label>
         <span class="text"><?php print $message; ?></span>
       </span>
     </div>
+
+    <?php if ($groups): ?>
+    <div class="groups">
+      <label><?php print format_plural(count($node->og_groups), 'Group:', ' Groups:'); ?></label>
+      <?php print $groups; ?>
+    </div>
+    <?php endif; ?>
+
   <?php endif; ?>
 </div>

@@ -38,20 +38,23 @@ function template_preprocess_ecenter_dashboard(&$vars) {
     $vars['main_content'] = array(
       'site-centric' => array(
         'subject' => t('Site-centric view'),
-        'content' => '<em>Stub for site-centric view</em>',
+        'content' => '<em>Placeholder for site-centric view</em>',
       ),
       'activity' => array(
-        'subject' => t('Activity'),
+        'subject' => t('Site activity'),
+        'description' => t('Public activity on the site and in your groups.'),
         'content' => views_embed_view('ecenter_dashboard_activity', 'block_1'),
       ),
     );
     $vars['secondary_content'] = array(
       'hot-comments' => array(
-        'subject' => t('Active discussions'),
+        'subject' => t('Hot conversations'),
+        'description' => t('The most active public conversations in the past 2 weeks.'),
         'content' => views_embed_view('ecenter_dashboard_hot_comments', 'block_1'),
       ),
       'hot-content' => array(
-        'subject' => t('Most viewed content'),
+        'subject' => t('Most popular content'),
+        'description' => t('The most popular content in the past month.'),
         'content' => views_embed_view('ecenter_dashboard_hot_content', 'block_1'),
       ),
     );

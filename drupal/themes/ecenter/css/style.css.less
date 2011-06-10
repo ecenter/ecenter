@@ -345,9 +345,10 @@ a {
         cursor: default; 
       }
     }
-
+    .menu {
+      margin-left: @container_padding_horizontal;
+    }
     &.menu-level-1 {
-      padding-left: @container_padding_horizontal;
       padding-top: 4px;
       padding-bottom: 4px;
       border-bottom: 1px solid @color_grey_60;
@@ -580,6 +581,15 @@ a {
   ul.inline li {
     margin: 0 0 0 .75em;
   }
+  ul.links {
+    margin-left: 0;
+    li, li a {
+      float: none;
+    }
+    li {
+      list-style-type: none;
+    }
+  }
   /* }}} */
   /* Paragraph and text {{{ */
   p, blockquote, pre  {
@@ -668,12 +678,17 @@ a {
 /* --- Content styling --- */
 /* Nodes {{{ */
 .node {
+  margin-bottom: 1.5em;
   .picture {
     .box;
+    line-height: 1;
     margin-right: 5px;
+    height: 35px;
+    width: 35px;
+    background-color: @color_grey_87;
     img {
-      height: 30px;
-      width: 30px;
+      height: 35px;
+      width: 35px;
     }
   }
   .field-field-blog-post-authors {
@@ -848,6 +863,50 @@ a {
 } // }}} 
 
 /* --- User interface --- */
+/* Pager {{{ */
+#content div.pager {
+  border-top: 1px solid @color_grey_80;
+  text-align: right;
+  ul {
+    margin-top: 10px;
+    margin-left: 10px;
+    &.pager-list {
+      float: right;
+      li {
+        margin-left: 6px;
+      }
+    }
+    &.pager-links {
+      float: left;
+      li {
+        margin-right: 6px;
+      }
+    }
+    li {
+      display: inline;
+      a, span {
+        .round_corner;
+        font-weight: bold;
+        display: inline-block;
+        padding: 3px 7px;
+        background-color: @color_grey_47;
+        color: @color_white;
+        text-decoration: none;
+        :hover {
+          background-color: @color_grey_80;
+          color: @color_grey_13;
+        }
+      }
+      &.pager-current {
+        span {
+          background-color: @color_grey_80;
+          color: @color_grey_13;
+        }
+      }
+    }
+  }
+}
+/* }}} */
 #content form { // Forms {{{
   /* Paragraphs and text {{{ */
   p {
@@ -1471,7 +1530,97 @@ a {
     }
   }
 } // }}}
+/* Dashboard page {{{ */
+.page-ecenter-dashboard #content {
+  h2 {
+    margin-bottom: 0;
+  }
+  .description {
+    margin-bottom: 1.5em;
+  }
+  .main-content {
+    .box;
+    width: 580px;
+    margin-right: 50px;
+  }
+  .secondary-content {
+    .box;
+    width: 300px;
+  }
+  .row {
+    margin-bottom: 3em;
+  }
+  .row-placeholder .content {
+    height: 250px;
+    padding: 10px;
+    background-color: @color_grey_80;
+    margin-bottom: 1.5em;
+  }
 
+  .last-comment-wrapper, 
+  .comment-count-wrapper,
+  .type-wrapper,
+  .updated-wrapper {
+    font-size: @font_size_13;
+  }
+  .user-wrapper {
+    font-size: @font_size_14;
+  }
+
+  .title {
+    font-weight: bold;
+  }
+
+  .row-tools, .row-login {
+    .shadow(2px; 2px; 4px; @color_grey_73);
+    font-size: @font_size_14;
+    font-weight: bold;
+    padding: 6px 10px;
+    background-color: @color_grey_93;
+    border: 1px solid @color_grey_60;
+    ul {
+      margin-bottom: 0;
+      li {
+        float: left;
+        width: 134px;
+      }
+    }
+  }
+
+  .row-login {
+    label {
+      display: inline;
+      margin-right: 10px;
+    }
+    input {
+      width: 150px;
+    }
+    .form-item {
+      margin-bottom: .75em;
+    }
+    .form-submit {
+      display: block;
+      margin: 0 auto;
+    }
+    .item-list {
+      ul {
+        margin: 1.5em 0 1em 0;
+        float: left;
+        li {
+          font-size: @font_size_14;
+          margin: 0 8px 0 0;
+          list-style-type: none;
+          float: left;
+          width: 87px;
+          &.last {
+            margin-right: 0;
+          }
+        }
+      }
+    }
+  }
+}
+/* }}} */
 /* BeautyTips {{{ */
 #content-body {
   .bt-wrapper {
@@ -1501,71 +1650,6 @@ body.page-search {
        margin-bottom: 1.5em;
        font-weight: bold;
      }
-  }
-}
-/* }}} */
-/* Homebox {{{ */
-body.page-dashboard h1#page-title {
-  margin-bottom: 0;
-}
-#homebox {
-  #homebox-buttons {
-    margin-bottom: 1em;
-  }
-
-  .homebox-column-wrapper {
-    .box;
-    width: 310px;
-  }
-  .homebox-maximized {width: 100%; }
-
-  .homebox-portlet {
-    //.shadow(1px; 1px; 4px; #888;);
-    //border: 1px solid #aaa;
-    background-color: #eee;
-    width: 290px;
-    margin: 0 0 1.5em 0;
-
-    .portlet-header {
-      //.vertical_gradient;
-      background-color: #ccc;
-      color: #555;
-      padding: 4px 4px 4px 6px;
-      font-size: 1em;
-      margin-bottom: .5em;
-      :hover { cursor: move; }
-    }
-
-    .portlet-content {
-      padding: 0 18px 0 9px;
-    }
-  }
-  .portlet-icon {
-    width: 16px;
-    height: 15px;
-    float: right;
-    cursor: pointer;
-  }
-  .portlet-plus {
-    background: url(../../../modules/contrib/homebox/images/plus.gif);
-  }
-  .portlet-minus {
-    background: url(../../../modules/contrib/homebox/images/minus.gif);
-  }
-  .portlet-close {
-    background: url(../../../modules/contrib/homebox/images/close.gif);
-  }
-  .portlet-maximize {
-    background: url(../../../modules/contrib/homebox/images/maximize.gif);
-  }
-  .portlet-minimize {
-    background: url(../../../modules/contrib/homebox/images/minimize.gif);
-  }
-
-  .homebox-placeholder {
-    width: 290px;
-    border: 2px dashed #bbb;
-    margin: 0 0 1.5em 0;
   }
 }
 /* }}} */
@@ -1672,8 +1756,10 @@ td.jqplot-table-legend > div {
 }
 
 .view-ecenter-issues {
-  span {
-    font-size: @font_size_12;
+  .row {
+    span {
+      font-size: @font_size_12;
+    }
   }
   .query {
     .box;
@@ -1695,6 +1781,50 @@ td.jqplot-table-legend > div {
       width: 35px;
       height: 35px;
     }
+  }
+}
+
+.view-ecenter-dashboard-activity {
+  font-size: @font_size_15;
+  .node {
+    padding: 4px 8px;
+  }
+  .meta {
+    border-bottom: 1px solid @color_grey_80;
+    a {
+      font-weight: bold;
+    }
+  }
+  .picture-wrapper {
+    float: left;
+    margin-top: 5px;
+  }
+  .details, .meta, .groups {
+    margin-left: 45px;
+    margin-bottom: 2px;
+  }
+  .details {
+    margin-top: 4px;
+    font-size: @font_size_13;
+  }
+  .groups {
+    margin-top: 4px;
+    border-top: 1px solid @color_grey_80;
+    font-size: @font_size_13;
+  }
+  .date {
+    font-size: @font_size_14;
+    color: @color_grey_33;
+    margin-left: 10px;
+    float: right;
+  }
+  .message {
+    .text {
+      font-style: italic;
+    }
+  }
+  .self-author {
+    background-color: #eee;
   }
 }
 /* }}} */
@@ -1719,13 +1849,6 @@ body.page-ecenter-tests #content {
   }
   .trace-label {
     font-size: 12px;
-  }
-}
-/* }}} */
-/* Modal windows {{{ */
-body.modal {
-  #header-wrapper, #navigation, .simplemenu-block, #footer, #recent-queries {
-    display: none !important;
   }
 }
 /* }}} */

@@ -40,6 +40,9 @@ function ecenter_test_theme() {
       'template' => 'ecenter-test-visual-traceroute',
       'arguments' => array(),  
     ),
+    'ecenter_test_heartbeat' => array(
+      'arguments' => array(),
+    ),
   );
 }
 
@@ -85,6 +88,10 @@ function theme_ecenter_test_combobox() {
     ),
   );
   return drupal_render($form);
+}
+
+function theme_ecenter_test_heartbeat() {
+  return 'oh hai';
 }
 
 function theme_ecenter_test_jqplot() {

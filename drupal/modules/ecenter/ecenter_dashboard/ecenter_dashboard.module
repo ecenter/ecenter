@@ -1,0 +1,91 @@
+<?php
+
+include_once('ecenter_dashboard.features.inc');
+
+/**
+ * Implementation of hook_menu().
+ */
+function ecenter_dashboard_menu() {
+  $items['ecenter-dashboard'] = array(
+    'page callback' => 'theme',
+    'page arguments' => array('ecenter_dashboard'),
+    'title' => 'Dashboard',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function ecenter_dashboard_theme() {
+  return array(
+    'ecenter_dashboard' => array(
+      'template' => 'ecenter-dashboard',
+      'arguments' => array(),
+    ),
+  );
+}
+
+/**
+ * E-Center dashboard callback
+ */
+function template_preprocess_ecenter_dashboard(&$vars) {
+  global $user;
+  
+  if ($user->uid) {
+    $vars['main_content'] = array(
+      'placeholder' => array(
+        'content' => 'Placeholder for site-centric view',
+      ),
+      'activity' => array(
+        'subject' => t('Site activity'),
+        'description' => t('Activity on the site and in your groups'),
+        'content' => views_embed_view('ecenter_dashboard_activity', 'block_personal'),
+      ),
+    );
+    $vars['secondary_content'] = array(
+      'tools' => array(
+        'subject' => t('Tools'),
+        'content' => theme('links', menu_navigation_links('menu-action-links')),
+      ),
+      'hot-comments' => array(
+        'subject' => t('Hot conversations'),
+        'description' => t('The most active public conversations in the past 2 weeks'),
+        'content' => views_embed_view('ecenter_dashboard_hot_comments', 'block_1'),
+      ),
+      'hot-content' => array(
+        'subject' => t('Most popular content'),
+        'description' => t('The most popular content in the past month'),
+        'content' => views_embed_view('ecenter_dashboard_hot_content', 'block_1'),
+      ),
+    );
+  }
+  else {
+    $vars['main_content'] = array(
+      'placeholder' => array(
+        'content' => 'Placeholder for welcome text, video, etc',
+      ),
+      'activity' => array(
+        'subject' => t('Site activity'),
+        'description' => t('All public activity'),
+        'content' => views_embed_view('ecenter_dashboard_activity', 'block_public'),
+      ),
+    );
+    $vars['secondary_content'] = array(
+      'login' => module_invoke('user', 'block', 'view', 0),
+      'hot-comments' => array(
+        'subject' => t('Hot conversations'),
+        'description' => t('The most active public conversations in the past 2 weeks'),
+        'content' => views_embed_view('ecenter_dashboard_hot_comments', 'block_1'),
+      ),
+      'hot-content' => array(
+        'subject' => t('Most popular content'),
+        'description' => t('The most popular content in the past month'),
+        'content' => views_embed_view('ecenter_dashboard_hot_content', 'block_1'),
+      ),
+    );
+  }
+
+}

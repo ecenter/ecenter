@@ -13,12 +13,28 @@ function ecenter_preprocess_page(&$vars) {
 
 
 function ecenter_preprocess_node(&$vars) {
+  global $user;
+
   if ($vars['build_mode'] == 'ecenter_activity') {
     $node = $vars['node'];
-    $author = user_load($node->uid);
 
     $vars['action'] = ($node->changed > $node->created) ? t('updated by') : t('created by');
     $vars['node_type'] = node_get_types('name', $node->type);
+
+    if (!empty($node->og_groups)) {
+      $group_links = array();
+      foreach ($vars['og_links']['raw'] as $link) {
+        $group_links[] = l($link['title'], $link['href']);
+      }
+      $vars['groups'] = implode($group_links, ', ');
+    }
+
+    if ($node->type == 'wiki') {
+      $revisions = node_revision_list($node);
+      $last_revision = array_shift($revisions);
+      $last_log = _ecenter_trim($last_revision->log);
+      $vars['message'] = (!empty($last_log)) ? $last_log : t('No log message.');
+    }
 
     // If comment timestamp newer than updated, we'll display a special
     // 'commented' message, otherwise that the node was created/updated
@@ -43,36 +59,34 @@ function ecenter_preprocess_node(&$vars) {
           LIMIT 1
         ";
         $last_comment = db_fetch_object(db_query($query, array($node->nid, COMMENT_PUBLISHED)));
-        $last_comment_user = user_load($last_comment->uid);
-        $vars['name'] = theme('username', $last_comment_user);
-        $vars['picture'] = theme('user_picture', $last_comment_user);
-        $vars['name_plain'] = $last_comment_user->name;
+        $author = user_load($last_comment->uid);
         $vars['message'] = _ecenter_trim($last_comment->comment);
         $vars['action'] = t('commented on');
+        if ($user->uid == $author->uid) {
+          $author->name = t('You');
+        }
       }
     }
     else {
       $date = $node->changed;
+      $author = user_load($node->uid);
+      
       $vars['comment_mode'] = FALSE;
+
+      // @TODO Instead of trimming body, we might want to use pre-processed
+      // body value to avoid build mode wrangling.
       $vars['message'] = _ecenter_trim($node->body);
-      $vars['name_plain'] = $author->name;
+      if ($user->uid == $author->uid) {
+        $author->name = t('you');
+      }
     }
+
+    $vars['name'] = theme('username', $author);
+    $vars['picture'] = theme('user_picture', $author);
+    $vars['name_plain'] = check_plain($author->name);
 
     $vars['date'] = _ecenter_format_date($date);
 
-    if (!empty($node->og_groups)) {
-      $group_links = array();
-      foreach ($vars['og_links']['raw'] as $link) {
-        $group_links[] = l($link['title'], $link['href']);
-      }
-      $vars['groups'] = implode($group_links, ', ');
-    }
-    if ($node->type == 'wiki') {
-      $revisions = node_revision_list($node);
-      $last_revision = array_shift($revisions);
-      $last_log = _ecenter_trim($last_revision->log);
-      $vars['message'] = (!empty($last_log)) ? $last_log : t('No log message.');
-    }
   }
 }
 

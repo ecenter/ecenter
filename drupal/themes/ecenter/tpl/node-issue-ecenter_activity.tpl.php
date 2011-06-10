@@ -1,5 +1,5 @@
 <div class="node">
-  <div class="picture"><?php print $picture; ?></div>
+  <div class="picture-wrapper"><?php print $picture; ?></div>
   <?php if ($comment_mode): ?>
     <div class="meta">
       <span class="date"><?php print $date; ?></span>

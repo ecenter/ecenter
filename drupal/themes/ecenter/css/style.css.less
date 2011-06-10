@@ -1474,6 +1474,26 @@ a {
   }
 } // }}}
 
+.page-ecenter-dashboard {
+  .main-content {
+    .box;
+    width: 600px;
+    margin-right: 30px;
+  }
+  .secondary-content {
+    .box;
+    width: 300px;
+  }
+  .row {
+    margin-bottom: 1.5em;
+  }
+  .row-site-centric .content {
+    height: 250px;
+    padding: 10px;
+    background-color: #ccc;
+  }
+}
+
 /* BeautyTips {{{ */
 #content-body {
   .bt-wrapper {
@@ -1503,71 +1523,6 @@ body.page-search {
        margin-bottom: 1.5em;
        font-weight: bold;
      }
-  }
-}
-/* }}} */
-/* Homebox {{{ */
-body.page-dashboard h1#page-title {
-  margin-bottom: 0;
-}
-#homebox {
-  #homebox-buttons {
-    margin-bottom: 1em;
-  }
-
-  .homebox-column-wrapper {
-    .box;
-    width: 310px;
-  }
-  .homebox-maximized {width: 100%; }
-
-  .homebox-portlet {
-    //.shadow(1px; 1px; 4px; #888;);
-    //border: 1px solid #aaa;
-    background-color: #eee;
-    width: 290px;
-    margin: 0 0 1.5em 0;
-
-    .portlet-header {
-      //.vertical_gradient;
-      background-color: #ccc;
-      color: #555;
-      padding: 4px 4px 4px 6px;
-      font-size: 1em;
-      margin-bottom: .5em;
-      :hover { cursor: move; }
-    }
-
-    .portlet-content {
-      padding: 0 18px 0 9px;
-    }
-  }
-  .portlet-icon {
-    width: 16px;
-    height: 15px;
-    float: right;
-    cursor: pointer;
-  }
-  .portlet-plus {
-    background: url(../../../modules/contrib/homebox/images/plus.gif);
-  }
-  .portlet-minus {
-    background: url(../../../modules/contrib/homebox/images/minus.gif);
-  }
-  .portlet-close {
-    background: url(../../../modules/contrib/homebox/images/close.gif);
-  }
-  .portlet-maximize {
-    background: url(../../../modules/contrib/homebox/images/maximize.gif);
-  }
-  .portlet-minimize {
-    background: url(../../../modules/contrib/homebox/images/minimize.gif);
-  }
-
-  .homebox-placeholder {
-    width: 290px;
-    border: 2px dashed #bbb;
-    margin: 0 0 1.5em 0;
   }
 }
 /* }}} */
@@ -1708,11 +1663,13 @@ td.jqplot-table-legend > div {
       font-weight: bold;
     }
   }
-  .picture {
+  .picture-wrapper {
     float: left;
+    margin-top: 5px;
+    background-color: #fff;
   }
   .details, .meta {
-    margin-left: 35px;
+    margin-left: 40px;
   }
   .details {
     font-size: @font_size_13;

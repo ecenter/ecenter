@@ -9,6 +9,7 @@ function ecenter_dashboard_menu() {
   $items['ecenter-dashboard'] = array(
     'page callback' => 'theme',
     'page arguments' => array('ecenter_dashboard'),
+    'title' => 'Dashboard',
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
   );
@@ -28,23 +29,30 @@ function ecenter_dashboard_theme() {
 }
 
 /**
- * E-Center dashboard callback 
+ * E-Center dashboard callback
  */
 function template_preprocess_ecenter_dashboard(&$vars) {
   global $user;
 
   if ($user->uid) {
     $vars['main_content'] = array(
-      array(
-        'title' => t('Activity'),
-        'content' => 'stub',
-        //'content' => views_embed_view('ecenter_heartbeat_my_activity', 'block_1'),
+      'site-centric' => array(
+        'subject' => t('Site-centric view'),
+        'content' => '<em>Stub for site-centric view</em>',
+      ),
+      'activity' => array(
+        'subject' => t('Activity'),
+        'content' => views_embed_view('ecenter_dashboard_activity', 'block_1'),
       ),
     );
     $vars['secondary_content'] = array(
-      array(
-        'title' => t('Recent comments'),
-        'content' => views_embed_view('comments_recent', 'block'),
+      'hot-comments' => array(
+        'subject' => t('Active discussions'),
+        'content' => views_embed_view('ecenter_dashboard_hot_comments', 'block_1'),
+      ),
+      'hot-content' => array(
+        'subject' => t('Most viewed content'),
+        'content' => views_embed_view('ecenter_dashboard_hot_content', 'block_1'),
       ),
     );
   }
@@ -52,8 +60,4 @@ function template_preprocess_ecenter_dashboard(&$vars) {
     // Anonymous...
   }
 
-  $block = module_invoke('heartbeat', 'block', 'view', 'privateheartbeat'); 
-  dpm($block);
-
-  dpm($vars);
 }

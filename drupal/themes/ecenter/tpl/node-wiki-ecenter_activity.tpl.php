@@ -1,5 +1,5 @@
 <div class="node">
-  <div class="picture"><?php print $picture; ?></div>
+  <div class="picture-wrapper"><?php print $picture; ?></div>
   <div class="meta">
     <span class="date"><?php print $date; ?></span>
     <span class="type"><?php print $node_type; ?></span>

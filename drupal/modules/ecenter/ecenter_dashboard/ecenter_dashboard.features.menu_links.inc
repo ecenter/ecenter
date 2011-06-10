@@ -47,7 +47,7 @@ function ecenter_dashboard_menu_default_menu_links() {
     'menu_name' => 'menu-action-links',
     'link_path' => 'node/add/issue',
     'router_path' => 'node/add/issue',
-    'link_title' => 'Create new issue',
+    'link_title' => 'Create issue',
     'options' => array(
       'attributes' => array(
         'title' => 'Create a new conversation about a network issue',
@@ -65,7 +65,7 @@ function ecenter_dashboard_menu_default_menu_links() {
     'menu_name' => 'menu-action-links',
     'link_path' => 'node/add/wiki',
     'router_path' => 'node/add/wiki',
-    'link_title' => 'Create new wiki page',
+    'link_title' => 'Create wiki page',
     'options' => array(
       'attributes' => array(
         'title' => 'Create a new wiki page',
@@ -80,8 +80,8 @@ function ecenter_dashboard_menu_default_menu_links() {
   );
   // Translatables
   // Included for use with string extractors like potx.
-  t('Create new issue');
-  t('Create new wiki page');
+  t('Create issue');
+  t('Create wiki page');
   t('Network health');
   t('Weathermap');
 

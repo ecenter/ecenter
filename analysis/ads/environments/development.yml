@@ -1,0 +1,8 @@
+logger: "console"
+log: "debug"
+# should Dancer consider warnings as critical errors?
+warnings: 1
+debug: 1
+show_errors: 1
+auto_reload: 0
+port: 9098

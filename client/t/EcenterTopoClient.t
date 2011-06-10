@@ -3,8 +3,8 @@ use strict;
 use Test::More tests => 8;
 use Log::Log4perl qw(:easy);
 use English qw( -no_match_vars );
-use_ok('Ecenter::TopoClient');
-use Ecenter::TopoClient;
+use_ok('Ecenter::DRS::TopoClient');
+use Ecenter::DRS::TopoClient;
 Log::Log4perl->easy_init($INFO); 
  
 my $obj1 = undef;
@@ -13,10 +13,10 @@ my %params = ( url =>  'url_value_id',
 	     );
 #2
 eval {
-$obj1 =  Ecenter::TopoClient->new(\%params);
+$obj1 =  Ecenter::DRS::TopoClient->new(\%params);
 };
 #$obj1->url('url_value_id');
-ok( $obj1  && !$EVAL_ERROR , "Create object Ecenter::TopoClient ...  $EVAL_ERROR");
+ok( $obj1  && !$EVAL_ERROR , "Create object Ecenter::DRS::TopoClient ...  $EVAL_ERROR");
 $EVAL_ERROR = undef; 
 #3-10
 map {  ok($obj1->meta->find_attribute_by_name($_)->get_value($obj1), " Check $_") or diag("$@ failed $_") }

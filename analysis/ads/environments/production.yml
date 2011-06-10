@@ -1,0 +1,8 @@
+logger: "console"
+log: "warning"
+warnings: 0
+debug: 0
+show_errors: 1
+route_cache: 1
+auto_reload: 0
+port: 9055

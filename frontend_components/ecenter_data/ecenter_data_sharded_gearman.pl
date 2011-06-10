@@ -2,8 +2,8 @@
 
 use Dancer;
 use Dancer::Plugin::REST;
-our $VERSION = '';  
-use English;
+our $VERSION = '3.4';  
+use English qw( -no_match_vars );
 use Data::Dumper;
 use lib "/home/netadmin/ecenter_git/ecenter/frontend_components/ecenter_data/lib";
 use DateTime;
@@ -56,12 +56,6 @@ our  $logger = Log::Log4perl->get_logger(__PACKAGE__);
    ecenter_data.pl - standalone RESTfull service, provides interface for the Ecenter data and dispatch
 
 =cut
-##  ADS service, too much data, need to POST
-
-any ['post'] =>  "/ads/algo.:format" => 
-       sub {
-	       return  detect_anomaly(algo => params->{algo}, params('query'));
-       };
 
 ##  status URL
 any ['get'] =>  "/status.:format" => 
@@ -170,37 +164,7 @@ sub _params_to_date {
     return \%params;
 }
 
-#
-# return hash with anomalies found
-#
-#
 
-sub detect_anomaly {
-    my %req_params =  validate(@_, { algo => {type => SCALAR, regex => qr/^apd|spd$/i},
-                                     data => {type => SCALAR},
-				     data_type   => {type => SCALAR, regex => qr/^owamp|bwctl|pinger$/i},
-				     sensitivity => {type => SCALAR, regex => qr/^\d+$/i,     default => 2, optional => 1},
-				     elevation1  => {type => SCALAR, regex => qr/^[\.\d]+$/i, default => .2, optional => 1},
-				     elevation2  => {type => SCALAR, regex => qr/^[\.\d]+$/i, default => .4, optional => 1},
-				     swc         => {type => SCALAR, regex => qr/^\d+$/i,     default => 20, optional => 1},
-				   });
-    my $data_request = decode_json $req_params{data};
-    delete $req_params{data};
-    unless($data_request && ref $data_request eq ref {} && %{$data_request}) {
-        return error "Data is not supplied or malformatted";
-    }
-    my $algo = "\U$req_params{algo}";
-    delete $req_params{algo};
-    my $ads = ("Ecenter::ADS::Detector::$algo")->new({ data => $data_request, %req_params });
-    my $results = {};
-    eval {
-        $results = $ads->process_data();
-    };
-    if(!$results || $EVAL_ERROR) {
-       error "ADS failed with: $EVAL_ERROR";
-    }
-    return $results;
-}
 #
 # return hash with error string for each non-healthy part of the data service
 #
@@ -400,16 +364,17 @@ sub process_data {
         $trace_cond->{reverse_traceroute}{src} = qq|  md.dst_ip  =  inet6_pton('$params{src_ip}') |;
     } 
     if ($params{src_hub}) {
-        $trace_cond->{direct_traceroute}{src}  = qq| hb1.hub =   '$params{src_hub}'  |;
-        $trace_cond->{reverse_traceroute}{src} = qq| hb2.hub =   '$params{src_hub}'  |;
+        
+       $trace_cond->{direct_traceroute}{src}  = qq| n_src.nodename like   '%$params{src_hub}%' |;
+       $trace_cond->{reverse_traceroute}{src} = qq| n_src.nodename like   '%$params{dst_hub}%' |;
     }
     if($params{dst_ip}) {
         $trace_cond->{direct_traceroute}{dst}   =   qq|  md.dst_ip =  inet6_pton('$params{dst_ip}') |;
         $trace_cond->{reverse_traceroute}{dst}  =   qq|  md.src_ip =  inet6_pton('$params{dst_ip}')  |; 
     } 
     if ($params{dst_hub}) {
-        $trace_cond->{direct_traceroute}{dst}   = qq|   hb2.hub =   '$params{dst_hub}' |;
-        $trace_cond->{reverse_traceroute}{dst}  = qq|   hb1.hub =   '$params{dst_hub}'  |;
+      $trace_cond->{direct_traceroute}{dst}   = qq|  n_dst.nodename like   '%$params{dst_hub}%' |;
+      $trace_cond->{reverse_traceroute}{dst}  = qq| n_dst.nodename like    '%$params{src_hub}%' |;
     }
     ################ starting the client
     #
@@ -479,12 +444,12 @@ sub process_data {
 						        	      metadata md
 					        		join  node n_src on(md.src_ip = n_src.ip_addr) 
 								join  node n_dst on(md.dst_ip = n_dst.ip_addr) 
-								join l2_l3_map    llm1 on( n_src.ip_addr=llm1.ip_addr) 
-     	                                                        join l2_port      l2p1 on(llm1.l2_urn =l2p1.l2_urn) 
-     	                                                        join hub         hb1  on(hb1.hub =l2p1.l2_urn)
-								join l2_l3_map    llm2 on( n_dst.ip_addr=llm2.ip_addr) 
-     	                                                        join l2_port      l2p2 on(llm2.l2_urn =l2p2.l2_urn) 
-     	                                                        join hub         hb2  on(hb2.hub =l2p2.l2_urn)
+								left join l2_l3_map    llm1 on( n_src.ip_addr=llm1.ip_addr) 
+     	                                                        left join l2_port      l2p1 on(llm1.l2_urn =l2p1.l2_urn) 
+     	                                                        left join hub          hb1  on(hb1.hub =l2p1.l2_urn)
+								left join l2_l3_map    llm2 on( n_dst.ip_addr=llm2.ip_addr) 
+     	                                                        left join l2_port      l2p2 on(llm2.l2_urn =l2p2.l2_urn) 
+     	                                                        left join hub          hb2  on(hb2.hub =l2p2.l2_urn)
 								join eventtype e on(md.eventtype_id = e.ref_id)
 								join service s  on (e.service = s.service)
 							  where  
@@ -605,12 +570,12 @@ sub  get_traceroute_mds {
 	                                               join eventtype e on(md.eventtype_id = e.ref_id)  
 						       join node n_src  on(md.src_ip = n_src.ip_addr)
 						       join node n_dst  on(md.dst_ip = n_dst.ip_addr) 
-						       join l2_l3_map	llm1 on( n_src.ip_addr=llm1.ip_addr) 
-     	                                               join l2_port	l2p1 on(llm1.l2_urn =l2p1.l2_urn) 
-     	                                               join hub         hb1  on(hb1.hub =l2p1.l2_urn)
-						       join l2_l3_map	llm2 on( n_dst.ip_addr=llm2.ip_addr) 
-     	                                               join l2_port	l2p2 on(llm2.l2_urn =l2p2.l2_urn) 
-     	                                               join hub         hb2  on(hb2.hub =l2p2.l2_urn)
+						       left join l2_l3_map	llm1 on( n_src.ip_addr=llm1.ip_addr) 
+     	                                               left join l2_port	l2p1 on(llm1.l2_urn =l2p1.l2_urn) 
+     	                                               left join hub         hb1  on(hb1.hub =l2p1.l2_urn)
+						       left join l2_l3_map	llm2 on( n_dst.ip_addr=llm2.ip_addr) 
+     	                                               left join l2_port	l2p2 on(llm2.l2_urn =l2p2.l2_urn) 
+     	                                               left join hub         hb2  on(hb2.hub =l2p2.l2_urn)
 						       join service s   on(s.service = e.service)
 						    where  
 						         e.service_type = 'traceroute' and  

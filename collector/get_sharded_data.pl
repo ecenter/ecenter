@@ -309,12 +309,8 @@ sub set_end_sites {
       }
       $logger->debug(" LT_urn: " . $l2_port->l2_urn);
       foreach my $subnet (keys %subnets) {
-         my $sql = qq|select n.ip_noted, n.ip_addr 
-	              from 
-	                              node n 
-		            left join l2_l3_map llm using(ip_addr) 
-	              where 
-		            llm.l2_l3_map is NULL and 
+         my $sql = qq|select n.ip_noted, n.ip_addr    from   node n    left join l2_l3_map llm using(ip_addr) 
+	              where  llm.l2_l3_map is NULL and 
 			   ( (inet6_mask(ip_addr,$subnets{$subnet}) =  inet6_mask(inet6_pton('$subnet'), $subnets{$subnet})
 			     )  OR  $alias_sql)|;
 	 $logger->debug("SQL::: $sql"); 

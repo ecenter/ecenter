@@ -1,0 +1,5 @@
+# Your application's name
+appname: "ads"
+layout: "main"
+logger: "console"
+charset: "UTF-8"

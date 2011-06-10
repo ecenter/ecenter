@@ -24,6 +24,64 @@ E-Center::ADS::Detector::APD -   adaptive and static  plateau detection algorith
   my $results = $detector->process_data;
   ### and results are in the results attribute:
   $results = $detector->results;
+  
+  # In case if no critical anomaly was detected the $results  data structure will look as:
+  # Notice the separate data for each source/destination pair:
+  
+  $VAR1 = {
+          '198.124.252.101' => {
+                                 '198.129.254.146' => {
+                                                        'sensitivity' => 2,
+                                                        'status' => 'OK',
+                                                        'elevation1' => '0.2',
+                                                        'elevation2' => '0.4',
+                                                        'plateau_size' => 7,
+                                                        'swc' => 20
+                                                      }
+                               },
+          '198.129.254.146' => {
+                                 '198.124.252.101' => {
+                                                        'sensitivity' => 2,
+                                                        'status' => 'OK',
+                                                        'elevation1' => '0.2',
+                                                        'elevation2' => '0.4',
+                                                        'plateau_size' => 7,
+                                                        'swc' => 20
+                                                      }
+						      
+                               }
+        };
+	
+ ## if there is a critical anomaly then:
+ 
+     $VAR1 = {
+          '198.124.252.101' => {
+                                 '198.129.254.146' => {
+                                                        'sensitivity' => 2,
+                                                        'status' =>  { 
+							    critical => {
+							       12132134124 =>
+								            {
+							                      anomaly_type => 'plateau',  
+			                                                        value        =>'0.3232',
+							    	             },
+							      },
+							       warning => {
+							       1213243443344 =>
+								            {
+							                      anomaly_type => 'plateau',  
+			                                                        value        =>'0.434343',
+							    	           },
+							      },
+							},
+                                                        'elevation1' => '0.2',
+                                                        'elevation2' => '0.4',
+                                                        'plateau_size' => 7,
+                                                        'swc' => 20
+                                                      }
+                               },
+        
+        }; 
 
 =head1 ATTRIBUTES
 
@@ -115,21 +173,21 @@ after 'process_data' => sub {
     	    	@warning = ();
     	    	@critical = ();
     	    }
-            my %response = ( anomaly_type => 'plateau', 
-			     timestamp    => $data_ip->{$key}->[$i][0],
-			     value        => $data[$i]  );
+            my $response = { anomaly_type => 'plateau',
+			     value        => $data[$i]  
+			   };
 	   $self->logger->debug("Tricnt=$tricnt Tri_duration=$tri_duration Sen=" . $self->sensitivity . " Data=$data[$i]");
 	   if($tricnt==$tri_duration){
 	        $self->logger->debug("Critical::" . $data_ip->{$key}->[$i][0]  . " value=" . $data[$i] );
     	    	$tricnt=0;
-    	    	$status{critical}{$data_ip->{$key}->[$i][0]}= \(%response, 'anomaly_value' => 'critical'); #   src:dst => timestamp
+    	    	$status{critical}{$data_ip->{$key}->[$i][0]}=  $response; #   src:dst => timestamp
     	    	($cu,$wu,$wl,$cl)=$self->_elevation(\@critical,\@warning,\@ele);
     	    	$timer=$self->swc;
     	    	$self->_cp_warning_normal(\$p, \@normal,\@warning);
     	    	@warning = ();
     	    } elsif ($tricnt> .75*$tri_duration){
 	        $self->logger->debug("Warning::" . $data_ip->{$key}->[$i][0] . " value=" . $data[$i]);
-    	    	$status{warning}{$data_ip->{$key}->[$i][0]}= \(%response, 'anomaly_value' => 'warning'); #   src:dst => timestamp
+    	    	$status{warning}{$data_ip->{$key}->[$i][0]}= $response; #   src:dst => timestamp
     	    }
 	    
 	}

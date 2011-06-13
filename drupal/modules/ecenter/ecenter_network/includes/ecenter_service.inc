@@ -132,7 +132,7 @@ abstract class EcenterService {
    * @return
    *   True if server is operational.
    */
-  protected function checkStatus() {
+  public function checkStatus() {
     $q = 'status';
     $status = $this->query($q, NULL, $this->_status_timeout, FALSE);
     if ($status['response']->status) {

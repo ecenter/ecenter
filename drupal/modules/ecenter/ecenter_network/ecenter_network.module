@@ -582,13 +582,15 @@ function ecenter_network_select_form_submit($form, &$form_state) {
 function ecenter_network_get_client($status_check = FALSE) {
   static $client = FALSE;
   if (!$client) {
-    require_once(dirname(__FILE__) . '/client.php');
+    require_once(dirname(__FILE__) . '/includes/ecenter_service.inc');
+    require_once(dirname(__FILE__) . '/includes/data_retrieval_service.inc');
     $host = variable_get('ecenter_network_host', 'localhost');
     $port = variable_get('ecenter_network_port', 8000);
     $dir = variable_get('ecenter_network_basedir', '');
     $timeout = variable_get('ecenter_network_timeout', 30);
     $status_timeout = variable_get('ecenter_network_status_timeout', 2);
-    $client = new Ecenter_Data_Service_Client($host, $port, $dir, $timeout, $status_timeout);
+    $client = new DataRetrievalService($host, $port, $dir, $timeout, 
+      $status_timeout);
   }
 
   // Client is not available

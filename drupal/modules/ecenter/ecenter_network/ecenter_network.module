@@ -631,7 +631,7 @@ function ecenter_network_get_client($status_check = FALSE, $type = 'drs', $name 
         print theme('page', '<div class="ecenter-fatal">'. $message .'</div>');
         exit();
       default:
-        drupal_set_message($message);
+        drupal_set_message($message, 'error');
     }
   }
   return $clients[$name];

@@ -795,43 +795,35 @@ function ecenter_network_parse_response($response) {
   foreach (array('forward' => 'src', 'reverse' => 'dst') 
     as $direction => $end_type) {
 
-    // -- Process end-to-end -- //
-
-    // Cache source netblock for later comparison
-    if ($params[$end_type]['type'] == 'ip') {
-      $src_netblock = long2ip(ip2long($params[$end_type]['value']) 
-        & ~((1 << 8) - 1));
-    }
-
-    // @TODO Consider registering data types somehow
     foreach (array('bwctl', 'owamp', 'pinger') as $test) {
       if (!is_array($data[$test])) {
-        return;
+        continue;
       }
+      
       $parsed_data['end_to_end'][$test][$direction] = array();
-
-      // Check out all sources for this test
+      
       foreach ($data[$test] as $src => $destinations) {
         $processed_data = array();
-        $node = ecenter_network_get_node($src);
-        // Does the source match the end node?
-        if (
-          ($params[$end_type]['type'] == 'hub' && 
-            $node['hub_name'] == $params[$end_type]['value'])
-            || long2ip(ip2long($src) & ~((1 << 8) -1)) == $src_netblock
-        ) {
-          foreach ($destinations as $dst => $row) {
-            foreach ($row as $timestamp => $measurements) {
+        foreach ($destinations as $dst => $row) {
+          if (($direction == 'forward' 
+            && $params['src']['value'] == $row['src_hub']
+            && $params['dst']['value'] == $row['dst_hub']) ||
+            ($direction == 'reverse' 
+            && $params['dst']['value'] == $row['src_hub']
+            && $params['src']['value'] == $row['dst_hub'])) {
+            foreach ($row['data'] as $timestamp => $measurements) {
               drupal_alter('ecenter_network_end_to_end_measurements', 
                 $processed_data, $timestamp, $measurements);    
             }
             drupal_alter('ecenter_network_end_to_end_measurements_statistics',
               $processed_data); 
           }
-        }  
+        }
+
         if (!empty($processed_data)) {
           $parsed_data['end_to_end'][$test][$direction] += $processed_data;
         }
+
       }
     }
 

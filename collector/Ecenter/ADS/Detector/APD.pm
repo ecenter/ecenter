@@ -126,6 +126,7 @@ after 'process_data' => sub {
     my $data_ip = $self->parse_data->{$ANA_METRIC->{$self->data_type}};
     foreach my $key (keys %$data_ip) {
 	my @data = map {$_->[1]} @{$data_ip->{$key}};
+	my %metadata =   map {$_ => $self->parse_data->{metadata}{$key}{$_}} qw/src_hub dst_hub metaid/;
 	my $data_size = scalar @data;
 	next unless $data_size;
 
@@ -192,7 +193,7 @@ after 'process_data' => sub {
 	    
 	}
 	$self->logger->debug("Results Data $key - ", sub{Dumper( \%status )});
-	$self->add_result($tri_duration, $key, \@ele,  \%status );
+	$self->add_result($tri_duration, $key, \@ele,  \%status, \%metadata);
     }
     return $self->results;
 };

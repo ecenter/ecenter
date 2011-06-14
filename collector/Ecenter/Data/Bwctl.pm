@@ -30,7 +30,7 @@ sub BUILD {
       $self->eventtypes([("http://ggf.org/ns/nmwg/tools/iperf/2.0")]);
       $self->namespace("http://ggf.org/ns/nmwg/tools/iperf/2.0");
       $self->nsid("iperf");
-      $self->resolution(100);
+#      $self->resolution(100);
       $self->logger(get_logger(__PACKAGE__));
 };
 

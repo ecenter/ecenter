@@ -26,7 +26,6 @@ use Log::Log4perl;
 use Time::HiRes qw(usleep);
 use DBI;
 
-
 use base 'Exporter';
 
 
@@ -112,69 +111,6 @@ sub get_datums {
     }
     #fixing up resolution - only return no more than requested number of points
     return  ($start_time, $end_time); 
-}
-
-=head2 refactor_result 
-
-get timestamp and aggregate to return no more than requested data points
-and return as arrayref => [timestamp, {data_row}] 
-
-=cut
-
-sub refactor_result {
-    my ($data_raw, $type, $resolution) = @_;
-    my $count = scalar @{$data_raw};
-    my $result = [];
-    $logger->debug("refactoring -- $type resolution=$resolution  Data_raw=$count");
-    if($count > $resolution) {
-	my $bin = $count/$resolution;
-	my $j = 0;
-	my $old_j = 0;
-	my $count_j = 0;
-	for(my $i = 0; $i < $count ; $i++) {
-	    $j = int($i/$bin);
-	    $result->[$j][0] +=   $data_raw->[$i][0];
-	    #map {$result->[$j][1]{$_}  = $data_raw->[$i][1]{$_}?
-	     #                                ($result->[$j][1]{$_}?
-	     #                                   ($result->[$j][1]{$_}+$data_raw->[$i][1]{$_}):
-		#				     $data_raw->[$i][1]{$_}):
-		#			                  $result->[$j][1]{$_};} 
-		#			 keys %{$data_raw->[$i][1]};
- 
-	    if($type eq 'snmp') { 
-	        $result->[$j][1]{utilization}  += $data_raw->[$i][1]{utilization}?$data_raw->[$i][1]{utilization}:0;
-	        $result->[$j][1]{capacity} =  $data_raw->[$i][1]{capacity};
-	        map {$result->[$j][1]{$_} += $data_raw->[$i][1]{$_}?$data_raw->[$i][1]{$_}:0 }   qw/errors drops/;
-	    } else {
-	        map {$result->[$j][1]{$_}  += $data_raw->[$i][1]{$_}?$data_raw->[$i][1]{$_}:0} grep(!/timestamp/, keys %{$data_raw->[$i][1]});
-	    }	
- 
-	    if( $j > $old_j || $i == ($count-1) ) {
-	        $count_j++ if $i == ($count-1); 
-	        #map {$result->[$old_j][1]{$_} = ($result->[$old_j][1]{$_} &&  $count_j)?
-		#                                  ($result->[$old_j][1]{$_}/$count_j):
-		#				     $result->[$old_j][1]{$_}; } 
-		#			        keys %{$data_raw->[$i][1]};
-		$result->[$old_j][0] = int(($result->[$old_j][0] &&  $count_j)?($result->[$old_j][0]/$count_j):$result->[$old_j][0]);
-	        if($type eq 'snmp') { 
-		    $result->[$old_j][1]{utilization} /=    $count_j  if $result->[$old_j][1]{utilization} &&  $count_j;
-	        } else {
-		    map {$result->[$old_j][1]{$_} = ($result->[$old_j][1]{$_} &&  $count_j)?
-		                                   ($result->[$old_j][1]{$_}/$count_j):
-		 				     $result->[$old_j][1]{$_}  } 
-		 			        keys %{$data_raw->[$i][1]}; 
-		}
-		$count_j = 0;
-	        $old_j = $j;
-	    }
-	    $count_j++;       
-	    #debug "REFACTOR: i=$i j=$j old_j=$old_j count_j=$count_j  raw=$data_raw->[$i][0]  result=$result->[$old_j][0] new=$result->[$j][0] ";
-	}	   
-    } else {
-        $result =  $data_raw;
-    }
-    $logger->debug("refactoring -- Data_result=" . scalar @$result);
-    return $result;
 }
 
 =head2 get_ip_name()
@@ -312,6 +248,67 @@ sub nto_ip {
     return join('.',@dotted_arr);
 }
 
+ 
+
+
+=head2 refactor_result 
+
+get timestamp and aggregate to return no more than requested data points
+and return as arrayref => [timestamp, {data_row}] 
+
+=cut
+
+sub refactor_result {
+    my ($data_raw, $type, $resolution) = @_;
+    my $count = scalar @{$data_raw};
+    my $result = [];
+    $logger->debug("refactoring -- $type resolution=$resolution  Data_raw=$count");
+    if($count > $resolution) {
+	my $bin = $count/$resolution;
+	my $j = 0;
+	my $old_j = 0;
+	my $count_j = 0;
+	for(my $i = 0; $i < $count ; $i++) {
+	    $j = int($i/$bin);
+	    $result->[$j][0] +=   $data_raw->[$i][0];
+	    if($type eq 'snmp') { 
+	        $result->[$j][1]{utilization}  += $data_raw->[$i][1]{utilization}?$data_raw->[$i][1]{utilization}:0;
+	        $result->[$j][1]{capacity} =  $data_raw->[$i][1]{capacity};
+	        map {$result->[$j][1]{$_} += $data_raw->[$i][1]{$_}?$data_raw->[$i][1]{$_}:0 }   qw/errors drops/;
+	    } else {
+	        foreach my $key (grep(!/timestamp/, keys %{$data_raw->[$i][1]})) {
+		    if($key =~ /min/i) {
+		        $result->[$j][1]{$key} = $data_raw->[$i][1]{$key} 
+			    if !$result->[$j][1]{$key} || $result->[$j][1]{$key} > $data_raw->[$i][1]{$key};
+		    } elsif(!$result->[$j][1]{$key} || $result->[$j][1]{$key} < $data_raw->[$i][1]{$key}) {
+		        $result->[$j][1]{$key} = $data_raw->[$i][1]{$key};
+		    }
+		}
+	    }	
+ 
+	    if( $j > $old_j || $i == ($count-1) ) {
+	        $count_j++ if $i == ($count-1);
+		$result->[$old_j][0] = int(($result->[$old_j][0] &&  $count_j)?($result->[$old_j][0]/$count_j):$result->[$old_j][0]);
+	        if($type eq 'snmp') { 
+		    $result->[$old_j][1]{utilization} /=    $count_j  if $result->[$old_j][1]{utilization} &&  $count_j;
+	        } else {
+		    # map {$result->[$old_j][1]{$_} = ($result->[$old_j][1]{$_} &&  $count_j)?
+		    #                                ($result->[$old_j][1]{$_}/$count_j):
+		    #				     $result->[$old_j][1]{$_}  } 
+		    #			        keys %{$data_raw->[$i][1]}; 
+		}
+		$count_j = 0;
+	        $old_j = $j;
+	    }
+	    $count_j++;       
+	    #debug "REFACTOR: i=$i j=$j old_j=$old_j count_j=$count_j  raw=$data_raw->[$i][0]  result=$result->[$old_j][0] new=$result->[$j][0] ";
+	}	   
+    } else {
+        $result =  $data_raw;
+    }
+    $logger->debug("refactoring -- Data_result=" . scalar @$result);
+    return $result;
+}
 
 1;
 

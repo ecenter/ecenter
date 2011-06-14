@@ -91,9 +91,10 @@ sub parse_data {
     ##
     foreach my $src_ip (keys %$data){
     	foreach my $dst_ip (keys %{$data->{$src_ip}}){
-    	    foreach my $timestamp (keys %{$data->{$src_ip}{$dst_ip}}){
+	    map { $parsed_data->{metadata}{"$src_ip:$dst_ip"}{$_} = $data->{$src_ip}{$dst_ip}{$_} } qw/src_hub dst_hub metaid/;
+    	    foreach my $timestamp (keys %{$data->{$src_ip}{$dst_ip}{data}}) {
     	    	foreach my $name (@{$METRIC->{$self->data_type}}) {
-		    $parsed_data->{$name}{"$src_ip:$dst_ip"}{$timestamp} = $data->{$src_ip}{$dst_ip}{$timestamp}{$name};
+		    $parsed_data->{$name}{"$src_ip:$dst_ip"}{$timestamp} = $data->{$src_ip}{$dst_ip}{data}{$timestamp}{$name};
     	        }
     	    }
         }
@@ -116,10 +117,11 @@ add result for the src/dst pair to the anomaly results hashref
 =cut
 
 sub add_result {
-    my ( $self, $tri_duration, $key, $ele, $status ) = @_;
+    my ( $self, $tri_duration, $key, $ele, $status, $metaid) = @_;
     my ($src, $dst) = split(':', $key);
-   
+    
     my $response = {
+         %{$metaid}, 
 	 plateau_size => $tri_duration,
          swc          => $self->swc,
          sensitivity  => $self->sensitivity,

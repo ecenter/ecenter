@@ -7,12 +7,12 @@
 
 class AnomalyDetectionService extends EcenterService {
 
-  public function getData($arg = '') {
+  public $query_types = array('hub', 'ip');
+
+  public function analyzeLiveData($src, $dst, $start, $end, $data_type, $detector_type, $sensitivity, $elevation1, $elevation2, $swc, $resolution = 50) {
     dpm('arg!!!');
   }
 
-  /*public function checkStatus() {
-    return TRUE;
-  }*/
-
+  public function analyzeStaticData($data) {
+  }
 }

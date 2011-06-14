@@ -154,6 +154,20 @@ UNIQUE KEY md_ips_type (src_ip, dst_ip, eventtype_id),
 FOREIGN KEY (eventtype_id) REFERENCES  eventtype(ref_id)  on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB CHARSET=latin1 COMMENT='ps-ps metaid provided by each service-eventtype';
 --
+--    performance / service availability table
+-- 
+CREATE TABLE  [% preserve %]   service_performance  (
+ service_performance   bigint  unsigned AUTO_INCREMENT NOT NULL,
+ metaid    bigint  unsigned  NOT NULL,
+ requested_time  int unsigned NOT NULL default '0',
+ response float NOT NULL default '0.0',
+ is_data boolean NOT NULL default '0',
+ updated  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ PRIMARY KEY  (service_performance),
+ UNIQUE KEY  metaid_updated (metaid, updated), 
+ FOREIGN KEY (metaid) REFERENCES metadata(metaid)  on DELETE CASCADE ON UPDATE CASCADE
+ )  ENGINE=InnoDB CHARSET=latin1 COMMENT='performance data for the metaid request';
+--
 --  NEXT TABLES FOR THE  DATA CACHE
 --  we are going to store pinger, owamp, bwctl, snmp data
 --  based on source -> destination pairs

@@ -28,6 +28,7 @@ use Gearman::Client;
 use NetAddr::IP::Util qw(inet_n2ad ipv6_n2x isIPv4);
 use JSON::XS qw(encode_json decode_json);
 
+ 
 
 my $DAYS7_SECS = 604800;
 my $REG_IP = qr/^[\d\.]+|[a-f\d\:]+$/i;
@@ -429,7 +430,7 @@ sub process_data {
     if($params{data_type}) {
         @data_keys = ($params{data_type}) if  $params{data_type} =~ /^bwctl|owamp|pinger$/i;
     } else {
-        @data_keys =  qw/bwctl owamp pinger/;
+        @data_keys =  qw/bwctl owamp/;
     }
     # my @data_keys = qw/owamp/;
     my %e2e_mds = ();
@@ -437,19 +438,19 @@ sub process_data {
     
     
     foreach my $dir (keys %directions) {
-	my $e2e_sql = qq|select   md.metaid, n_src.ip_noted as src_ip, md.subject, e.service_type as type, hb1.hub as src_hub, hb2.hub as dst_hub,
+	my $e2e_sql = qq|select   md.metaid, n_src.ip_noted as src_ip, md.subject, e.service_type as type, hb1.hub_name as src_hub, hb2.hub_name as dst_hub,
 	                          n_dst.ip_noted  as dst_ip, 
                                                               n_src.nodename as src_name, n_dst.nodename as dst_name, s.service
 	                                        	   from 
 						        	      metadata md
 					        		join  node n_src on(md.src_ip = n_src.ip_addr) 
 								join  node n_dst on(md.dst_ip = n_dst.ip_addr) 
-								left join l2_l3_map    llm1 on( n_src.ip_addr=llm1.ip_addr) 
+								left join l2_l3_map    llm1 on(n_src.ip_addr=llm1.ip_addr) 
      	                                                        left join l2_port      l2p1 on(llm1.l2_urn =l2p1.l2_urn) 
-     	                                                        left join hub          hb1  on(hb1.hub =l2p1.l2_urn)
-								left join l2_l3_map    llm2 on( n_dst.ip_addr=llm2.ip_addr) 
+     	                                                        left join hub          hb1  on(hb1.hub =l2p1.hub)
+								left join l2_l3_map    llm2 on(n_dst.ip_addr=llm2.ip_addr) 
      	                                                        left join l2_port      l2p2 on(llm2.l2_urn =l2p2.l2_urn) 
-     	                                                        left join hub          hb2  on(hb2.hub =l2p2.l2_urn)
+     	                                                        left join hub          hb2  on(hb2.hub =l2p2.hub)
 								join eventtype e on(md.eventtype_id = e.ref_id)
 								join service s  on (e.service = s.service)
 							  where  
@@ -468,9 +469,9 @@ sub process_data {
         %e2e_mds = (%e2e_mds, %{$md_href});
 
 	foreach my $e_type (@data_keys)  {
-	    debug " ...  Running  ------------  $e_type";
+	    $logger->debug(" ...  Running  ------------  $e_type");
 	    get_e2e($task_set, $data->{$e_type}, \%params, $md_href, $e_type );
-	    debug " +++++ Done  $dir ------------  $e_type";
+	    $logger->debug(" +++++ Done  $dir ------------  $e_type");
 	}
      }
   };
@@ -478,7 +479,9 @@ sub process_data {
       error "data call  failed - $EVAL_ERROR";
       GeneralException->throw(error => $EVAL_ERROR ); 
   }
+  $logger->debug(" +++++ Waiting  +++++++++++");
   $task_set->wait(timeout => $params{timeout});
+  $logger->debug(" +++++ E2E is DONE  +++++++++++");
   foreach my $ip_noted (keys %{$data->{snmp}}) { 
         my @result =(); 
         foreach my $time  (sort {$a<=>$b} grep {$_} keys %{$data->{snmp}{$ip_noted}}) { 
@@ -491,7 +494,7 @@ sub process_data {
         }
         ### debug "Data for ip=$hop_ip hop_id=$hops_ref->{$hop_ip}:: " . Dumper( $snmp{$hops_ref->{$hop_ip}});
        $data->{snmp}{$ip_noted} = refactor_result(\@result, 'snmp', $params{resolution});
-	 ##$data->{snmp}{$ip_noted} = \@result;
+       ##$data->{snmp}{$ip_noted} = \@result;
   }
   return $data; 
 }
@@ -505,6 +508,7 @@ sub get_e2e{
     my %result = ();
     ### my $task_set = $g_client->new_task_set;
     my $FAILED = 0;
+    my %data_filter = map {$_ => 1}  @{$TABLEMAP->{$type}{data}};
     my $time_slice = ($type =~ /pinger|owamp/)?config->{time_slice_secs}:($params->{$type}{end} - $params->{$type}{start});
     foreach my $metaid  ( keys %{$md_href} ) {
         my  $md_row =  $md_href->{$metaid}; 
@@ -540,10 +544,12 @@ sub get_e2e{
 								         $logger->error("FAILED: datum malformed", sub{Dumper($datum)});
 									 next;
 								     }
-								     $datum->[1]->{src_hub} = $md_href->{src_hub};
-								     $datum->[1]->{dst_hub} = $md_href->{dst_hub};
-								     
-				                                     $data_hr->{$md_row->{src_ip}}{$md_row->{dst_ip}}{$datum->[0]} = $datum->[1];
+								
+								     my %result_clip =    map {$_ => $datum->[1]{$_}} grep($data_filter{$_}, keys %{$datum->[1]});
+								     $data_hr->{$md_row->{src_ip}}{$md_row->{dst_ip}}{metaid}  = $metaid;
+								     $data_hr->{$md_row->{src_ip}}{$md_row->{dst_ip}}{src_hub} = $md_row->{src_hub};
+								     $data_hr->{$md_row->{src_ip}}{$md_row->{dst_ip}}{dst_hub} = $md_row->{dst_hub};
+				                                     $data_hr->{$md_row->{src_ip}}{$md_row->{dst_ip}}{data}{$datum->[0]} = \%result_clip;
 								 }
 								 $logger->debug("DATA for $type: md=$metaid times=$st_time - $end_time :::" . scalar(@{$returned->{data}}));
 			    	                                 
@@ -572,10 +578,10 @@ sub  get_traceroute_mds {
 						       join node n_dst  on(md.dst_ip = n_dst.ip_addr) 
 						       left join l2_l3_map	llm1 on( n_src.ip_addr=llm1.ip_addr) 
      	                                               left join l2_port	l2p1 on(llm1.l2_urn =l2p1.l2_urn) 
-     	                                               left join hub         hb1  on(hb1.hub =l2p1.l2_urn)
+     	                                               left join hub         hb1  on(hb1.hub =l2p1.hub)
 						       left join l2_l3_map	llm2 on( n_dst.ip_addr=llm2.ip_addr) 
      	                                               left join l2_port	l2p2 on(llm2.l2_urn =l2p2.l2_urn) 
-     	                                               left join hub         hb2  on(hb2.hub =l2p2.l2_urn)
+     	                                               left join hub         hb2  on(hb2.hub =l2p2.hub)
 						       join service s   on(s.service = e.service)
 						    where  
 						         e.service_type = 'traceroute' and  

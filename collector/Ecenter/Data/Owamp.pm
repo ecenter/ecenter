@@ -31,7 +31,7 @@ sub BUILD {
       $self->eventtypes([("http://ggf.org/ns/nmwg/tools/owamp/2.0")]);
       $self->namespace("http://ggf.org/ns/nmwg/tools/owamp/2.0");
       $self->nsid("owamp"); 
-      $self->resolution(100);
+#      $self->resolution(100);
       $self->logger(get_logger(__PACKAGE__));
 };
   

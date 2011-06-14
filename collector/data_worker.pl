@@ -236,6 +236,8 @@ sub get_remote_snmp  {
 sub _get_remote_data  {
     my ($request, $dbh) = @_;
     my $result = {status => 'ok', data => [] };
+    my $t1 = time();
+    my $t_delta = 0;
     eval {
         my $ma =  ("Ecenter::Data::$DATA->{$request->{type}}{class}")->new({ url =>  $request->{md_row}{service} , timeout => $OPTIONS{timeout}});
         my $ns = $ma->namespace;
@@ -250,11 +252,17 @@ sub _get_remote_data  {
         		subject =>  $subject,
         		start   =>  DateTime->from_epoch( epoch =>  $request->{start}),
         		end     =>  DateTime->from_epoch( epoch =>  $request->{end}),
-			resolution =>  $request->{resolution},
+###			resolution =>  $request->{resolution},
         	      };
-        $ma->get_data($ma_request);
+	$ma->get_data($ma_request);
+	$t_delta = time() - $t1;
         $logger->debug("$request->{md_row}{service} MA Data Entries=", sub {Dumper($ma->data)});
-        if($ma->data && @{$ma->data}) {
+        if($ma->data && @{$ma->data}) { 
+	    $dbh->resultset('ServicePerformance')->create( { metaid =>  $request->{metaid},
+	                                                     requested_start => $request->{start},
+	                                                     requested_time => ($request->{end}- $request->{start}), 
+	                                                     response => $t_delta, 
+							     is_data => 1} );
 	    $logger->debug('..process data...');
 	    foreach my $ma_data (@{$ma->data}) { 
                 my $sql_datum = {  metaid => $request->{metaid},  timestamp => $ma_data->[0]};
@@ -281,7 +289,13 @@ sub _get_remote_data  {
          $logger->error(" remote call failed - $EVAL_ERROR  ");
 	 $result->{status} = 'error';
 	 $result->{data} =  " remote call failed - $EVAL_ERROR "; 
-    } 
+    }
+    $dbh->resultset('ServicePerformance')->create( { metaid =>  $request->{metaid},
+	                                             requested_start => $request->{start},
+	                                             requested_time => ($request->{end}- $request->{start}), 
+	                                             response => $t_delta, 
+						     is_data => 1} ) 
+        if $EVAL_ERROR || !@{$result->{data}};
     $logger->info("..Done processing data...");   
     return encode_json $result;
 }
@@ -292,7 +306,8 @@ sub _get_remote_snmp {
     my ($request, $dbh) = @_;
     my $snmp_ma;
     my $result = {status => 'ok', data => {}};
- 
+    my $t1 = time();
+    my $t_delta = 0;
     eval {
 	$snmp_ma =  Ecenter::Data::Snmp->new({ url => $request->{service} });
 	$snmp_ma->get_data({ direction =>  $request->{direction}, 
@@ -303,15 +318,26 @@ sub _get_remote_snmp {
 			  });
     };
     if($EVAL_ERROR) {
+        $dbh->resultset('ServicePerformance')->create( { metaid =>  $request->{metaid},
+	                                                 requested_start => $request->{start},
+	                                                 requested_time => ($request->{end}- $request->{start}), 
+	                                                 response =>  time() - $t1, 
+							 is_data => 0} );
 	$logger->error(" Remote MA --  $request->{service} failed $EVAL_ERROR");
         $result->{status} = 'error';
         $result->{data} = " Remote MA -- $request->{service} failed $EVAL_ERROR";
 	return encode_json  $result;
     }
+    $t_delta = time() - $t1;
     #$logger->info("$request->{service} :: SNMP Data=", sub {Dumper($snmp_ma->data)});
     $logger->info("$request->{service} :: SNMP DataN=" . scalar @{$snmp_ma->data});
     
     if($snmp_ma->data && @{$snmp_ma->data}) {
+        $dbh->resultset('ServicePerformance')->create( { metaid =>  $request->{metaid},
+	                                                 requested_start => $request->{start},
+	                                                 requested_time => ($request->{end}- $request->{start}), 
+	                                                 response => $t_delta, 
+							 is_data => 1} );
 	 foreach my $data (@{$snmp_ma->data}) {
 	     eval {
 	          my $datum = {  metaid => $request->{metaid},
@@ -331,6 +357,12 @@ sub _get_remote_snmp {
 		$logger->error("  Some error with insertion    $EVAL_ERROR");
 	     }
         }
+    } else {
+        $dbh->resultset('ServicePerformance')->create( { metaid =>  $request->{metaid},
+	                                                 requested_start => $request->{start},
+	                                                 requested_time => ($request->{end}- $request->{start}), 
+	                                                 response =>  $t_delta, 
+							 is_data => 0} );
     }
     return encode_json $result;
 }

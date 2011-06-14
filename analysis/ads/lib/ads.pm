@@ -64,12 +64,12 @@ sub detect_anomaly {
 				     elevation2  => {type => SCALAR, regex => qr/^[\.\d]+$/i, default => .4, optional => 1},
 				     swc         => {type => SCALAR, regex => qr/^\d+$/i,     default => 20, optional => 1},
 				   });
-     my $data = {};
+    my $data = {};
     if($req_params{data}) {
         $data  = decode_json $req_params{data};
     } else {
        my %request = map { $_ => $req_params{$_}} grep($req_params{$_},  @DATA_ARGS);
-       my $drs =  Ecenter::DRS::DataClient->new(\%request);
+       my $drs =  Ecenter::DRS::DataClient->new({%request, url => config->{drs_url}});
        $data =  $drs->get_data;
     }
     $req_params{data} = $data;

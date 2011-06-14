@@ -55,14 +55,12 @@ abstract class EcenterService {
    *   additional metadata to be maintained with the query parameters.
    * @param $timeout
    *   (optional) Request timeout to use (overrides timeout set in constructor).
-   * @param $assoc
-   *   (optional) If true (default), return associative array, otherwise return
-   *   an anonymous PHP object.
    * @return
    *   An associative array consisting of querystring, query parameters as an
    *   associative array, response
    */
-  protected function query($path, $parameters = NULL, $timeout = NULL, $assoc = TRUE) {
+  protected function query($path, $parameters = NULL, $timeout = NULL) {
+
     $timeout = ($timeout) ? $timeout : $this->_timeout;
     $url = $this->_url .'/'. $path .'.'. $this->data_type;
 
@@ -133,8 +131,8 @@ abstract class EcenterService {
    */
   public function checkStatus() {
     $q = 'status';
-    $status = $this->query($q, NULL, $this->_status_timeout, FALSE);
-    if ($status['response']->status) {
+    $status = $this->query($q, NULL, $this->_status_timeout);
+    if ($status['response']['status']) {
       return TRUE;
     }
     return FALSE;

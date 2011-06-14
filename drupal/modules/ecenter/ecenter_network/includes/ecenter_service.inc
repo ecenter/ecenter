@@ -104,7 +104,63 @@ abstract class EcenterService {
     $code = curl_getinfo($handle, CURLINFO_HTTP_CODE);
 
     if (!$error) {
-      $response = json_decode($response, $assoc);
+      $response = json_decode($response, TRUE);
+    }
+    else {
+      $response = $error;
+    }
+
+    curl_close($handle);
+
+    $result = array(
+      'parameters' => $parameters,
+      'query' => $querystring,
+      'url' => $url,
+      'code' => $code,
+      'response' => $response,
+    );
+
+    return $result;
+  }
+
+  /**
+   * Query a data service
+   *
+   * @param $path
+   *   The path to the web service resource.
+   * @param $data
+   *   Array of data to POST
+   * @param $timeout
+   *   (optional) Request timeout to use (overrides timeout set in constructor).
+   * @return
+   *   An associative array consisting of querystring, query parameters as an
+   *   associative array, response
+   */
+  protected function post($path, $data = NULL, $timeout = NULL) {
+    $timeout = ($timeout) ? $timeout : $this->_timeout;
+    $url = $this->_url .'/'. $path .'.'. $this->data_type;
+
+    $handle = curl_init();
+
+    $options = array(
+      CURLOPT_URL => $url,
+      CURLOPT_TIMEOUT => $timeout,
+      CURLOPT_RETURNTRANSFER => 1,
+      CURLOPT_FRESH_CONNECT => 1,
+      CURLOPT_FORBID_REUSE => 1,
+      CURLOPT_VERBOSE => 1,
+      CURLOPT_POST => count($data),
+      CURLOPT_POSTFIELDS => http_build_query($data),
+    );
+
+    curl_setopt_array($handle, $options);
+
+    $response = curl_exec($handle);
+    $error = curl_error($handle);
+    $code = curl_getinfo($handle, CURLINFO_HTTP_CODE);
+
+    if (!$error) {
+      $response = json_decode($response, TRUE);
     }
     else {
       $response = $error;

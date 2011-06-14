@@ -573,29 +573,52 @@ function ecenter_network_select_form_submit($form, &$form_state) {
 }
 
 /**
- * Get the E-Center weather map client
+ * Get the E-Center Data Retrieval Service client
+ *
+ * All parameters optional
  *
  * @param $status_check
- * If '503', return HTTP 503 page or redirect. If 'message', set message and 
- * continue. If FALSE, just return the client.
+ *   If '503', return HTTP 503 page or redirect. If 'message', set message and 
+ *   continue. If FALSE, just return the client (default).
+ * @param $type
+ *   'drs' for Data Retrieval Service (default), 'ads' for Anomaly Detection 
+ *   Service
+ * @param $name 
+ *   A unique name for this client (optional)
  */
-function ecenter_network_get_client($status_check = FALSE) {
-  static $client = FALSE;
-  if (!$client) {
-    require_once(dirname(__FILE__) . '/includes/ecenter_service.inc');
-    require_once(dirname(__FILE__) . '/includes/data_retrieval_service.inc');
-    $host = variable_get('ecenter_network_host', 'localhost');
-    $port = variable_get('ecenter_network_port', 8000);
-    $dir = variable_get('ecenter_network_basedir', '');
-    $timeout = variable_get('ecenter_network_timeout', 30);
-    $status_timeout = variable_get('ecenter_network_status_timeout', 2);
-    $client = new DataRetrievalService($host, $port, $dir, $timeout, 
+function ecenter_network_get_client($status_check = FALSE, $type = 'drs', $name = NULL) {
+  static $clients = array();
+
+  require_once(dirname(__FILE__) . '/includes/ecenter_service.inc');
+  switch ($type) {
+    case 'drs':
+      require_once(dirname(__FILE__) . '/includes/data_retrieval_service.inc');
+      $klass = 'DataRetrievalService';
+      $name = ($name) ? $name : 'drs_default';
+      break;
+    case 'ads':
+      require_once(dirname(__FILE__) . '/includes/anomaly_detection_service.inc');
+      $klass = 'AnomalyDetectionService';
+      $name = ($name) ? $name : 'ads_default';
+      break;
+    default:
+      drupal_set_message(t('Incorrect $type passed to client constructor'), 
+        'error');
+  }
+
+  if (empty($clients[$name])) {
+    $host = variable_get('ecenter_network_'. $type .'_host', 'localhost');
+    $port = variable_get('ecenter_network_'. $type .'_port', 8000);
+    $dir = variable_get('ecenter_network_'. $type .'_basedir', '');
+    $timeout = variable_get('ecenter_network_'. $type .'_timeout', 30);
+    $status_timeout = variable_get('ecenter_network_'. $type .'_status_timeout', 2);
+    $clients[$name] = new $klass($host, $port, $dir, $timeout, 
       $status_timeout);
   }
 
-  // Client is not available
-  if ($status_check && !$client->checkStatus()) {
-    $message = t('E-Center web service is not available.');
+  // Check client availability
+  if ($status_check && !$clients[$name]->checkStatus()) {
+    $message = t('!class client is not available.', array('!class' => $klass));
     watchdog('ecenter', $message, array(), WATCHDOG_ERROR);
 
     switch ($status_check) {
@@ -611,7 +634,7 @@ function ecenter_network_get_client($status_check = FALSE) {
         drupal_set_message($message);
     }
   }
-  return $client;
+  return $clients[$name];
 }
 
 /**

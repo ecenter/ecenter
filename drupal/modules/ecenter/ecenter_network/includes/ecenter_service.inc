@@ -18,7 +18,6 @@ abstract class EcenterService {
    */
   public $data_type = 'json';
 
-
   /**
    * Client constructor
    *

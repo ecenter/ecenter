@@ -44,7 +44,7 @@ abstract class EcenterService {
   }
 
   /**
-   * Query the data service
+   * Query a data service
    *
    * @param $path
    *   The path to the web service resource.

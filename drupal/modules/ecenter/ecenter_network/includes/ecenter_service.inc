@@ -137,9 +137,17 @@ abstract class EcenterService {
    *   An associative array consisting of querystring, query parameters as an
    *   associative array, response
    */
-  protected function post($path, $data = NULL, $timeout = NULL) {
+  protected function post($path, $data = NULL, $query = array(), $timeout = NULL) {
     $timeout = ($timeout) ? $timeout : $this->_timeout;
     $url = $this->_url .'/'. $path .'.'. $this->data_type;
+
+    $querystring = http_build_query($query);
+
+    if (!empty($querystring)) {
+      $url .= '?'. $querystring;
+    }
+    // @TODO Fix... somewhere: Dancer does not support encoded ampersands in the querystring
+    $url = str_replace('&amp;', '&', $url);
 
     $handle = curl_init();
 
@@ -150,18 +158,18 @@ abstract class EcenterService {
       CURLOPT_FRESH_CONNECT => 1,
       CURLOPT_FORBID_REUSE => 1,
       CURLOPT_VERBOSE => 1,
-      CURLOPT_POST => count($data),
-      CURLOPT_POSTFIELDS => http_build_query($data),
+      CURLOPT_POST => 1,
+      CURLOPT_POSTFIELDS => $data,
     );
 
     curl_setopt_array($handle, $options);
 
-    $response = curl_exec($handle);
+    $raw = curl_exec($handle);
     $error = curl_error($handle);
     $code = curl_getinfo($handle, CURLINFO_HTTP_CODE);
 
     if (!$error) {
-      $response = json_decode($response, TRUE);
+      $response = json_decode($raw, TRUE);
     }
     else {
       $response = $error;
@@ -170,11 +178,13 @@ abstract class EcenterService {
     curl_close($handle);
 
     $result = array(
-      'parameters' => $parameters,
+      'post' => $data,
+      'parameters' => $query,
       'query' => $querystring,
       'url' => $url,
       'code' => $code,
       'response' => $response,
+      'raw' => $raw,
     );
 
     return $result;

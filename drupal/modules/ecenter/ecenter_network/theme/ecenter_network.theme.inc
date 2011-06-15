@@ -687,7 +687,7 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
       $options['axes']['yaxis']['label'] = t('mbps');
       $options['seriesDefaults']['renderer'] = '$.jqplot.BarRenderer';
       $options['seriesDefaults']['rendererOptions'] = array(
-        'barWidth' => 7,
+        'barWidth' => 2,
       );
       return;
     case 'max_delay':

@@ -47,7 +47,11 @@ class AnomalyDetectionService extends EcenterService {
     return $this->query($algorithm, $params);
   }
 
-  public function postData($data) {
-    return $this->post('test', array('data' => $data));
+  public function getStaticData($data, $algorithm = 'spd') {
+    return $this->query($algorithm, $data);
+  }  
+    
+  public function postData($data, $algorithm = 'spd') {
+    return $this->post($algorithm, $data); //, array('data_type' => 'owamp'));
   }
 }

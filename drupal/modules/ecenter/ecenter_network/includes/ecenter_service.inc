@@ -99,12 +99,12 @@ abstract class EcenterService {
 
     curl_setopt_array($handle, $options);
 
-    $response = curl_exec($handle);
+    $raw = curl_exec($handle);
     $error = curl_error($handle);
     $code = curl_getinfo($handle, CURLINFO_HTTP_CODE);
 
     if (!$error) {
-      $response = json_decode($response, TRUE);
+      $response = json_decode($raw, TRUE);
     }
     else {
       $response = $error;
@@ -118,6 +118,7 @@ abstract class EcenterService {
       'url' => $url,
       'code' => $code,
       'response' => $response,
+      'raw' => $raw,
     );
 
     return $result;

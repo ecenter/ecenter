@@ -37,10 +37,17 @@ any ['get'] =>  "/ads/status.:format" =>
  	       return  { status => 'ok' }
        };
 ##  ADS service, too much data, need to POST
-
-any ['get', 'post'] =>  "/ads/:algo.:format" => 
-       sub {
+get  "/ads/:algo.:format" => 
+       sub {   
 	       return  detect_anomaly(algo => params->{algo}, params('query'));
+       };
+post "/ads/:algo.:format" => 
+       sub {   my $request = params;
+               my $post = params('body');
+               debug "POST::::" . Dumper  $request;
+	       delete $request->{format} 
+                   if exists $request->{format};
+	       return  detect_anomaly( %{$request}, %{$post});
        };
 #
 # return hash with anomalies found

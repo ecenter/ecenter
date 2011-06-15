@@ -129,13 +129,24 @@ any ['get', 'post'] =>  '/data/:data.:format' =>
 	}
 	return $data;
     };
-
 #########   get data - all ----------------------------------------------------------
 any ['get', 'post'] =>  '/data.:format' => 
     sub {
         my $data = {};
         eval {
 	   $data = process_data( params('query'));
+	};
+	if(my $e = Exception::Class->caught()) {
+	    send_error("Failed with " . $e->trace->as_string);
+	}
+	return $data;
+    };
+#########   get data - Site Centric View (SCV)  ----------------------------------------------------------
+any ['get', 'post'] =>  '/site.:format' => 
+    sub {
+        my $data = {};
+        eval {
+	   $data = process_site( params('query'));
 	};
 	if(my $e = Exception::Class->caught()) {
 	    send_error("Failed with " . $e->trace->as_string);
@@ -316,6 +327,72 @@ sub process_service {
     # debug Dumper(\@services);
     return \@services;
 }
+
+
+#
+#   get site (HUB)  centric view - utilization for all first hop interfaces in/out in the timeperiod
+sub process_site {
+   my $data = {};
+   my $task_set;
+   my %params = ();
+   eval {
+        %params = validate(@_, { src_hub	 => {type => SCALAR, regex => qr/^\w+$/i }, 
+		              start	 => {type => SCALAR, regex => $REG_DATE, optional => 1},
+		              end	 => {type => SCALAR, regex => $REG_DATE, optional => 1},
+			      resolution => {type => SCALAR, regex => qr/^\d+$/, optional => 1},
+			      timeout	 => {type => SCALAR, regex => qr/^\d+$/, optional => 1},
+			   }
+		 );
+	if($params{resolution}) {
+            $params{resolution} =  $params{resolution} > 0 && $params{resolution} <= 1000?$params{resolution}:1000;
+	} else {
+            $params{resolution} = 20;
+	} 
+	if($params{timeout}) {
+            $params{timeout} =  $params{timeout} > 0 && $params{timeout} <= 1000?$params{timeout}:1000;
+	} else {
+            $params{timeout} = 120;
+	}
+        my $date_params  =  _params_to_date({start => $params{start},end => $params{end}});
+        map { $params{$_} = $date_params->{$_} } keys %{$date_params};
+        my $g_client = _get_gearman();
+        my $traceroute   = get_traceroute($g_client, { src => qq| AND  (n_src.nodename like   '%$params{src_hub}%' OR  n_dst.nodename like   '%$params{src_hub}%' ) |}, \%params);
+        $data = $traceroute->{hops} 
+             if($traceroute && $traceroute->{hops} && ref $traceroute->{hops} &&  %{$traceroute->{hops}});
+        $data->{traceroute_nodes} =  $traceroute->{hop_ips};
+        debug "HOPS:::" . Dumper( $traceroute->{hop_ips} );
+        return $data unless $traceroute->{hop_ips};
+        $task_set = $g_client->new_task_set; 
+        $data->{snmp} = {};
+        eval {
+	    get_snmp($task_set, $data->{snmp},  $traceroute->{hop_ips}, \%params);
+        }; 
+        if($EVAL_ERROR) {
+	    error "  No SNMP data - failed $EVAL_ERROR";
+        }
+    };
+    if($EVAL_ERROR) {
+      error "site centric call  failed - $EVAL_ERROR";
+      GeneralException->throw(error => $EVAL_ERROR ); 
+    } 
+    $task_set->wait(timeout => $params{timeout});
+    foreach my $ip_noted (keys %{$data->{snmp}}) { 
+        my @result =(); 
+        foreach my $time  (sort {$a<=>$b} grep {$_} keys %{$data->{snmp}{$ip_noted}}) { 
+	    push @result,[ $time,  { capacity =>  $data->{snmp}{$ip_noted}{$time}{capacity},  
+		                     utilization => $data->{snmp}{$ip_noted}{$time}{utilization},
+				     errors => $data->{snmp}{$ip_noted}{$time}{errors},
+				     drops => $data->{snmp}{$ip_noted}{$time}{drops},
+		   	           }
+		         ];
+        }
+        ### debug "Data for ip=$hop_ip hop_id=$hops_ref->{$hop_ip}:: " . Dumper( $snmp{$hops_ref->{$hop_ip}});
+       $data->{snmp}{$ip_noted} = refactor_result(\@result, 'snmp', $params{resolution});
+       ##$data->{snmp}{$ip_noted} = \@result;
+    }
+    return $data;
+}
+
 #
 #   get  end to end traceroute data and reverse and then associated data - per hop (utilization) and end to end
 #  if data is not in the db then get it from remote site
@@ -361,34 +438,26 @@ sub process_data {
     my $trace_cond = {};
     
     if($params{src_ip}) {
-        $trace_cond->{direct_traceroute}{src}  = qq|  md.src_ip =  inet6_pton('$params{src_ip}')|;
-        $trace_cond->{reverse_traceroute}{src} = qq|  md.dst_ip  =  inet6_pton('$params{src_ip}') |;
+        $trace_cond->{direct_traceroute}{src}  = qq| AND md.src_ip =  inet6_pton('$params{src_ip}')|;
+        $trace_cond->{reverse_traceroute}{src} = qq| AND  md.dst_ip  =  inet6_pton('$params{src_ip}') |;
     } 
     if ($params{src_hub}) {
         
-       $trace_cond->{direct_traceroute}{src}  = qq| n_src.nodename like   '%$params{src_hub}%' |;
-       $trace_cond->{reverse_traceroute}{src} = qq| n_src.nodename like   '%$params{dst_hub}%' |;
+       $trace_cond->{direct_traceroute}{src}  = qq| AND  n_src.nodename like   '%$params{src_hub}%' |;
+       $trace_cond->{reverse_traceroute}{src} = qq| AND  n_src.nodename like   '%$params{dst_hub}%' |;
     }
     if($params{dst_ip}) {
-        $trace_cond->{direct_traceroute}{dst}   =   qq|  md.dst_ip =  inet6_pton('$params{dst_ip}') |;
-        $trace_cond->{reverse_traceroute}{dst}  =   qq|  md.src_ip =  inet6_pton('$params{dst_ip}')  |; 
+        $trace_cond->{direct_traceroute}{dst}   =   qq| AND   md.dst_ip =  inet6_pton('$params{dst_ip}') |;
+        $trace_cond->{reverse_traceroute}{dst}  =   qq|  AND  md.src_ip =  inet6_pton('$params{dst_ip}')  |; 
     } 
     if ($params{dst_hub}) {
-      $trace_cond->{direct_traceroute}{dst}   = qq|  n_dst.nodename like   '%$params{dst_hub}%' |;
-      $trace_cond->{reverse_traceroute}{dst}  = qq| n_dst.nodename like    '%$params{src_hub}%' |;
+      $trace_cond->{direct_traceroute}{dst}   = qq| AND   n_dst.nodename like   '%$params{dst_hub}%' |;
+      $trace_cond->{reverse_traceroute}{dst}  = qq| AND  n_dst.nodename like    '%$params{src_hub}%' |;
     }
     ################ starting the client
     #
     #
-    my $g_client = new Gearman::Client;
-    my @servers = ();
-    foreach my $host ( %{config->{gearman}{servers}}) {
-        push @servers, (map { $host . ":$_"} @{config->{gearman}{servers}{$host}});
-    }
-    unless($g_client->job_servers( @servers ) ) {
-         error "Failed to add Gearman  servera ";
-	 GearmanServerException->throw(" Failed to add Gearman  servers  ");
-    }
+    my $g_client =  _get_gearman();
     #
 #
     # my $dst_cond = $params{dst_ip}?"inet6_mask(md.dst_ip, 24)= inet6_mask(inet6_pton('$params{dst_ip}'), 24)":"md.dst_ip = '0'";
@@ -498,7 +567,21 @@ sub process_data {
   }
   return $data; 
 }
- 
+#
+#   initialize GEarman
+#
+sub _get_gearman {
+    my $g_client = new Gearman::Client;
+    my @servers = ();
+    foreach my $host ( %{config->{gearman}{servers}}) {
+    	push @servers, (map { $host . ":$_"} @{config->{gearman}{servers}{$host}});
+    }
+    unless($g_client->job_servers( @servers ) ) {
+    	error "Failed to add Gearman  servera ";
+    	GearmanServerException->throw(" Failed to add Gearman  servers  ");
+    }
+    return $g_client;
+} 
 
 #
 #  get bwctl/owamp/pinger data for end2end, first for the src_ip, then for the dst_ip
@@ -564,7 +647,7 @@ sub get_e2e{
     }
     return;
 }
- 
+
 #
 #     get traceroute md ids   from the db
 # 
@@ -584,12 +667,11 @@ sub  get_traceroute_mds {
      	                                               left join hub         hb2  on(hb2.hub =l2p2.hub)
 						       join service s   on(s.service = e.service)
 						    where  
-						         e.service_type = 'traceroute' and  
-							 $trace_cond->{src} and 
-							 $trace_cond->{dst} and 
-							 s.service like '%raceroute%'|;
+						         e.service_type = 'traceroute' and   s.service like '%raceroute%'
+							 $trace_cond->{src}
+							 $trace_cond->{dst}|;
   
-    debug " TRACEROUTE SQL_mds: $cmd";						     
+    $logger->debug(" TRACEROUTE SQL_mds: $cmd");						     
     my $trace_ref =  database('ecenter')->selectall_hashref($cmd, 'metaid');
     return $trace_ref;
 } 
@@ -602,37 +684,48 @@ sub get_traceroute {
     my $hop_ips = {};
     # get metadata
     my $md_traces =   get_traceroute_mds($trace_cond);
-    debug " TRACEroute MDS:" .  Dumper $md_traces;
-    my ($metaid, $md_row) = each  %{$md_traces};
-    return {hops => {}, hop_ips => {}}  unless $md_row && ref $md_row eq ref {} && $md_row->{service};
-    ####### 
+    $logger->debug(" TRACEroute MDS:", sub{Dumper $md_traces}); 
+    my @metaids = ();
+    my @md_rows = ();
+    if($trace_cond->{src} &&  $trace_cond->{dst}) {
+        ($metaids[0], $md_rows[0]) = each  %{$md_traces};
+    } else {
+        @metaids =    keys %{$md_traces};
+	@md_rows =    values %{$md_traces};
+    }
+    return {hops => {}, hop_ips => {}}  unless @md_rows && ref $md_rows[0] eq ref {} && $md_rows[0]->{service};
+    #######
+
     my $task_set = $g_client->new_task_set();
-    for(my $st_time = $params->{traceroute}{start}; $st_time <= $params->{traceroute}{end}; $st_time += config->{time_slice_secs}) {
-        my $data_table = strftime "%Y%m", localtime($st_time);
-	my $st_end_i = $st_time + config->{time_slice_secs};
-        $task_set->add_task("dispatch_data" => 
-     			     encode_json {md_row => $md_row, 
-			                  table =>  "$params->{table_map}{traceroute}{table}$data_table",
-			    		  resolution => 100, 
-			    		  type=> 'traceroute', 
-					  metaid => $metaid, 
-			    		  start =>  $st_time, 
-			    		  end =>   ($params->{traceroute}{end}<$st_end_i?$params->{traceroute}{end}:$st_end_i)},
-			     { on_complete => sub { 
-			    	   my $returned = decode_json  ${$_[0]};  
-			    	   if($returned->{status} eq 'ok' && $returned->{data} && @{$returned->{data}}) {
-			    	      foreach my $datum ( @{$returned->{data}} ) {
-				         $datum->{hop_ip} =  $datum->{ip_noted};
-					 $hop_ips->{$datum->{ip_noted}}++; 
-					 $hops->{$datum->{ip_noted}}{$datum->{timestamp}}  = $datum;
-			    	      }
-			    	   } else {
-				       error "request is not OK:::" . Dumper($returned);
-				   }
-				   debug "HOP-IPS:::" . Dumper($hop_ips);
-			    	}
-			     }
-			    );
+    foreach my $metaid (@metaids) {
+        my $md_row = shift @md_rows;
+	for(my $st_time = $params->{traceroute}{start}; $st_time <= $params->{traceroute}{end}; $st_time += config->{time_slice_secs}) {
+            my $data_table = strftime "%Y%m", localtime($st_time);
+	    my $st_end_i = $st_time +  config->{time_slice_secs};
+            $task_set->add_task("dispatch_data" => 
+     				 encode_json {md_row => $md_row, 
+			                      table =>  "$params->{table_map}{traceroute}{table}$data_table",
+			    		      resolution => 100, 
+			    		      type=> 'traceroute', 
+					      metaid => $metaid, 
+			    		      start =>  $st_time, 
+			    		      end =>   ($params->{traceroute}{end}<$st_end_i?$params->{traceroute}{end}:$st_end_i)},
+				 { on_complete => sub { 
+			    	       my $returned = decode_json  ${$_[0]};  
+			    	       if($returned->{status} eq 'ok' && $returned->{data} && @{$returned->{data}}) {
+			    		  foreach my $datum ( @{$returned->{data}} ) {
+				             $datum->{hop_ip} =  $datum->{ip_noted};
+					     $hop_ips->{$datum->{ip_noted}}++; 
+					     $hops->{$datum->{ip_noted}}{$datum->{timestamp}}  = $datum;
+			    		  }
+			    	       } else {
+					   $logger->error("request is not OK:::", sub{Dumper($returned)});
+				       }
+				       $logger->debug("HOP-IPS:::", sub{Dumper($hop_ips)});
+			    	    }
+				 }
+				);
+	}
     }
     $task_set->wait(timeout => $params->{timeout});
     return {hops => {}, hop_ips => {}} unless  %$hops && %$hop_ips;
@@ -646,7 +739,7 @@ sub get_traceroute {
      	                                              left join hub          hb using(hub) 
 						     where  
 						            n_hop.ip_noted in ($ips_str) |; 
-    debug " TRACEROUTE SQL_hhops: $cmd";		
+    $logger->debug(" TRACEROUTE SQL_hhops: $cmd");		
     my $hops_ref = database('ecenter')->selectall_hashref($cmd, 'ip_noted');		
     return {hops => $hops, hop_ips =>  $hops_ref };
 }

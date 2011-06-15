@@ -159,12 +159,13 @@ FOREIGN KEY (eventtype_id) REFERENCES  eventtype(ref_id)  on DELETE CASCADE ON U
 CREATE TABLE  [% preserve %]   service_performance  (
  service_performance   bigint  unsigned AUTO_INCREMENT NOT NULL,
  metaid    bigint  unsigned  NOT NULL,
- requested_time  int unsigned NOT NULL default '0',
+ requested_start   bigint(12) unsigned NOT NULL,
+ requested_time    int unsigned NOT NULL,
  response float NOT NULL default '0.0',
  is_data boolean NOT NULL default '0',
  updated  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
  PRIMARY KEY  (service_performance),
- UNIQUE KEY  metaid_updated (metaid, updated), 
+ UNIQUE KEY  metaid_updated (metaid, updated),
  FOREIGN KEY (metaid) REFERENCES metadata(metaid)  on DELETE CASCADE ON UPDATE CASCADE
  )  ENGINE=InnoDB CHARSET=latin1 COMMENT='performance data for the metaid request';
 --

@@ -155,6 +155,11 @@ $.tablechart.prototype.draw = function() {
     tables.hide();
   }
 
+  // Add class
+  if (this.options.tableClass) {
+    $(this.el).addClass(this.options.tableClass);
+  }
+
   // Apply any additional series processing
   if (this.options.processSeries) {
     series = this.options.processSeries.call(this, series);
@@ -269,6 +274,7 @@ $.fn.tablechart.defaults = {
   processSeries: null,
   attachMethod: function(container) { $(this.el).before(container); },
   hideTables: false,
+  tableClass: 'jqplot-data',
   plotOptions: {series: []}
 };
 

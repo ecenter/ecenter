@@ -11,6 +11,7 @@ use DateTime::Format::MySQL;
 use Ecenter::Exception;
 use Ecenter::DB;
 use Ecenter::Utils;
+use Ecenter::Data::Hub;
 use Ecenter::ADS::Detector::APD;
 
  # for simple SQL stuff
@@ -343,6 +344,7 @@ sub process_site {
 			      timeout	 => {type => SCALAR, regex => qr/^\d+$/, optional => 1},
 			   }
 		 );
+	$params{site_view} =  $params{src_hub};
 	if($params{resolution}) {
             $params{resolution} =  $params{resolution} > 0 && $params{resolution} <= 1000?$params{resolution}:1000;
 	} else {
@@ -355,41 +357,57 @@ sub process_site {
 	}
         my $date_params  =  _params_to_date({start => $params{start},end => $params{end}});
         map { $params{$_} = $date_params->{$_} } keys %{$date_params};
-        my $g_client = _get_gearman();
-        my $traceroute   = get_traceroute($g_client, { src => qq| AND  (n_src.nodename like   '%$params{src_hub}%' OR  n_dst.nodename like   '%$params{src_hub}%' ) |}, \%params);
-        $data = $traceroute->{hops} 
-             if($traceroute && $traceroute->{hops} && ref $traceroute->{hops} &&  %{$traceroute->{hops}});
-        $data->{traceroute_nodes} =  $traceroute->{hop_ips};
-        debug "HOPS:::" . Dumper( $traceroute->{hop_ips} );
-        return $data unless $traceroute->{hop_ips};
+        my $g_client = _get_gearman(); 
+	$params{table_map} = $TABLEMAP;
+	my $traceroute = {};
+	my $trace_cond = { direct_traceroute  => { src => qq| AND  ( hb2.hub is not NULL AND n_src.nodename like   '%$params{src_hub}%') |},
+	                   reverse_traceroute => { src => qq| AND  ( hb1.hub is not NULL AND n_dst.nodename like   '%$params{src_hub}%') |}
+			 };
+	foreach my $way (qw/direct_traceroute reverse_traceroute/) {
+           $traceroute->{$way}  = get_traceroute($g_client, $trace_cond->{$way},\%params);
+        }
+        #debug "HOPS:::" . Dumper( $traceroute->{hop_ips} );
+        my $utilization = {};
+	
+	foreach my $way (qw/direct_traceroute reverse_traceroute/) {
+	    foreach my $ip  (keys %{$traceroute->{$way}{hops}}) {
+	    	if($traceroute->{$way}{hop_ips}{$ip}{hub_name} eq $params{src_hub}) {
+	    	      $utilization->{$way}{$ip}++;
+	    	} 
+	    }  
+	    foreach my $ip  (keys %{$utilization}) { 
+	      foreach my $tm  (sort {$a <=> $b} keys %{$traceroute->{$way}{hops}{$ip}}) {
+	    	 $utilization->{$way}{$ip} = $traceroute->{$way}{mds}{$traceroute->{$way}{hops}{$ip}{$tm}{metaid}}{dst_hub};
+	      }
+	   }
+	}
         $task_set = $g_client->new_task_set; 
-        $data->{snmp} = {};
+        my $snmp = {};
+	my %allhops = (%{$utilization->{direct_traceroute}}, %{$utilization->{reverse_traceroute}});
         eval {
-	    get_snmp($task_set, $data->{snmp},  $traceroute->{hop_ips}, \%params);
+	    get_snmp($task_set, $snmp, \%allhops, \%params);
         }; 
         if($EVAL_ERROR) {
-	    error "  No SNMP data - failed $EVAL_ERROR";
+	    $logger->error("  No SNMP data - failed $EVAL_ERROR");
         }
+	$task_set->wait(timeout => $params{timeout}); 
+	my $hub = Ecenter::Data::Hub->new;
+	foreach my $way (qw/direct_traceroute reverse_traceroute/) {
+	    foreach my $ip  (keys %{$utilization->{$way}}) {
+	        my $dst_hub =   $utilization->{$way}{$ip};
+	    	foreach my $time (sort {$a<=>$b} grep {$_} %{$snmp->{$ip}}) {
+		    next unless $snmp->{$ip}{$time}{capacity};
+	    	    my $tmp = ($snmp->{$ip}{$time}{utilization}/$snmp->{$ip}{$time}{capacity});
+	    	    $data->{$way}{$dst_hub}  = $tmp if(!$data->{$way}{$dst_hub}  || $tmp > $data->{$way}{$dst_hub});
+	    	}
+	    }  
+	    
+	}
     };
     if($EVAL_ERROR) {
-      error "site centric call  failed - $EVAL_ERROR";
+      $logger->error("site centric call  failed - $EVAL_ERROR");
       GeneralException->throw(error => $EVAL_ERROR ); 
     } 
-    $task_set->wait(timeout => $params{timeout});
-    foreach my $ip_noted (keys %{$data->{snmp}}) { 
-        my @result =(); 
-        foreach my $time  (sort {$a<=>$b} grep {$_} keys %{$data->{snmp}{$ip_noted}}) { 
-	    push @result,[ $time,  { capacity =>  $data->{snmp}{$ip_noted}{$time}{capacity},  
-		                     utilization => $data->{snmp}{$ip_noted}{$time}{utilization},
-				     errors => $data->{snmp}{$ip_noted}{$time}{errors},
-				     drops => $data->{snmp}{$ip_noted}{$time}{drops},
-		   	           }
-		         ];
-        }
-        ### debug "Data for ip=$hop_ip hop_id=$hops_ref->{$hop_ip}:: " . Dumper( $snmp{$hops_ref->{$hop_ip}});
-       $data->{snmp}{$ip_noted} = refactor_result(\@result, 'snmp', $params{resolution});
-       ##$data->{snmp}{$ip_noted} = \@result;
-    }
     return $data;
 }
 
@@ -523,9 +541,8 @@ sub process_data {
 								join eventtype e on(md.eventtype_id = e.ref_id)
 								join service s  on (e.service = s.service)
 							  where  
-								$trace_cond->{"$dir\_traceroute"}{src} and $trace_cond->{"$dir\_traceroute"}{dst} and 
-								e.service_type in ('pinger','bwctl','owamp') and
-								s.service  like 'http%'
+								e.service_type in ('pinger','bwctl','owamp') and  s.service  like 'http%' 
+								$trace_cond->{"$dir\_traceroute"}{src}   $trace_cond->{"$dir\_traceroute"}{dst}
 					             group by src_ip, dst_ip, service, type|;
 	debug " E2E SQL:: $e2e_sql";
 	my $md_href =  database('ecenter')->selectall_hashref($e2e_sql, 'metaid');   
@@ -702,6 +719,7 @@ sub get_traceroute {
 	for(my $st_time = $params->{traceroute}{start}; $st_time <= $params->{traceroute}{end}; $st_time += config->{time_slice_secs}) {
             my $data_table = strftime "%Y%m", localtime($st_time);
 	    my $st_end_i = $st_time +  config->{time_slice_secs};
+	    $logger->debug("Dispatching::$params->{table_map}{traceroute}{table}$data_table md=$metaid st=$st_time" , sub{Dumper($md_row)});
             $task_set->add_task("dispatch_data" => 
      				 encode_json {md_row => $md_row, 
 			                      table =>  "$params->{table_map}{traceroute}{table}$data_table",
@@ -715,7 +733,7 @@ sub get_traceroute {
 			    	       if($returned->{status} eq 'ok' && $returned->{data} && @{$returned->{data}}) {
 			    		  foreach my $datum ( @{$returned->{data}} ) {
 				             $datum->{hop_ip} =  $datum->{ip_noted};
-					     $hop_ips->{$datum->{ip_noted}}++; 
+					     $hop_ips->{$datum->{ip_noted}}++;
 					     $hops->{$datum->{ip_noted}}{$datum->{timestamp}}  = $datum;
 			    		  }
 			    	       } else {
@@ -731,7 +749,7 @@ sub get_traceroute {
     return {hops => {}, hop_ips => {}} unless  %$hops && %$hop_ips;
     my $ips_str = join (',', map {database('ecenter')->quote($_)} keys %$hop_ips);
     ##  get hub info for each hop in the traceroute
-    my $cmd =    qq|select  distinct   n_hop.netmask, n_hop.ip_noted,  n_hop.nodename, hb.hub, hb.longitude, hb.latitude  
+    my $cmd =    qq|select  distinct   n_hop.netmask, n_hop.ip_noted,  n_hop.nodename, hb.hub, hb.hub_name, hb.longitude, hb.latitude  
 					             from 
 						            node        n_hop 
 						      left join l2_l3_map    llm on( n_hop.ip_addr=llm.ip_addr) 
@@ -741,7 +759,7 @@ sub get_traceroute {
 						            n_hop.ip_noted in ($ips_str) |; 
     $logger->debug(" TRACEROUTE SQL_hhops: $cmd");		
     my $hops_ref = database('ecenter')->selectall_hashref($cmd, 'ip_noted');		
-    return {hops => $hops, hop_ips =>  $hops_ref };
+    return {hops => $hops, hop_ips =>  $hops_ref, mds => $md_traces};
 }
 #
 #    for the list of hop IPs get SNMP data localy or remotely ( forked )

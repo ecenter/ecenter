@@ -347,7 +347,7 @@ function theme_ecenter_network_hops($hops = array()) {
     $options = array(
       'height' => 175,
       'width' => 550,
-      'hideTables' => FALSE,
+      'hideTables' => TRUE,
       'parseX' => '$.tablechart.parseText',
       'dependencies' => array('canvasTextRenderer'),
       'plotOptions' => $plot_options,
@@ -405,7 +405,7 @@ function theme_ecenter_network_end_to_end_tables($tables) {
       $options = array(
         'height' => 125,
         'width' => 400,
-        'hideTables' => FALSE,
+        'hideTables' => TRUE,
         'parseX' => '$.tablechart.parseText',
         'dependencies' => array('canvasTextRenderer'),
         'plotOptions' => $plot_options,

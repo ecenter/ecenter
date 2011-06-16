@@ -1183,7 +1183,7 @@ function ecenter_network_openlayers_layers() {
     ),
     'maxExtent' => openlayers_get_extent('900913'), 
   );
-  $layers['world_dark'] = $mapbox_layer;
+  $layers['world_glass'] = $mapbox_layer;
 
   return $layers;
 }

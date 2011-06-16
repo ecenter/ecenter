@@ -14,9 +14,28 @@ function ecenter_preprocess_page(&$vars) {
 
 function ecenter_preprocess_node(&$vars) {
   global $user;
+  $node = $vars['node'];
+
+  if ($vars['type'] = 'issue' && !$vars['teaser'] && !$vars['build_mode']) {
+    $output = '';
+    foreach ($node->issue_queries as $query) {
+      $output .= theme('ecenter_network_data',
+        unserialize($query->field_query_data[0]['value']), 
+        $query->query_params);
+    }
+    $fieldset = array(
+      '#title' => t('Query results'),
+      '#type' => 'fieldset',
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#prefix' => '<div class="page-network-weathermap query-results">',
+      '#suffix' => '</div>',
+      '#value' => $output,
+    );
+    $vars['content'] = drupal_render($fieldset) . $vars['content'];
+  }
 
   if ($vars['build_mode'] == 'ecenter_activity') {
-    $node = $vars['node'];
     $vars['action'] = ($node->changed > $node->created) ? t('updated by') : t('created by');
     $vars['node_type'] = node_get_types('name', $node->type);
 

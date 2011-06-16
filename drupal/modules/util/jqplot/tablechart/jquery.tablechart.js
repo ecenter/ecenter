@@ -63,7 +63,8 @@
  *
  * Configuration options (no options are required):
  *
- *  hideTables: Hide source tables (default: false)
+ *  hideTables: Hide source tables. Boolean or callback to hide values
+ *    (default: false)
  *  height: Height of chart container (default: null)
  *  width: Width of chart container (default: null)
  *  chartName: Optional chart name. Override the chart name to create multiple
@@ -147,8 +148,16 @@ $.tablechart.prototype.draw = function() {
   }
 
   // Hide tables
-  if (this.options.hideTables) {
+  if (this.options.hideTables && $.isFunction(this.options.hideTables)) {
     this.options.hideTables.call(this, tables);
+  }
+  else if (this.options.hideTables) {
+    tables.hide();
+  }
+
+  // Add class
+  if (this.options.tableClass) {
+    $(this.el).addClass(this.options.tableClass);
   }
 
   // Apply any additional series processing
@@ -265,7 +274,7 @@ $.fn.tablechart.defaults = {
   processSeries: null,
   attachMethod: function(container) { $(this.el).before(container); },
   hideTables: false,
-  hideTables: function(tables) { $(this.el).hide(); }, 
+  tableClass: 'jqplot-data',
   plotOptions: {series: []}
 };
 

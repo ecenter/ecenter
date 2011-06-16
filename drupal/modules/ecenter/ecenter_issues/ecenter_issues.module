@@ -167,7 +167,7 @@ function ecenter_issues_issue_add_data($form, &$form_state) {
 }
 
 /**
- * Get query node based on parameters 
+ * Get query node based on parameters
  *
  * @param $params
  *   Array of parameters ('src', 'dst', 'start', 'end')
@@ -217,8 +217,6 @@ function ecenter_issues_get_query_node($params) {
 /**
  * Get issues for a query
  *
- * @TODO Support more flexibility than exact matching used here
- * 
  * @param $node
  *   A query node object
  * @return
@@ -263,7 +261,7 @@ function ecenter_issues_parse_params($param_string) {
  *
  * @param $node
  *   Issue node object
- * @return 
+ * @return
  *   An array representation of querystring needed to reconstruct permalink
  */
 function ecenter_issues_get_node_query($node) {

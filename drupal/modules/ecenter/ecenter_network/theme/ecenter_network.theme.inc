@@ -353,7 +353,7 @@ function theme_ecenter_network_hops($hops = array()) {
       'plotOptions' => $plot_options,
     );
     jqplot_register_tablechart('#utilization-tables', $options);
-    return '<div id="utilization-tables" class="wrapper"><div class="chart-title"><h3>'. 
+    return '<div id="utilization-tables" class="data-wrapper"><div class="chart-title"><h3>'. 
       t('Per hop utilization').'</h3></div><div class="data-tables">'. implode("\n", $tables) .
       '</div></div>';
   }
@@ -377,7 +377,7 @@ function theme_ecenter_network_end_to_end_tables($tables) {
         'ecenter_network_format_'. $type .'_label',
         'ecenter_network_format_default_label',
       );
-      $output .= '<div class="wrapper" id="'. $type .'-'. $measurement
+      $output .= '<div class="data-wrapper" id="'. $type .'-'. $measurement
         .'-data-tables">';
       $output .= '<div class="chart-title clearfix"><h3>'.
         theme($suggestions, $measurement, $type) .'</h3>';

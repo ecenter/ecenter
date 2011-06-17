@@ -74,7 +74,7 @@ function ecenter_core_block($op = 'list', $delta = 0, $edit = array()) {
  * Implementation of hook_form_alter().
  */
 function ecenter_core_form_alter(&$form, &$form_state, $form_id) {
-  $form['#attributes']['class'] .= $form['#attributes']['class'] ? ' ' : NULL;
+  $form['#attributes']['class'] = (!empty($form['#attributes']['class'])) ? $form['#attributes']['class'] .' ' : '';
   $form['#attributes']['class'] .= 'form-id-'. $form_id;
 
   switch ($form_id) {

@@ -821,7 +821,7 @@ function ecenter_network_parse_response($response) {
     as $direction => $end_type) {
 
     foreach (array('bwctl', 'owamp', 'pinger') as $test) {
-      if (!is_array($data[$test])) {
+      if (empty($data[$test])) {
         continue;
       }
       
@@ -855,7 +855,7 @@ function ecenter_network_parse_response($response) {
     // -- Process traceroute -- //
     $traceroute = array();
     $traceroute_direction = ($direction == 'forward') ? 'direct' : 'reverse';
-    if (is_array($data[$traceroute_direction .'_traceroute'])) {
+    if (!empty($data[$traceroute_direction .'_traceroute'])) {
       foreach ($data[$traceroute_direction .'_traceroute'] as $series) {
         // Sort series so first hop is best candidate for most likely hop
         usort($series, '_ecenter_network_sort_series');

@@ -50,17 +50,17 @@
 
   <?php if (!empty($breadcrumb) || !empty($page_type) || !empty($tabs)): ?>
   <div id="page-meta" class="clearfix">
-    <?php if ($breadcrumb): ?>
+    <?php if (!empty($breadcrumb)): ?>
       <?php print $breadcrumb; ?>
     <?php endif; ?>
-    
+
     <?php if (!empty($tabs)): ?>
       <div id="tasks">
         <?php print $tabs; ?>
       </div>
     <?php endif; ?>
-    
-    <?php if ($page_type): ?>
+
+    <?php if (!empty($page_type)): ?>
       <div class="page-type"><?php print $page_type; ?></div>
     <?php endif; ?>
   </div>

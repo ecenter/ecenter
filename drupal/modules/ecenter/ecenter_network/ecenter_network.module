@@ -1628,9 +1628,7 @@ function _ecenter_network_extract_query() {
   }
   else {
     foreach (array('src', 'dst', 'start', 'end', 'timezone') as $key) {
-      if (!empty($_REQUEST[$key])) {
-        $vars[$key] = $_REQUEST[$key];
-      }
+      $vars[$key] = (!empty($_REQUEST[$key])) ? $_REQUEST[$key] : NULL;
     }
   }
 

@@ -158,11 +158,12 @@ function theme_ecenter_test_data_clients() {
   $end = '2011-06-10 23:00:00';
   */
 
-  $src = 'hub:SLAC';
+  $src = 'hub:FNAL';
   $dst = 'hub:ORNL';
-  $start = '2011-06-13 08:20:00';
-  $end = '2011-06-13 16:15:00';
+  $start = '2011-06-10 10:00:00';
+  $end = '2011-06-10 22:00:00';
   $type = 'owamp';
+  $resolution = 1000;
 
   // Parse out query type
   list($src_type, $src_value) = explode(':', $src, 2);
@@ -171,7 +172,7 @@ function theme_ecenter_test_data_clients() {
   $output = '<h2>Data request</h2>';
  
   $fn_start = microtime(true);
-  $drs_result = $drs_client->getData($src, $dst, $start, $end);
+  $drs_result = $drs_client->getData($src, $dst, $start, $end, $resolution);
   $fn_end = microtime(true);
   
   $output .= '<h3>Raw results</h3>';
@@ -206,14 +207,6 @@ function theme_ecenter_test_data_clients() {
     'data' => $drs_result['raw'],
     'data_type' => $type,
   );
-
-  $fn_start = microtime(true);
-  $result = $ads_client->getStaticData($data);
-  $fn_end = microtime(true);
-
-  $output .= '<h4>Static (get) results</h4>';
-  $output .= kpr($result, TRUE);
-  $output .= 'Performance: '. round($fn_end - $fn_start, 4) .' sec';
 
   $fn_start = microtime(true);
   $result = $ads_client->postData($data);

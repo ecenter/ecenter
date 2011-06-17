@@ -10,7 +10,6 @@ class AnomalyDetectionService extends EcenterService {
   public $query_types = array('hub', 'ip');
 
   public function getData($src, $dst, $start, $end, $data_type, $algorithm = 'spd', $detector_type = NULL, $sensitivity = NULL, $elevation1 = NULL, $elevation2 = NULL, $swc = NULL, $resolution = 50) {
-    dpm('arg!!!');
     
     // Parse out query type
     list($src_type, $src_value) = explode(':', $src, 2);
@@ -48,7 +47,11 @@ class AnomalyDetectionService extends EcenterService {
     return $this->query($algorithm, $params);
   }
 
-  public function postData($data) {
-    return $this->post('test', array('data' => $data));
+  public function getStaticData($data, $algorithm = 'spd') {
+    return $this->query($algorithm, $data);
+  }  
+    
+  public function postData($data, $algorithm = 'spd') {
+    return $this->post($algorithm, $data); //, array('data_type' => 'owamp'));
   }
 }

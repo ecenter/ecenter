@@ -75,13 +75,20 @@ sub detect_anomaly {
     if($req_params{data}) {
         $data  = decode_json $req_params{data};
     } else {
-       my %request = map { $_ => $req_params{$_}} grep($req_params{$_},  @DATA_ARGS);
-       my $drs =  Ecenter::DRS::DataClient->new({%request, url => config->{drs_url}});
-       $data =  $drs->get_data;
+        my %request = map { $_ => $req_params{$_}} grep($req_params{$_},  @DATA_ARGS); 
+	eval {
+            my $drs =  Ecenter::DRS::DataClient->new({%request, url => config->{drs_url}, data_type => $req_params{data_type}});
+            $data =  $drs->get_data;
+	};
+	if(!($data && ref $data eq ref {} && %{$data}) || $EVAL_ERROR) {
+            $logger->error("Remote call to DRS  failed with: $EVAL_ERROR or/and there ws no data returned");
+	    return { status => 'error', error => "Remote call to DRS  failed with: $EVAL_ERROR"};
+        }
     }
     $req_params{data} = $data;
     unless($data && ref $data eq ref {} && %{$data}) {
-            return error "Data is not supplied or supplied but empty or  malformed";
+            $logger->error("Data is not supplied or supplied but empty or  malformed"); 
+            return { status => 'error', error => "Data is not supplied or supplied but empty or  malformed"};
     }
     my $ads = Ecenter::ADS::Detector::APD->new({ data => $data, %req_params });
     my $results = {};

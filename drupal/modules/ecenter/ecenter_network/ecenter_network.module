@@ -573,27 +573,52 @@ function ecenter_network_select_form_submit($form, &$form_state) {
 }
 
 /**
- * Get the E-Center weather map client
+ * Get the E-Center Data Retrieval Service client
+ *
+ * All parameters optional
  *
  * @param $status_check
- * If '503', return HTTP 503 page or redirect. If 'message', set message and 
- * continue. If FALSE, just return the client.
+ *   If '503', return HTTP 503 page or redirect. If 'message', set message and 
+ *   continue. If FALSE, just return the client (default).
+ * @param $type
+ *   'drs' for Data Retrieval Service (default), 'ads' for Anomaly Detection 
+ *   Service
+ * @param $name 
+ *   A unique name for this client (optional)
  */
-function ecenter_network_get_client($status_check = FALSE) {
-  static $client = FALSE;
-  if (!$client) {
-    require_once(dirname(__FILE__) . '/client.php');
-    $host = variable_get('ecenter_network_host', 'localhost');
-    $port = variable_get('ecenter_network_port', 8000);
-    $dir = variable_get('ecenter_network_basedir', '');
-    $timeout = variable_get('ecenter_network_timeout', 30);
-    $status_timeout = variable_get('ecenter_network_status_timeout', 2);
-    $client = new Ecenter_Data_Service_Client($host, $port, $dir, $timeout, $status_timeout);
+function ecenter_network_get_client($status_check = FALSE, $type = 'drs', $name = NULL) {
+  static $clients = array();
+
+  require_once(dirname(__FILE__) . '/includes/ecenter_service.inc');
+  switch ($type) {
+    case 'drs':
+      require_once(dirname(__FILE__) . '/includes/data_retrieval_service.inc');
+      $klass = 'DataRetrievalService';
+      $name = ($name) ? $name : 'drs_default';
+      break;
+    case 'ads':
+      require_once(dirname(__FILE__) . '/includes/anomaly_detection_service.inc');
+      $klass = 'AnomalyDetectionService';
+      $name = ($name) ? $name : 'ads_default';
+      break;
+    default:
+      drupal_set_message(t('Incorrect $type passed to client constructor'), 
+        'error');
   }
 
-  // Client is not available
-  if ($status_check && !$client->checkStatus()) {
-    $message = t('E-Center web service is not available.');
+  if (empty($clients[$name])) {
+    $host = variable_get('ecenter_network_'. $type .'_host', 'localhost');
+    $port = variable_get('ecenter_network_'. $type .'_port', 8000);
+    $dir = variable_get('ecenter_network_'. $type .'_basedir', '');
+    $timeout = variable_get('ecenter_network_'. $type .'_timeout', 30);
+    $status_timeout = variable_get('ecenter_network_'. $type .'_status_timeout', 2);
+    $clients[$name] = new $klass($host, $port, $dir, $timeout, 
+      $status_timeout);
+  }
+
+  // Check client availability
+  if ($status_check && !$clients[$name]->checkStatus()) {
+    $message = t('!class client is not available.', array('!class' => $klass));
     watchdog('ecenter', $message, array(), WATCHDOG_ERROR);
 
     switch ($status_check) {
@@ -606,10 +631,10 @@ function ecenter_network_get_client($status_check = FALSE) {
         print theme('page', '<div class="ecenter-fatal">'. $message .'</div>');
         exit();
       default:
-        drupal_set_message($message);
+        drupal_set_message($message, 'error');
     }
   }
-  return $client;
+  return $clients[$name];
 }
 
 /**
@@ -796,7 +821,7 @@ function ecenter_network_parse_response($response) {
     as $direction => $end_type) {
 
     foreach (array('bwctl', 'owamp', 'pinger') as $test) {
-      if (!is_array($data[$test])) {
+      if (empty($data[$test])) {
         continue;
       }
       
@@ -830,7 +855,7 @@ function ecenter_network_parse_response($response) {
     // -- Process traceroute -- //
     $traceroute = array();
     $traceroute_direction = ($direction == 'forward') ? 'direct' : 'reverse';
-    if (is_array($data[$traceroute_direction .'_traceroute'])) {
+    if (!empty($data[$traceroute_direction .'_traceroute'])) {
       foreach ($data[$traceroute_direction .'_traceroute'] as $series) {
         // Sort series so first hop is best candidate for most likely hop
         usort($series, '_ecenter_network_sort_series');
@@ -1451,20 +1476,6 @@ function ecenter_network_openlayers_map_alter(&$map) {
       }
     }
   }
-
-  // @TODO test, please delete
-  if ($map['layers']['openlayers_test_openlayers_1']) {
-    foreach ($map['layers']['openlayers_test_openlayers_1']['features'] as $key => $feature) {
-      $feature['style'] = array(
-        'label' => $feature['attributes']['name'],
-        'labelYOffset' => -14,
-        'fontSize' => '13px',
-        'fontWeight' => 'bold',
-        'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',
-      );
-      $map['layers']['openlayers_test_openlayers_1']['features'][$key] = $feature;
-    }
-  }
 }
 
 /**
@@ -1590,7 +1601,9 @@ function _ecenter_network_timestamp_to_local($date, $format = 'Y-m-d H:i:s', $tz
  *  An array of query values
  */
 function _ecenter_network_extract_query() {
-  if ($_REQUEST['form_id'] == 'ecenter_network_select_form') {
+  $vars = array();
+
+  if (!empty($_REQUEST['form_id']) && $_REQUEST['form_id'] == 'ecenter_network_select_form') {
     $vars = array(
       'src' => $_REQUEST['network_wrapper']['query']['src_wrapper']['src'],
       'dst' => $_REQUEST['network_wrapper']['query']['dst_wrapper']['dst'],
@@ -1600,13 +1613,9 @@ function _ecenter_network_extract_query() {
     );
   }
   else {
-    $vars = array(
-      'src' => $_REQUEST['src'],
-      'dst' => $_REQUEST['dst'] ,
-      'start' => $_REQUEST['start'],
-      'end' => $_REQUEST['end'],
-      'timezone' => $_REQUEST['timezone'],
-    );
+    foreach (array('src', 'dst', 'start', 'end', 'timezone') as $key) {
+      $vars[$key] = (!empty($_REQUEST[$key])) ? $_REQUEST[$key] : NULL;
+    }
   }
 
   return $vars;

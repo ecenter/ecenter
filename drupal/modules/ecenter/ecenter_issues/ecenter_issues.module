@@ -34,7 +34,7 @@ function ecenter_issues_init() {
   if (arg(0) == 'node' && is_numeric(arg(1)) && !arg(2)) {
     $node = node_load(arg(1));
   }
-  if (arg(0) == 'issues' || $node->type == 'issue') {
+  if (arg(0) == 'issues' || (!empty($node) && $node->type == 'issue')) {
     drupal_add_css(drupal_get_path('module', 'ecenter_issues') .'/css/ecenter-issues.css');
   }
 }

@@ -366,11 +366,13 @@ a {
       }
     }
     &.menu-level-2 {
-      padding-left: @container_padding_horizontal + 4px;
       padding-top: 5px;
       padding-bottom: 5px;
       font-size: .875em;
       background-color: @color_grey_80;
+      ul {
+        margin-left: @container_padding_horizontal;
+      }
       a {
         margin-right: 4px;
         padding: 0 7px;

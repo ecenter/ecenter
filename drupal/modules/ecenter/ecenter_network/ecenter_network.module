@@ -1615,7 +1615,9 @@ function _ecenter_network_timestamp_to_local($date, $format = 'Y-m-d H:i:s', $tz
  *  An array of query values
  */
 function _ecenter_network_extract_query() {
-  if ($_REQUEST['form_id'] == 'ecenter_network_select_form') {
+  $vars = array();
+
+  if (!empty($_REQUEST['form_id']) && $_REQUEST['form_id'] == 'ecenter_network_select_form') {
     $vars = array(
       'src' => $_REQUEST['network_wrapper']['query']['src_wrapper']['src'],
       'dst' => $_REQUEST['network_wrapper']['query']['dst_wrapper']['dst'],
@@ -1625,13 +1627,11 @@ function _ecenter_network_extract_query() {
     );
   }
   else {
-    $vars = array(
-      'src' => $_REQUEST['src'],
-      'dst' => $_REQUEST['dst'] ,
-      'start' => $_REQUEST['start'],
-      'end' => $_REQUEST['end'],
-      'timezone' => $_REQUEST['timezone'],
-    );
+    foreach (array('src', 'dst', 'start', 'end', 'timezone') as $key) {
+      if (!empty($_REQUEST[$key])) {
+        $vars[$key] = $_REQUEST[$key];
+      }
+    }
   }
 
   return $vars;

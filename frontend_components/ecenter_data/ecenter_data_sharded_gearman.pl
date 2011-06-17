@@ -370,17 +370,18 @@ sub process_site {
         my $utilization = {};
 	
 	foreach my $way (qw/direct_traceroute reverse_traceroute/) {
+	    $utilization->{$way} = {};
 	    foreach my $ip  (keys %{$traceroute->{$way}{hops}}) {
 	    	if($traceroute->{$way}{hop_ips}{$ip}{hub_name} eq $params{src_hub}) {
-	    	      $utilization->{$way}{$ip}++;
+		    while (my($tm,$datum) =  each %{$traceroute->{$way}{hops}{$ip}}) {
+		        next if $traceroute->{$way}{mds}{$datum->{metaid}}{dst_hub} eq $params{src_hub};
+	    	        $utilization->{$way}{$ip} = $traceroute->{$way}{mds}{$datum->{metaid}}{dst_hub};
+		        last;
+		    }
 	    	} 
-	    }  
-	    foreach my $ip  (keys %{$utilization}) { 
-	      foreach my $tm  (sort {$a <=> $b} keys %{$traceroute->{$way}{hops}{$ip}}) {
-	    	 $utilization->{$way}{$ip} = $traceroute->{$way}{mds}{$traceroute->{$way}{hops}{$ip}{$tm}{metaid}}{dst_hub};
-	      }
-	   }
+	    }
 	}
+	$logger->debug("Utilization:: ", sub{Dumper($utilization)});
         $task_set = $g_client->new_task_set; 
         my $snmp = {};
 	my %allhops = (%{$utilization->{direct_traceroute}}, %{$utilization->{reverse_traceroute}});
@@ -397,8 +398,12 @@ sub process_site {
 	        my $dst_hub =   $utilization->{$way}{$ip};
 	    	foreach my $time (sort {$a<=>$b} grep {$_} %{$snmp->{$ip}}) {
 		    next unless $snmp->{$ip}{$time}{capacity};
-	    	    my $tmp = ($snmp->{$ip}{$time}{utilization}/$snmp->{$ip}{$time}{capacity});
-	    	    $data->{$way}{$dst_hub}  = $tmp if(!$data->{$way}{$dst_hub}  || $tmp > $data->{$way}{$dst_hub});
+	    	    push @{$data->{$way}{$dst_hub}{snmp}}, [$time,  { capacity =>  $snmp->{$ip}{$time}{capacity},  
+		                                                      utilization =>  $snmp->{$ip}{$time}{utilization} || '0',
+				                                      errors => $snmp->{$ip}{$time}{errors} || '0',
+				                                      drops => $snmp->{$ip}{$time}{drops} || '0',
+								    }
+		    ];
 	    	}
 	    }  
 	    
@@ -670,7 +675,7 @@ sub get_e2e{
 # 
 sub  get_traceroute_mds {
     my ($trace_cond) = @_;
-    my  $cmd =   qq|select  distinct md.metaid as metaid, md.src_ip, md.dst_ip, md.subject, hb1.hub as src_hub, hb2.hub as dst_hub,
+    my  $cmd =   qq|select  distinct md.metaid as metaid, md.src_ip, md.dst_ip, md.subject, hb1.hub_name as src_hub, hb2.hub_name as dst_hub,
                              s.service  from 
 	                                                    metadata md 
 	                                               join eventtype e on(md.eventtype_id = e.ref_id)  
@@ -737,9 +742,9 @@ sub get_traceroute {
 					     $hops->{$datum->{ip_noted}}{$datum->{timestamp}}  = $datum;
 			    		  }
 			    	       } else {
-					   $logger->error("request is not OK:::", sub{Dumper($returned)});
+					   $logger->error("request is not OK:::", sub{Dumper($md_row)});
 				       }
-				       $logger->debug("HOP-IPS:::", sub{Dumper($hop_ips)});
+				       #$logger->debug("HOP-IPS:::", sub{Dumper($hop_ips)});
 			    	    }
 				 }
 				);

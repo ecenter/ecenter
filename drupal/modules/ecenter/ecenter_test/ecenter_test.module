@@ -165,8 +165,8 @@ function theme_ecenter_test_data_clients() {
   $type = 'owamp';
 
   // Parse out query type
-  list($src_type, $src_value) = explode(':', $data['src'], 2);
-  list($dst_type, $dst_value) = explode(':', $data['dst'], 2);
+  list($src_type, $src_value) = explode(':', $src, 2);
+  list($dst_type, $dst_value) = explode(':', $dst, 2);
 
   $output = '<h2>Data request</h2>';
  

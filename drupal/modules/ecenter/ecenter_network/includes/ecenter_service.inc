@@ -63,6 +63,7 @@ abstract class EcenterService {
 
     $timeout = ($timeout) ? $timeout : $this->_timeout;
     $url = $this->_url .'/'. $path .'.'. $this->data_type;
+    $querystring = '';
 
     if (!empty($parameters)) {
       $query = array();

@@ -11,6 +11,9 @@ class AnomalyDetectionService extends EcenterService {
 
   public function getData($src, $dst, $start, $end, $data_type, $resolution = 50, $algorithm = 'spd', $detector_type = NULL, $sensitivity = NULL, $elevation1 = NULL, $elevation2 = NULL, $swc = NULL) {
 
+    $params = get_defined_vars();
+    unset($params['algorithm']);
+
     // Parse out query type
     list($src_type, $src_value) = explode(':', $src, 2);
     list($dst_type, $dst_value) = explode(':', $dst, 2);
@@ -28,26 +31,22 @@ class AnomalyDetectionService extends EcenterService {
       throw new Exception('Invalid source and destination query types.');
     }
 
-    $params = array(
-      'src' => array(
-        'query' => array('src_'. $src_type => $src_value),
-        'type' => $src_type,
-        'value' => $src_value,
-      ),
-      'dst' => array(
-        'query' => array('dst_'. $dst_type => $dst_value),
-        'type' => $dst_type,
-        'value' => $dst_value,
-      ),
-      'start' => $start,
-      'end' => $end,
-      'data_type' => $data_type,
+
+    $params['src'] = array(
+      'query' => array('src_'. $src_type => $src_value),
+      'type' => $src_type,
+      'value' => $src_value,
+    );
+    $params['dst'] = array(
+      'query' => array('dst_'. $dst_type => $dst_value),
+      'type' => $dst_type,
+      'value' => $dst_value,
     );
 
     return $this->query($algorithm, $params);
   }
 
   public function postData($data, $algorithm = 'spd') {
-    return $this->post($algorithm, $data); //, array('data_type' => 'owamp'));
+    return $this->post($algorithm, $data);
   }
 }

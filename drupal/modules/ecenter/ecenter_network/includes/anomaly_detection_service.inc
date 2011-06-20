@@ -9,7 +9,7 @@ class AnomalyDetectionService extends EcenterService {
 
   public $query_types = array('hub', 'ip');
 
-  public function getData($src, $dst, $start, $end, $data_type, $algorithm = 'spd', $detector_type = NULL, $sensitivity = NULL, $elevation1 = NULL, $elevation2 = NULL, $swc = NULL, $resolution = 50) {
+  public function getData($src, $dst, $start, $end, $data_type, $resolution = 50, $algorithm = 'spd', $detector_type = NULL, $sensitivity = NULL, $elevation1 = NULL, $elevation2 = NULL, $swc = NULL) {
 
     // Parse out query type
     list($src_type, $src_value) = explode(':', $src, 2);

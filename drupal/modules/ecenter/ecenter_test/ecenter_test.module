@@ -192,7 +192,7 @@ function theme_ecenter_test_data_clients() {
   $output .= '<h3>'. $type . '</h3>';
 
   $fn_start = microtime(true);
-  $result = $ads_client->getData($src, $dst, $start, $end, $type);
+  $result = $ads_client->getData($src, $dst, $start, $end, $type, $resolution);
   $fn_end = microtime(true);
 
   $output .= '<h4>Dynamic (get) results</h4>';
@@ -206,6 +206,7 @@ function theme_ecenter_test_data_clients() {
     'end' => $end,
     'data' => $drs_result['raw'],
     'data_type' => $type,
+    'resolution' => $resolution,
   );
 
   $fn_start = microtime(true);
@@ -215,6 +216,8 @@ function theme_ecenter_test_data_clients() {
   $output .= '<h4>Static (post) results</h4>';
   $output .= kpr($result, TRUE);
   $output .= 'Performance: '. round($fn_end - $fn_start, 4) .' sec';
+
+
   
   return $output;
 

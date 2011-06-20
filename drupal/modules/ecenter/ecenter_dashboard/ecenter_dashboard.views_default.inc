@@ -781,7 +781,7 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['filters']['status']['value'] = '1';
 
   /* Display: Block */
-  $handler = $view->new_display('block', 'Block', 'block_1');
+  $handler = $view->new_display('block', 'Block', 'block');
   $translatables['ecenter_dashboard_hot_content'] = array(
     t('Defaults'),
     t('more'),

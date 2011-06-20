@@ -11,18 +11,22 @@ function ecenter_issues_content_default_fields() {
     'field_name' => 'field_issue_query',
     'type_name' => 'issue',
     'display_settings' => array(
-      'weight' => '-2',
+      'weight' => '-4',
       'parent' => '',
+      'ecenter_activity' => array(
+        'format' => 'hidden',
+        'exclude' => 1,
+      ),
       'label' => array(
         'format' => 'hidden',
       ),
       'teaser' => array(
-        'format' => 'query_link',
-        'exclude' => 0,
+        'format' => 'hidden',
+        'exclude' => 1,
       ),
       'full' => array(
-        'format' => 'query_link',
-        'exclude' => 0,
+        'format' => 'hidden',
+        'exclude' => 1,
       ),
       '4' => array(
         'format' => 'default',

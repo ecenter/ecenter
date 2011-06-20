@@ -481,7 +481,9 @@ function ecenter_network_select_form(&$form_state) {
   }
 
   if ($src && $dst && $start && $end) {
-    $data = ecenter_network_get_data($src, $dst, $start, $end);
+    $data = array(
+      'drs' => ecenter_network_get_data($src, $dst, $start, $end)
+    );
 
     $params = array(
       'src' => $src,
@@ -497,6 +499,9 @@ function ecenter_network_select_form(&$form_state) {
         $data['traceroute']['diff'])), 'setting');
       drupal_add_js(array('ecenterNetwork' => array('tracerouteMaxLength' => 
         $data['traceroute']['traceroute_max'])), 'setting');
+
+      $data['ads'] = ecenter_network_get_ads_data($src, $dst, $start, $end);
+
       $form['results_wrapper']['results']['#value'] =
         theme('ecenter_network_data', $data, $params);
       $form['results_wrapper']['recent']['#value'] =
@@ -712,6 +717,76 @@ function ecenter_network_get_data($src, $dst, $start, $end) {
 
   }
   return $results[$query];
+}
+
+/**
+ * Get/cache anomaly data
+ *
+ * @param $src
+ *   Source IP address
+ * @param $dst
+ *   Destination IP address
+ * @param $start
+ *   Start time, expressed in UTC, formatted as Y-m-d H:i:s
+ * @param $end
+ *   End time, expressed in UTC, formatted as Y-m-d H:i:s
+ * @return
+ *   An array of parsed data
+ */
+function ecenter_network_get_ads_data($src, $dst, $start, $end) {
+  global $user;
+  static $results = array();
+
+  $query = http_build_query(array(
+    'src' => $src,
+    'dst' => $dst,
+    'start' => $start,
+    'end' => $end,
+  ));
+
+  if (!array_key_exists($query, $results)) {
+    $client = ecenter_network_get_client('message', 'ads');
+    foreach (array('owamp', 'bwctl') as $data_type) {
+      $result = $client->getData($src, $dst, $start, $end, $data_type, 1000);
+      if ($result['code'] == 200) {
+        $data = ecenter_network_parse_ads_response($result);
+        $results[$query][$data_type] = $data;
+      }
+      else { // Note that the static variable is NOT set in this case
+        watchdog('ecenter_network',
+          'Request (@url) failed with code @code (@response).',
+          array('@url' => $result['url'], '@code' => $result['code'],
+          '@response' => $result['response']), WATCHDOG_WARNING);
+        return NULL;
+      }
+    }
+  }
+  return $results[$query];
+}
+
+function ecenter_network_parse_ads_response($response) {
+  $parsed_data = array();
+  $data = $response['response'];
+  $params = $response['parameters'];
+
+  foreach (array('forward', 'reverse') as $direction) {
+    foreach ($data as $src => $destinations) {
+      foreach ($destinations as $dst => $row) {
+        if (($direction == 'forward' 
+          && $params['src']['value'] == $row['src_hub']
+          && $params['dst']['value'] == $row['dst_hub']) ||
+          ($direction == 'reverse' 
+          && $params['dst']['value'] == $row['src_hub']
+          && $params['src']['value'] == $row['dst_hub']) &&
+          is_array($row['status'])) {
+
+          $parsed_data[$direction][$params['data_type']] = $row['status'];
+        } 
+      }
+    }
+  }
+  dpm($parsed_data);
+  return $parsed_data;
 }
 
 /**

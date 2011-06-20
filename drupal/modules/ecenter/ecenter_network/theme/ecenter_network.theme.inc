@@ -90,10 +90,10 @@ function template_preprocess_ecenter_network_data(&$vars) {
 
   // End to end measurements
   $vars['end_to_end'] = theme('ecenter_network_end_to_end',
-    $vars['data']['end_to_end']);
+    $vars['data']['drs']['end_to_end']);
 
   // Per-hop measurements
-  $vars['hops'] = theme('ecenter_network_hops', $vars['data']['hops']);
+  $vars['hops'] = theme('ecenter_network_hops', $vars['data']['drs']['hops']);
 }
 
 /**

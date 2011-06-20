@@ -578,12 +578,12 @@ function ecenter_network_select_form_submit($form, &$form_state) {
  * All parameters optional
  *
  * @param $status_check
- *   If '503', return HTTP 503 page or redirect. If 'message', set message and 
+ *   If '503', return HTTP 503 page or redirect. If 'message', set message and
  *   continue. If FALSE, just return the client (default).
  * @param $type
- *   'drs' for Data Retrieval Service (default), 'ads' for Anomaly Detection 
+ *   'drs' for Data Retrieval Service (default), 'ads' for Anomaly Detection
  *   Service
- * @param $name 
+ * @param $name
  *   A unique name for this client (optional)
  */
 function ecenter_network_get_client($status_check = FALSE, $type = 'drs', $name = NULL) {
@@ -680,9 +680,9 @@ function ecenter_network_get_data($src, $dst, $start, $end) {
         $results[$query] = $data;
       }
       else { // Note that the static variable is NOT set in this case
-        watchdog('ecenter_network', 
-          'Request (@url) failed with code @code (@response).', 
-          array('@url' => $result['url'], '@code' => $result['code'], 
+        watchdog('ecenter_network',
+          'Request (@url) failed with code @code (@response).',
+          array('@url' => $result['url'], '@code' => $result['code'],
           '@response' => $result['response']), WATCHDOG_WARNING);
         return NULL;
       }
@@ -693,7 +693,7 @@ function ecenter_network_get_data($src, $dst, $start, $end) {
     // user object. Only capture successful queries.
     if (!empty($results[$query]) && $user->uid > 0) {
       $queries = $user->ecenter_network_queries;
-      if (count($queries) > 
+      if (count($queries) >
         (variable_get('ecenter_network_recent_query_limit', 5))) {
         array_shift($queries);
       }
@@ -702,7 +702,7 @@ function ecenter_network_get_data($src, $dst, $start, $end) {
     }
     else if (!empty($results[$query]) && isset($_COOKIE[session_name()])) {
       $queries = unserialize(sess_read('ecenter_network_queries'));
-      if (count($queries) > 
+      if (count($queries) >
         (variable_get('ecenter_network_recent_query_limit', 5) - 1)) {
         array_shift($queries);
       }
@@ -718,7 +718,7 @@ function ecenter_network_get_data($src, $dst, $start, $end) {
  * Get hops
  *
  * @param $src
- *   (optional) Source (hub name or IP) to determine potential destinations. 
+ *   (optional) Source (hub name or IP) to determine potential destinations.
  *   If not supplied, list all potential source hops.
  * @param $src_type
  *   (optional) Source type ('hub' or 'ip')
@@ -754,7 +754,7 @@ function ecenter_network_get_hops($src = NULL, $src_type = 'hub') {
   return $hops[$src_key];
 }
 
-/** 
+/**
  * Get node
  */
 function ecenter_network_get_node($ip) {

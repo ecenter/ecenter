@@ -372,16 +372,20 @@ sub process_site {
             $utilization->{$way} = {};
 	    my %checked_mds = ();
 	    foreach my $ip (  keys %{$traceroute->{$way}{hop_ips}} ) {
-	      next  if($traceroute->{$way}{hop_ips}{$ip}{hub_name} eq $params{src_hub});
+	      ##next  if($traceroute->{$way}{hop_ips}{$ip}{hub_name} eq $params{src_hub});
+	      
 	      while (my($tm,$datum) =  each %{$traceroute->{$way}{hops}{$ip}}) {
 	          my $other_hub = $way eq 'direct_traceroute'?$traceroute->{$way}{mds}{$datum->{metaid}}{dst_hub}:
 	     	 		       $traceroute->{$way}{mds}{$datum->{metaid}}{src_hub};			 
 	          $utilization->{$way}{$other_hub}{$ip}++;
+		  $data->{$way}{$other_hub}{$ip} = $datum;
 		  $all_ips{$ip}++;
+		  
 	      }
 	    	 
 	    }
-	}
+	} 
+	$data->{traceroute_nodes} = {%{$traceroute->{direct_traceroute}{hop_ips}}, %{$traceroute->{reverse_traceroute}{hop_ips}}};
 	$logger->debug("Utilization:: ", sub{Dumper($utilization)});
         $task_set = $g_client->new_task_set; 
         my $snmp = {};

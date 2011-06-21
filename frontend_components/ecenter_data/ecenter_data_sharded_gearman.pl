@@ -123,7 +123,7 @@ any ['get', 'post'] =>  '/data/:data.:format' =>
     sub {
         my $data = {};
         eval {
-	   $data = process_data( data => params->{data}, params('query'));
+	   $data = process_data( data_type => params->{data}, params('query'));
 	};
 	if(my $e = Exception::Class->caught()) {
 	    send_error("Failed with " . $e->trace->as_string);
@@ -360,33 +360,33 @@ sub process_site {
         my $g_client = _get_gearman(); 
 	$params{table_map} = $TABLEMAP;
 	my $traceroute = {};
-	my $trace_cond = { direct_traceroute  => { src => qq| AND  ( hb2.hub is not NULL AND n_src.nodename like   '%$params{src_hub}%') |},
-	                   reverse_traceroute => { src => qq| AND  ( hb1.hub is not NULL AND n_dst.nodename like   '%$params{src_hub}%') |}
+	my $trace_cond = { direct_traceroute  => { src => qq| AND  ( hb2.hub is not NULL  AND hb2.hub  not like   '%$params{src_hub}%'  AND n_src.nodename like   '%$params{src_hub}%') |},
+	                   reverse_traceroute => { src => qq| AND  ( hb1.hub is not NULL  AND hb1.hub  not like   '%$params{src_hub}%'  AND n_dst.nodename like   '%$params{src_hub}%') |}
 			 };
+	my $utilization = {};
+	my %all_ips = ();
 	foreach my $way (qw/direct_traceroute reverse_traceroute/) {
-           $traceroute->{$way}  = get_traceroute($g_client, $trace_cond->{$way},\%params);
-        }
-        #debug "HOPS:::" . Dumper( $traceroute->{hop_ips} );
-        my $utilization = {};
-	
-	foreach my $way (qw/direct_traceroute reverse_traceroute/) {
-	    $utilization->{$way} = {};
-	    foreach my $ip  (keys %{$traceroute->{$way}{hops}}) {
-	    	if($traceroute->{$way}{hop_ips}{$ip}{hub_name} eq $params{src_hub}) {
-		    while (my($tm,$datum) =  each %{$traceroute->{$way}{hops}{$ip}}) {
-		        next if $traceroute->{$way}{mds}{$datum->{metaid}}{dst_hub} eq $params{src_hub};
-	    	        $utilization->{$way}{$ip} = $traceroute->{$way}{mds}{$datum->{metaid}}{dst_hub};
-		        last;
-		    }
-	    	} 
+            $traceroute->{$way}  = get_traceroute($g_client, $trace_cond->{$way},\%params);
+            
+            ##$logger->debug("$way HOPS:::", sub{Dumper $traceroute->{$way}{hops}});
+            $utilization->{$way} = {};
+	    my %checked_mds = ();
+	    foreach my $ip (  keys %{$traceroute->{$way}{hop_ips}} ) {
+	      next  if($traceroute->{$way}{hop_ips}{$ip}{hub_name} eq $params{src_hub});
+	      while (my($tm,$datum) =  each %{$traceroute->{$way}{hops}{$ip}}) {
+	          my $other_hub = $way eq 'direct_traceroute'?$traceroute->{$way}{mds}{$datum->{metaid}}{dst_hub}:
+	     	 		       $traceroute->{$way}{mds}{$datum->{metaid}}{src_hub};			 
+	          $utilization->{$way}{$other_hub}{$ip}++;
+		  $all_ips{$ip}++;
+	      }
+	    	 
 	    }
 	}
 	$logger->debug("Utilization:: ", sub{Dumper($utilization)});
         $task_set = $g_client->new_task_set; 
         my $snmp = {};
-	my %allhops = (%{$utilization->{direct_traceroute}}, %{$utilization->{reverse_traceroute}});
-        eval {
-	    get_snmp($task_set, $snmp, \%allhops, \%params);
+	eval {
+	    get_snmp($task_set, $snmp, \%all_ips, \%params);
         }; 
         if($EVAL_ERROR) {
 	    $logger->error("  No SNMP data - failed $EVAL_ERROR");
@@ -394,19 +394,32 @@ sub process_site {
 	$task_set->wait(timeout => $params{timeout}); 
 	my $hub = Ecenter::Data::Hub->new;
 	foreach my $way (qw/direct_traceroute reverse_traceroute/) {
-	    foreach my $ip  (keys %{$utilization->{$way}}) {
-	        my $dst_hub =   $utilization->{$way}{$ip};
-	    	foreach my $time (sort {$a<=>$b} grep {$_} %{$snmp->{$ip}}) {
-		    next unless $snmp->{$ip}{$time}{capacity};
-	    	    push @{$data->{$way}{$dst_hub}{snmp}}, [$time,  { capacity =>  $snmp->{$ip}{$time}{capacity},  
-		                                                      utilization =>  $snmp->{$ip}{$time}{utilization} || '0',
-				                                      errors => $snmp->{$ip}{$time}{errors} || '0',
-				                                      drops => $snmp->{$ip}{$time}{drops} || '0',
-								    }
-		    ];
-	    	}
-	    }  
-	    
+	    foreach my $dst_hub (keys %{$utilization->{$way}}) {
+	       $data->{$way}{$dst_hub}{snmp} = {  utilization => {ip => 'NA', value => 0},
+	                                          errors      => {ip => 'NA', value => 0},
+						  drops       => {ip => 'NA', value => 0},
+					       };
+	       foreach my $ip  (keys %{$utilization->{$way}{$dst_hub}}) {
+	            foreach my $time (sort {$a<=>$b} grep {$_} keys %{$snmp->{$ip}}) {
+		        next unless $snmp->{$ip}{$time}{capacity};
+		        my %tmp =  %{$snmp->{$ip}{$time}};
+			$tmp{utilization} = $tmp{utilization}?($tmp{utilization}/$tmp{capacity})*100.:0;
+			foreach my $metric (qw/utilization  errors drops/) {
+		            if( $tmp{$metric} &&  
+			       ($tmp{$metric}  > $data->{$way}{$dst_hub}{snmp}{$metric}{value})) {
+		                $data->{$way}{$dst_hub}{snmp}{utilization}{value} = $tmp{$metric};
+		                $data->{$way}{$dst_hub}{snmp}{utilization}{ip} = $ip;
+			    }
+		        }
+		     # push @{$data->{$way}{$dst_hub}{snmp}}, [$time,  { capacity =>  $snmp->{$ip}{$time}{capacity},  
+		     #                                                   utilization =>  $snmp->{$ip}{$time}{utilization} || '0',
+		     #		                                       errors => $snmp->{$ip}{$time}{errors} || '0',
+		     #		                                       drops => $snmp->{$ip}{$time}{drops} || '0',
+		     #						     }
+		     # ]; 
+	    	    }
+	        }
+	    }
 	}
     };
     if($EVAL_ERROR) {
@@ -435,6 +448,7 @@ sub process_data {
 		              end	 => {type => SCALAR, regex => $REG_DATE, optional => 1},
 			      resolution => {type => SCALAR, regex => qr/^\d+$/, optional => 1},
 			      timeout	 => {type => SCALAR, regex => qr/^\d+$/, optional => 1},
+			      only_data =>  {type => SCALAR, regex => qr/^(0|1)$/, optional => 1},
 			   }
 		 );
     # debug Dumper(\%params );
@@ -459,23 +473,24 @@ sub process_data {
     my $date_params  =  _params_to_date({start => $params{start},end => $params{end}});
     map { $params{$_} = $date_params->{$_} } keys %{$date_params};
     my $trace_cond = {};
-    
-    if($params{src_ip}) {
-        $trace_cond->{direct_traceroute}{src}  = qq| AND md.src_ip =  inet6_pton('$params{src_ip}')|;
-        $trace_cond->{reverse_traceroute}{src} = qq| AND  md.dst_ip  =  inet6_pton('$params{src_ip}') |;
-    } 
-    if ($params{src_hub}) {
-        
-       $trace_cond->{direct_traceroute}{src}  = qq| AND  n_src.nodename like   '%$params{src_hub}%' |;
-       $trace_cond->{reverse_traceroute}{src} = qq| AND  n_src.nodename like   '%$params{dst_hub}%' |;
-    }
-    if($params{dst_ip}) {
-        $trace_cond->{direct_traceroute}{dst}   =   qq| AND   md.dst_ip =  inet6_pton('$params{dst_ip}') |;
-        $trace_cond->{reverse_traceroute}{dst}  =   qq|  AND  md.src_ip =  inet6_pton('$params{dst_ip}')  |; 
-    } 
-    if ($params{dst_hub}) {
-      $trace_cond->{direct_traceroute}{dst}   = qq| AND   n_dst.nodename like   '%$params{dst_hub}%' |;
-      $trace_cond->{reverse_traceroute}{dst}  = qq| AND  n_dst.nodename like    '%$params{src_hub}%' |;
+    unless($params{only_data}) {
+	if($params{src_ip}) {
+            $trace_cond->{direct_traceroute}{src}  = qq| AND md.src_ip =  inet6_pton('$params{src_ip}')|;
+            $trace_cond->{reverse_traceroute}{src} = qq| AND  md.dst_ip  =  inet6_pton('$params{src_ip}') |;
+	} 
+	if ($params{src_hub}) {
+
+	   $trace_cond->{direct_traceroute}{src}  = qq| AND  n_src.nodename like   '%$params{src_hub}%' |;
+	   $trace_cond->{reverse_traceroute}{src} = qq| AND  n_src.nodename like   '%$params{dst_hub}%' |;
+	}
+	if($params{dst_ip}) {
+            $trace_cond->{direct_traceroute}{dst}   =   qq| AND   md.dst_ip =  inet6_pton('$params{dst_ip}') |;
+            $trace_cond->{reverse_traceroute}{dst}  =   qq|  AND  md.src_ip =  inet6_pton('$params{dst_ip}')  |; 
+	} 
+	if ($params{dst_hub}) {
+	  $trace_cond->{direct_traceroute}{dst}   = qq| AND   n_dst.nodename like   '%$params{dst_hub}%' |;
+	  $trace_cond->{reverse_traceroute}{dst}  = qq| AND  n_dst.nodename like    '%$params{src_hub}%' |;
+	}
     }
     ################ starting the client
     #
@@ -489,20 +504,24 @@ sub process_data {
     ## 
     # my $trace_cond = qq|  inet6_mask(md.src_ip, 24) = inet6_mask(inet6_pton('$params{src_ip}'), 24) and $dst_cond |;
     $params{table_map} = $TABLEMAP;
-    my $traceroute = {};
-    foreach my $way (qw/direct_traceroute reverse_traceroute/) {
-        $traceroute->{$way}  = get_traceroute($g_client, $trace_cond->{$way}, \%params);
-	 
-        $data->{$way} = $traceroute->{$way}{hops} 
+    my $traceroute = {}; 
+    my %allhops = ();
+    unless($params{only_data}) {
+        my $traceroute = {};
+        foreach my $way (qw/direct_traceroute reverse_traceroute/) {
+            $traceroute->{$way}  = get_traceroute($g_client, $trace_cond->{$way}, \%params);
+            $data->{$way} = $traceroute->{$way}{hops} 
                               if($traceroute->{$way} && $traceroute->{$way}{hops} && 
 			         ref $traceroute->{$way}{hops} &&  %{$traceroute->{$way}{hops}}); 
+        }
+        ### snmp data for each hop - all unique hop IPs
+    	%allhops = (%{$traceroute->{direct_traceroute}{hop_ips}}, %{$traceroute->{reverse_traceroute}{hop_ips}});
+	$data->{traceroute_nodes} = \%allhops;
+	debug "HOPS:::" . Dumper(\%allhops);
+	return $data unless $traceroute->{direct_traceroute}{hop_ips} || $traceroute->{reverse_traceroute}{hop_ips};
+    } else {
+        %allhops = ( $params{src_ip} => 1 );
     }
-    
-    ### snmp data for each hop - all unique hop IPs
-    my %allhops = (%{$traceroute->{direct_traceroute}{hop_ips}}, %{$traceroute->{reverse_traceroute}{hop_ips}});
-    $data->{traceroute_nodes} = \%allhops;
-    debug "HOPS:::" . Dumper(\%allhops);
-    return $data unless $traceroute->{direct_traceroute}{hop_ips} || $traceroute->{reverse_traceroute}{hop_ips};
     $task_set = $g_client->new_task_set; 
     $data->{snmp} = {};
     if(!$params{data_type} || $params{data_type} =~ /^snmp$/i) {
@@ -516,6 +535,8 @@ sub process_data {
      #return $data;
     # end to end data  stats if available
     ### return $data unless $params{src_ip} && $params{dst_ip};
+    
+    
     my %directions = (direct => ['src_ip', 'dst_ip'], reverse => ['dst_ip', 'src_ip'] );
     
     my @data_keys = ();
@@ -528,42 +549,43 @@ sub process_data {
     my %e2e_mds = ();
     map {$data->{$_} = {}} @data_keys;
     
-    
-    foreach my $dir (keys %directions) {
-	my $e2e_sql = qq|select   md.metaid, n_src.ip_noted as src_ip, md.subject, e.service_type as type, hb1.hub_name as src_hub, hb2.hub_name as dst_hub,
-	                          n_dst.ip_noted  as dst_ip, 
-                                                              n_src.nodename as src_name, n_dst.nodename as dst_name, s.service
-	                                        	   from 
-						        	      metadata md
-					        		join  node n_src on(md.src_ip = n_src.ip_addr) 
-								join  node n_dst on(md.dst_ip = n_dst.ip_addr) 
-								left join l2_l3_map    llm1 on(n_src.ip_addr=llm1.ip_addr) 
-     	                                                        left join l2_port      l2p1 on(llm1.l2_urn =l2p1.l2_urn) 
-     	                                                        left join hub          hb1  on(hb1.hub =l2p1.hub)
-								left join l2_l3_map    llm2 on(n_dst.ip_addr=llm2.ip_addr) 
-     	                                                        left join l2_port      l2p2 on(llm2.l2_urn =l2p2.l2_urn) 
-     	                                                        left join hub          hb2  on(hb2.hub =l2p2.hub)
-								join eventtype e on(md.eventtype_id = e.ref_id)
-								join service s  on (e.service = s.service)
-							  where  
-								e.service_type in ('pinger','bwctl','owamp') and  s.service  like 'http%' 
-								$trace_cond->{"$dir\_traceroute"}{src}   $trace_cond->{"$dir\_traceroute"}{dst}
-					             group by src_ip, dst_ip, service, type|;
-	debug " E2E SQL:: $e2e_sql";
-	my $md_href =  database('ecenter')->selectall_hashref($e2e_sql, 'metaid');   
-	#debug " MD for the E2E ::: " . Dumper $md_href;	
-       
-	unless($md_href && %{$md_href}) {
-	   $logger->error("No metadata for e2e on $dir ....");
-	   next;
-	}
-        %e2e_mds = (%e2e_mds, %{$md_href});
+    if(@data_keys) {
+	foreach my $dir (keys %directions) {
+	    my $e2e_sql = qq|select   md.metaid, n_src.ip_noted as src_ip, md.subject, e.service_type as type, hb1.hub_name as src_hub, hb2.hub_name as dst_hub,
+	                              n_dst.ip_noted  as dst_ip, 
+                                                        	  n_src.nodename as src_name, n_dst.nodename as dst_name, s.service
+	                                        	       from 
+						        		  metadata md
+					        		    join  node n_src on(md.src_ip = n_src.ip_addr) 
+								    join  node n_dst on(md.dst_ip = n_dst.ip_addr) 
+								    left join l2_l3_map    llm1 on(n_src.ip_addr=llm1.ip_addr) 
+     	                                                            left join l2_port      l2p1 on(llm1.l2_urn =l2p1.l2_urn) 
+     	                                                            left join hub          hb1  on(hb1.hub =l2p1.hub)
+								    left join l2_l3_map    llm2 on(n_dst.ip_addr=llm2.ip_addr) 
+     	                                                            left join l2_port      l2p2 on(llm2.l2_urn =l2p2.l2_urn) 
+     	                                                            left join hub          hb2  on(hb2.hub =l2p2.hub)
+								    join eventtype e on(md.eventtype_id = e.ref_id)
+								    join service s  on (e.service = s.service)
+							      where  
+								    e.service_type in ('pinger','bwctl','owamp') and  s.service  like 'http%' 
+								    $trace_cond->{"$dir\_traceroute"}{src}   $trace_cond->{"$dir\_traceroute"}{dst}
+					        	 group by src_ip, dst_ip, service, type|;
+	    debug " E2E SQL:: $e2e_sql";
+	    my $md_href =  database('ecenter')->selectall_hashref($e2e_sql, 'metaid');   
+	    #debug " MD for the E2E ::: " . Dumper $md_href;	
 
-	foreach my $e_type (@data_keys)  {
-	    $logger->debug(" ...  Running  ------------  $e_type");
-	    get_e2e($task_set, $data->{$e_type}, \%params, $md_href, $e_type );
-	    $logger->debug(" +++++ Done  $dir ------------  $e_type");
-	}
+	    unless($md_href && %{$md_href}) {
+	       $logger->error("No metadata for e2e on $dir ....");
+	       next;
+	    }
+            %e2e_mds = (%e2e_mds, %{$md_href});
+
+	    foreach my $e_type (@data_keys)  {
+		$logger->debug(" ...  Running  ------------  $e_type");
+		get_e2e($task_set, $data->{$e_type}, \%params, $md_href, $e_type );
+		$logger->debug(" +++++ Done  $dir ------------  $e_type");
+	    }
+	 }
      }
   };
   if($EVAL_ERROR) {
@@ -728,7 +750,7 @@ sub get_traceroute {
             $task_set->add_task("dispatch_data" => 
      				 encode_json {md_row => $md_row, 
 			                      table =>  "$params->{table_map}{traceroute}{table}$data_table",
-			    		      resolution => 100, 
+			    		      resolution => 200, 
 			    		      type=> 'traceroute', 
 					      metaid => $metaid, 
 			    		      start =>  $st_time, 
@@ -742,7 +764,7 @@ sub get_traceroute {
 					     $hops->{$datum->{ip_noted}}{$datum->{timestamp}}  = $datum;
 			    		  }
 			    	       } else {
-					   $logger->error("request is not OK:::", sub{Dumper($md_row)});
+					   $logger->error("request is not OK = $returned->{status}:::", sub{Dumper($md_row)});
 				       }
 				       #$logger->debug("HOP-IPS:::", sub{Dumper($hop_ips)});
 			    	    }

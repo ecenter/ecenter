@@ -256,14 +256,17 @@ sub _get_remote_data  {
         	      };
 	$ma->get_data($ma_request);
 	$t_delta = time() - $t1;
-        $logger->debug("$request->{md_row}{service} MA Data Entries=", sub {Dumper($ma->data)});
-        if($ma->data && @{$ma->data}) { 
+	$logger->info("$request->{md_row}{service} $request->{md_row}{src_hub}-$request->{md_row}{dst_hub} - $request->{type} - Entries=" . @{$ma->data});
+        $logger->debug("$request->{md_row}{service} MA - $request->{type} - Entries=", sub {Dumper($ma->data)});
+      
+        
+	if($ma->data && @{$ma->data}) { 
 	    $dbh->resultset('ServicePerformance')->create( { metaid =>  $request->{metaid},
 	                                                     requested_start => $request->{start},
 	                                                     requested_time => ($request->{end}- $request->{start}), 
 	                                                     response => $t_delta, 
 							     is_data => 1} );
-	    $logger->debug('..process data...');
+	    $logger->debug('..process data...traceroutes found =' . @{$ma->data});
 	    foreach my $ma_data (@{$ma->data}) { 
                 my $sql_datum = {  metaid => $request->{metaid},  timestamp => $ma_data->[0]};
                 foreach my $data_id (keys %{$ma_data->[1]}) {

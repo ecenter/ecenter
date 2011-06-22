@@ -1095,7 +1095,7 @@ function ecenter_network_openlayers_presets() {
   $openlayers_presets->description = 'E-Center network weathermap';
   $openlayers_presets->data = array(
     'width' => '660px',
-    'height' => '360px',
+    'height' => '400px',
     'image_path' => 'http://js.mapbox.com/theme/dark/',
     'css_path' => '',
     'proxy_host' => '',
@@ -1110,7 +1110,7 @@ function ecenter_network_openlayers_presets() {
       'openlayers_behavior_navigation' => array(
         'zoomWheelEnabled' => 0,
       ),
-      'openlayers_behavior_panzoombar' => array(),
+      'openlayers_behavior_panzoom' => array(),
       'openlayers_behavior_fullscreen' => array(
         'activated' => 0,
       ),

@@ -395,6 +395,60 @@ function _ecenter_network_select_form() {
     '#suffix' => '</p></div>',
   );
 
+  $form['network_wrapper']['query']['ads_wrapper'] = array(
+    '#prefix' => '<div id="ads-settings-wrapper">',
+    '#suffix' => '</div>',
+  );
+
+  $form['network_wrapper']['query']['ads_wrapper']['ads'] = array(
+    '#type' => 'checkbox',
+    '#title' => 'Use anomaly detection (experimental)',
+  );
+
+  $form['network_wrapper']['query']['ads_wrapper']['ads_settings'] = array(
+    '#prefix' => '<div id="ads-settings">',
+    '#suffix' => '</div>',
+  );
+
+  $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['algorithm'] = array(
+    '#title' => t('Algorithm'),
+    '#type' => 'select',
+    '#options' => array(
+      'spd' => t('spd'),
+      'apd' => t('apd'),
+    ),
+  );
+
+  $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['detector_type'] = array(
+    '#title' => t('Detector type'),
+    '#type' => 'textfield',
+    '#size' => 5,
+  );
+
+  $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['sensitivity'] = array(
+    '#title' => t('Sensitivity'),
+    '#type' => 'textfield',
+    '#size' => 5,
+  );
+
+  $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['elevation1'] = array(
+    '#title' => t('Elevation 1'),
+    '#type' => 'textfield',
+    '#size' => 5,
+  );
+
+  $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['elevation2'] = array(
+    '#title' => t('Elevation 2'),
+    '#type' => 'textfield',
+    '#size' => 5,
+  );
+
+  $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['swc'] = array(
+    '#title' => t('swc'),
+    '#type' => 'textfield',
+    '#size' => 5,
+  );
+
   // Submit button
   $form['network_wrapper']['submit'] = array(
     '#type' => 'submit',

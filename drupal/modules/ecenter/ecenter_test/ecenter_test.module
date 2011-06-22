@@ -151,13 +151,6 @@ function theme_ecenter_test_data_clients() {
   $drs_client = ecenter_network_get_client();
   $ads_client = ecenter_network_get_client(FALSE, 'ads');
 
-  /*
-  $src = 'hub:SLAC';
-  $dst = 'hub:FNAL';
-  $start = '2011-06-10 17:00:00';
-  $end = '2011-06-10 23:00:00';
-  */
-
   $src = 'hub:SLAC';
   $dst = 'hub:ORNL';
   $start = '2011-06-10 10:00:00';

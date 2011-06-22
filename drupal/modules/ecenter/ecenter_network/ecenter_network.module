@@ -95,6 +95,7 @@ function ecenter_network_theme() {
       'template' => 'ecenter-network-end-to-end',
       'arguments' => array(
         'data' => NULL,
+        'ads_data' => NULL,
       ),
     ) + $options,
     'ecenter_network_end_to_end_tables' => array(
@@ -764,31 +765,6 @@ function ecenter_network_get_ads_data($src, $dst, $start, $end) {
   return $results[$query];
 }
 
-function ecenter_network_parse_ads_response($response) {
-  $parsed_data = array();
-  $data = $response['response'];
-  $params = $response['parameters'];
-
-  foreach (array('forward', 'reverse') as $direction) {
-    foreach ($data as $src => $destinations) {
-      foreach ($destinations as $dst => $row) {
-        if (($direction == 'forward' 
-          && $params['src']['value'] == $row['src_hub']
-          && $params['dst']['value'] == $row['dst_hub']) ||
-          ($direction == 'reverse' 
-          && $params['dst']['value'] == $row['src_hub']
-          && $params['src']['value'] == $row['dst_hub']) &&
-          is_array($row['status'])) {
-
-          $parsed_data[$direction][$params['data_type']] = $row['status'];
-        } 
-      }
-    }
-  }
-  dpm($parsed_data);
-  return $parsed_data;
-}
-
 /**
  * Get hops
  *
@@ -990,6 +966,30 @@ function ecenter_network_parse_response($response) {
   return $parsed_data;
 }
 
+function ecenter_network_parse_ads_response($response) {
+  $parsed_data = array();
+  $data = $response['response'];
+  $params = $response['parameters'];
+
+  foreach (array('forward', 'reverse') as $direction) {
+    foreach ($data as $src => $destinations) {
+      foreach ($destinations as $dst => $row) {
+        if (is_array($row['status']) &&
+            (($direction == 'forward' 
+            && $params['src']['value'] == $row['src_hub']
+            && $params['dst']['value'] == $row['dst_hub']) ||
+            ($direction == 'reverse' 
+            && $params['dst']['value'] == $row['src_hub']
+            && $params['src']['value'] == $row['dst_hub']))
+          ) {
+          $parsed_data[$direction] = $row['status'];
+        } 
+      }
+    }
+  }
+  return $parsed_data;
+}
+
 /**
  * Filter traceroute results
  */
@@ -1004,7 +1004,7 @@ function ecenter_network_ecenter_network_end_to_end_measurements_alter(&$data, $
   unset($measurements['metaid'], $measurements['timestamp']);
   $timeseries = array();
   foreach ($measurements as $measurement => $value) {
-    if ($measurement != 'max_delay' && $measurement != 'sent') {
+    if ($measurement != 'sent') {
       $data[$measurement]['timeseries'][$timestamp] = (float) $value;
     }
   }

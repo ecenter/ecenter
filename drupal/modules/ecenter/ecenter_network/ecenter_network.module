@@ -408,6 +408,10 @@ function _ecenter_network_select_form() {
   $form['network_wrapper']['query']['ads_wrapper']['ads_settings'] = array(
     '#prefix' => '<div id="ads-settings">',
     '#suffix' => '</div>',
+    '#type' => 'fieldset',
+    '#title' => t('Advanced detection settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
   );
 
   $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['algorithm'] = array(

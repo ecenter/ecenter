@@ -631,7 +631,7 @@ function _ecenter_network_plot_options_template() {
       'shadow' => FALSE,
       'fill' => FALSE,
       'markerOptions' => array(
-        'size' => 3,
+        'size' => 2,
         'shadow' => FALSE,
       ),
     ),
@@ -742,8 +742,7 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
       case 'reverse_critical':
         $options['series'][$idx] += array(
           'showLine' => FALSE,
-          'markerOptions' => array('style' => 'square'),
-          'size' => 9,
+          'markerOptions' => array('style' => 'filledSquare', 'size' => 10),
         );
     }
   }

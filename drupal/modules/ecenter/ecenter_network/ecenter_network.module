@@ -254,6 +254,7 @@ function ecenter_network_health() {
  */
 function _ecenter_network_select_form() {
   global $user;
+  extract(_ecenter_network_extract_query());
 
   // Initialize time-related variables
   $default_start = variable_get('ecenter_network_default_end', 7200);
@@ -403,6 +404,7 @@ function _ecenter_network_select_form() {
   $form['network_wrapper']['query']['ads_wrapper']['ads'] = array(
     '#type' => 'checkbox',
     '#title' => 'Use anomaly detection (experimental)',
+    '#default_value' => (!empty($ads)) ? TRUE : FALSE,
   );
 
   $form['network_wrapper']['query']['ads_wrapper']['ads_settings'] = array(
@@ -421,37 +423,50 @@ function _ecenter_network_select_form() {
       'spd' => t('spd'),
       'apd' => t('apd'),
     ),
+    '#default_value' => (!empty($algorithm)) ? $algorithm : 'spd',
   );
 
-  $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['detector_type'] = array(
+  /*$form['network_wrapper']['query']['ads_wrapper']['ads_settings']['detector_type'] = array(
     '#title' => t('Detector type'),
     '#type' => 'textfield',
     '#size' => 5,
-  );
+  );*/
 
   $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['sensitivity'] = array(
     '#title' => t('Sensitivity'),
     '#type' => 'textfield',
     '#size' => 5,
+    '#default_value' => (!empty($sensitivity)) ? $sensitivity : 2,
   );
 
   $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['elevation1'] = array(
     '#title' => t('Elevation 1'),
     '#type' => 'textfield',
     '#size' => 5,
+    '#default_value' => (!empty($elevation1)) ? $elevation1 : 0.2,
   );
 
   $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['elevation2'] = array(
     '#title' => t('Elevation 2'),
     '#type' => 'textfield',
     '#size' => 5,
+    '#default_value' => (!empty($elevation2)) ? $elevation2 : 0.4,
   );
 
   $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['swc'] = array(
     '#title' => t('swc'),
     '#type' => 'textfield',
     '#size' => 5,
+    '#default_value' => (!empty($swc)) ? $swc : 20,
   );
+
+  $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['plateau_size'] = array(
+    '#title' => t('Plateau size'),
+    '#type' => 'textfield',
+    '#size' => 5,
+    '#default_value' => (!empty($plateau_size)) ? $plateau_size : 7,
+  );
+
 
   // Submit button
   $form['network_wrapper']['submit'] = array(
@@ -555,11 +570,13 @@ function ecenter_network_select_form(&$form_state) {
     // If we've got the data (at bare minimum, a traceroute), delegate to rendering function
     if ($data) {
       drupal_add_js(array('ecenterNetwork' => array('tracerouteData' => 
-        $data['traceroute']['diff'])), 'setting');
+        $data['drs']['traceroute']['diff'])), 'setting');
       drupal_add_js(array('ecenterNetwork' => array('tracerouteMaxLength' => 
-        $data['traceroute']['traceroute_max'])), 'setting');
+        $data['drs']['traceroute']['traceroute_max'])), 'setting');
 
-      $data['ads'] = ecenter_network_get_ads_data($src, $dst, $start, $end);
+      if ($ads) {
+        $data['ads'] = ecenter_network_get_ads_data($src, $dst, $start, $end, $algorithm, $detector_type, $sensitivity, $elevation1, $elevation2, $swc, $plateau_size);
+      }
 
       $form['results_wrapper']['results']['#value'] =
         theme('ecenter_network_data', $data, $params);
@@ -792,21 +809,17 @@ function ecenter_network_get_data($src, $dst, $start, $end) {
  * @return
  *   An array of parsed data
  */
-function ecenter_network_get_ads_data($src, $dst, $start, $end) {
+function ecenter_network_get_ads_data($src, $dst, $start, $end, $algorithm = 'spd', $detector_type = NULL, $sensitivity = NULL, $elevation1 = NULL, $elevation2 = NULL, $swc = NULL) {
+  $params = get_defined_vars();
   global $user;
   static $results = array();
 
-  $query = http_build_query(array(
-    'src' => $src,
-    'dst' => $dst,
-    'start' => $start,
-    'end' => $end,
-  ));
+  $query = http_build_query($params);
 
   if (!array_key_exists($query, $results)) {
     $client = ecenter_network_get_client('message', 'ads');
     foreach (array('owamp', 'bwctl') as $data_type) {
-      $result = $client->getData($src, $dst, $start, $end, $data_type, 1000);
+      $result = $client->getData($src, $dst, $start, $end, $data_type, 1000, $algorithm, $detector_type, $sensitivity, $elevation1, $elevation2, $swc);
       if ($result['code'] == 200) {
         $data = ecenter_network_parse_ads_response($result);
         $results[$query][$data_type] = $data;
@@ -1743,12 +1756,25 @@ function _ecenter_network_extract_query() {
       'start' => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['start']['date']),
       'end' => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['end']['date']),
       'timezone' => $_REQUEST['network_wrapper']['query']['timezone_name'],
+
+      'ads' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads'],
+      'algorithm' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads_settings']['algorithm'],
+      'detector_type' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads_settings']['detector_type'],
+      'sensitivity' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads_settings']['sensitivity'],
+      'elevation1' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads_settings']['elevation1'],
+      'elevation2' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads_settings']['elevation2'],
+      'swc' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads_settings']['swc'],
+      'plateau_size' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads_settings']['plateau_size'],
     );
   }
   else {
-    foreach (array('src', 'dst', 'start', 'end', 'timezone') as $key) {
+    foreach (array('src', 'dst', 'start', 'end', 'timezone', 'ads', 'algorithm', 'detector_type', 'sensitivity', 'elevation1', 'elevation2', 'swc', 'plateau_size') as $key) {
       $vars[$key] = (!empty($_REQUEST[$key])) ? $_REQUEST[$key] : NULL;
     }
+  }
+
+  if (!empty($vars['ads']) && empty($vars['algorithm'])) {
+    $vars['algorithm'] = 'spd';
   }
 
   return $vars;

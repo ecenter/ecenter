@@ -31,7 +31,6 @@ class AnomalyDetectionService extends EcenterService {
       throw new Exception('Invalid source and destination query types.');
     }
 
-
     $params['src'] = array(
       'query' => array('src_'. $src_type => $src_value),
       'type' => $src_type,

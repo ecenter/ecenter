@@ -70,11 +70,15 @@ abstract class EcenterService {
       foreach ($parameters as $key => $value) {
         if (is_array($value)) {
           foreach ($value['query'] as $query_key => $query_value) {
-            $query[$query_key] = $query_value;
+            if (!empty($query_value)) {
+              $query[$query_key] = $query_value;
+            }
           }
         }
         else {
-          $query[$key] = $value;
+          if (!empty($value)) {
+            $query[$key] = $value;
+          }
         }
       }
       $querystring = http_build_query($query);

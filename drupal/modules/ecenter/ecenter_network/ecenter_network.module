@@ -454,19 +454,11 @@ function _ecenter_network_select_form() {
   );
 
   $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['swc'] = array(
-    '#title' => t('swc'),
+    '#title' => t('Summary window count'),
     '#type' => 'textfield',
     '#size' => 5,
     '#default_value' => (!empty($swc)) ? $swc : 20,
   );
-
-  $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['plateau_size'] = array(
-    '#title' => t('Plateau size'),
-    '#type' => 'textfield',
-    '#size' => 5,
-    '#default_value' => (!empty($plateau_size)) ? $plateau_size : 7,
-  );
-
 
   // Submit button
   $form['network_wrapper']['submit'] = array(
@@ -575,7 +567,7 @@ function ecenter_network_select_form(&$form_state) {
         $data['drs']['traceroute']['traceroute_max'])), 'setting');
 
       if ($ads) {
-        $data['ads'] = ecenter_network_get_ads_data($src, $dst, $start, $end, $algorithm, $detector_type, $sensitivity, $elevation1, $elevation2, $swc, $plateau_size);
+        $data['ads'] = ecenter_network_get_ads_data($src, $dst, $start, $end, $algorithm, $detector_type, $sensitivity, $elevation1, $elevation2, $swc);
       }
 
       $form['results_wrapper']['results']['#value'] =
@@ -1764,11 +1756,10 @@ function _ecenter_network_extract_query() {
       'elevation1' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads_settings']['elevation1'],
       'elevation2' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads_settings']['elevation2'],
       'swc' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads_settings']['swc'],
-      'plateau_size' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads_settings']['plateau_size'],
     );
   }
   else {
-    foreach (array('src', 'dst', 'start', 'end', 'timezone', 'ads', 'algorithm', 'detector_type', 'sensitivity', 'elevation1', 'elevation2', 'swc', 'plateau_size') as $key) {
+    foreach (array('src', 'dst', 'start', 'end', 'timezone', 'ads', 'algorithm', 'detector_type', 'sensitivity', 'elevation1', 'elevation2', 'swc') as $key) {
       $vars[$key] = (!empty($_REQUEST[$key])) ? $_REQUEST[$key] : NULL;
     }
   }

@@ -33,7 +33,7 @@ function ecenter_dashboard_theme() {
  */
 function template_preprocess_ecenter_dashboard(&$vars) {
   global $user;
-  
+
   if ($user->uid) {
     $vars['main_content'] = array(
       'placeholder' => array(
@@ -53,12 +53,12 @@ function template_preprocess_ecenter_dashboard(&$vars) {
       'hot-comments' => array(
         'subject' => t('Hot conversations'),
         'description' => t('The most active public conversations in the past 2 weeks'),
-        'content' => views_embed_view('ecenter_dashboard_hot_comments', 'block_1'),
+        'content' => views_embed_view('ecenter_dashboard_hot_comments', 'block'),
       ),
       'hot-content' => array(
         'subject' => t('Most popular content'),
         'description' => t('The most popular content in the past month'),
-        'content' => views_embed_view('ecenter_dashboard_hot_content', 'block_1'),
+        'content' => views_embed_view('ecenter_dashboard_hot_content', 'block'),
       ),
     );
   }

@@ -151,29 +151,24 @@ function theme_ecenter_test_data_clients() {
   $drs_client = ecenter_network_get_client();
   $ads_client = ecenter_network_get_client(FALSE, 'ads');
 
-  /*
-  $src = 'hub:SLAC';
-  $dst = 'hub:FNAL';
-  $start = '2011-06-10 17:00:00';
-  $end = '2011-06-10 23:00:00';
-  */
-
   $src = 'hub:SLAC';
   $dst = 'hub:ORNL';
-  $start = '2011-06-13 08:20:00';
-  $end = '2011-06-13 16:15:00';
+  $start = '2011-06-10 10:00:00';
+  $end = '2011-06-10 22:00:00';
   $type = 'owamp';
+  $drs_resolution = 100;
+  $ads_resolution = 1000;
 
   // Parse out query type
-  list($src_type, $src_value) = explode(':', $data['src'], 2);
-  list($dst_type, $dst_value) = explode(':', $data['dst'], 2);
+  list($src_type, $src_value) = explode(':', $src, 2);
+  list($dst_type, $dst_value) = explode(':', $dst, 2);
 
-  $output = '<h2>Data request</h2>';
- 
+  $output = '<h2>Data request (resolution '. $drs_resolution .')</h2>';
+
   $fn_start = microtime(true);
-  $drs_result = $drs_client->getData($src, $dst, $start, $end);
+  $drs_result = $drs_client->getData($src, $dst, $start, $end, $drs_resolution);
   $fn_end = microtime(true);
-  
+
   $output .= '<h3>Raw results</h3>';
   $output .= kpr($drs_result, TRUE);
   $output .= 'Performance: '. round($fn_end - $fn_start, 4) .' sec';
@@ -185,17 +180,17 @@ function theme_ecenter_test_data_clients() {
   $output .= '<h3>Parsed results</h3>';
   $output .= kpr($parsed, TRUE);
   $output .= 'Performance: '. round($fn_end - $fn_start, 4) .' sec';
-  
-  $output .= '<h2>Anomaly detection request</h2>';
-  
+
+  $output .= '<h2>Dynamic anomaly detection request (resolution '. $ads_resolution .')</h2>';
+
   $output .= '<h3>'. $type . '</h3>';
 
   $fn_start = microtime(true);
-  $result = $ads_client->getData($src, $dst, $start, $end, $type);
+  $ads_dynamic_get_result = $ads_client->getData($src, $dst, $start, $end, $type, $ads_resolution);
   $fn_end = microtime(true);
 
-  $output .= '<h4>Dynamic (get) results</h4>';
-  $output .= kpr($result, TRUE);
+  $output .= '<h4>GET results</h4>';
+  $output .= kpr($ads_dynamic_get_result, TRUE);
   $output .= 'Performance: '. round($fn_end - $fn_start, 4) .' sec';
 
   $data = array(
@@ -203,26 +198,53 @@ function theme_ecenter_test_data_clients() {
     'dst_'. $dst_type => $dst_value,
     'start' => $start,
     'end' => $end,
-    'data' => $drs_result['raw'],
     'data_type' => $type,
+    'resolution' => $ads_resolution,
   );
 
   $fn_start = microtime(true);
-  $result = $ads_client->getStaticData($data);
+  $ads_dynamic_post_result = $ads_client->postData($data);
   $fn_end = microtime(true);
 
-  $output .= '<h4>Static (get) results</h4>';
-  $output .= kpr($result, TRUE);
+  $output .= '<h4>POST results</h4>';
+  $output .= kpr($ads_dynamic_post_result, TRUE);
   $output .= 'Performance: '. round($fn_end - $fn_start, 4) .' sec';
+
+  $output .= '<h2>Static anomaly detection request (resolution '. $ads_resolution .')</h2>';
+
+  $output .= '<h3>'. $type . '</h3>';
 
   $fn_start = microtime(true);
-  $result = $ads_client->postData($data);
+  $static_result = $drs_client->getData($src, $dst, $start, $end, $ads_resolution);
+  $data = array(
+    'data' => $static_result['raw'],
+    'data_type' => $type,
+  );
+  $ads_static_post_result = $ads_client->postData($data);
   $fn_end = microtime(true);
 
-  $output .= '<h4>Static (post) results</h4>';
-  $output .= kpr($result, TRUE);
+  $output .= '<h4>POST results</h4>';
+  $output .= kpr($ads_static_post_result, TRUE);
   $output .= 'Performance: '. round($fn_end - $fn_start, 4) .' sec';
-  
+
+
+  $output .= '<h2>Comparison</h2>';
+  $output .= '<table><tbody>';
+
+  $match = ($ads_dynamic_get_result['raw'] == $ads_dynamic_post_result['raw']) ? 'Yes' : 'No';
+  $output .= '<tr><td>Dynamic get matches dynamic post</td>';
+  $output .= '<td>'. $match .'</td></tr>';
+
+  $match = ($ads_dynamic_post_result['raw'] == $ads_static_post_result['raw']) ? 'Yes' : 'No';
+  $output .= '<tr><td>Dynamic post matches static post</td>';
+  $output .= '<td>'. $match .'</td></tr>';
+
+  $match = ($ads_dynamic_get_result['raw'] == $ads_static_post_result['raw']) ? 'Yes' : 'No';
+  $output .= '<tr><td>Dynamic get matches static post</td>';
+  $output .= '<td>'. $match .'</td></tr>';
+
+  $output .= '</tbody></table>';
+
   return $output;
 
 }

@@ -749,7 +749,7 @@ function ecenter_network_get_data($src, $dst, $start, $end) {
       $results[$query] = $result->data;
     }
     else {
-      $resolution = variable_get('ecenter_network_query_resolution', 50);
+      $resolution = variable_get('ecenter_network_drs_resolution', 50);
       $client = ecenter_network_get_client();
       $result = $client->getData($src, $dst, $start, $end, $resolution);
       if ($result['code'] == 200) {
@@ -817,12 +817,66 @@ function ecenter_network_get_ads_data($src, $dst, $start, $end, $algorithm = 'sp
   $query = http_build_query($params);
 
   if (!array_key_exists($query, $results)) {
+    $resolution = variable_get('ecenter_network_ads_resolution', 1000);
     $client = ecenter_network_get_client('message', 'ads');
     foreach (array('owamp', 'bwctl') as $data_type) {
-      $result = $client->getData($src, $dst, $start, $end, $data_type, 1000, $algorithm, $detector_type, $sensitivity, $elevation1, $elevation2, $swc);
+      $result = $client->getData($src, $dst, $start, $end, $data_type, $resolution, $algorithm, $detector_type, $sensitivity, $elevation1, $elevation2, $swc);
       if ($result['code'] == 200) {
         $data = ecenter_network_parse_ads_response($result);
         $results[$query][$data_type] = $data;
+      }
+      else { // Note that the static variable is NOT set in this case
+        watchdog('ecenter_network',
+          'Request (@url) failed with code @code (@response).',
+          array('@url' => $result['url'], '@code' => $result['code'],
+          '@response' => $result['response']), WATCHDOG_WARNING);
+        return NULL;
+      }
+    }
+  }
+  return $results[$query];
+}
+
+/**
+ * Get/cache site centric data
+ *
+ * @TODO Integrate parsing before cache is set
+ *
+ * @param $site
+ *   Source IP address
+ * @param $start
+ *   Start time, expressed in UTC, formatted as Y-m-d H:i:s
+ * @param $end
+ *   End time, expressed in UTC, formatted as Y-m-d H:i:s
+ * @return
+ *   An array of parsed data
+ */
+function ecenter_network_get_site_centric_data($site, $start, $end) {
+  global $user;
+  static $results = array();
+
+  $query = http_build_query(array(
+    'src_hub' => $site,
+    'start' => $start,
+    'end' => $end,
+  ));
+
+  if (!array_key_exists($query, $results)) {
+    $caching = variable_get('ecenter_network_site_data_cache_enabled', 0);
+    if ($caching && $result = cache_get($query, 'cache_ecenter_site_data')) {
+      $results[$query] = ecenter_network_parse_site_data($result->data);
+    }
+    else {
+      $resolution = variable_get('ecenter_network_site_data_resolution', 50);
+      $client = ecenter_network_get_client();
+      $result = $client->getSiteCentricData($site, $start, $end);
+      if ($result['code'] == 200) {
+        $data = $result['response'];
+        if ($caching) {
+          $expires = time() + variable_get('ecenter_network_site_data_cache_ttl', 3600);
+          cache_set($query, $data, 'cache_ecenter_site_data', $expires);
+        }
+        $results[$query] = ecenter_network_parse_site_data($data);
       }
       else { // Note that the static variable is NOT set in this case
         watchdog('ecenter_network',
@@ -1056,6 +1110,16 @@ function ecenter_network_parse_ads_response($response) {
           $parsed_data[$direction] = $row['status'];
         } 
       }
+    }
+  }
+  return $parsed_data;
+}
+
+function ecenter_network_parse_site_data($data) {
+  $parsed_data = array();
+  foreach (array('direct_traceroute' => 'forward', 'reverse_traceroute' => 'reverse') as $key => $direction) {
+    foreach ($data[$key] as $hub => $results) {
+      $parsed_data[$hub][$direction] = $results['snmp'];
     }
   }
   return $parsed_data;
@@ -1768,7 +1832,9 @@ function _ecenter_network_extract_query() {
     );
   }
   else {
-    foreach (array('src', 'dst', 'start', 'end', 'timezone', 'ads', 'algorithm', 'detector_type', 'sensitivity', 'elevation1', 'elevation2', 'swc', 'plateau_size') as $key) {
+    foreach (array('src', 'dst', 'start', 'end', 'timezone', 'ads', 'algorithm',
+      'detector_type', 'sensitivity', 'elevation1', 'elevation2', 'swc', 
+      'plateau_size') as $key) {
       $vars[$key] = (!empty($_REQUEST[$key])) ? $_REQUEST[$key] : NULL;
     }
   }

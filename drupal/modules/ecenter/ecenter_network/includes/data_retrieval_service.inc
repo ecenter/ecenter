@@ -128,4 +128,19 @@ class DataRetrievalService extends EcenterService {
     );
     return $this->query('health', $params);
   }
+
+  /**
+   *
+   */
+  public function getSiteCentricData($site, $start, $end, $only_data = FALSE, $resolution = 50) {
+    $params = array(
+      'src_hub' => $site,
+      'start' => $start,
+      'end' => $end,
+      'only_data' => $only_data,
+      'resolution' => $resolution,
+    );
+    return $this->query('site', $params);
+  }
+
 }

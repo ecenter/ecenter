@@ -11,22 +11,18 @@ function ecenter_issues_menu_default_menu_links() {
     'menu_name' => 'primary-links',
     'link_path' => 'issues',
     'router_path' => 'issues',
-    'link_title' => 'Network issues',
-    'options' => array(
-      'attributes' => array(
-        'title' => '',
-      ),
-    ),
+    'link_title' => 'View issues',
+    'options' => array(),
     'module' => 'system',
     'hidden' => '0',
     'external' => '0',
     'has_children' => '0',
     'expanded' => '0',
-    'weight' => '-47',
+    'weight' => '-48',
   );
   // Translatables
   // Included for use with string extractors like potx.
-  t('Network issues');
+  t('View issues');
 
 
   return $menu_links;

@@ -10,7 +10,7 @@ function ecenter_issues_context_default_contexts() {
   $context->api_version = 3;
   $context->name = 'ecenter_issues';
   $context->description = '';
-  $context->tag = 'ecenter';
+  $context->tag = 'e-center';
   $context->conditions = array(
     'node' => array(
       'values' => array(
@@ -29,7 +29,7 @@ function ecenter_issues_context_default_contexts() {
 
   // Translatables
   // Included for use with string extractors like potx.
-  t('ecenter');
+  t('e-center');
 
   $export['ecenter_issues'] = $context;
   $context = new stdClass;
@@ -37,7 +37,7 @@ function ecenter_issues_context_default_contexts() {
   $context->api_version = 3;
   $context->name = 'ecenter_issues_view';
   $context->description = '';
-  $context->tag = 'ecenter';
+  $context->tag = 'e-center';
   $context->conditions = array(
     'views' => array(
       'values' => array(
@@ -46,23 +46,13 @@ function ecenter_issues_context_default_contexts() {
     ),
   );
   $context->reactions = array(
-    'block' => array(
-      'blocks' => array(
-        'views--exp-ecenter_issues-page_1' => array(
-          'module' => 'views',
-          'delta' => '-exp-ecenter_issues-page_1',
-          'region' => 'right',
-          'weight' => 0,
-        ),
-      ),
-    ),
     'breadcrumb' => 'issues',
   );
   $context->condition_mode = 1;
 
   // Translatables
   // Included for use with string extractors like potx.
-  t('ecenter');
+  t('e-center');
 
   $export['ecenter_issues_view'] = $context;
   return $export;

@@ -95,6 +95,7 @@ function ecenter_network_theme() {
       'template' => 'ecenter-network-end-to-end',
       'arguments' => array(
         'data' => NULL,
+        'ads_data' => NULL,
       ),
     ) + $options,
     'ecenter_network_end_to_end_tables' => array(
@@ -253,6 +254,7 @@ function ecenter_network_health() {
  */
 function _ecenter_network_select_form() {
   global $user;
+  extract(_ecenter_network_extract_query());
 
   // Initialize time-related variables
   $default_start = variable_get('ecenter_network_default_end', 7200);
@@ -394,6 +396,78 @@ function _ecenter_network_select_form() {
     '#suffix' => '</p></div>',
   );
 
+  $form['network_wrapper']['query']['ads_wrapper'] = array(
+    '#prefix' => '<div id="ads-settings-wrapper">',
+    '#suffix' => '</div>',
+  );
+
+  $form['network_wrapper']['query']['ads_wrapper']['ads'] = array(
+    '#type' => 'checkbox',
+    '#title' => 'Use anomaly detection (experimental)',
+    '#default_value' => (!empty($ads)) ? TRUE : FALSE,
+  );
+
+  $form['network_wrapper']['query']['ads_wrapper']['ads_settings'] = array(
+    '#prefix' => '<div id="ads-settings">',
+    '#suffix' => '</div>',
+    '#type' => 'fieldset',
+    '#title' => t('Advanced detection settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+
+  $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['algorithm'] = array(
+    '#title' => t('Algorithm'),
+    '#type' => 'select',
+    '#options' => array(
+      'spd' => t('spd'),
+      'apd' => t('apd'),
+    ),
+    '#default_value' => (!empty($algorithm)) ? $algorithm : 'spd',
+  );
+
+  /*$form['network_wrapper']['query']['ads_wrapper']['ads_settings']['detector_type'] = array(
+    '#title' => t('Detector type'),
+    '#type' => 'textfield',
+    '#size' => 5,
+  );*/
+
+  $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['sensitivity'] = array(
+    '#title' => t('Sensitivity'),
+    '#type' => 'textfield',
+    '#size' => 5,
+    '#default_value' => (!empty($sensitivity)) ? $sensitivity : 2,
+  );
+
+  $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['elevation1'] = array(
+    '#title' => t('Elevation 1'),
+    '#type' => 'textfield',
+    '#size' => 5,
+    '#default_value' => (!empty($elevation1)) ? $elevation1 : 0.2,
+  );
+
+  $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['elevation2'] = array(
+    '#title' => t('Elevation 2'),
+    '#type' => 'textfield',
+    '#size' => 5,
+    '#default_value' => (!empty($elevation2)) ? $elevation2 : 0.4,
+  );
+
+  $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['swc'] = array(
+    '#title' => t('swc'),
+    '#type' => 'textfield',
+    '#size' => 5,
+    '#default_value' => (!empty($swc)) ? $swc : 20,
+  );
+
+  $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['plateau_size'] = array(
+    '#title' => t('Plateau size'),
+    '#type' => 'textfield',
+    '#size' => 5,
+    '#default_value' => (!empty($plateau_size)) ? $plateau_size : 7,
+  );
+
+
   // Submit button
   $form['network_wrapper']['submit'] = array(
     '#type' => 'submit',
@@ -481,7 +555,9 @@ function ecenter_network_select_form(&$form_state) {
   }
 
   if ($src && $dst && $start && $end) {
-    $data = ecenter_network_get_data($src, $dst, $start, $end);
+    $data = array(
+      'drs' => ecenter_network_get_data($src, $dst, $start, $end)
+    );
 
     $params = array(
       'src' => $src,
@@ -494,9 +570,14 @@ function ecenter_network_select_form(&$form_state) {
     // If we've got the data (at bare minimum, a traceroute), delegate to rendering function
     if ($data) {
       drupal_add_js(array('ecenterNetwork' => array('tracerouteData' => 
-        $data['traceroute']['diff'])), 'setting');
+        $data['drs']['traceroute']['diff'])), 'setting');
       drupal_add_js(array('ecenterNetwork' => array('tracerouteMaxLength' => 
-        $data['traceroute']['traceroute_max'])), 'setting');
+        $data['drs']['traceroute']['traceroute_max'])), 'setting');
+
+      if ($ads) {
+        $data['ads'] = ecenter_network_get_ads_data($src, $dst, $start, $end, $algorithm, $detector_type, $sensitivity, $elevation1, $elevation2, $swc, $plateau_size);
+      }
+
       $form['results_wrapper']['results']['#value'] =
         theme('ecenter_network_data', $data, $params);
       $form['results_wrapper']['recent']['#value'] =
@@ -578,12 +659,12 @@ function ecenter_network_select_form_submit($form, &$form_state) {
  * All parameters optional
  *
  * @param $status_check
- *   If '503', return HTTP 503 page or redirect. If 'message', set message and 
+ *   If '503', return HTTP 503 page or redirect. If 'message', set message and
  *   continue. If FALSE, just return the client (default).
  * @param $type
- *   'drs' for Data Retrieval Service (default), 'ads' for Anomaly Detection 
+ *   'drs' for Data Retrieval Service (default), 'ads' for Anomaly Detection
  *   Service
- * @param $name 
+ * @param $name
  *   A unique name for this client (optional)
  */
 function ecenter_network_get_client($status_check = FALSE, $type = 'drs', $name = NULL) {
@@ -680,9 +761,9 @@ function ecenter_network_get_data($src, $dst, $start, $end) {
         $results[$query] = $data;
       }
       else { // Note that the static variable is NOT set in this case
-        watchdog('ecenter_network', 
-          'Request (@url) failed with code @code (@response).', 
-          array('@url' => $result['url'], '@code' => $result['code'], 
+        watchdog('ecenter_network',
+          'Request (@url) failed with code @code (@response).',
+          array('@url' => $result['url'], '@code' => $result['code'],
           '@response' => $result['response']), WATCHDOG_WARNING);
         return NULL;
       }
@@ -693,7 +774,7 @@ function ecenter_network_get_data($src, $dst, $start, $end) {
     // user object. Only capture successful queries.
     if (!empty($results[$query]) && $user->uid > 0) {
       $queries = $user->ecenter_network_queries;
-      if (count($queries) > 
+      if (count($queries) >
         (variable_get('ecenter_network_recent_query_limit', 5))) {
         array_shift($queries);
       }
@@ -702,7 +783,7 @@ function ecenter_network_get_data($src, $dst, $start, $end) {
     }
     else if (!empty($results[$query]) && isset($_COOKIE[session_name()])) {
       $queries = unserialize(sess_read('ecenter_network_queries'));
-      if (count($queries) > 
+      if (count($queries) >
         (variable_get('ecenter_network_recent_query_limit', 5) - 1)) {
         array_shift($queries);
       }
@@ -715,10 +796,51 @@ function ecenter_network_get_data($src, $dst, $start, $end) {
 }
 
 /**
+ * Get/cache anomaly data
+ *
+ * @param $src
+ *   Source IP address
+ * @param $dst
+ *   Destination IP address
+ * @param $start
+ *   Start time, expressed in UTC, formatted as Y-m-d H:i:s
+ * @param $end
+ *   End time, expressed in UTC, formatted as Y-m-d H:i:s
+ * @return
+ *   An array of parsed data
+ */
+function ecenter_network_get_ads_data($src, $dst, $start, $end, $algorithm = 'spd', $detector_type = NULL, $sensitivity = NULL, $elevation1 = NULL, $elevation2 = NULL, $swc = NULL) {
+  $params = get_defined_vars();
+  global $user;
+  static $results = array();
+
+  $query = http_build_query($params);
+
+  if (!array_key_exists($query, $results)) {
+    $client = ecenter_network_get_client('message', 'ads');
+    foreach (array('owamp', 'bwctl') as $data_type) {
+      $result = $client->getData($src, $dst, $start, $end, $data_type, 1000, $algorithm, $detector_type, $sensitivity, $elevation1, $elevation2, $swc);
+      if ($result['code'] == 200) {
+        $data = ecenter_network_parse_ads_response($result);
+        $results[$query][$data_type] = $data;
+      }
+      else { // Note that the static variable is NOT set in this case
+        watchdog('ecenter_network',
+          'Request (@url) failed with code @code (@response).',
+          array('@url' => $result['url'], '@code' => $result['code'],
+          '@response' => $result['response']), WATCHDOG_WARNING);
+        return NULL;
+      }
+    }
+  }
+  return $results[$query];
+}
+
+/**
  * Get hops
  *
  * @param $src
- *   (optional) Source (hub name or IP) to determine potential destinations. 
+ *   (optional) Source (hub name or IP) to determine potential destinations.
  *   If not supplied, list all potential source hops.
  * @param $src_type
  *   (optional) Source type ('hub' or 'ip')
@@ -754,7 +876,7 @@ function ecenter_network_get_hops($src = NULL, $src_type = 'hub') {
   return $hops[$src_key];
 }
 
-/** 
+/**
  * Get node
  */
 function ecenter_network_get_node($ip) {
@@ -915,6 +1037,30 @@ function ecenter_network_parse_response($response) {
   return $parsed_data;
 }
 
+function ecenter_network_parse_ads_response($response) {
+  $parsed_data = array();
+  $data = $response['response'];
+  $params = $response['parameters'];
+
+  foreach (array('forward', 'reverse') as $direction) {
+    foreach ($data as $src => $destinations) {
+      foreach ($destinations as $dst => $row) {
+        if (is_array($row['status']) &&
+            (($direction == 'forward' 
+            && $params['src']['value'] == $row['src_hub']
+            && $params['dst']['value'] == $row['dst_hub']) ||
+            ($direction == 'reverse' 
+            && $params['dst']['value'] == $row['src_hub']
+            && $params['src']['value'] == $row['dst_hub']))
+          ) {
+          $parsed_data[$direction] = $row['status'];
+        } 
+      }
+    }
+  }
+  return $parsed_data;
+}
+
 /**
  * Filter traceroute results
  */
@@ -929,7 +1075,7 @@ function ecenter_network_ecenter_network_end_to_end_measurements_alter(&$data, $
   unset($measurements['metaid'], $measurements['timestamp']);
   $timeseries = array();
   foreach ($measurements as $measurement => $value) {
-    if ($measurement != 'max_delay' && $measurement != 'sent') {
+    if ($measurement != 'sent') {
       $data[$measurement]['timeseries'][$timestamp] = (float) $value;
     }
   }
@@ -1020,7 +1166,7 @@ function ecenter_network_openlayers_presets() {
   $openlayers_presets->description = 'E-Center network weathermap';
   $openlayers_presets->data = array(
     'width' => '660px',
-    'height' => '360px',
+    'height' => '400px',
     'image_path' => 'http://js.mapbox.com/theme/dark/',
     'css_path' => '',
     'proxy_host' => '',
@@ -1035,7 +1181,7 @@ function ecenter_network_openlayers_presets() {
       'openlayers_behavior_navigation' => array(
         'zoomWheelEnabled' => 0,
       ),
-      'openlayers_behavior_panzoombar' => array(),
+      'openlayers_behavior_panzoom' => array(),
       'openlayers_behavior_fullscreen' => array(
         'activated' => 0,
       ),
@@ -1610,12 +1756,25 @@ function _ecenter_network_extract_query() {
       'start' => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['start']['date']),
       'end' => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['end']['date']),
       'timezone' => $_REQUEST['network_wrapper']['query']['timezone_name'],
+
+      'ads' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads'],
+      'algorithm' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads_settings']['algorithm'],
+      'detector_type' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads_settings']['detector_type'],
+      'sensitivity' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads_settings']['sensitivity'],
+      'elevation1' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads_settings']['elevation1'],
+      'elevation2' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads_settings']['elevation2'],
+      'swc' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads_settings']['swc'],
+      'plateau_size' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads_settings']['plateau_size'],
     );
   }
   else {
-    foreach (array('src', 'dst', 'start', 'end', 'timezone') as $key) {
+    foreach (array('src', 'dst', 'start', 'end', 'timezone', 'ads', 'algorithm', 'detector_type', 'sensitivity', 'elevation1', 'elevation2', 'swc', 'plateau_size') as $key) {
       $vars[$key] = (!empty($_REQUEST[$key])) ? $_REQUEST[$key] : NULL;
     }
+  }
+
+  if (!empty($vars['ads']) && empty($vars['algorithm'])) {
+    $vars['algorithm'] = 'spd';
   }
 
   return $vars;

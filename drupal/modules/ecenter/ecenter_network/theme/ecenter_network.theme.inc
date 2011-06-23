@@ -90,10 +90,10 @@ function template_preprocess_ecenter_network_data(&$vars) {
 
   // End to end measurements
   $vars['end_to_end'] = theme('ecenter_network_end_to_end',
-    $vars['data']['end_to_end']);
+    $vars['data']['drs']['end_to_end'], $vars['data']['ads']);
 
   // Per-hop measurements
-  $vars['hops'] = theme('ecenter_network_hops', $vars['data']['hops']);
+  $vars['hops'] = theme('ecenter_network_hops', $vars['data']['drs']['hops']);
 }
 
 /**
@@ -101,6 +101,7 @@ function template_preprocess_ecenter_network_data(&$vars) {
  */
 function template_preprocess_ecenter_network_end_to_end(&$vars) {
   $data = $vars['data'];
+
   $statistics_table = array();
   $data_tables = array();
 
@@ -166,6 +167,21 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
           $data_tables[$test][$measurement][$direction] = $data_table;
           $data_tables[$test][$measurement]['start'] = $start;
           $data_tables[$test][$measurement]['end'] = $end;
+
+          if ((($test == 'owamp' && $measurement == 'max_delay') || $test == 'bwctl') 
+            && !empty($vars['ads_data'][$test][$direction])) {
+            $data_table = array();
+            foreach ($vars['ads_data'][$test][$direction] as $warning_type => $timeseries) {
+              foreach ($timeseries as $timestamp => $value) {
+                $time = _ecenter_network_timestamp_to_local($timestamp);
+                $data_table[] = array(
+                  array('data' => $time, 'header' => TRUE),
+                  $value['value'] * 1000,
+                );
+              }
+            }
+            $data_tables[$test][$measurement][$direction .'_'. $warning_type] = $data_table;
+          }
         }
       }
     }
@@ -347,7 +363,7 @@ function theme_ecenter_network_hops($hops = array()) {
     $options = array(
       'height' => 175,
       'width' => 550,
-      'hideTables' => TRUE,
+      'hideTables' => FALSE,
       'parseX' => '$.tablechart.parseText',
       'dependencies' => array('canvasTextRenderer'),
       'plotOptions' => $plot_options,
@@ -372,6 +388,8 @@ function theme_ecenter_network_end_to_end_tables($tables) {
       $start = _ecenter_network_timestamp_to_local($measurement_data['start'], 'M j, Y H:i');
       $end = _ecenter_network_timestamp_to_local($measurement_data['end'], 'M j, Y H:i');
 
+      unset($measurement_data['start'], $measurement_data['end']);
+
       $suggestions = array(
         'ecenter_network_format_'. $type .'_'. $measurement .'_label',
         'ecenter_network_format_'. $type .'_label',
@@ -388,10 +406,10 @@ function theme_ecenter_network_end_to_end_tables($tables) {
       $output .= '</div>';
 
       $output .= '<div class="data-tables">';
-      foreach (array('forward', 'reverse') as $direction) {
+      foreach ($measurement_data as $key => $table) {
         $output .= '<div class="data-table">';
-        $output .= '<h4>'. t(ucfirst($direction)) .'</h4>';
-        $output .= theme('jqplot_table', array(), $measurement_data[$direction]);
+        $output .= '<h4>'. t(ucfirst($key)) .'</h4>';
+        $output .= theme('jqplot_table', array(), $table);
         $output .= '</div>';
       }
       $output .= '</div>';
@@ -400,12 +418,13 @@ function theme_ecenter_network_end_to_end_tables($tables) {
 
       $plot_options = _ecenter_network_plot_options_template();
       $plot_options['legend']['show'] = TRUE;
+
       drupal_alter('ecenter_network_plot_options', $plot_options, $measurement,
-        $type);
+        $type, $measurement_data);
       $options = array(
         'height' => 125,
         'width' => 400,
-        'hideTables' => TRUE,
+        'hideTables' => FALSE,
         'parseX' => '$.tablechart.parseText',
         'dependencies' => array('canvasTextRenderer'),
         'plotOptions' => $plot_options,
@@ -612,7 +631,7 @@ function _ecenter_network_plot_options_template() {
       'shadow' => FALSE,
       'fill' => FALSE,
       'markerOptions' => array(
-        'size' => 3,
+        'size' => 2,
         'shadow' => FALSE,
       ),
     ),
@@ -656,11 +675,7 @@ function _ecenter_network_plot_options_template() {
 /**
  * Implementation of hook_ecenter_network_plot_options_alter().
  */
-function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurement, $type) {
-  $options['series'] = array(
-    array('label' => t('Forward'),),
-    array('label' => t('Reverse'),),
-  );
+function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurement, $type, $data = array()) {
   $line_options = array(
     'highlighter' => array(
       'show' => TRUE,
@@ -677,9 +692,11 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
       'clickReset' => TRUE,
     ),
   );
+
   switch ($measurement) {
     case 'throughput':
       $options['axes']['yaxis']['label'] = t('mbps');
+      $options['axes']['yaxis']['min'] = 0;
       $options['seriesDefaults']['renderer'] = '$.jqplot.BarRenderer';
       $options['seriesDefaults']['rendererOptions'] = array(
         'barWidth' => 2,
@@ -701,18 +718,34 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
       $options['axes']['yaxis']['label'] = t('milliseconds');
       $options['axes']['yaxis']['tickOptions']['formatString'] = '%01.1f';
       $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%dms</span>';
-      return;
+      break;
     case 'loss':
       $options += $line_options;
       $options['axes']['yaxis']['min'] = 0;
       $options['axes']['yaxis']['label'] = t('loss');
       $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%d</span>';
-      return;
+      break;
     case 'utilization':
       $options += $line_options;
       $options['axes']['yaxis']['label'] = t('% utilization');
       $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%d%</span>';
-      return;
+      break;
+  }
+
+  // Final processing
+  $options['series'] = array();
+  foreach (array_keys($data) as $idx => $table) {
+    $options['series'][$idx] = array('label' => t(ucfirst(str_replace('_', ' ', $table))));
+    switch($table) {
+      case 'forward_warning':
+      case 'forward_critical': 
+      case 'reverse_warning':
+      case 'reverse_critical':
+        $options['series'][$idx] += array(
+          'showLine' => FALSE,
+          'markerOptions' => array('style' => 'filledSquare', 'size' => 10),
+        );
+    }
   }
 }
 

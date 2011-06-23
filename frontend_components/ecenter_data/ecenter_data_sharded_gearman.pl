@@ -411,20 +411,16 @@ sub process_site {
 			foreach my $metric (qw/utilization  errors drops/) {
 		            if( $tmp{$metric} &&  
 			       ($tmp{$metric}  > $data->{$way}{$dst_hub}{snmp}{$metric}{value})) {
-		                $data->{$way}{$dst_hub}{snmp}{utilization}{value} = $tmp{$metric};
-		                $data->{$way}{$dst_hub}{snmp}{utilization}{ip} = $ip;
+		                $data->{$way}{$dst_hub}{snmp}{$metric}{value} = $tmp{$metric};
+		                $data->{$way}{$dst_hub}{snmp}{$metric}{ip} = $ip;
 			    }
 		        }
-		     # push @{$data->{$way}{$dst_hub}{snmp}}, [$time,  { capacity =>  $snmp->{$ip}{$time}{capacity},  
-		     #                                                   utilization =>  $snmp->{$ip}{$time}{utilization} || '0',
-		     #		                                       errors => $snmp->{$ip}{$time}{errors} || '0',
-		     #		                                       drops => $snmp->{$ip}{$time}{drops} || '0',
-		     #						     }
-		     # ]; 
 	    	    }
 	        }
 	    }
+	    
 	}
+	
     };
     if($EVAL_ERROR) {
       $logger->error("site centric call  failed - $EVAL_ERROR");
@@ -547,14 +543,26 @@ sub process_data {
     if($params{data_type}) {
         @data_keys = ($params{data_type}) if  $params{data_type} =~ /^bwctl|owamp|pinger$/i;
     } else {
-        @data_keys =  qw/bwctl owamp/;
+        @data_keys =  qw/bwctl owamp pinger/;
     }
     # my @data_keys = qw/owamp/;
     my %e2e_mds = ();
     map {$data->{$_} = {}} @data_keys;
-    
+    #
+    # B logic - get list of slowest pinger and owamp services and creat exclusion list to avoid them  
+    #
+  
     if(@data_keys) {
 	foreach my $dir (keys %directions) {
+	    my $slow_services  =  database('ecenter')->selectall_hashref(q|select distinct s.service   from service_performance sp 
+                                                                    join metadata md using(metaid)
+								    join  node n_src on(md.src_ip = n_src.ip_addr) 
+								    join  node n_dst on(md.dst_ip = n_dst.ip_addr) 
+								    join eventtype e on(md.eventtype_id = e.ref_id) 
+								    join service s using(service) where e.service_type in ('pinger','owamp') and sp.response > | . config->{slow_service_limit} . 
+								    qq| $trace_cond->{"$dir\_traceroute"}{src} $trace_cond->{"$dir\_traceroute"}{dst}|, 'service');  
+            my $exclude_services_sql =  join (' AND ', map {  "  s.service !='$_' " } keys %{$slow_services});
+            $exclude_services_sql =  $exclude_services_sql?"($exclude_services_sql)":'1';
 	    my $e2e_sql = qq|select   md.metaid, n_src.ip_noted as src_ip, md.subject, e.service_type as type, hb1.hub_name as src_hub, hb2.hub_name as dst_hub,
 	                              n_dst.ip_noted  as dst_ip, 
                                                         	  n_src.nodename as src_name, n_dst.nodename as dst_name, s.service
@@ -571,7 +579,7 @@ sub process_data {
 								    join eventtype e on(md.eventtype_id = e.ref_id)
 								    join service s  on (e.service = s.service)
 							      where  
-								    e.service_type in ('pinger','bwctl','owamp') and  s.service  like 'http%' 
+								    $exclude_services_sql and e.service_type in ( 'bwctl','owamp', 'pinger') 
 								    $trace_cond->{"$dir\_traceroute"}{src}   $trace_cond->{"$dir\_traceroute"}{dst}
 					        	 group by src_ip, dst_ip, service, type|;
 	    debug " E2E SQL:: $e2e_sql";

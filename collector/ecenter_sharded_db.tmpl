@@ -169,6 +169,40 @@ CREATE TABLE  [% preserve %]   service_performance  (
  FOREIGN KEY (metaid) REFERENCES metadata(metaid)  on DELETE CASCADE ON UPDATE CASCADE
  )  ENGINE=InnoDB CHARSET=latin1 COMMENT='performance data for the metaid request';
 --
+--    ADS cache -  anomalies cache
+--
+--    treat each anomaly analysis as measurement
+--
+CREATE TABLE  [% preserve %]   anomaly  (
+ anomaly bigint  unsigned AUTO_INCREMENT NOT NULL,
+ metaid    bigint  unsigned  NOT NULL,
+ sensitivity  float NOT NULL,
+ elevation1   float NOT NULL,
+ elevation2   float NOT NULL,
+ swc     smallint unsigned NOT NULL,
+ resolution   smallint unsigned NOT NULL,
+ algo   enum('apd','spd') NOT NULL DEFAULT 'spd',
+ start_time   bigint(12) unsigned NOT NULL,
+ end_time     bigint(12) unsigned NOT NULL,
+ PRIMARY KEY  (anomaly),
+ UNIQUE KEY  metaid_algo_when (metaid, algo, start_time, end_time),
+ FOREIGN KEY (metaid) REFERENCES metadata(metaid)  on DELETE CASCADE ON UPDATE CASCADE
+)  ENGINE=InnoDB CHARSET=latin1 COMMENT='anomaly detection';
+--
+--      ADS cache - actual anomalies found
+--
+CREATE TABLE  [% preserve %]   anomaly_data_[% datestamp %]  (
+ anomaly_data  bigint  unsigned AUTO_INCREMENT NOT NULL,
+ anomaly    bigint  unsigned  NOT NULL,
+ anomaly_status enum('critical','warning') NOT NULL DEFAULT 'critical',
+ anomaly_type  varchar(16) NOT NULL DEFAULT 'plateau',
+ timestamp  bigint(12) unsigned NOT NULL,
+ value  float NOT NULL DEFAULT '0.0',
+ PRIMARY KEY  (anomaly_data),
+ UNIQUE KEY    anomaly_time (anomaly, timestamp),
+ FOREIGN KEY (anomaly) REFERENCES anomaly(anomaly)  on DELETE CASCADE ON UPDATE CASCADE
+)  ENGINE=InnoDB CHARSET=latin1 COMMENT='anomalies data monthly table';
+--
 --  NEXT TABLES FOR THE  DATA CACHE
 --  we are going to store pinger, owamp, bwctl, snmp data
 --  based on source -> destination pairs

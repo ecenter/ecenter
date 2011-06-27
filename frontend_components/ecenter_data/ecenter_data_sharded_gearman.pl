@@ -9,7 +9,6 @@ use lib "/home/netadmin/ecenter_git/ecenter/frontend_components/ecenter_data/lib
 use DateTime;
 use DateTime::Format::MySQL;
 use Ecenter::Exception;
-use Ecenter::DB;
 use Ecenter::Utils;
 use Ecenter::Data::Hub;
 use Ecenter::ADS::Detector::APD;

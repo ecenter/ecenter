@@ -372,18 +372,32 @@ sub get_e2e {
 	                         $last_time->{$md->metaid}{timestamp}:$PAST_START;
     	     my $e2e_data = []; 
 	     $dbi->disconnect if $dbi;
+	     my $t1 = time();
+             my $t_delta = 0; 
 	     eval {
 		$e2e_data =   Ecenter::Client->new({ type    => $type,  
 	                                             url     => $md->eventtype->service->service,
 	                                             start   => $secs_past,
-    	    			                     end     => time(),
+    	    			                     end     => $t1,
 						     resolution => 10000,
 						     args => {
 						        subject => $md->subject
 						     }
 	    		      })->get_data;
+		 $t_delta = time() - $t1;
+		 $dbh->resultset('ServicePerformance')->create( { metaid =>  $md->metaid,
+	                                                     requested_start =>  $secs_past,
+	                                                     requested_time => ($t1 - $secs_past), 
+	                                                     response => $t_delta, 
+							     is_data => (($e2e_data  && @{  $e2e_data })?1:0) 
+							     } ); 
 	     };
-	     if($EVAL_ERROR) { 
+	     if($EVAL_ERROR) {
+	       $dbh->resultset('ServicePerformance')->create( { metaid =>  $md->metaid,
+	                                                     requested_start =>  $secs_past,
+	                                                     requested_time => ($t1 - $secs_past), 
+	                                                     response => $t_delta, 
+							     is_data => 0} ); 
 	        $dbh->storage->disconnect if $dbh;
 		$logger->error("Data ::Failed - $EVAL_ERROR");
 		##$pm->finish;
@@ -391,7 +405,7 @@ sub get_e2e {
 	     }
     	     ##$logger->debug("Data :: ", sub{Dumper(  $e2e_data )});
     	     ##$pm->finish unless   $e2e_data  && @{  $e2e_data };
-	     unless($e2e_data  && @{  $e2e_data }) {
+	     unless($e2e_data  && @{  $e2e_data }) { 
 	        $logger->error(" No Data for $type: start=$secs_past " . $md->eventtype->service->service . ' md=' . $md->subject);
 	        $dbh->storage->disconnect if $dbh;
 		return;
@@ -507,7 +521,7 @@ sub get_snmp {
 		# get last timestamp
 		 my $dbh =  Ecenter::DB->connect('DBI:mysql:' . $OPTIONS{db},  $OPTIONS{user}, $OPTIONS{password}, 
                                 	    {RaiseError => 1, PrintError => 1});
-        	$dbh->storage->debug(1)  if $OPTIONS{debug}|| $OPTIONS{v}; 
+        	$dbh->storage->debug(1)  if $OPTIONS{debug}|| $OPTIONS{v};
 		my $snmp_ma =  Ecenter::Data::Snmp->new({ url => $service->service});
    
 		my ($last_time) = $dbh->resultset("SnmpData$now_table")->search( {  
@@ -519,13 +533,15 @@ sub get_snmp {
 	    						    );
 
         	my $secs_past = $last_time && ($last_time->timestamp >  $PAST_START)?$last_time->timestamp:$PAST_START;
-		
+		my $t1 = time();
+                my $t_delta = 0; 
     		$snmp_ma->get_data({ direction => 'out',
     	    			     ifAddress => $addr, 
     	    			     start     => DateTime->from_epoch( epoch =>  $secs_past),
     	    			     end       => DateTime->now()	
 	    			  });
     		$logger->debug("Data :: ", sub{Dumper( $snmp_ma->data)});
+		
     		my $meta = $dbh->resultset('Metadata')->update_or_create({ 
     	    						 eventtype_id => $eventtype_id ,
     	    						 src_ip	  => $src_ip,
@@ -534,6 +550,12 @@ sub get_snmp {
 	    					      {key => 'md_ips_type'}
     	    					      );
     		if($snmp_ma->data && @{$snmp_ma->data}) {
+		    $dbh->resultset('ServicePerformance')->create( { metaid =>  $meta->metaid,
+	                                                     requested_start =>   $secs_past ,
+	                                                     requested_time => ($t1 - $secs_past), 
+	                                                     response => $t_delta, 
+							     is_data => 1 
+							     } ); 
     		    foreach my $data (@{ $snmp_ma->data}) { 
     	    	       eval {
 		       
@@ -552,6 +574,13 @@ sub get_snmp {
 		         $logger->error($meta->metaid . " metaid failed due some error $EVAL_ERROR skipping ...  ");
 		      }
     		    }
+		} else {
+		   $dbh->resultset('ServicePerformance')->create( { metaid =>  $meta->metaid,
+	                                                     requested_start =>   $secs_past ,
+	                                                     requested_time => ($t1 - $secs_past), 
+	                                                     response => $t_delta, 
+							     is_data => 0 
+							     } ); 
 		}
 		$dbh->storage->disconnect if $dbh;
 		return;

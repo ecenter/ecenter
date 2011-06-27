@@ -3,3 +3,16 @@ appname: "ads"
 layout: "main"
 logger: "console"
 charset: "UTF-8"
+plugins:
+   DBIC:
+     dbix:
+       schema_class: Ecenter::DB
+       dsn: dbi:mysql:localhost:dbname=ecenter_data
+       user: ecenter
+       pass: ecenter2010
+       debug: 1
+       options:
+          ShowErrorStatement: 1
+          RaiseError: 1
+          PrintError: 1
+          AutoCommit: 1

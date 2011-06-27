@@ -396,78 +396,6 @@ function _ecenter_network_select_form() {
     '#suffix' => '</p></div>',
   );
 
-  $form['network_wrapper']['query']['ads_wrapper'] = array(
-    '#prefix' => '<div id="ads-settings-wrapper">',
-    '#suffix' => '</div>',
-  );
-
-  $form['network_wrapper']['query']['ads_wrapper']['ads'] = array(
-    '#type' => 'checkbox',
-    '#title' => 'Use anomaly detection (experimental)',
-    '#default_value' => (!empty($ads)) ? TRUE : FALSE,
-  );
-
-  $form['network_wrapper']['query']['ads_wrapper']['ads_settings'] = array(
-    '#prefix' => '<div id="ads-settings">',
-    '#suffix' => '</div>',
-    '#type' => 'fieldset',
-    '#title' => t('Advanced detection settings'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-  );
-
-  $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['algorithm'] = array(
-    '#title' => t('Algorithm'),
-    '#type' => 'select',
-    '#options' => array(
-      'spd' => t('spd'),
-      'apd' => t('apd'),
-    ),
-    '#default_value' => (!empty($algorithm)) ? $algorithm : 'spd',
-  );
-
-  /*$form['network_wrapper']['query']['ads_wrapper']['ads_settings']['detector_type'] = array(
-    '#title' => t('Detector type'),
-    '#type' => 'textfield',
-    '#size' => 5,
-  );*/
-
-  $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['sensitivity'] = array(
-    '#title' => t('Sensitivity'),
-    '#type' => 'textfield',
-    '#size' => 5,
-    '#default_value' => (!empty($sensitivity)) ? $sensitivity : 2,
-  );
-
-  $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['elevation1'] = array(
-    '#title' => t('Elevation 1'),
-    '#type' => 'textfield',
-    '#size' => 5,
-    '#default_value' => (!empty($elevation1)) ? $elevation1 : 0.2,
-  );
-
-  $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['elevation2'] = array(
-    '#title' => t('Elevation 2'),
-    '#type' => 'textfield',
-    '#size' => 5,
-    '#default_value' => (!empty($elevation2)) ? $elevation2 : 0.4,
-  );
-
-  $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['swc'] = array(
-    '#title' => t('swc'),
-    '#type' => 'textfield',
-    '#size' => 5,
-    '#default_value' => (!empty($swc)) ? $swc : 20,
-  );
-
-  $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['plateau_size'] = array(
-    '#title' => t('Plateau size'),
-    '#type' => 'textfield',
-    '#size' => 5,
-    '#default_value' => (!empty($plateau_size)) ? $plateau_size : 7,
-  );
-
-
   // Submit button
   $form['network_wrapper']['submit'] = array(
     '#type' => 'submit',
@@ -484,6 +412,73 @@ function _ecenter_network_select_form() {
   // For ahah helper
   $form['#tree'] = TRUE;
 
+  return $form;
+}
+
+// Form snippet for ADS
+function ecenter_network_ads_form() {
+  extract(_ecenter_network_extract_query());
+
+  dpm(get_defined_vars());
+
+  $form['ads_wrapper'] = array(
+    '#prefix' => '<div id="ads-settings-wrapper">',
+    '#suffix' => '</div>',
+  );
+ 
+  $form['ads_wrapper']['ads'] = array(
+    '#id' => 'ads',
+    '#type' => 'checkbox',
+    '#title' => 'Use anomaly detection (experimental)',
+    '#value' => (!empty($ads)) ? TRUE : FALSE,
+  );
+
+  $form['ads_wrapper']['ads_settings'] = array(
+    '#prefix' => '<div id="ads-settings">',
+    '#suffix' => '</div>',
+    '#type' => 'fieldset',
+    '#title' => t('Advanced detection settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+
+  $form['ads_wrapper']['ads_settings']['algorithm'] = array(
+    '#title' => t('Algorithm'),
+    '#type' => 'select',
+    '#options' => array(
+      'spd' => t('spd'),
+      'apd' => t('apd'),
+    ),
+    '#value' => (!empty($algorithm)) ? $algorithm : 'spd',
+  );
+
+  $form['ads_wrapper']['ads_settings']['sensitivity'] = array(
+    '#title' => t('Sensitivity'),
+    '#type' => 'textfield',
+    '#size' => 5,
+    '#value' => (!empty($sensitivity)) ? $sensitivity : 2,
+  );
+
+  $form['ads_wrapper']['ads_settings']['elevation1'] = array(
+    '#title' => t('Elevation 1'),
+    '#type' => 'textfield',
+    '#size' => 5,
+    '#value' => (!empty($elevation1)) ? $elevation1 : 0.2,
+  );
+
+  $form['ads_wrapper']['ads_settings']['elevation2'] = array(
+    '#title' => t('Elevation 2'),
+    '#type' => 'textfield',
+    '#size' => 5,
+    '#value' => (!empty($elevation2)) ? $elevation2 : 0.4,
+  );
+
+  $form['ads_wrapper']['ads_settings']['swc'] = array(
+    '#title' => t('swc'),
+    '#type' => 'textfield',
+    '#size' => 5,
+    '#value' => (!empty($swc)) ? $swc : 20,
+  );
   return $form;
 }
 
@@ -575,7 +570,7 @@ function ecenter_network_select_form(&$form_state) {
         $data['drs']['traceroute']['traceroute_max'])), 'setting');
 
       if ($ads) {
-        $data['ads'] = ecenter_network_get_ads_data($src, $dst, $start, $end, $algorithm, $detector_type, $sensitivity, $elevation1, $elevation2, $swc, $plateau_size);
+        $data['ads'] = ecenter_network_get_ads_data($src, $dst, $start, $end, $algorithm, $detector_type, $sensitivity, $elevation1, $elevation2, $swc);
       }
 
       $form['results_wrapper']['results']['#value'] =
@@ -1757,18 +1752,17 @@ function _ecenter_network_extract_query() {
       'end' => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['end']['date']),
       'timezone' => $_REQUEST['network_wrapper']['query']['timezone_name'],
 
-      'ads' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads'],
-      'algorithm' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads_settings']['algorithm'],
-      'detector_type' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads_settings']['detector_type'],
-      'sensitivity' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads_settings']['sensitivity'],
-      'elevation1' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads_settings']['elevation1'],
-      'elevation2' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads_settings']['elevation2'],
-      'swc' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads_settings']['swc'],
-      'plateau_size' => $_REQUEST['network_wrapper']['query']['ads_wrapper']['ads_settings']['plateau_size'],
+      'ads' => $_REQUEST['ads_wrapper']['query']['ads_wrapper']['ads'],
+      'algorithm' => $_REQUEST['ads_wrapper']['query']['ads_wrapper']['ads_settings']['algorithm'],
+      'detector_type' => $_REQUEST['ads_wrapper']['query']['ads_wrapper']['ads_settings']['detector_type'],
+      'sensitivity' => $_REQUEST['ads_wrapper']['query']['ads_wrapper']['ads_settings']['sensitivity'],
+      'elevation1' => $_REQUEST['ads_wrapper']['query']['ads_wrapper']['ads_settings']['elevation1'],
+      'elevation2' => $_REQUEST['ads_wrapper']['query']['ads_wrapper']['ads_settings']['elevation2'],
+      'swc' => $_REQUEST['ads_wrapper']['query']['ads_wrapper']['ads_settings']['swc'],
     );
   }
   else {
-    foreach (array('src', 'dst', 'start', 'end', 'timezone', 'ads', 'algorithm', 'detector_type', 'sensitivity', 'elevation1', 'elevation2', 'swc', 'plateau_size') as $key) {
+    foreach (array('src', 'dst', 'start', 'end', 'timezone', 'ads', 'algorithm', 'detector_type', 'sensitivity', 'elevation1', 'elevation2', 'swc') as $key) {
       $vars[$key] = (!empty($_REQUEST[$key])) ? $_REQUEST[$key] : NULL;
     }
   }

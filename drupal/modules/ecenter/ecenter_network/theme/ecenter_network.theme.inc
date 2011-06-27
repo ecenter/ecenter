@@ -105,6 +105,9 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
   $statistics_table = array();
   $data_tables = array();
 
+  $ads = ecenter_network_ads_form();
+  $vars['ads'] = drupal_render($ads);
+
   foreach ($data as $test => $directions) {
     $start = 0;
     $end = 0;

@@ -34,19 +34,15 @@ function ecenter_dashboard_theme() {
 function template_preprocess_ecenter_dashboard(&$vars) {
   global $user;
 
-  $data = ecenter_network_get_site_centric_data('FNAL', '2011-06-26 04:00:00', '2011-06-26 15:00:00');
-
-  dpm($data);
-
   drupal_add_js(libraries_get_path('raphael') .'/raphael-min.js');
+  drupal_add_js(libraries_get_path('qtip') .'/jquery.qtip.js');
   drupal_add_js(drupal_get_path('module', 'ecenter_dashboard') .'/js/ecenter-dashboard.js');
 
-  drupal_add_js(libraries_get_path('qtip') .'/jquery.qtip.js');
-
-  drupal_add_js(array('ecenterNetwork' => array('siteData' => $data)), 'setting');
-
-
   if ($user->uid) {
+    // Calculate proper date range
+    $data = ecenter_network_get_site_centric_data('NERSC', '2011-06-22 00:00:00', '2011-06-23 00:00:00');
+    drupal_add_js(array('ecenterNetwork' => array('siteData' => $data)), 'setting');
+
     $vars['main_content'] = array(
       'site_view' => array(
         'content' => '',

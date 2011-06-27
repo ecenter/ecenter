@@ -882,7 +882,7 @@ function ecenter_network_get_site_centric_data($site, $start, $end) {
           $expires = time() + variable_get('ecenter_network_site_data_cache_ttl', 3600);
           cache_set($query, $data, 'cache_ecenter_site_data', $expires);
         }
-        $results[$query] = ecenter_network_parse_site_data($data);
+        $results[$query] = ecenter_network_parse_site_data($data, $site);
       }
       else { // Note that the static variable is NOT set in this case
         watchdog('ecenter_network',

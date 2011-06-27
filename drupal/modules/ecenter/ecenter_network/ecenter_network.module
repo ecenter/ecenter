@@ -146,6 +146,12 @@ function ecenter_network_theme() {
         'cached_data_count' => 0,
       ),
     ) + $options,
+    'ecenter_network_site_centric_snmp_data' => array(
+      'arguments' => array(
+        'row' => NULL,
+        'direction' => NULL,
+      ),
+    ) + $options,
   );
   return $registry;
 }
@@ -864,7 +870,7 @@ function ecenter_network_get_site_centric_data($site, $start, $end) {
   if (!array_key_exists($query, $results)) {
     $caching = variable_get('ecenter_network_site_data_cache_enabled', 0);
     if ($caching && $result = cache_get($query, 'cache_ecenter_site_data')) {
-      $results[$query] = ecenter_network_parse_site_data($result->data);
+      $results[$query] = ecenter_network_parse_site_data($result->data, $site);
     }
     else {
       $resolution = variable_get('ecenter_network_site_data_resolution', 50);
@@ -1115,11 +1121,15 @@ function ecenter_network_parse_ads_response($response) {
   return $parsed_data;
 }
 
-function ecenter_network_parse_site_data($data) {
-  $parsed_data = array();
+function ecenter_network_parse_site_data($data, $site) {
+  $parsed_data = array(
+    'source' => $site,
+  );
   foreach (array('direct_traceroute' => 'forward', 'reverse_traceroute' => 'reverse') as $key => $direction) {
     foreach ($data[$key] as $hub => $results) {
-      $parsed_data[$hub][$direction] = $results['snmp'];
+      $parsed_data['destinations'][$hub][$direction]['data'] = $results['snmp'];
+      $parsed_data['destinations'][$hub][$direction]['themed'] = 
+        theme('ecenter_network_site_centric_snmp_data', $results['snmp'], $direction);
     }
   }
   return $parsed_data;

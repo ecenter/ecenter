@@ -45,7 +45,7 @@ function template_preprocess_ecenter_dashboard(&$vars) {
 
     $vars['main_content'] = array(
       'site_view' => array(
-        'content' => '',
+        'content' => '<p><strong>Warning</strong> Site centric view currently uses a static query for June 22-23 from NERSC for demonstration purposes.</p>',
       ),
       'activity' => array(
         'subject' => t('Site activity'),

@@ -653,6 +653,10 @@ $.fn.ecenter_network.plugins.end_to_end = function() {
   });
 }
 
+
+$.fn.ecenter_network.plugins.ads = function() {
+}
+
 /**
  * Default options: Define default plugins to call
  */
@@ -662,7 +666,8 @@ $.fn.ecenter_network.defaults = {
     $.fn.ecenter_network.plugins.ajax,
     $.fn.ecenter_network.plugins.map,
     $.fn.ecenter_network.plugins.date,
-    $.fn.ecenter_network.plugins.chart
+    $.fn.ecenter_network.plugins.chart,
+    $.fn.ecenter_network.plugins.ads
   ],
   // Drawing plugins
   draw_plugins : [

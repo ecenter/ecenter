@@ -415,7 +415,9 @@ function _ecenter_network_select_form() {
   return $form;
 }
 
-// Form snippet for ADS
+/**
+ * Form snippet for ADS
+ */
 function ecenter_network_ads_form() {
   extract(_ecenter_network_extract_query());
 
@@ -423,25 +425,38 @@ function ecenter_network_ads_form() {
     '#prefix' => '<div id="ads-settings-wrapper">',
     '#suffix' => '</div>',
   );
- 
+
   $form['ads_wrapper']['ads'] = array(
     '#id' => 'ads',
     '#name' => 'ads',
     '#type' => 'checkbox',
     '#title' => 'Use anomaly detection (experimental)',
     '#value' => (!empty($ads)) ? TRUE : FALSE,
+    '#weight' => 0,
+  );
+
+  $form['ads_wrapper']['ads_submit'] = array(
+    '#type' => 'submit',
+    '#id' => 'ads-submit',
+    '#name' => 'ads-submit',
+    '#value' => t('Detect anomalies'),
+    '#weight' => 5,
   );
 
   $form['ads_wrapper']['ads_settings'] = array(
+    '#id' => 'ads-settings-fieldset',
     '#prefix' => '<div id="ads-settings">',
     '#suffix' => '</div>',
     '#type' => 'fieldset',
     '#title' => t('Advanced detection settings'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
+    '#weight' => 10,
   );
 
   $form['ads_wrapper']['ads_settings']['algorithm'] = array(
+    '#id' => 'algorithm',
+    '#name' => 'algorithm',
     '#title' => t('Algorithm'),
     '#type' => 'select',
     '#options' => array(
@@ -449,37 +464,51 @@ function ecenter_network_ads_form() {
       'apd' => t('apd'),
     ),
     '#value' => (!empty($algorithm)) ? $algorithm : 'spd',
+    '#weight' => 1,
   );
 
   $form['ads_wrapper']['ads_settings']['sensitivity'] = array(
+    '#id' => 'sensitivity',
+    '#name' => 'sensitivity',
     '#title' => t('Sensitivity'),
     '#type' => 'textfield',
     '#size' => 5,
     '#id' => 'sensitivity',
     '#name' => 'sensitivity',
     '#value' => (!empty($sensitivity)) ? $sensitivity : 2,
+    '#weight' => 2,
   );
 
   $form['ads_wrapper']['ads_settings']['elevation1'] = array(
+    '#id' => 'elevation1',
+    '#name' => 'elevation1',
     '#title' => t('Elevation 1'),
     '#type' => 'textfield',
     '#size' => 5,
     '#value' => (!empty($elevation1)) ? $elevation1 : 0.2,
+    '#weight' => 3,
   );
 
   $form['ads_wrapper']['ads_settings']['elevation2'] = array(
+    '#id' => 'elevation2',
+    '#name' => 'elevation2',
     '#title' => t('Elevation 2'),
     '#type' => 'textfield',
     '#size' => 5,
     '#value' => (!empty($elevation2)) ? $elevation2 : 0.4,
+    '#weight' => 4,
   );
 
   $form['ads_wrapper']['ads_settings']['swc'] = array(
+    '#id' => 'swc',
+    '#name' => 'swc',
     '#title' => t('swc'),
     '#type' => 'textfield',
     '#size' => 5,
     '#value' => (!empty($swc)) ? $swc : 20,
+    '#weight' => 5,
   );
+
   return $form;
 }
 
@@ -1754,14 +1783,16 @@ function _ecenter_network_extract_query() {
       'end' => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['end']['date']),
       'timezone' => $_REQUEST['network_wrapper']['query']['timezone_name'],
 
-      'ads' => $_REQUEST['ads_wrapper']['ads'],
-      'algorithm' => $_REQUEST['ads_wrapper']['ads_settings']['algorithm'],
-      'detector_type' => $_REQUEST['ads_wrapper']['ads_settings']['detector_type'],
-      'sensitivity' => $_REQUEST['ads_wrapper']['ads_settings']['sensitivity'],
-      'elevation1' => $_REQUEST['ads_wrapper']['ads_settings']['elevation1'],
-      'elevation2' => $_REQUEST['ads_wrapper']['ads_settings']['elevation2'],
-      'swc' => $_REQUEST['ads_wrapper']['ads_settings']['swc'],
+      'ads' => $_REQUEST['ads'],
+      'algorithm' => $_REQUEST['algorithm'],
+      'detector_type' => $_REQUEST['detector_type'],
+      'sensitivity' => $_REQUEST['sensitivity'],
+      'elevation1' => $_REQUEST['elevation1'],
+      'elevation2' => $_REQUEST['elevation2'],
+      'swc' => $_REQUEST['swc'],
     );
+
+    dpm('oh hai');
   }
   else {
     foreach (array('src', 'dst', 'start', 'end', 'timezone', 'ads', 'algorithm', 'detector_type', 'sensitivity', 'elevation1', 'elevation2', 'swc') as $key) {
@@ -1772,6 +1803,9 @@ function _ecenter_network_extract_query() {
   if (!empty($vars['ads']) && empty($vars['algorithm'])) {
     $vars['algorithm'] = 'spd';
   }
+
+  dpm($_REQUEST);
+  dpm($vars);
 
   return $vars;
 }

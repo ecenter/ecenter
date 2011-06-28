@@ -419,8 +419,6 @@ function _ecenter_network_select_form() {
 function ecenter_network_ads_form() {
   extract(_ecenter_network_extract_query());
 
-  dpm(get_defined_vars());
-
   $form['ads_wrapper'] = array(
     '#prefix' => '<div id="ads-settings-wrapper">',
     '#suffix' => '</div>',
@@ -428,6 +426,7 @@ function ecenter_network_ads_form() {
  
   $form['ads_wrapper']['ads'] = array(
     '#id' => 'ads',
+    '#name' => 'ads',
     '#type' => 'checkbox',
     '#title' => 'Use anomaly detection (experimental)',
     '#value' => (!empty($ads)) ? TRUE : FALSE,
@@ -456,6 +455,8 @@ function ecenter_network_ads_form() {
     '#title' => t('Sensitivity'),
     '#type' => 'textfield',
     '#size' => 5,
+    '#id' => 'sensitivity',
+    '#name' => 'sensitivity',
     '#value' => (!empty($sensitivity)) ? $sensitivity : 2,
   );
 
@@ -570,6 +571,7 @@ function ecenter_network_select_form(&$form_state) {
         $data['drs']['traceroute']['traceroute_max'])), 'setting');
 
       if ($ads) {
+        dpm('ads enabled');
         $data['ads'] = ecenter_network_get_ads_data($src, $dst, $start, $end, $algorithm, $detector_type, $sensitivity, $elevation1, $elevation2, $swc);
       }
 
@@ -1752,13 +1754,13 @@ function _ecenter_network_extract_query() {
       'end' => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['end']['date']),
       'timezone' => $_REQUEST['network_wrapper']['query']['timezone_name'],
 
-      'ads' => $_REQUEST['ads_wrapper']['query']['ads_wrapper']['ads'],
-      'algorithm' => $_REQUEST['ads_wrapper']['query']['ads_wrapper']['ads_settings']['algorithm'],
-      'detector_type' => $_REQUEST['ads_wrapper']['query']['ads_wrapper']['ads_settings']['detector_type'],
-      'sensitivity' => $_REQUEST['ads_wrapper']['query']['ads_wrapper']['ads_settings']['sensitivity'],
-      'elevation1' => $_REQUEST['ads_wrapper']['query']['ads_wrapper']['ads_settings']['elevation1'],
-      'elevation2' => $_REQUEST['ads_wrapper']['query']['ads_wrapper']['ads_settings']['elevation2'],
-      'swc' => $_REQUEST['ads_wrapper']['query']['ads_wrapper']['ads_settings']['swc'],
+      'ads' => $_REQUEST['ads_wrapper']['ads'],
+      'algorithm' => $_REQUEST['ads_wrapper']['ads_settings']['algorithm'],
+      'detector_type' => $_REQUEST['ads_wrapper']['ads_settings']['detector_type'],
+      'sensitivity' => $_REQUEST['ads_wrapper']['ads_settings']['sensitivity'],
+      'elevation1' => $_REQUEST['ads_wrapper']['ads_settings']['elevation1'],
+      'elevation2' => $_REQUEST['ads_wrapper']['ads_settings']['elevation2'],
+      'swc' => $_REQUEST['ads_wrapper']['ads_settings']['swc'],
     );
   }
   else {

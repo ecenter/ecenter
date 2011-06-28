@@ -62,8 +62,11 @@ Drupal.behaviors.siteView = function(context) {
         'stroke' : '#00cc00'
       });
     var text = paper
-      .text( (flip * text_offset) + destinationX, destinationY, destination.hub)
-      //.attr({'text-anchor' : 'start'});
+      .text((flip * text_offset) + destinationX, destinationY, destination.hub)
+      .attr({
+        'font-weight' : 'bold',
+        'font-size' : '13pt'
+      });
 
     if (flip == 1) {
       text.attr({'text-anchor' : 'start'});
@@ -93,21 +96,29 @@ Drupal.behaviors.siteView = function(context) {
       node.attr({'stroke': '#ff7700'});
       text.attr({'fill': '#ff7700'});
     }
-    
+ 
     var node_box = node.getBBox();
     var text_box = text.getBBox();
+
+    var bbox_width = text_box.width + node_box.width + text_offset;
+
+    if (flip == 1) {
+      var bbox_x = node_box.x - (stroke_width / 2);
+    } else {
+      var bbox_x = text_box.x - (stroke_width / 2); 
+    }
 
     // Hover bounding box
     var rect = paper
       .rect(
-        node_box.x - (stroke_width / 2), 
+        bbox_x,
         node_box.y - (stroke_width / 2), 
-        text_box.x + text_box.width + stroke_width - node_box.x, 
+        bbox_width,
         node_box.height + stroke_width
       )
       .attr({
         'stroke-width' : 0,
-        'fill': '#000000', 
+        'fill': '#ffffff', 
         'fill-opacity': 0.3,
       })
       .hover(function() {
@@ -117,35 +128,37 @@ Drupal.behaviors.siteView = function(context) {
         }
       );
 
-    var content = '';
+    var content = null;
     if (destination.forward != undefined && destination.reverse != undefined) {
-      content = destination.forward.themed + destination.reverse.themed;
+      var content = destination.forward.themed + destination.reverse.themed;
     }
     else if (destination.forward != undefined) {
-      content = destination.forward.themed;
+      var content = destination.forward.themed;
     }
-    else {
-      content = destination.reverse.themed;
+    else if (destination.reverse != undefined) {
+      var content = destination.reverse.themed;
     }
 
-    $(rect[0]).qtip({
-      content: content,
-      show: 'mouseover',
-      hide: {
-        fixed: true
-      },
-      position: {
-        corner: {
-          tooltip: 'topLeft'
+    if (content) {
+      $(rect[0]).qtip({
+        content: content,
+        show: 'mouseover',
+        hide: {
+          fixed: true
         },
-        adjust: {
-          x: 2 * text_box.width + 10
+        position: {
+          corner: {
+            tooltip: 'topLeft'
+          },
+          adjust: {
+            x: 2 * text_box.width
+          }
+        },
+        style: {
+          background: 'rgba(255, 255, 255, 0.75)'
         }
-      },
-      style: {
-        background: 'rgba(255, 255, 255, 0.6)'
-      }
-    });
+      });
+    }
 
     var set = paper.set()
       .push(node)
@@ -159,14 +172,19 @@ Drupal.behaviors.siteView = function(context) {
 
   var text = paper
     .text(cx, cy, data.source)
+    .attr({
+      'font-size' : '15pt',
+      'font-weight' : 'bold'
+    });
+
   var text_box = text.getBBox();
 
   var node = paper
-    .circle(cx, cy, text_box.width / 1.4)
+    .circle(cx, cy, text_box.width / 1.3)
     .attr({
-      'fill' : '#ffffff',
+      'fill' : '#dddddd',
       'stroke-width' : stroke_width,
-      'stroke' : '#0000aa',
+      'stroke' : '#999999',
     });
 
   source.push(node);

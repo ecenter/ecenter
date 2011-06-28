@@ -626,10 +626,14 @@ function theme_ecenter_network_site_centric_snmp_data($row, $direction) {
   
   $table = array();
   foreach ($row as $measurement => $values) {
+    // @TODO add threshold checking
     $table[] = array(
-      t(ucfirst($measurement)),
-      sprintf('%.2f', $values['value']),
-      $values['ip'],
+      'class' => 'test',
+      'data' => array(
+        t(ucfirst($measurement)),
+        sprintf('%.2f', $values['value']),
+        $values['ip'],
+      ),
     );
   }
   

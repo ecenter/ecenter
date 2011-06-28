@@ -432,12 +432,6 @@ function _ecenter_network_select_form() {
     '#default_value' => (!empty($algorithm)) ? $algorithm : 'spd',
   );
 
-  /*$form['network_wrapper']['query']['ads_wrapper']['ads_settings']['detector_type'] = array(
-    '#title' => t('Detector type'),
-    '#type' => 'textfield',
-    '#size' => 5,
-  );*/
-
   $form['network_wrapper']['query']['ads_wrapper']['ads_settings']['sensitivity'] = array(
     '#title' => t('Sensitivity'),
     '#type' => 'textfield',
@@ -966,13 +960,13 @@ function ecenter_network_get_node($ip) {
 /**
  * Parse Data Retrieval Sevice data
  *
- * Compatible with 3.0 version of DRS. Several portions of the parser are
- * computationally
+ * Compatible with 3.4.x version of DRS. Several portions of the parser are
+ * computationally expensive (a day's worth of data takes 200-300 ms to parse).
  *
  * @param $response
  *   A response object from the E-center webservice.
  * @return
- *   A big, complicated array of E-center data
+ *   An array of parsed data
  */
 function ecenter_network_parse_response($response) {
   $parsed_data = array();
@@ -1089,6 +1083,16 @@ function ecenter_network_parse_response($response) {
   return $parsed_data;
 }
 
+/**
+ * Parse Anomaly Detection Service data
+ *
+ * Compatible with 3.4.x version of ADS.
+ *
+ * @param $response
+ *   A response object from the ADS
+ * @return
+ *   An array of parsed data
+ */
 function ecenter_network_parse_ads_response($response) {
   $parsed_data = array();
   $data = $response['response'];
@@ -1113,6 +1117,16 @@ function ecenter_network_parse_ads_response($response) {
   return $parsed_data;
 }
 
+/**
+ * Parse 'site centric view' data
+ *
+ * Compatible with 3.4.x version of DRS. 
+ *
+ * @param $response
+ *   A response object from the DRS
+ * @return
+ *   An array of parsed data
+ */
 function ecenter_network_parse_site_data($data, $site) {
   $parsed_data = array(
     'source' => $site,

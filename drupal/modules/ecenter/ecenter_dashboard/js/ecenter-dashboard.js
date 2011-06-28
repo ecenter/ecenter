@@ -3,10 +3,10 @@
 Drupal.behaviors.siteView = function(context) {
   var data = Drupal.settings.ecenterNetwork.siteData;
 
-  if (data.destinations == undefined) {
+  if (data == undefined || data.destinations == undefined) {
     return;
   }
- 
+
   var node_radius = 9;
   var stroke_width = 5;
   var width = 350;
@@ -14,10 +14,10 @@ Drupal.behaviors.siteView = function(context) {
   var cx = width / 2;
   var cy = height / 2;
   var text_offset = node_radius + stroke_width + 2;
-  var radius = (width > height) ? cy - node_radius - (stroke_width / 2) 
+  var radius = (width > height) ? cy - node_radius - (stroke_width / 2)
     : cx - node_radius - (stroke_width / 2);
 
-  var paper = Raphael('dashboard-site_view', width, height); 
+  var paper = Raphael('dashboard-site_view', width, height);
 
   // Loop through destinations to find length
   // Object.keys would work if supported by IE versions < 9
@@ -30,9 +30,9 @@ Drupal.behaviors.siteView = function(context) {
     }
   }
 
-  var increment = 2 * (Math.PI / destinations.length);  
+  var increment = 2 * (Math.PI / destinations.length);
   var angle = 0;
-  
+
   var destination_sets = [];
 
   // Loop through destinations again and draw
@@ -49,7 +49,6 @@ Drupal.behaviors.siteView = function(context) {
         'stroke': '#cccccc'
       });
 
-    console.log(angle);
     var flip = 1;
     if (-1 * angle > Math.PI) {
       var flip = -1;

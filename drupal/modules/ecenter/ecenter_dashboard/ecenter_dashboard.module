@@ -34,10 +34,18 @@ function ecenter_dashboard_theme() {
 function template_preprocess_ecenter_dashboard(&$vars) {
   global $user;
 
+  drupal_add_js(libraries_get_path('raphael') .'/raphael-min.js');
+  drupal_add_js(libraries_get_path('qtip') .'/jquery.qtip.js');
+  drupal_add_js(drupal_get_path('module', 'ecenter_dashboard') .'/js/ecenter-dashboard.js');
+
   if ($user->uid) {
+    // Calculate proper date range
+    $data = ecenter_network_get_site_centric_data('NERSC', '2011-06-22 00:00:00', '2011-06-23 00:00:00');
+    drupal_add_js(array('ecenterNetwork' => array('siteData' => $data)), 'setting');
+
     $vars['main_content'] = array(
-      'placeholder' => array(
-        'content' => 'Placeholder for site-centric view',
+      'site_view' => array(
+        'content' => '',
       ),
       'activity' => array(
         'subject' => t('Site activity'),
@@ -64,9 +72,6 @@ function template_preprocess_ecenter_dashboard(&$vars) {
   }
   else {
     $vars['main_content'] = array(
-      'placeholder' => array(
-        'content' => 'Placeholder for welcome text, video, etc',
-      ),
       'activity' => array(
         'subject' => t('Site activity'),
         'description' => t('All public activity'),

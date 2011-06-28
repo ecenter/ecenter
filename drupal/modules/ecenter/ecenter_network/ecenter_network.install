@@ -12,6 +12,8 @@ function ecenter_network_schema() {
   $schema['cache_ecenter_hops']['description'] = 'Cache table for storing hops';
   $schema['cache_ecenter_nodes'] = drupal_get_schema_unprocessed('system', 'cache');
   $schema['cache_ecenter_nodes']['description'] = 'Cache table for storing nodes';
+  $schema['cache_ecenter_site_data'] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_ecenter_site_data']['description'] = 'Cache table for storing site centric data results';
 
   $schema['ecenter_result_archive'] = array(
     'description' => 'E-Center data result archive',
@@ -47,4 +49,29 @@ function ecenter_network_install() {
  */
 function ecenter_network_uninstall() {
   drupal_uninstall_schema('ecenter_network');
+  variable_del('ecenter_network_ads_basedir');
+  variable_del('ecenter_network_ads_host');
+  variable_del('ecenter_network_ads_port');
+  variable_del('ecenter_network_ads_status_timeout');
+  variable_del('ecenter_network_ads_timeout');
+  variable_del('ecenter_network_ads_resolution');
+
+  variable_del('ecenter_network_drs_basedir');
+  variable_del('ecenter_network_drs_host');
+  variable_del('ecenter_network_drs_port');
+  variable_del('ecenter_network_drs_status_timeout');
+  variable_del('ecenter_network_drs_timeout');
+  variable_del('ecenter_network_ads_resolution');
+
+  variable_del('ecenter_network_data_cache_enabled');
+  variable_del('ecenter_network_data_cache_ttl');
+
+  variable_del('ecenter_network_hop_cache_enabled');
+  variable_del('ecenter_network_hop_cache_ttl');
+
+  variable_del('ecenter_network_node_cache_enabled');
+  variable_del('ecenter_network_node_cache_ttl');
+
+  variable_del('ecenter_network_site_centric_cache_enabled');
+  variable_del('ecenter_network_site_centric_cache_ttl');
 }

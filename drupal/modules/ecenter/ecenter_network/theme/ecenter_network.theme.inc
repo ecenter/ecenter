@@ -621,6 +621,22 @@ function theme_ecenter_network_health_row($metadata_count = 0, $cached_data_coun
   return theme('table', array(), $rows, array('class' => $class));
 }
 
+function theme_ecenter_network_site_centric_snmp_data($row, $direction) {
+  $headers = array(t('Measurement'), t('Value'), t('Interface'));
+  
+  $table = array();
+  foreach ($row as $measurement => $values) {
+    $table[] = array(
+      t(ucfirst($measurement)),
+      sprintf('%.2f', $values['value']),
+      $values['ip'],
+    );
+  }
+  
+  return '<h2>'. t(ucfirst($direction)) .'</h2>'. 
+    theme('jqplot_table', $headers, $table);
+}
+
 /**
  * Get plot options template
  */

@@ -1552,10 +1552,7 @@ a {
   .row {
     margin-bottom: 3em;
   }
-  .row-placeholder .content {
-    height: 250px;
-    padding: 10px;
-    background-color: @color_grey_80;
+  #dashboard-site_view .content {
     margin-bottom: 1.5em;
   }
 
@@ -1573,7 +1570,7 @@ a {
     font-weight: bold;
   }
 
-  .row-tools, .row-login {
+  #dashboard-tools, #dashboard-login {
     .shadow(2px; 2px; 4px; @color_grey_73);
     font-size: @font_size_14;
     font-weight: bold;
@@ -1589,7 +1586,7 @@ a {
     }
   }
 
-  .row-login {
+  #dashboard-login {
     label {
       display: inline;
       margin-right: 10px;
@@ -1623,7 +1620,7 @@ a {
   }
 }
 /* }}} */
-/* BeautyTips {{{ */
+/* BeautyTips and qTips {{{ */
 #content-body {
   .bt-wrapper {
     .bt-content {
@@ -1637,6 +1634,30 @@ a {
         margin: 0;
         font-size: 1.15em;
       }
+    }
+  }
+}
+.qtip {
+  .shadow(2px; 2px; 5px; @color_grey_60);
+  font-size: 12px;
+  .qtip-contentWrapper {
+    border: 1px solid @color_grey_60;
+  }
+  h2 {
+    font-size: 14px;
+    border-bottom: 1px solid @color_grey_80;
+    margin-bottom: 6px;
+  }
+  table {
+    margin-bottom: 12px;
+    th {
+      padding: 0 6px 0 0;
+      border-bottom: 1px solid @color_grey_80;
+      border-right: 10px solid rgba(255, 255, 255, 0);
+    }
+    td {
+      padding: 2px 6px 2px 0;
+      border-right: 10px solid rgba(255, 255, 255, 0);
     }
   }
 }

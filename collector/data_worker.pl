@@ -297,7 +297,7 @@ sub _get_remote_data  {
 	                                             requested_start => $request->{start},
 	                                             requested_time => ($request->{end}- $request->{start}), 
 	                                             response => $t_delta, 
-						     is_data => 1} ) 
+						     is_data => 0} )
         if $EVAL_ERROR || !@{$result->{data}};
     $logger->info("..Done processing data...");   
     return encode_json $result;

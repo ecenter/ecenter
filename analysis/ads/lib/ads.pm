@@ -12,7 +12,7 @@ use Ecenter::ADS::Detector::APD;
 use POSIX qw(strftime);
 use Params::Validate qw(:all);
 use Dancer::Logger;
-
+use Dancer::Plugin::DBIC qw(schema);
 use Log::Log4perl qw(:easy); 
  
 use JSON::XS qw(encode_json decode_json);
@@ -72,12 +72,13 @@ sub detect_anomaly {
 				     swc         => {type => SCALAR, regex => qr/^\d+$/i,     default => 20, optional => 1},
 				   });
     my $data = {};
+    my $drs;
     if($req_params{data}) {
         $data  = decode_json $req_params{data};
     } else {
         my %request = map { $_ => $req_params{$_}} grep($req_params{$_},  @DATA_ARGS); 
 	eval {
-            my $drs =  Ecenter::DRS::DataClient->new({%request, url => config->{drs_url}, data_type => $req_params{data_type}});
+            $drs =  Ecenter::DRS::DataClient->new({%request, url => config->{drs_url}, data_type => $req_params{data_type}});
             $data =  $drs->get_data;
 	};
 	if(!($data && ref $data eq ref {} && %{$data}) || $EVAL_ERROR) {
@@ -90,6 +91,7 @@ sub detect_anomaly {
             $logger->error("Data is not supplied or supplied but empty or  malformed"); 
             return { status => 'error', error => "Data is not supplied or supplied but empty or  malformed"};
     }
+    map {delete $req_params{$_} if $req_params{$_} } qw/start end/;
     my $ads = Ecenter::ADS::Detector::APD->new({ data => $data, %req_params });
     my $results = {};
     eval {
@@ -97,6 +99,44 @@ sub detect_anomaly {
     };
     if(!$ads->results || $EVAL_ERROR) {
        error "ADS failed with: $EVAL_ERROR";
+    }else {
+        my $anomalies = $ads->results;
+        foreach my  $src_ip (keys %{$anomalies}) {
+            foreach my $dst_ip (keys %{$anomalies->{$src_ip}}) {
+	        next if ref $anomalies->{$src_ip}{$dst_ip}{status} eq ref 'OK' && 
+		        $anomalies->{$src_ip}{$dst_ip}{status} eq 'OK';
+	        $logger->debug("Creating... " , sub { Dumper($anomalies->{$src_ip}{$dst_ip}) } );
+	        eval {
+		    my $anomaly = schema('dbix')->resultset('Anomaly')->find_or_create({ metaid     =>  $anomalies->{$src_ip}{$dst_ip}{metaid},
+		                                                                	 elevation1 =>  $anomalies->{$src_ip}{$dst_ip}{elevation1},
+									        	 elevation2 =>  $anomalies->{$src_ip}{$dst_ip}{elevation2},
+									        	 swc    =>  $anomalies->{$src_ip}{$dst_ip}{swc},
+									        	 algo  => $req_params{algo},
+									        	 start_time   =>   $ads->start,
+									        	 end_time	 =>   $ads->end,
+											 resolution =>  $drs->resolution
+										       },
+									               {key => 'metaid_algo_when'});
+		    foreach my $type (qw/warning critical/) {								
+			foreach my $time (sort {$a <=> $b} keys %{$anomalies->{$src_ip}{$dst_ip}{status}{$type}} ) {
+		            my $data_table = strftime "%Y%m", localtime($time);
+			    
+		            schema('dbix')->resultset("AnomalyData$data_table")
+			                      ->find_or_create({anomaly        => $anomaly->anomaly, 
+					                	anomaly_status => $type,
+								anomaly_type   => $anomalies->{$src_ip}{$dst_ip}{status}{$type}{$time}{anomaly_type},
+								timestamp      => $time,
+								value          => $anomalies->{$src_ip}{$dst_ip}{status}{$type}{$time}{value},
+							       },
+							       { key => 'anomaly_time'} );
+			}
+		    }
+		};
+		if($EVAL_ERROR) {
+		    $logger->error("DB failed::$EVAL_ERROR");
+		}								    
+            }
+        }
     }
     return $ads->results;
 }

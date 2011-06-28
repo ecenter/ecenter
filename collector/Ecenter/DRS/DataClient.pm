@@ -100,7 +100,7 @@ sub get_data {
         unless   $self->url; 
     my $url_params = $self->url . '/data.json?'; 
     foreach my $key (qw/data_type start end timeout resolution src_hub src_ip dst_hub dst_ip/) {
-       $url_params .=   ($url_params  =~ /\?$/?$key . '=' . $self->$key:'&' . $key . '='. $self->$key)
+        $url_params .=   ($url_params  =~ /\?$/?$key . '=' . $self->$key:'&' . $key . '='. $self->$key)
             if $self->$key;
     }
     $self->send_request($url_params);

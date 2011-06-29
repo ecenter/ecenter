@@ -123,10 +123,17 @@ process data for the
 after 'process_data' => sub {
     my ( $self,  $args ) = @_;
     map {$self->$_($args->{$_}) if $self->can($_)}  keys %$args if $args && ref $args eq ref {};
-    my $data_ip = $self->parse_data->{$ANA_METRIC->{$self->data_type}};
+    unless( $self->data || $self->parsed_data) {
+       $self->logger->logdie("NO data was supplied, aborting");
+    }
+    $self->parse_data if  !$self->parsed_data;
+    unless( $self->parsed_data) {
+       $self->logger->logdie("NO data was found, aborting");
+    }
+    my $data_ip = $self->parsed_data->{$ANA_METRIC->{$self->data_type}};
     foreach my $key (keys %$data_ip) {
 	my @data = map {$_->[1]} @{$data_ip->{$key}};
-	my %metadata =   map {$_ => $self->parse_data->{metadata}{$key}{$_}} qw/src_hub dst_hub metaid/;
+	my %metadata =   map {$_ => $self->parsed_data->{metadata}{$key}{$_}} qw/src_hub dst_hub metaid/;
 	my $data_size = scalar @data;
 	next unless $data_size;
 

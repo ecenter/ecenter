@@ -14,80 +14,42 @@ function ecenter_core_ctools_plugin_api() {
 }
 
 /**
- * Implementation of hook_homebox().
+ * Implementation of hook_imagecache_default_presets().
  */
-function ecenter_core_homebox() {
-  $homeboxes = array();
-
-  $homeboxes['dashboard'] = array (
-    'regions' => 3,
-    'cache' => 0,
-    'color' => 0,
-    'colors' => 
-    array (
-      0 => '#E4F0F8',
-      1 => '#E4F0F8',
-      2 => '#E4F0F8',
-      3 => '#E4F0F8',
-      4 => '#E4F0F8',
-      5 => '#E4F0F8',
-    ),
-    'blocks' => 
-    array (
-      'comment_0' => 
-      array (
-        'module' => 'comment',
-        'delta' => '0',
-        'region' => 2,
-        'movable' => 1,
-        'status' => 1,
-        'open' => 1,
-        'closable' => 1,
-        'title' => '',
-        'weight' => -11,
-      ),
-      'views_ecenter_blog-block_news' => 
-      array (
-        'module' => 'views',
-        'delta' => 'ecenter_blog-block_news',
-        'region' => 1,
-        'movable' => 1,
-        'status' => 1,
-        'open' => 1,
-        'closable' => 1,
-        'title' => '',
-        'weight' => -11,
-      ),
-      'search_0' => 
-      array (
-        'module' => 'search',
-        'delta' => '0',
-        'region' => 2,
-        'movable' => 1,
-        'status' => 1,
-        'open' => 1,
-        'closable' => 1,
-        'title' => '',
-        'weight' => -10,
+function ecenter_core_imagecache_default_presets() {
+  $items = array(
+    'ecenter_content_narrow' => array(
+      'presetname' => 'ecenter_content_narrow',
+      'actions' => array(
+        '0' => array(
+          'weight' => '0',
+          'module' => 'imagecache',
+          'action' => 'imagecache_scale',
+          'data' => array(
+            'width' => '560',
+            'height' => '',
+            'upscale' => 0,
+          ),
+        ),
       ),
     ),
-    'widths' => 
-    array (
-    ),
-    'title' => 'Dashboard',
-    'path' => 'dashboard',
-    'menu' => 0,
-    'enabled' => 1,
-    'full' => 0,
-    'custom' => 0,
-    'roles' => 
-    array (
-      0 => 'authenticated user',
+    'ecenter_thumbnail' => array(
+      'presetname' => 'ecenter_thumbnail',
+      'actions' => array(
+        '0' => array(
+          'weight' => '0',
+          'module' => 'imagecache',
+          'action' => 'imagecache_scale',
+          'data' => array(
+            'width' => '200',
+            'height' => '',
+            'upscale' => 0,
+          ),
+        ),
+      ),
     ),
   );
-
-
-  return $homeboxes;
+  return $items;
 }
 
 /**
@@ -99,6 +61,17 @@ function ecenter_core_node_info() {
       'name' => t('Page'),
       'module' => 'features',
       'description' => t('A static page, typically used for informational purposes.'),
+      'has_title' => '1',
+      'title_label' => t('Title'),
+      'has_body' => '1',
+      'body_label' => t('Body'),
+      'min_word_count' => '0',
+      'help' => '',
+    ),
+    'snippet' => array(
+      'name' => t('Snippet'),
+      'module' => 'features',
+      'description' => t('A snippet of HTML to be used in views or retrieved in code.'),
       'has_title' => '1',
       'title_label' => t('Title'),
       'has_body' => '1',

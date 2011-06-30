@@ -217,7 +217,7 @@
 }
 /* }}} */
 
-// Common styles {{{
+// Body {{{
 body {
   font-family: @font_body;
   font-size: 18px;
@@ -225,6 +225,8 @@ body {
   color: @color_grey_20;
   background-color: @color_grey_33;
 }
+// }}}
+// Common element styles {{{
 
 // Links
 a {
@@ -237,7 +239,7 @@ a {
 
 // Text styles
 p, blockquote {
-  margin-bottom: 1.5em;
+  margin-bottom: 27px;
 }
 em {
   font-style: italic;
@@ -493,7 +495,7 @@ form {
   }
   /* }}} */
   .form-item { // {{{
-    margin-bottom: 1.5em;
+    margin-bottom: 27px;
     .description {
       .font_size_12;
       margin-bottom: 0;
@@ -508,7 +510,7 @@ form {
     }
   } // }}}
   .form-radios { // {{{
-    margin-bottom: 1.5em;
+    margin-bottom: 27px;
     .form-item {
       margin-bottom: 0;
     }
@@ -664,7 +666,7 @@ form {
   }
 }
 // }}}
-// E-Center login block {{{
+// Login block {{{
 #block-ecenter_core-login { 
   float: right;
   font-size: 13px;
@@ -693,7 +695,7 @@ form {
   }
 } 
 // }}}
-// E-Center sponsors block {{{
+// Sponsors block {{{
 #block-ecenter_core-sponsors { 
   li {
     .box;
@@ -998,7 +1000,7 @@ form {
     }
   } // }}}
   #results-title { // {{{
-    margin-bottom: 1.5em;
+    margin-bottom: 27px;
     border-bottom: 2px solid @color_grey_80;
     h2 {
       font-weight: bold;
@@ -1062,7 +1064,7 @@ form {
     width: 550px;
     margin-right: 30px;
     margin-top: 25px;
-    margin-bottom: 1.5em;
+    margin-bottom: 27px;
     .data-tables {
       display: none;
       margin-bottom: 55px;
@@ -1084,8 +1086,8 @@ form {
     }
   } // }}}
   #end-to-end-wrapper { // {{{
-    margin: 1.5em 0;
-    padding-top: 1.5em;
+    margin: 27px 0;
+    padding-top: 27px;
     border-top: 1px solid @color_grey_73;
     #end-to-end-results { 
       .box; 
@@ -1208,9 +1210,9 @@ form {
   }
 }
 // }}}
-/* Nodes {{{ */
+// Nodes {{{
 .node {
-  margin-bottom: 1.5em;
+  margin-bottom: 27px;
   .picture {
     .box;
     line-height: 1;
@@ -1224,8 +1226,8 @@ form {
     }
   }
   .field-field-blog-post-authors {
-    margin-top: -1.5em;
-    margin-bottom: 1.5em;
+    margin-top: -27px;
+    margin-bottom: 27px;
   }
   .field-field-issue-query {
     font-size: 13px;
@@ -1244,12 +1246,73 @@ form {
   font-weight: bold;
   color: #555;
 }
-/* }}} */
+// }}}
 /* Node terms {{{ */
 .terms {
-  margin-bottom: 1.5em;
+  margin-bottom: 27px;
 }
 /* }}} */
+// Node editing {{{
+.node-edit {
+  #content {
+    width: auto;
+  }
+  .body-field-wrapper {
+    float: left;
+    width: 60%;
+    margin-right: 18px;
+  }
+  form {
+    .field-insert {
+      td {
+        background: @color_grey_93;
+        padding: 8px 12px 8px 0;
+        border-right: none;
+        border-left: none;
+        &.content-multiple-drag {
+          padding: 0 0 0 4px;
+        }
+      }
+      .form-item {
+        margin: 0;
+        font-size: 14px;
+      }
+      br {
+        display: none;
+      }
+      em {
+        margin-right: 8px;
+      }
+      .widget-edit {
+        .box;
+      
+      }
+      .widget-preview {
+        .box;
+        width: 60px;
+        margin-right: 9px;
+      }
+      .form-file {
+        .box;
+        width: 250px;
+        margin-right: 9px;
+      }
+      .insert-style-select {
+        display: block;
+        margin-bottom: 8px;
+      }
+      .form-submit {
+        float: left;
+        margin-right: 6px;
+        font-size: 13px;
+        line-height: 13px;
+        padding: 2px 5px;
+        
+      }
+    }
+  }
+}
+// }}}
 /* Comments {{{ */
 .comment-wrapper-title {
   border-bottom: 1px solid #999;
@@ -1276,7 +1339,7 @@ form {
     display: none;
   }
   .comment {
-    margin-bottom: 1.5em;
+    margin-bottom: 27px;
     border-bottom: 1px solid #ccc;
     .content {
       font-size: .875em;
@@ -1320,17 +1383,17 @@ form {
   }
 }
 /* }}} */
-/* oEmbed {{{ */
+// oEmbed {{{
 .oembed {
   float: none !important;
-  margin-bottom: 1.5em;
+  margin-bottom: 27px;
   background-color: transparent !important;
   border: none !important;
   .oembed-title {
     display: none !important;
   }
 }
-/* }}} */
+// }}}
 // Vertical tabs {{{
 .vertical-tabs { 
   font-size: 14px;
@@ -1346,7 +1409,7 @@ form {
     margin-bottom: 0;
   }
   .description {
-    margin-bottom: 1.5em;
+    margin-bottom: 27px;
   }
   .main-content {
     .box;
@@ -1361,7 +1424,7 @@ form {
     margin-bottom: 3em;
   }
   #dashboard-site_view .content {
-    margin-bottom: 1.5em;
+    margin-bottom: 27px;
   }
 
   .last-comment-wrapper, 
@@ -1411,7 +1474,7 @@ form {
     }
     .item-list {
       ul {
-        margin: 1.5em 0 1em 0;
+        margin: 27px 0 1em 0;
         float: left;
         li {
           font-size: 14px;
@@ -1477,8 +1540,8 @@ body.page-search {
       float: none;
      }
      .box-title {
-       font-size: 1.5em;
-       margin-bottom: 1.5em;
+       font-size: 27px;
+       margin-bottom: 27px;
        font-weight: bold;
      }
   }
@@ -1539,52 +1602,16 @@ td.jqplot-table-legend > div {
   }
 }
 /* }}} */
-/* Views {{{ */
+// Views {{{
 .view {
   .row, .views-row {
-    margin-bottom: 1.5em;
+    margin-bottom: 27px;
     h3 {
       margin-bottom: 1.25em;
       border-bottom: 1px solid @color_grey_73;
     }
   }
 }
-
-#views-exposed-form-ecenter-issues-page-1 {
-  .description {
-    .hide;
-  }
-}
-
-.view-ecenter-issues {
-  .row {
-    span {
-      font-size: 12px;
-    }
-  }
-  .query {
-    .box;
-    a {
-      .button;
-      margin-right: 10px;
-      font-size: 13px;
-      .round_corner(@intense_corner_radius; @intense_corner_radius; @intense_corner_radius; @intense_corner_radius;);
-    }
-  }
-  .body {
-    margin-bottom: 1.5em;
-  }
-  .user-picture {
-    .box;
-    clear: left;
-    margin-right: 6px;
-    img {
-      width: 35px;
-      height: 35px;
-    }
-  }
-}
-
 .view-ecenter-dashboard-activity {
   font-size: 15px;
   .node {
@@ -1628,9 +1655,9 @@ td.jqplot-table-legend > div {
     background-color: #eee;
   }
 }
-/* }}} */
-/* Tests {{{ */
-body.page-ecenter-tests #content {
+// }}}
+// Tests {{{
+body.page-ecenter-tests {
   table {
     font-size: 12px;
     width: 100%;
@@ -1652,9 +1679,9 @@ body.page-ecenter-tests #content {
     font-size: 12px;
   }
 }
-/* }}} */
-/* Network health {{{ */
-#content table.network-health {
+// }}}
+// Network health {{{
+table.network-health {
   td {
     background-color: @color_grey_93;
   }
@@ -1688,8 +1715,8 @@ body.page-ecenter-tests #content {
     }
   }
 }
-/* }}} */
-/* Table of contents {{{ */
+// }}}
+// Table of contents {{{
 #toc {
   float: right;
   width: 200px;
@@ -1721,8 +1748,8 @@ body.page-ecenter-tests #content {
   border-top: 1px solid @color_grey_87;
   margin-bottom: 2.5em;
 }
-/* }}} */
-/* Revision log block {{{ */
+// }}}
+// Revision log block {{{
 .block .view-ecenter-wiki-revisions {
   .view-content {
     font-size: 12px;
@@ -1738,75 +1765,9 @@ body.page-ecenter-tests #content {
     }
   }
 }
-/* }}} */
-/* Syntax highlighter {{{ */
+// }}}
+// Syntax highlighter {{{
 .syntaxhighlighter {
   width: auto !important;
 }
-/* }}} */
-
-
-.node-edit {
-  #content {
-    width: auto;
-  }
-  .body-field-wrapper {
-    float: left;
-    width: 60%;
-    margin-right: 18px;
-  }
-  form {
-    .field-insert {
-      td {
-        background: @color_grey_93;
-        padding: 8px 12px 8px 0;
-        border-right: none;
-        border-left: none;
-        &.content-multiple-drag {
-          padding: 0 0 0 4px;
-        }
-      }
-      .form-item {
-        margin: 0;
-        font-size: 14px;
-      }
-      br {
-        display: none;
-      }
-      em {
-        margin-right: 8px;
-      }
-      .widget-edit {
-        .box;
-      
-      }
-      .widget-preview {
-        .box;
-        width: 60px;
-        margin-right: 9px;
-      }
-      .form-file {
-        .box;
-        width: 250px;
-        margin-right: 9px;
-      }
-      .insert-style-select {
-        display: block;
-        margin-bottom: 8px;
-      }
-      .form-submit {
-        float: left;
-        margin-right: 6px;
-        font-size: 13px;
-        line-height: 13px;
-        padding: 2px 5px;
-        
-      }
-    }
-  }
-}
-
-
-
-
-
+// }}}

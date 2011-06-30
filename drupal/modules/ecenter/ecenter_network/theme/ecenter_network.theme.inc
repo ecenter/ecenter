@@ -105,6 +105,10 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
   $statistics_table = array();
   $data_tables = array();
 
+  if (!$data) {
+    return;
+  }
+
   foreach ($data as $test => $directions) {
     $start = 0;
     $end = 0;

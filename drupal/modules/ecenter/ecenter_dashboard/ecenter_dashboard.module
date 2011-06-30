@@ -9,7 +9,7 @@ function ecenter_dashboard_menu() {
   $items['ecenter-dashboard'] = array(
     'page callback' => 'theme',
     'page arguments' => array('ecenter_dashboard'),
-    'title' => 'Dashboard',
+    //'title' => 'Dashboard',
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
   );
@@ -36,16 +36,17 @@ function template_preprocess_ecenter_dashboard(&$vars) {
 
   drupal_add_js(libraries_get_path('raphael') .'/raphael-min.js');
   drupal_add_js(libraries_get_path('qtip') .'/jquery.qtip.js');
-  drupal_add_js(drupal_get_path('module', 'ecenter_dashboard') .'/js/ecenter-dashboard.js');
+  //drupal_add_js(drupal_get_path('module', 'ecenter_dashboard') .'/js/ecenter-dashboard.js');
 
   if ($user->uid) {
     // Calculate proper date range
-    $data = ecenter_network_get_site_centric_data('LBL', '2011-06-24 00:00:00', '2011-06-25 00:00:00');
-    drupal_add_js(array('ecenterNetwork' => array('siteData' => $data)), 'setting');
+    //$data = ecenter_network_get_site_centric_data('LBL', '2011-06-24 00:00:00', '2011-06-25 00:00:00');
+    //drupal_add_js(array('ecenterNetwork' => array('siteData' => $data)), 'setting');
 
     $vars['main_content'] = array(
       'site_view' => array(
-        'content' => '<p><strong>Warning:</strong> Site centric view currently uses a static query for June 24-25 from LBL for demonstration purposes.</p>',
+        //'content' => '<p><strong>Warning:</strong> Site centric view currently uses a static query for June 24-25 from LBL for demonstration purposes.</p>',
+        'content' => views_embed_view('ecenter_dashboard_carousel', 'block'),
       ),
       'activity' => array(
         'subject' => t('Site activity'),

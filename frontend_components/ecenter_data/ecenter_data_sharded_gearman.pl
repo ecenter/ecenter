@@ -27,19 +27,7 @@ use Log::Log4perl qw(:easy);
 use Gearman::Client;
 use NetAddr::IP::Util qw(inet_n2ad ipv6_n2x isIPv4);
 use JSON::XS qw(encode_json decode_json);
-
- 
-
-my $DAYS7_SECS = 604800;
-my $REG_IP = qr/^[\d\.]+|[a-f\d\:]+$/i;
-my $REG_DATE = qr/^\d{4}\-\d{2}\-\d{2}\s+\d{2}\:\d{2}\:\d{2}$/;
-my @HEALTH_NAMES = qw/nasa.gov pnl.gov llnl.gov   pppl.gov anl.gov lbl.gov bnl.gov dmz.net nersc.gov jgi.doe.gov snll.gov ornl.gov slac.stanford.edu es.net/;
-my $TABLEMAP = { bwctl      => {table => 'BwctlData',  class => 'Bwctl',      data => [qw/throughput/]},
-   		 owamp      => {table => 'OwampData',  class => 'Owamp',      data => [qw/sent loss min_delay max_delay duplicates/]},
-    		 pinger     => {table => 'PingerData', class => 'PingER',     data => [qw/meanRtt maxRtt medianRtt maxIpd meanIpd minIpd minRtt iqrIpd lossPercent/]},
-		 traceroute => {table => 'HopData',    class => 'Traceroute', data => [qw/hop_ip	hop_num  hop_delay/]},
-    	       };
-#set serializer => 'JSON';
+ set serializer => 'JSON';
 #set content_type =>  'application/json';
 prepare_serializer_for_format;
 
@@ -153,29 +141,6 @@ any ['get', 'post'] =>  '/site.:format' =>
 	}
 	return $data;
     };
-#
-#   deal with dates
-#
-sub _params_to_date {
-     my %params = validate(@_, { start  => {type => SCALAR, regex => $REG_DATE, optional =>  1},
-		                 end    => {type => SCALAR, regex => $REG_DATE, optional =>  1},
-			    }
-	       );
-    $params{end}  =  $params{end}?DateTime::Format::MySQL->parse_datetime( $params{end} )->epoch:time();
-    $params{start}  = $params{start}?DateTime::Format::MySQL->parse_datetime($params{start})->epoch:$params{end} - 12*3600;
-    map { $params{$_}{end} =  $params{end};   
-          $params{$_}{start} =  $params{start}
-	} 
-    qw/owamp pinger snmp bwctl traceroute/;
-	      
-    if(  ($params{end}-$params{start}) <   $DAYS7_SECS) {
-	    my $median = $params{start} + int(($params{end}-$params{start})/2);
-	    $params{bwctl}{start} = $median -  $DAYS7_SECS; # 7 days
-	    $params{bwctl}{end}   = $median +  $DAYS7_SECS; #  7 days
-    }
-    return \%params;
-}
-
 
 #
 # return hash with error string for each non-healthy part of the data service
@@ -190,8 +155,8 @@ sub get_health {
 				  });
     debug Dumper(@_);
     my $params  =  {};
-    $params->{end}  =  $req_params{end}?DateTime::Format::MySQL->parse_datetime( $req_params{end} )->epoch:time();
-    $params->{start}  = $req_params{start}?DateTime::Format::MySQL->parse_datetime($req_params{start})->epoch:$params->{end} - 24*3600;
+    my $date_params  =  params_to_date({start => $req_params{start}, end => $req_params{end}});
+    map { $params->{$_} = $date_params->{$_} } keys %{$date_params};
     my @services = ();
     my %health = (); 
     $health{start} =   $params->{start};
@@ -227,7 +192,7 @@ sub get_health {
     	    if(@mds) {
     		my $md_ins = join("','", map {$_->[0]} @mds);
     		my $table = $type eq 'traceroute'?'hop':$type;
-    		my $shards = _get_shards({data => $table, start => $params->{start},end => $params->{end}});
+    		my $shards =  get_shards({data => $table, start => $params->{start},end => $params->{end}}, database('ecenter'));
     		foreach my $shard (sort  { $a <=> $b } keys %$shards) {
     		   my $sql = qq|select count(*) from  $shards->{$shard}{table}{dbi}  
     				 where metaid in  ('$md_ins') and  timestamp >=  $shards->{$shard}{start} and  timestamp <= $shards->{$shard}{end} |;
@@ -248,7 +213,7 @@ sub get_health {
 sub process_source {
     my %params = validate(@_, {node_ip => {type => SCALAR, regex => $REG_IP, optional => 1},  
                                src_hub => {type => SCALAR, regex =>   qr/^\w+$/i, optional => 1},
-                               src_ip => {type => SCALAR, regex => $REG_IP, optional => 1},
+                               src_ip  => {type => SCALAR, regex => $REG_IP, optional => 1},
 			      }); 
     my @hubs =(); 
     my $hash_ref;
@@ -354,7 +319,7 @@ sub process_site {
 	} else {
             $params{timeout} = 120;
 	}
-        my $date_params  =  _params_to_date({start => $params{start},end => $params{end}});
+        my $date_params  =  params_to_date({start => $params{start},end => $params{end}});
         map { $params{$_} = $date_params->{$_} } keys %{$date_params};
         my $g_client = _get_gearman(); 
 	$params{table_map} = $TABLEMAP;
@@ -469,7 +434,7 @@ sub process_data {
     }
     #   get epoch or set end default to NOW and start to end-12 hours
    
-    my $date_params  =  _params_to_date({start => $params{start},end => $params{end}});
+    my $date_params  =  params_to_date({start => $params{start},end => $params{end}});
     map { $params{$_} = $date_params->{$_} } keys %{$date_params};
     my $trace_cond = {};
     unless($params{only_data}) {
@@ -558,7 +523,9 @@ sub process_data {
 								    join  node n_src on(md.src_ip = n_src.ip_addr) 
 								    join  node n_dst on(md.dst_ip = n_dst.ip_addr) 
 								    join eventtype e on(md.eventtype_id = e.ref_id) 
-								    join service s using(service) where e.service_type in ('pinger','owamp') and sp.response > | . config->{slow_service_limit} . 
+								    join service s using(service) 
+								    where e.service_type in ('pinger') 
+								    and sp.response > | . config->{slow_service_limit} . 
 								    qq| $trace_cond->{"$dir\_traceroute"}{src} $trace_cond->{"$dir\_traceroute"}{dst}|, 'service');  
             my $exclude_services_sql =  join (' AND ', map {  "  s.service !='$_' " } keys %{$slow_services});
             $exclude_services_sql =  $exclude_services_sql?"($exclude_services_sql)":'1';
@@ -845,51 +812,5 @@ sub get_snmp {
     }
     return;
 }
-#
-# get the  list of ids for the sharded table based on supplied   $param->{startTime} and  $param->{endTime} times
-# returns   {dbi => \@tables, dbic => \@tables_dbic}
-#
-sub _get_shards {
-    my ($param) = @_;
-    unless($param && ref $param && $param->{data} && $param->{data} =~ /^snmp|owamp|pinger|bwctl|hop$/xmis) {
-        error "No shard for the absent data type";
-	return;
-    }
-    my $startTime = $param->{start};
-    $startTime ||= time();
-    my $endTime   = $param->{end};
-    $endTime ||= $startTime;
-    
-    my $list = {};
-    debug  "Loading data tables for time period $startTime to $endTime";
-    # go through every day and populate with new months
-    for ( my $i = $startTime; $i <= $endTime; $i += 86400 ) {
-        my $date_fmt = strftime "%Y%m",  localtime($i);
-        my $end_i = $i + 86400;
-	debug "time_i=$i startime=$startTime end_time=$endTime  ";
-	$list->{$date_fmt}{table}{dbic} = "\u$param->{data}Data$date_fmt";
-        $list->{$date_fmt}{table}{dbi}  = "$param->{data}\_data_$date_fmt";
-	$list->{$date_fmt}{start} = $startTime;
-	$list->{$date_fmt}{end}   = ($endTime<$end_i)?$endTime:$end_i;
-    }
-   
-    # check if table is there if required via - existing parameter
-    if( $param->{existing} ) {
-	foreach my $date_fmt ( sort { $a <=> $b } keys %{$list} ) {
-            unless ( database('ecenter')->selectrow_array( "select * from   $date_fmt  where 1=0 " )) {
-        	delete $list->{$date_fmt};
-            }
-	}
-	unless ( scalar %$list ) {
-            error " No tables found  ";
-            return;
-	}
-    }
-    return  $list;
-}
-#
-#  get snmp data from the database with some conditions
-#
 
-#---------------------------------------------------------------
 dance;

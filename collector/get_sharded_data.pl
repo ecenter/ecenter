@@ -342,8 +342,9 @@ sub set_end_sites {
 sub get_anomaly {
     my ($pm, $PAST_START ) = @_;
     my $METRIC = {owamp => [qw/max_delay/], bwctl => [qw/throughput/]};
-    my $dbi_a = db_connect(\%OPTIONS);
+   
     foreach my $type (qw/owamp bwctl/) {
+        my $dbi_a = db_connect(\%OPTIONS); 
 	my $metadata = $dbi_a->selectall_hashref(qq| select   md.metaid as metaid, n_src.ip_noted as src_ip,   hb1.hub_name as src_hub, hb2.hub_name as dst_hub,
 	                              n_dst.ip_noted  as dst_ip
 	                                        	       from 
@@ -359,6 +360,7 @@ sub get_anomaly {
 								    join eventtype e on(md.eventtype_id = e.ref_id)
 								    join service s  on (e.service = s.service)
 							      where   e.service_type = '$type' AND s.is_alive = '1'|, 'metaid');
+	 
 	 my $date_table = strftime('%Y%m', localtime());
 	 foreach my $md (keys %$metadata) {
 	     pool_control($MAX_THREADS,undef);
@@ -374,7 +376,8 @@ sub get_anomaly {
 		my $data = $dbi->selectall_hashref( "select * from  $type\_data_$date_table   where  metaid='" . 
 	                        	            $md  . "' AND  timestamp > $PAST_START", 'timestamp' );
 		$dbi->disconnect if $dbi;
-		my $apd =  Ecenter::ADS::Detector::APD->new({ data_type => $type, algo => 'spd'});
+		my $swc = $type eq 'bwctl'?21:99;
+		my $apd =  Ecenter::ADS::Detector::APD->new({ data_type => $type, algo => 'spd', swc => $swc});
 		my $key = "$metadata->{$md}{src_ip}\__$metadata->{$md}{dst_ip}";
 		my $data_prepared  = {};
 		$data_prepared->{metadata}{$key}{src_hub} =  $metadata->{$md}{src_hub};
@@ -448,8 +451,9 @@ sub get_anomaly {
 	    });
 	    ##$pm->finish;
 	}
+	$dbi_a->disconnect if $dbi_a;
     }
-    $dbi_a->disconnect if $dbi_a;
+    
 }
 #
 #  send async request to get remote data from e2e MAs

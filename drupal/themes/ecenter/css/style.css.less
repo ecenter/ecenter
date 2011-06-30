@@ -165,12 +165,14 @@
 }
 /* }}} */
 /* Mixins: Clearfix (.clearfix, .clear-block) {{{ */
-.clearfix:after, .clear-block:after {
-  content: ".";
-  display: block;
-  height: 0;
-  clear: both;
-  visibility: hidden;
+.clearfix, .clear-block {
+  :after {
+    content: ".";
+    display: block;
+    height: 0;
+    clear: both;
+    visibility: hidden;
+  }
 }
 /* }}} */
 /* Mixins: Content classes (content-introduction, -highlight, -pad, -clearfix
@@ -327,7 +329,6 @@ table {
 // }}}
 // Content {{{
 #content { 
-  .clearfix;
   .page_padding;
   background-color: @color_white;
   width: 930px;
@@ -1257,12 +1258,23 @@ form {
   #content {
     width: auto;
   }
-  .body-field-wrapper {
-    float: left;
-    width: 60%;
-    margin-right: 18px;
-  }
   form {
+    .body-field-wrapper {
+      float: left;
+      width: 60%;
+      margin-right: 18px;
+    }
+    .vertical-tabs {
+      width: 550px;
+      input {
+        max-width: 450px;
+      }
+    }
+    // Painful clearing
+    .buttons { 
+      float: left;
+      width: 100%;
+    }
     .field-insert {
       td {
         background: @color_grey_93;

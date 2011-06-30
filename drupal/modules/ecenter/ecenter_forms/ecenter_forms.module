@@ -19,10 +19,19 @@ function ecenter_forms_form_alter(&$form, &$form_state, $form_id) {
     // Remove summary / teaser silliness
     $form['body_field']['teaser_include']['#access'] = FALSE;
 
-    foreach ($form['#field_info'] as $field => $settings) {
-      if (!empty($settings['widget']['insert'])) {
-        $form[$field]['#title'] = t('Upload @type', array('@type' => $form[$field]['#title']));
-        $form[$field]['#prefix'] = '<div class="field-insert" id="'. $form[$field]['#field_name'] .'">';
+    $form['buttons']['#prefix'] = '<div class="buttons clear-block">';
+    $form['buttons']['#suffix'] = '</div>';
+
+    if (!empty($form['#field_info'])) {
+      foreach ($form['#field_info'] as $field => $settings) {
+        if (!empty($settings['widget']['insert'])) {
+          $form[$field]['#title'] = t('Upload @type', 
+            array('@type' => $form[$field]['#title']));
+
+          // Wrap the pre-existing wrapper for consistent styling
+          $form[$field]['#prefix'] = '<div class="field-insert">'. $form[$field]['#prefix'];
+          $form[$field]['#suffix'] .= '</div>'; 
+        }
       }
     }
   }

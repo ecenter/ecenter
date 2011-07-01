@@ -9,15 +9,15 @@ Drupal.behaviors.siteView = function(context) {
 
   var node_radius = 9;
   var stroke_width = 5;
-  var width = 350;
-  var height = 250;
+  var width = 300;
+  var height = 220;
   var cx = width / 2;
   var cy = height / 2;
   var text_offset = node_radius + stroke_width + 2;
   var radius = (width > height) ? cy - node_radius - (stroke_width / 2)
     : cx - node_radius - (stroke_width / 2);
 
-  var paper = Raphael('dashboard-site_view', width, height);
+  var paper = Raphael('site-view-svg', width, height);
 
   // Loop through destinations to find length
   // Object.keys would work if supported by IE versions < 9

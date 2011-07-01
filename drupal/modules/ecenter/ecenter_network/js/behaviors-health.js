@@ -21,7 +21,25 @@ Drupal.behaviors.EcenterNetworkHealth = function(context) {
 
     var marker = $('<div class="marker">')
       .addClass(klass)
-      .bt(table.html());
+      .qtip({
+        content: table.clone().wrap('<div></div>').parent().html(),
+
+        show: 'mouseover',
+        position: {
+          corner: {
+            tooltip: 'leftMiddle'
+          },
+          adjust: {
+            x: 5
+          }
+        },
+        hide: {
+          fixed: true
+        },
+        style: {
+          background: 'rgba(255, 255, 255, 0.75)'
+        }
+      });
 
     table
       .after(marker)

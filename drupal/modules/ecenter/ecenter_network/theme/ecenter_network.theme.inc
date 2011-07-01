@@ -555,6 +555,7 @@ function theme_ecenter_network_hop_option($hop) {
  * Theme health display
  */
 function template_preprocess_ecenter_network_health(&$vars) {
+  drupal_add_js(libraries_get_path('qtip') .'/jquery.qtip.js');
   drupal_add_js(drupal_get_path('module', 'ecenter_network') .
     '/js/behaviors-health.js');
 
@@ -569,9 +570,9 @@ function template_preprocess_ecenter_network_health(&$vars) {
 
   // Metadata count
   $header = array(t('Hub'));
-  $header_created = FALSE;    
+  $header_created = FALSE;
   $rows = array();
-  
+
   foreach ($metadata as $hub => $measurements) {
     $row = array(
       array(

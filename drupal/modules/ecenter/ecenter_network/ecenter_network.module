@@ -865,7 +865,7 @@ function ecenter_network_get_site_centric_data($site, $start, $end) {
       if ($result['code'] == 200) {
         $data = $result['response'];
         if ($caching) {
-          $expires = time() + variable_get('ecenter_network_site_data_cache_ttl', 3600);
+          $expires = time() + variable_get('ecenter_network_site_data_cache_ttl', 7200);
           cache_set($query, $data, 'cache_ecenter_site_data', $expires);
         }
         $results[$query] = ecenter_network_parse_site_data($data, $site);

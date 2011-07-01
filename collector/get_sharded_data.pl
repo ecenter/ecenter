@@ -10,6 +10,7 @@ get_sharded_data.pl - cache script for the  E-Center data
 =head1 DESCRIPTION
 
 grabs, parses and inserts into the ecenter db all found data from the remote MAs. Based on the pre-collected metadata.
+Also, it  looks for the last week worth of data to find anomalies using SPD algo. It treats anoma;ies the same way as data.
 
 
 =head1 SYNOPSIS
@@ -29,14 +30,16 @@ debugging info logged
 
 print usage info
 
-=item --[pinger|owamp|bwctl|hop]
+=item --[pinger|owamp|bwctl|hop|anomaly]
 
-setting any of these flags will force collection of the corresponded data from the all known remote MAs 
+setting any of these flags will force collection of the corresponded data from the all known remote MAs.
+Or it will search for anomalies. 
 
 =item --past=<N days>
 
- get SNMP data for the past N days, limited by 1000 days
- Default:7 days
+get SNMP data for the past N days, limited by 1000 days. 
+It will search for the week or more of the data for anomalies.
+Default:7 days
  
 =item --snmp
 
@@ -93,7 +96,7 @@ use Ecenter::Data::Hub;
 use Ecenter::Client;
 use Ecenter::Data::Snmp;
 use DateTime;
-
+use Ecenter::ADS::Detector::APD;
  
 # Maximum working threads
 my $MAX_THREADS = 10;
@@ -104,7 +107,7 @@ my @E2E = qw/pinger owamp bwctl hop/;
 my @string_option_keys = qw/password user db procs past/;
 GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
-            qw/debug help v snmp no_topo/, @E2E
+            qw/debug help v snmp no_topo anomaly/, @E2E
 ) or pod2usage(1);
 my $output_level =  $OPTIONS{debug} || $OPTIONS{d}?$DEBUG:$INFO;
 
@@ -121,8 +124,8 @@ pod2usage(-verbose => 2)
 	 ($OPTIONS{past}  && ($OPTIONS{past}<0 || $OPTIONS{past}>1000)));
 
 $MAX_THREADS = $OPTIONS{procs} if $OPTIONS{procs}  && $OPTIONS{procs}  < 40;
-# number days back from now for the snmp data
-my $PAST_START =  $OPTIONS{past}?$OPTIONS{past}:7;
+# number days back from now for the data ( more than 7 days for anomalies search)
+my $PAST_START =  $OPTIONS{past} && (!$OPTIONS{anomaly} || $OPTIONS{past}>7)?$OPTIONS{past}:7;
 # snmp data cache request time limit - one day back - epoch
 $PAST_START = (time() - $PAST_START*24*3600);
 
@@ -148,6 +151,9 @@ foreach my $e2e (@E2E) {
   if($OPTIONS{$e2e}) {
      get_e2e($pm,  $PAST_START, $e2e);
   }
+}
+if($OPTIONS{anomaly}) {
+     get_anomaly($pm,  $PAST_START);
 }
 #
 # now collect topology and SNMP data from ESnet
@@ -329,6 +335,125 @@ sub set_end_sites {
    $logger->debug("Done");
    $dbi->disconnect if $dbi;
    $logger->debug("Back");
+}
+#
+#  get anomalies
+#
+sub get_anomaly {
+    my ($pm, $PAST_START ) = @_;
+    my $METRIC = {owamp => [qw/max_delay/], bwctl => [qw/throughput/]};
+   
+    foreach my $type (qw/owamp bwctl/) {
+        my $dbi_a = db_connect(\%OPTIONS); 
+	my $metadata = $dbi_a->selectall_hashref(qq| select   md.metaid as metaid, n_src.ip_noted as src_ip,   hb1.hub_name as src_hub, hb2.hub_name as dst_hub,
+	                              n_dst.ip_noted  as dst_ip
+	                                        	       from 
+						        		  metadata md
+					        		    join  node n_src on(md.src_ip = n_src.ip_addr) 
+								    join  node n_dst on(md.dst_ip = n_dst.ip_addr) 
+								    left join l2_l3_map    llm1 on(n_src.ip_addr=llm1.ip_addr) 
+     	                                                            left join l2_port      l2p1 on(llm1.l2_urn =l2p1.l2_urn) 
+     	                                                            left join hub          hb1  on(hb1.hub =l2p1.hub)
+								    left join l2_l3_map    llm2 on(n_dst.ip_addr=llm2.ip_addr) 
+     	                                                            left join l2_port      l2p2 on(llm2.l2_urn =l2p2.l2_urn) 
+     	                                                            left join hub          hb2  on(hb2.hub =l2p2.hub)
+								    join eventtype e on(md.eventtype_id = e.ref_id)
+								    join service s  on (e.service = s.service)
+							      where   e.service_type = '$type' AND s.is_alive = '1'|, 'metaid');
+	 
+	 my $date_table = strftime('%Y%m', localtime());
+	 foreach my $md (keys %$metadata) {
+	     pool_control($MAX_THREADS,undef);
+	     threads->new({'context' => 'scalar'},
+	                              sub { 
+		my $dbh =  Ecenter::DB->connect('DBI:mysql:' . $OPTIONS{db},  $OPTIONS{user}, $OPTIONS{password},
+                                	        { RaiseError => 1, PrintError => 1 } );
+        	$dbh->storage->debug(1)  if $OPTIONS{debug} || $OPTIONS{v};
+        	my $dbi =  db_connect(\%OPTIONS);
+		  
+		$logger->debug("SRC/DST =  $metadata->{$md}{src_ip}   $metadata->{$md}{dst_ip}");
+		return unless  $metadata->{$md}{src_ip}  &&  $metadata->{$md}{dst_ip} ;					 
+		my $data = $dbi->selectall_hashref( "select * from  $type\_data_$date_table   where  metaid='" . 
+	                        	            $md  . "' AND  timestamp > $PAST_START", 'timestamp' );
+		$dbi->disconnect if $dbi;
+		my $swc = $type eq 'bwctl'?21:99;
+		my $apd =  Ecenter::ADS::Detector::APD->new({ data_type => $type, algo => 'spd', swc => $swc});
+		my $key = "$metadata->{$md}{src_ip}\__$metadata->{$md}{dst_ip}";
+		my $data_prepared  = {};
+		$data_prepared->{metadata}{$key}{src_hub} =  $metadata->{$md}{src_hub};
+		$data_prepared->{metadata}{$key}{dst_hub} =  $metadata->{$md}{dst_hub};
+		$data_prepared->{metadata}{$key}{metaid}  =  $md;
+	        my $resolution =  100; 
+		
+		foreach my $name (@{$METRIC->{$type}}) {
+	            $data_prepared->{$name} = {$key => []};
+		    @{$data_prepared->{$name}{$key}} = sort {$a->[0] <=> $b->[0] } map {[$_, $data->{$_}{$name}]} keys %{$data};
+		    next unless @{$data_prepared->{$name}{$key}};
+		    #$logger->debug("Parsed data", sub{Dumper($data_prepared)});
+		    $apd->start($data_prepared->{$name}{$key}->[0][0]) 
+		        if !$apd->start || 
+	                    $apd->start > $data_prepared->{$name}{$key}->[0][0];
+		    my $timestamps = scalar (keys %$data);
+		    my $last_timestamp = $timestamps?$timestamps-1:0;
+	            $apd->end($data_prepared->{$name}{$key}->[$last_timestamp][0])
+		        if !$apd->end || 
+	                    $apd->end > $data_prepared->{$name}{$key}->[$last_timestamp][0];
+	      	    $resolution = $type eq 'owamp'?int($timestamps/3):$timestamps;
+                } 
+		$apd->parsed_data( $data_prepared );
+	        eval {
+                    $apd->process_data();
+                };
+                if(!$apd->results || $EVAL_ERROR) {
+                    $logger->error("ADS failed for $type md=" .  $md . " - with: $EVAL_ERROR");
+		    $dbh->storage->disconnect if $dbh;
+		    return;
+                } else {
+	            eval { 
+		        my $anomalies = $apd->results;
+                        foreach my  $src_ip (keys %{$anomalies}) {
+                            foreach my $dst_ip (keys %{$anomalies->{$src_ip}}) {
+	                        next if ref $anomalies->{$src_ip}{$dst_ip}{status} eq ref 'OK' && 
+		                $anomalies->{$src_ip}{$dst_ip}{status} eq 'OK';
+	                        $logger->info("Creating... " , sub { Dumper($anomalies->{$src_ip}{$dst_ip}) } );
+				my $anomaly = $dbh->resultset('Anomaly')->find_or_create({ metaid  =>  $anomalies->{$src_ip}{$dst_ip}{metaid},
+		                                                                		   elevation1 =>  $anomalies->{$src_ip}{$dst_ip}{elevation1},
+									        		   elevation2 =>  $anomalies->{$src_ip}{$dst_ip}{elevation2},
+									        		   swc    =>  $anomalies->{$src_ip}{$dst_ip}{swc},
+									        		   algo  => 'spd',
+									        		   start_time	=>   $apd->start,
+									        		   end_time    =>   $apd->end,
+												   resolution =>  $resolution
+												   },
+									        		   {key => 'metaid_algo_when'});
+				foreach my $type (qw/warning critical/) {								
+				    foreach my $time (sort {$a <=> $b} keys %{$anomalies->{$src_ip}{$dst_ip}{status}{$type}} ) {
+		        		my $anomaly_table = strftime "%Y%m", localtime($time);
+
+		        		$dbh->resultset("AnomalyData$anomaly_table")
+			                		  ->find_or_create({anomaly        => $anomaly->anomaly, 
+					                		    anomaly_status => $type,
+									    anomaly_type   => $anomalies->{$src_ip}{$dst_ip}{status}{$type}{$time}{anomaly_type},
+									    timestamp      => $time,
+									    value          => $anomalies->{$src_ip}{$dst_ip}{status}{$type}{$time}{value},
+									   },
+									   { key => 'anomaly_time'} );
+				    }
+				}
+		            }
+		        }
+		    };
+		    if($EVAL_ERROR) {
+			$logger->error("DB failed::$EVAL_ERROR");
+		    }	
+	        }	
+		$dbh->storage->disconnect if $dbh;
+	    });
+	    ##$pm->finish;
+	}
+	$dbi_a->disconnect if $dbi_a;
+    }
+    
 }
 #
 #  send async request to get remote data from e2e MAs

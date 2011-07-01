@@ -10,7 +10,7 @@
 Drupal.behaviors.EcenterNetworkHealth = function(context) {
   $('table.network-health table').each(function() {
     var table = $(this);
-    
+
     if (table.hasClass('critical')) {
       var klass = 'critical';
     } else if (table.hasClass('marginal')) {

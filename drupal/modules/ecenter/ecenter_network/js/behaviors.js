@@ -635,13 +635,31 @@ $.fn.ecenter_network.plugins.chart = function() {
     var hop = Drupal.settings.ecenterNetwork.seriesLookupByIndex[sidx];
     var ol = $('#openlayers-map-auto-id-0').data('openlayers');
     var map = ol.openlayers;
-    var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop(); 
-    var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();    var feature = layer.getFeatureBy('ecenterID', hop.hub);
+    var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
+    var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
+    var feature = layer.getFeatureBy('ecenterID', hop.hub);
 
     if (feature) {
       control.callbacks.out.call(control, feature);
     }
   });
+
+  $('#results .data-wrapper').each(function(i) {
+    var wrapper = this;
+    var show_text = Drupal.t('Show data tables');
+    var hide_text = Drupal.t('Hide data tables');
+    $('.tablechart', this).after('<button class="show-data">' + show_text + '</button>');
+    $('button.show-data', this).toggle(function(e) {
+      $('.data-tables', wrapper).show();
+      $(this).html(hide_text);
+      return false;
+    }, function(e) {
+      $('.data-tables', wrapper).hide();
+      $(this).html(Drupal.t(show_text));
+      return false;
+    });
+  });
+
 }
 
 $.fn.ecenter_network.plugins.end_to_end = function() {
@@ -668,8 +686,7 @@ $.fn.ecenter_network.defaults = {
   draw_plugins : [
     $.fn.ecenter_network.plugins.change,
     $.fn.ecenter_network.plugins.traceroute,
-    $.fn.ecenter_network.plugins.draw_map,
-    $.fn.ecenter_network.plugins.end_to_end
+    $.fn.ecenter_network.plugins.draw_map
   ]
 };
 

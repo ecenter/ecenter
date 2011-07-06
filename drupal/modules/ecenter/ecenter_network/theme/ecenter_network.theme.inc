@@ -727,7 +727,7 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
         'barWidth' => 2,
       );
       $options['axes']['xaxis']['tickOptions']['formatString'] = "%#m/%d";
-      return;
+      break;
     case 'max_delay':
     case 'min_delay':
     case 'maxRtt':

@@ -817,9 +817,6 @@ form {
       }
     }
   } // }}}
-  .data-tables { // {{{
-    display: none;
-  } // }}}
   #query-wrapper { // {{{
     float: left;
     width: 300px;
@@ -1057,11 +1054,22 @@ form {
     }
   } // }}}
   .data-tables { // {{{
-    margin-bottom: 55px;
+    margin: 21px 0;
+    display: none;
+    h4 {
+      margin-bottom: 14px;
+    }
     .data-table {
       float: left;
       margin-right: 10px;
-      font-size: 12px;
+      th {
+        font-size: 12px;
+        padding: 0 6px;
+      }
+      td {
+        font-size: 14px;
+        padding: 0 6px;
+      }
     }
   } // }}}
   #utilization-tables { // {{{
@@ -1645,6 +1653,8 @@ td.jqplot-table-legend > div {
   border: none !important;
   margin: 0 !important;
   tbody td, th {
+    font-size: 11px !important;
+    color: @color_black !important;
     font-weight: normal;
     background-color: transparent;
     border: none !important;

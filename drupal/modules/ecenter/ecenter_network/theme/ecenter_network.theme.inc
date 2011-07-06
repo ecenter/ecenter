@@ -763,7 +763,7 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
     $options['series'][$idx] = array('label' => t(ucfirst(str_replace('_', ' ', $table))));
     switch($table) {
       case 'forward_warning':
-      case 'forward_critical': 
+      case 'forward_critical':
       case 'reverse_warning':
       case 'reverse_critical':
         $options['series'][$idx] += array(

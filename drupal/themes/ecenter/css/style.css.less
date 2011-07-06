@@ -322,11 +322,6 @@ table {
   }
 } 
 // }}}
-// Page wrapper {{{
-#page-wrapper { 
-  .vertical_gradient(@color_grey_87; @color_grey_73);
-}
-// }}}
 // Content {{{
 #content { 
   .page_padding;
@@ -960,26 +955,32 @@ form {
     } // }}}
   } // }}}
   #results-wrapper { // {{{
-    background-color: @color_white;
-    td {
-      text-align: center;
-    }
-    td .value {
-      color: @color_black;
-      font-size: 16px;
-      font-family: @font_mono;
-    }
-    td .unit {
-      font-size: 12px;
-      font-weight: normal;
-      color: @color_grey_47;
-    }
-  } // }}}
-  #results-wrapper { // {{{
     .page_padding;
     position: relative;
     z-index: 10;
     background-color: @color_white;
+    table {
+      td {
+        text-align: center;
+      }
+      td .value {
+        color: @color_black;
+        font-family: @font_mono;
+      }
+      td .unit {
+        font-weight: normal;
+        color: @color_grey_47;
+      }
+      &.end-to-end-table {
+        td .value {
+          font-size: 16px;
+        }
+        td .unit {
+          font-size: 12px;
+        }
+      }
+    }
+
   } // }}}
   #recent-queries { // {{{
     font-size: @font_size_18;
@@ -1018,7 +1019,7 @@ form {
         line-height: 1;
         &.date-range { font-size: 14px; font-weight: normal; line-height: 1.6;}
       }
-    } 
+    }
   } // }}}
   #end-to-end-charts { // {{{
     margin-top: 25px;
@@ -1048,17 +1049,21 @@ form {
         h4 {
           font-size: .8em;
         }
-      } 
+      }
+    }
+    .show-data {
+      font-size: 12px;
+      padding: 1px 3px;
     }
   } // }}}
   .data-tables { // {{{
     margin-bottom: 55px;
     .data-table {
       float: left;
-      margin-right: 15px;
-      font-size: .825em;
+      margin-right: 10px;
+      font-size: 12px;
     }
-  } // }}} 
+  } // }}}
   #utilization-tables { // {{{
     float: left;
     width: 550px;
@@ -1222,12 +1227,11 @@ form {
     .box;
     line-height: 1;
     margin-right: 5px;
-    height: 35px;
-    width: 35px;
-    background-color: @color_grey_87;
+    height: 24px;
+    width: 24px;
     img {
-      height: 35px;
-      width: 35px;
+      height: 24px;
+      width: 24px;
     }
   }
 
@@ -1245,19 +1249,26 @@ form {
       list-style-type: disc;
     }
   }
-  
+
   ol {
     li {
       list-style-type: decimal;
     }
   }
+
+  pre {
+    font-size: 14px;
+  }
 }
 .node .submitted, .comment .submitted {
   line-height: 27px;
   font-size: 13px;
-  margin-bottom: .5em;
+  margin-bottom: 27px;
   font-weight: bold;
   color: #555;
+}
+.node .submitted {
+  margin-top: -14px;
 }
 .terms {
   margin-bottom: 27px;
@@ -1766,10 +1777,9 @@ table.network-health {
   border: none;
   font-size: 13px;
   ul, ol {
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
     li {
-      margin: 0 !important;
+      margin-left: 27px;
+      margin-bottom: 0;
     }
   }
   .toc-title {

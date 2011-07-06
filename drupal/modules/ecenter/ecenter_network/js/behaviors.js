@@ -118,7 +118,7 @@ $.fn.ecenter_network.plugins.ajax = function() {
       if (src.val() && !dst.val()) {
         var ol = $('#openlayers-map-auto-id-0').data('openlayers');
         var map = ol.openlayers;
-        var layer = map.getLayersBy('drupalID', 'ecenter_network_sites').pop(); 
+        var layer = map.getLayersBy('drupalID', 'ecenter_network_sites').pop();
 
         // Zoom to extent
         layerextent = layer.getDataExtent();
@@ -144,7 +144,7 @@ $.fn.ecenter_network.plugins.ajax = function() {
       // Zoom to correct level for sites layer
       var ol = $('#openlayers-map-auto-id-0').data('openlayers');
       var map = ol.openlayers;
-      var layer = map.getLayersBy('drupalID', 'ecenter_network_sites').pop(); 
+      var layer = map.getLayersBy('drupalID', 'ecenter_network_sites').pop();
 
       // Zoom to extent
       layerextent = layer.getDataExtent();
@@ -620,7 +620,7 @@ $.fn.ecenter_network.plugins.chart = function() {
 
       var ol = $('#openlayers-map-auto-id-0').data('openlayers');
       var map = ol.openlayers;
-      var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop(); 
+      var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
       var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
       var feature = layer.getFeatureBy('ecenterID', hop.hub);
 

@@ -17,8 +17,6 @@ function template_preprocess_ecenter_network_data(&$vars) {
   $src_hop = $hops['combined'][$vars['params']['src']];
   $dst_hop = $hops['combined'][$vars['params']['dst']];
 
-  //dpm($vars);
-
   // Generate date range -- internal date is stored as UTC
   $dates = array();
   foreach (array('start', 'end') as $val) {
@@ -105,6 +103,13 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
   $statistics_table = array();
   $data_tables = array();
 
+  if (!$data) {
+    return;
+  }
+
+  $ads = ecenter_network_ads_form();
+  $vars['ads'] = drupal_render($ads);
+
   foreach ($data as $test => $directions) {
     $start = 0;
     $end = 0;
@@ -167,7 +172,7 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
           $data_tables[$test][$measurement][$direction] = $data_table;
           $data_tables[$test][$measurement]['start'] = $start;
           $data_tables[$test][$measurement]['end'] = $end;
-
+          
           if ((($test == 'owamp' && $measurement == 'max_delay') || $test == 'bwctl') 
             && !empty($vars['ads_data'][$test][$direction])) {
             $data_table = array();
@@ -431,8 +436,10 @@ function theme_ecenter_network_end_to_end_tables($tables) {
       );
       jqplot_register_tablechart('#'. $type .'-'. $measurement .'-data-tables',
         $options);
+
     }
   }
+
   return $output;
 }
 
@@ -551,6 +558,7 @@ function theme_ecenter_network_hop_option($hop) {
  * Theme health display
  */
 function template_preprocess_ecenter_network_health(&$vars) {
+  drupal_add_js(libraries_get_path('qtip') .'/jquery.qtip.js');
   drupal_add_js(drupal_get_path('module', 'ecenter_network') .
     '/js/behaviors-health.js');
 
@@ -565,9 +573,9 @@ function template_preprocess_ecenter_network_health(&$vars) {
 
   // Metadata count
   $header = array(t('Hub'));
-  $header_created = FALSE;    
+  $header_created = FALSE;
   $rows = array();
-  
+
   foreach ($metadata as $hub => $measurements) {
     $row = array(
       array(
@@ -596,6 +604,9 @@ function template_preprocess_ecenter_network_health(&$vars) {
   $vars['health_table'] = theme('table', $header, $rows, array('class' => 'network-health'));
 }
 
+/**
+ * Theme a row of the health display
+ */
 function theme_ecenter_network_health_row($metadata_count = 0, $cached_data_count = 0) {
   $rows = array(
     'metadata_count' => array(
@@ -621,6 +632,9 @@ function theme_ecenter_network_health_row($metadata_count = 0, $cached_data_coun
   return theme('table', array(), $rows, array('class' => $class));
 }
 
+/**
+ * Theme SNMP data in site-centric view
+ */
 function theme_ecenter_network_site_centric_snmp_data($row, $direction) {
   $headers = array(t('Measurement'), t('Value'), t('Interface'));
   
@@ -722,7 +736,7 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
         'barWidth' => 2,
       );
       $options['axes']['xaxis']['tickOptions']['formatString'] = "%#m/%d";
-      return;
+      break;
     case 'max_delay':
     case 'min_delay':
     case 'maxRtt':
@@ -758,7 +772,7 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
     $options['series'][$idx] = array('label' => t(ucfirst(str_replace('_', ' ', $table))));
     switch($table) {
       case 'forward_warning':
-      case 'forward_critical': 
+      case 'forward_critical':
       case 'reverse_warning':
       case 'reverse_critical':
         $options['series'][$idx] += array(

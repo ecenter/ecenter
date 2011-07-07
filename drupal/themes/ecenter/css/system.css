@@ -19,10 +19,10 @@ div.tree-child-horizontal {
 html.js input.form-autocomplete {
   background-image: url(../../../../../misc/throbber.gif);
   background-repeat: no-repeat;
-  background-position: 100% 2px; /* LTR */
+  background-position: 100% 7px; /* LTR */
 }
 html.js input.throbbing {
-  background-position: 100% -18px; /* LTR */
+  background-position: 100% -13px; /* LTR */
 }
 /* }}} */
 /* Collapsing fieldsets {{{ */

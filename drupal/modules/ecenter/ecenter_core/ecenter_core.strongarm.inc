@@ -22,10 +22,24 @@ function ecenter_core_strongarm() {
   $strongarm = new stdClass;
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
+  $strongarm->name = 'comment_anonymous_snippet';
+  $strongarm->value = 0;
+
+  $export['comment_anonymous_snippet'] = $strongarm;
+  $strongarm = new stdClass;
+  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
+  $strongarm->api_version = 1;
   $strongarm->name = 'comment_controls_page';
   $strongarm->value = '3';
 
   $export['comment_controls_page'] = $strongarm;
+  $strongarm = new stdClass;
+  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
+  $strongarm->api_version = 1;
+  $strongarm->name = 'comment_controls_snippet';
+  $strongarm->value = '3';
+
+  $export['comment_controls_snippet'] = $strongarm;
   $strongarm = new stdClass;
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
@@ -36,10 +50,24 @@ function ecenter_core_strongarm() {
   $strongarm = new stdClass;
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
+  $strongarm->name = 'comment_default_mode_snippet';
+  $strongarm->value = '4';
+
+  $export['comment_default_mode_snippet'] = $strongarm;
+  $strongarm = new stdClass;
+  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
+  $strongarm->api_version = 1;
   $strongarm->name = 'comment_default_order_page';
   $strongarm->value = '1';
 
   $export['comment_default_order_page'] = $strongarm;
+  $strongarm = new stdClass;
+  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
+  $strongarm->api_version = 1;
+  $strongarm->name = 'comment_default_order_snippet';
+  $strongarm->value = '1';
+
+  $export['comment_default_order_snippet'] = $strongarm;
   $strongarm = new stdClass;
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
@@ -50,10 +78,24 @@ function ecenter_core_strongarm() {
   $strongarm = new stdClass;
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
+  $strongarm->name = 'comment_default_per_page_snippet';
+  $strongarm->value = '50';
+
+  $export['comment_default_per_page_snippet'] = $strongarm;
+  $strongarm = new stdClass;
+  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
+  $strongarm->api_version = 1;
   $strongarm->name = 'comment_form_location_page';
   $strongarm->value = '0';
 
   $export['comment_form_location_page'] = $strongarm;
+  $strongarm = new stdClass;
+  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
+  $strongarm->api_version = 1;
+  $strongarm->name = 'comment_form_location_snippet';
+  $strongarm->value = '0';
+
+  $export['comment_form_location_snippet'] = $strongarm;
   $strongarm = new stdClass;
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
@@ -71,10 +113,47 @@ function ecenter_core_strongarm() {
   $strongarm = new stdClass;
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
+  $strongarm->name = 'comment_preview_snippet';
+  $strongarm->value = '1';
+
+  $export['comment_preview_snippet'] = $strongarm;
+  $strongarm = new stdClass;
+  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
+  $strongarm->api_version = 1;
+  $strongarm->name = 'comment_snippet';
+  $strongarm->value = '0';
+
+  $export['comment_snippet'] = $strongarm;
+  $strongarm = new stdClass;
+  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
+  $strongarm->api_version = 1;
   $strongarm->name = 'comment_subject_field_page';
   $strongarm->value = '1';
 
   $export['comment_subject_field_page'] = $strongarm;
+  $strongarm = new stdClass;
+  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
+  $strongarm->api_version = 1;
+  $strongarm->name = 'comment_subject_field_snippet';
+  $strongarm->value = '1';
+
+  $export['comment_subject_field_snippet'] = $strongarm;
+  $strongarm = new stdClass;
+  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
+  $strongarm->api_version = 1;
+  $strongarm->name = 'content_extra_weights_snippet';
+  $strongarm->value = array(
+    'title' => '-5',
+    'body_field' => '-3',
+    'revision_information' => '0',
+    'author' => '-1',
+    'options' => '1',
+    'comment_settings' => '2',
+    'menu' => '-4',
+    'path' => '3',
+  );
+
+  $export['content_extra_weights_snippet'] = $strongarm;
   $strongarm = new stdClass;
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
@@ -165,6 +244,16 @@ function ecenter_core_strongarm() {
   $strongarm = new stdClass;
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
+  $strongarm->name = 'node_options_snippet';
+  $strongarm->value = array(
+    0 => 'status',
+    1 => 'revision',
+  );
+
+  $export['node_options_snippet'] = $strongarm;
+  $strongarm = new stdClass;
+  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
+  $strongarm->api_version = 1;
   $strongarm->name = 'simplemenu_call_theme';
   $strongarm->value = 0;
 
@@ -173,7 +262,7 @@ function ecenter_core_strongarm() {
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
   $strongarm->name = 'simplemenu_css_filename';
-  $strongarm->value = 'sites/default/files/css/simplemenu-bbdd6cf1c694e382c42520e32c87a744.css';
+  $strongarm->value = 'sites/default/files/css/simplemenu-db5173177143e0a99d3b8ba14718b258.css';
 
   $export['simplemenu_css_filename'] = $strongarm;
   $strongarm = new stdClass;

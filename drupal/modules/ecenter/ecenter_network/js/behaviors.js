@@ -118,7 +118,7 @@ $.fn.ecenter_network.plugins.ajax = function() {
       if (src.val() && !dst.val()) {
         var ol = $('#openlayers-map-auto-id-0').data('openlayers');
         var map = ol.openlayers;
-        var layer = map.getLayersBy('drupalID', 'ecenter_network_sites').pop(); 
+        var layer = map.getLayersBy('drupalID', 'ecenter_network_sites').pop();
 
         // Zoom to extent
         layerextent = layer.getDataExtent();
@@ -144,7 +144,7 @@ $.fn.ecenter_network.plugins.ajax = function() {
       // Zoom to correct level for sites layer
       var ol = $('#openlayers-map-auto-id-0').data('openlayers');
       var map = ol.openlayers;
-      var layer = map.getLayersBy('drupalID', 'ecenter_network_sites').pop(); 
+      var layer = map.getLayersBy('drupalID', 'ecenter_network_sites').pop();
 
       // Zoom to extent
       layerextent = layer.getDataExtent();
@@ -620,7 +620,7 @@ $.fn.ecenter_network.plugins.chart = function() {
 
       var ol = $('#openlayers-map-auto-id-0').data('openlayers');
       var map = ol.openlayers;
-      var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop(); 
+      var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
       var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
       var feature = layer.getFeatureBy('ecenterID', hop.hub);
 
@@ -635,13 +635,31 @@ $.fn.ecenter_network.plugins.chart = function() {
     var hop = Drupal.settings.ecenterNetwork.seriesLookupByIndex[sidx];
     var ol = $('#openlayers-map-auto-id-0').data('openlayers');
     var map = ol.openlayers;
-    var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop(); 
-    var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();    var feature = layer.getFeatureBy('ecenterID', hop.hub);
+    var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
+    var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
+    var feature = layer.getFeatureBy('ecenterID', hop.hub);
 
     if (feature) {
       control.callbacks.out.call(control, feature);
     }
   });
+
+  $('#results .data-wrapper').each(function(i) {
+    var wrapper = this;
+    var show_text = Drupal.t('Show data tables');
+    var hide_text = Drupal.t('Hide data tables');
+    $('.tablechart', this).after('<button class="show-data">' + show_text + '</button>');
+    $('button.show-data', this).toggle(function(e) {
+      $('.data-tables', wrapper).show();
+      $(this).html(hide_text);
+      return false;
+    }, function(e) {
+      $('.data-tables', wrapper).hide();
+      $(this).html(Drupal.t(show_text));
+      return false;
+    });
+  });
+
 }
 
 $.fn.ecenter_network.plugins.end_to_end = function() {
@@ -653,6 +671,31 @@ $.fn.ecenter_network.plugins.end_to_end = function() {
   });
 }
 
+
+$.fn.ecenter_network.plugins.ads = function() {
+  $('.ads-submit').live({
+    'click' : function(e) {
+      e.stopPropagation();
+      $('#ads').attr('checked', true);
+      var input = $('#dst-wrapper input');
+      input.data('autocomplete')._trigger('change');
+      $('#loading-overlay button').focus();
+      return false;
+    }
+  });
+  $('.ads-algorithm').live({
+    'change' : function(e) {
+      if ($('option:selected', this).val() == 'apd') {
+        $('#ads-settings input').not('.ads-algorithm').attr('disabled', true);
+      }
+      else {
+        $('#ads-settings input').not('.ads-algorithm').attr('disabled', false);
+      }
+    }
+  });
+}
+
+
 /**
  * Default options: Define default plugins to call
  */
@@ -662,14 +705,14 @@ $.fn.ecenter_network.defaults = {
     $.fn.ecenter_network.plugins.ajax,
     $.fn.ecenter_network.plugins.map,
     $.fn.ecenter_network.plugins.date,
-    $.fn.ecenter_network.plugins.chart
+    $.fn.ecenter_network.plugins.chart,
+    $.fn.ecenter_network.plugins.ads
   ],
   // Drawing plugins
   draw_plugins : [
     $.fn.ecenter_network.plugins.change,
     $.fn.ecenter_network.plugins.traceroute,
     $.fn.ecenter_network.plugins.draw_map,
-    $.fn.ecenter_network.plugins.end_to_end
   ]
 };
 

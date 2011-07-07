@@ -9,7 +9,7 @@ auto_reload: 0
 port: 8055
 gearman:
    servers: 
-       localhost: ['10121', '10131']
+       localhost: ['10121', '10131', '10141' ]
 plugins:
    DBIC:
      dbix:

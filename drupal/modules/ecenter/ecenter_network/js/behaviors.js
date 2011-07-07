@@ -683,6 +683,16 @@ $.fn.ecenter_network.plugins.ads = function() {
       return false;
     }
   });
+  $('.ads-algorithm').live({
+    'change' : function(e) {
+      if ($('option:selected', this).val() == 'apd') {
+        $('#ads-settings input').not('.ads-algorithm').attr('disabled', true);
+      }
+      else {
+        $('#ads-settings input').not('.ads-algorithm').attr('disabled', false);
+      }
+    }
+  });
 }
 
 

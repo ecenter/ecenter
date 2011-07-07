@@ -460,6 +460,7 @@ function ecenter_network_ads_form() {
       'spd' => t('spd'),
       'apd' => t('apd'),
     ),
+    '#attributes' => array('class' => 'ads-algorithm'),
     '#value' => (!empty($algorithm)) ? $algorithm : 'spd',
     '#weight' => 1,
   );

@@ -52,7 +52,12 @@ function ecenter_network_admin_form() {
       '#description' => t('Timeout to check the webservice status, in seconds.'),
       '#default_value' => variable_get('ecenter_network_'. $type .'_status_timeout', 2),
     );
-
+    $form[$type]['ecenter_network_'. $type .'_resolution'] = array(
+      '#title' => t('Query resolution'),
+      '#type' => 'textfield',
+      '#description' => t('The default query resolution.'),
+      '#default_value' => variable_get('ecenter_network_'. $type .'_resolution', 50),
+    );
   }
 
   // DRS specific settings
@@ -67,12 +72,6 @@ function ecenter_network_admin_form() {
     '#type' => 'textfield',
     '#description' => t('Specify default window of time to query over, in seconds (i.e. 1 hour is 3600 seconds).'),
     '#default_value' => variable_get('ecenter_network_time_window', 7200),
-  );
-  $form['drs']['ecenter_network_query_resolution'] = array(
-    '#title' => t('Query resolution'),
-    '#type' => 'textfield',
-    '#description' => t('The default query resolution.'),
-    '#default_value' => variable_get('ecenter_network_query_resolution', 50),
   );
   $form['drs']['performance'] = array(
     '#title' => t('Performance'),
@@ -115,6 +114,18 @@ function ecenter_network_admin_form() {
     '#type' => 'textfield',
     '#description' => t('How long should node results be cached, in seconds?'),
     '#default_value' => variable_get('ecenter_network_node_cache_ttl', 300),
+  );
+  $form['drs']['performance']['ecenter_network_site_data_cache_enabled'] = array(
+    '#title' => t('Enable site data result caching'),
+    '#type' => 'checkbox',
+    '#description' => t('Should E-center Network cache site-centric data results?'),
+    '#default_value' => variable_get('ecenter_network_site_data_cache_enabled', 0),
+  );
+  $form['drs']['performance']['ecenter_network_site_data_cache_ttl'] = array(
+    '#title' => t('Site data cache time to live'),
+    '#type' => 'textfield',
+    '#description' => t('How long should results be cached, in seconds?'),
+    '#default_value' => variable_get('ecenter_network_site_data_cache_ttl', 3600),
   );
 
   return system_settings_form($form);

@@ -80,7 +80,7 @@ my @string_option_keys = qw/user root_pass from to db trunk pass db_template/;
 
 GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
-            qw/debug d help fresh/,
+            qw/debug d help fresh make_orm/,
 ) or pod2usage(1);
 
 pod2usage(1) if $OPTIONS{help};
@@ -125,7 +125,7 @@ $OPTIONS{db} ||= 'ecenter_data';
 $OPTIONS{user} ||= 'ecenter';
 
 
-$OPTIONS{trunk} ||= '/home/netadmin/ecenter/trunk';
+$OPTIONS{trunk} ||= '/home/netadmin/ecenter_git/ecenter';
 $OPTIONS{db_template} ||= "$OPTIONS{trunk}/collector/ecenter_sharded_db.tmpl";
   
 $OPTIONS{preserve} = $OPTIONS{fresh}?'':' if not exists ';
@@ -168,7 +168,7 @@ foreach my $date (keys %datestamps) {
 	     preserve_case => 1,
              dump_directory => "$OPTIONS{trunk}/frontend_components/ecenter_data/lib" },
 	   [ "dbi:mysql:database=$OPTIONS{db}", $OPTIONS{user} ,  $OPTIONS{pass} ],
-    );
+    ) if $OPTIONS{make_orm};
 }
 #   drop FKs and create/re-org partitions
 #

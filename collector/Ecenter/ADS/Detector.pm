@@ -51,6 +51,8 @@ logging  agent via C<Log::Log4perl>
 
 has data        =>  (is => 'rw', isa => 'HashRef');
 has results     =>  (is => 'rw', isa => 'HashRef');
+has start       =>  (is => 'rw', isa => 'Num');
+has end         =>  (is => 'rw', isa => 'Num');
 has logger      =>  (is => 'rw', isa => 'Log::Log4perl::Logger');
 has parsed_data =>  (is => 'rw', isa => 'HashRef');
 has data_type   =>  (is => 'rw', isa => 'Str', required => 1);
@@ -91,10 +93,10 @@ sub parse_data {
     ##
     foreach my $src_ip (keys %$data){
     	foreach my $dst_ip (keys %{$data->{$src_ip}}){
-	    map { $parsed_data->{metadata}{"$src_ip:$dst_ip"}{$_} = $data->{$src_ip}{$dst_ip}{$_} } qw/src_hub dst_hub metaid/;
+	    map { $parsed_data->{metadata}{"$src_ip\__$dst_ip"}{$_} = $data->{$src_ip}{$dst_ip}{$_} } qw/src_hub dst_hub metaid/;
     	    foreach my $timestamp (keys %{$data->{$src_ip}{$dst_ip}{data}}) {
-    	    	foreach my $name (@{$METRIC->{$self->data_type}}) {
-		    $parsed_data->{$name}{"$src_ip:$dst_ip"}{$timestamp} = $data->{$src_ip}{$dst_ip}{data}{$timestamp}{$name};
+		foreach my $name (@{$METRIC->{$self->data_type}}) {
+		    $parsed_data->{$name}{"$src_ip\__$dst_ip"}{$timestamp} = $data->{$src_ip}{$dst_ip}{data}{$timestamp}{$name};
     	        }
     	    }
         }
@@ -103,10 +105,19 @@ sub parse_data {
 	foreach my $key (keys   %{$parsed_data->{$name}}) {
 	    my %tmp =  %{$parsed_data->{$name}{$key}};
 	    $parsed_data->{$name}{$key} = [];
+	    my $timestamps =    scalar (keys %tmp);
 	    @{$parsed_data->{$name}{$key}} =  sort {$a->[0] <=> $b->[0] } map {[$_ , $tmp{$_} ]} 
 	                                        keys %tmp;
+	   $self->start($parsed_data->{$name}{$key}->[0][0]) 
+	       if !$self->start || 
+	           $self->start > $parsed_data->{$name}{$key}->[0][0];
+	   my $last_timestamp = $timestamps?$timestamps-1:0;
+	   $self->end($parsed_data->{$name}{$key}->[$last_timestamp][0]) 
+	       if !$self->end || 
+	           $self->end > $parsed_data->{$name}{$key}->[$last_timestamp][0];			
         }
     }
+    
     $self->logger->debug("Parsed Data", sub{Dumper($parsed_data)});
     return $self->parsed_data($parsed_data);
 }
@@ -118,7 +129,7 @@ add result for the src/dst pair to the anomaly results hashref
 
 sub add_result {
     my ( $self, $tri_duration, $key, $ele, $status, $metaid) = @_;
-    my ($src, $dst) = split(':', $key);
+    my ($src, $dst) = split('__', $key);
     
     my $response = {
          %{$metaid}, 

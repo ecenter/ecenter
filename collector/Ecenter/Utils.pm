@@ -19,13 +19,15 @@ use Data::Validate::Domain qw( is_domain is_hostname);
 use Params::Validate;
 use Socket;
 use Socket6;
+use POSIX qw(strftime);
 use Net::DNS;
 use English qw(-no_match_vars);
 use Data::Dumper;
 use Log::Log4perl;
 use Time::HiRes qw(usleep);
 use DBI;
-
+use Params::Validate qw(:all);
+use DateTime::Format::MySQL;
 use base 'Exporter';
 
 
@@ -45,8 +47,20 @@ our $logger =   Log::Log4perl->get_logger(__PACKAGE__);
  
 # exported functions  
 
-our @EXPORT = qw/get_ip_name pack_snmp_data get_datums refactor_result db_connect update_create_fixed pool_control ip_ton nto_ip/;
+our @EXPORT = qw/get_ip_name pack_snmp_data params_to_date get_shards get_datums refactor_result 
+                 db_connect update_create_fixed pool_control ip_ton nto_ip $DAYS7_SECS $REG_IP $REG_DATE @HEALTH_NAMES $TABLEMAP/;
  
+
+our $DAYS7_SECS = 604800;
+our $REG_IP = qr/^[\d\.]+|[a-f\d\:]+$/i;
+our $REG_DATE = qr/^\d{4}\-\d{2}\-\d{2}\s+\d{2}\:\d{2}\:\d{2}$/;
+our @HEALTH_NAMES = qw/nasa.gov pnl.gov llnl.gov   pppl.gov anl.gov lbl.gov bnl.gov dmz.net nersc.gov jgi.doe.gov snll.gov ornl.gov slac.stanford.edu es.net/;
+our $TABLEMAP = { bwctl      => {table => 'BwctlData',  class => 'Bwctl',      data => [qw/throughput/]},
+   		 owamp      => {table => 'OwampData',  class => 'Owamp',      data => [qw/sent loss min_delay max_delay duplicates/]},
+    		 pinger     => {table => 'PingerData', class => 'PingER',     data => [qw/meanRtt maxRtt medianRtt maxIpd meanIpd minIpd minRtt iqrIpd lossPercent/]},
+		 traceroute => {table => 'HopData',    class => 'Traceroute', data => [qw/hop_ip	hop_num  hop_delay/]},
+    	       };
+
 =head1 FUNCTIONS 
  
 =head2 db_connect 
@@ -59,6 +73,82 @@ sub db_connect {
     $logger->logdie(" DBI connect failed:  $DBI::errstr") unless $dbh;
     return $dbh; 
 }
+
+
+=head2 get_shards
+
+  get the  list of ids for the sharded table based on supplied   $param->{startTime} and  $param->{endTime} times
+  returns   {dbi => \@tables, dbic => \@tables_dbic}
+
+=cut
+
+sub get_shards {
+    my ($param, $dbh) = @_;
+    unless($param && ref $param && $param->{data} && $param->{data} =~ /^snmp|owamp|pinger|bwctl|hop|anomaly$/xmis) {
+        $logger->error("No shard for the absent data type");
+	return;
+    }
+    my $startTime = $param->{start};
+    $startTime ||= time();
+    my $endTime   = $param->{end};
+    $endTime ||= $startTime;
+    
+    my $list = {};
+    $logger->debug("Loading data tables for time period $startTime to $endTime");
+    # go through every day and populate with new months
+    for ( my $i = $startTime; $i <= $endTime; $i += 86400 ) {
+        my $date_fmt = strftime "%Y%m",  localtime($i);
+        my $end_i = $i + 86400;
+	$logger->debug("time_i=$i startime=$startTime end_time=$endTime");
+	$list->{$date_fmt}{table}{dbic} = "\u$param->{data}Data$date_fmt";
+        $list->{$date_fmt}{table}{dbi}  = "$param->{data}\_data_$date_fmt";
+	$list->{$date_fmt}{start} = $startTime;
+	$list->{$date_fmt}{end}   = ($endTime<$end_i)?$endTime:$end_i;
+    }
+    # check if table is there if required via - existing parameter
+    if( $param->{existing} ) {
+	foreach my $date_fmt ( sort { $a <=> $b } keys %{$list} ) {
+            unless ( $dbh->selectrow_array( "select * from   $date_fmt  where 1=0 " )) {
+        	delete $list->{$date_fmt};
+            }
+	}
+	unless ( scalar %$list ) {
+            $logger->error(" No tables found");
+            return;
+	}
+    }
+    return  $list;
+}
+
+=head2  params_to_date
+ 
+set start and end dates as epoch time, parse parameteres, set default values
+set parameters for any metric
+
+=cut
+
+
+sub  params_to_date {
+     my %params = validate(@_, { start  => {type => SCALAR, regex => $REG_DATE, optional =>  1},
+		                 end    => {type => SCALAR, regex => $REG_DATE, optional =>  1},
+			    }
+	       );
+    $params{end}  =  $params{end}?DateTime::Format::MySQL->parse_datetime( $params{end} )->epoch:time();
+    $params{start}  = $params{start}?DateTime::Format::MySQL->parse_datetime($params{start})->epoch:$params{end} - 12*3600;
+    map { $params{$_}{end} =  $params{end};   
+          $params{$_}{start} =  $params{start}
+	} 
+    qw/owamp pinger snmp bwctl traceroute/;
+	      
+    if(  ($params{end}-$params{start}) <   $DAYS7_SECS) {
+	    my $median = $params{start} + int(($params{end}-$params{start})/2);
+	    $params{bwctl}{start} = $median -  $DAYS7_SECS; # 7 days
+	    $params{bwctl}{end}   = $median +  $DAYS7_SECS; #  7 days
+    }
+    return \%params;
+}
+
+
 =head2   pack_snmp_dat
  
 post-process SNMP data

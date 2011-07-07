@@ -9,7 +9,7 @@ function ecenter_dashboard_menu() {
   $items['ecenter-dashboard'] = array(
     'page callback' => 'theme',
     'page arguments' => array('ecenter_dashboard'),
-    'title' => 'Dashboard',
+    'title' => 'E-Center dashboard',
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
   );
@@ -34,10 +34,31 @@ function ecenter_dashboard_theme() {
 function template_preprocess_ecenter_dashboard(&$vars) {
   global $user;
 
+  drupal_add_js(libraries_get_path('raphael') .'/raphael-min.js');
+  drupal_add_js(libraries_get_path('qtip') .'/jquery.qtip.js');
+  drupal_add_js(drupal_get_path('module', 'ecenter_dashboard') .'/js/ecenter-dashboard.js');
+
   if ($user->uid) {
+    module_load_include('inc', 'date_api', 'date_api_elements');
+    $now = time() - 1800;
+    $offset = 3600 * 12;
+    $inc = 60;
+    $tz = timezone_open('UTC');
+    $end = date_make_date($now, $tz, DATE_UNIX);
+    $start = date_make_date($now - $offset, $tz, DATE_UNIX);
+    date_increment_round($start, $inc);
+    date_increment_round($end, $inc);
+    $start = date_format($start, 'Y-m-d H:i:s');
+    $end = date_format($end, 'Y-m-d H:i:s');
+
+    $hub = (!empty($user->ecenter_default_hub)) ? $user->ecenter_default_hub : variable_get('ecenter_site_default_hub', 'FNAL');
+    $data = ecenter_network_get_site_centric_data($hub, $start, $end);
+    drupal_add_js(array('ecenterNetwork' => array('siteData' => $data)), 'setting');
+
     $vars['main_content'] = array(
-      'placeholder' => array(
-        'content' => 'Placeholder for site-centric view',
+      'site_view' => array(
+        'content' => '<div id="site-view-description"><h2>'. t('@site status:', array('@site' => $user->ecenter_default_hub)) .'</h2>' . 
+          '<p>'. t('@start - @end', array('@start' => $start, '@end' => $end)) .'</p></div><div id="site-view-svg"></div>',
       ),
       'activity' => array(
         'subject' => t('Site activity'),
@@ -64,8 +85,8 @@ function template_preprocess_ecenter_dashboard(&$vars) {
   }
   else {
     $vars['main_content'] = array(
-      'placeholder' => array(
-        'content' => 'Placeholder for welcome text, video, etc',
+      'carousel' => array(
+        'content' => views_embed_view('ecenter_dashboard_carousel', 'block'),
       ),
       'activity' => array(
         'subject' => t('Site activity'),
@@ -87,5 +108,23 @@ function template_preprocess_ecenter_dashboard(&$vars) {
       ),
     );
   }
+}
 
+function ecenter_dashboard_cron() {
+  module_load_include('inc', 'date_api', 'date_api_elements');
+  $now = time();
+  $offset = 3600 * 12;
+  $inc = 60;
+  $tz = timezone_open('UTC');
+  $end = date_make_date($now, $tz, DATE_UNIX);
+  $start = date_make_date($now - $offset, $tz, DATE_UNIX);
+  date_increment_round($start, $inc);
+  date_increment_round($end, $inc);
+  $start = date_format($start, 'Y-m-d H:i:s');
+  $end = date_format($end, 'Y-m-d H:i:s');
+
+  $hubs = ecenter_network_get_hops();
+  foreach ($hubs['hubs'] as $key => $hop) {
+    $data = ecenter_network_get_site_centric_data($key, $start, $end);
+  }
 }

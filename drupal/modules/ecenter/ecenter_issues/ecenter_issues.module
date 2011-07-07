@@ -167,7 +167,7 @@ function ecenter_issues_issue_add_data($form, &$form_state) {
 }
 
 /**
- * Get query node based on parameters 
+ * Get query node based on parameters
  *
  * @param $params
  *   Array of parameters ('src', 'dst', 'start', 'end')
@@ -217,8 +217,6 @@ function ecenter_issues_get_query_node($params) {
 /**
  * Get issues for a query
  *
- * @TODO Support more flexibility than exact matching used here
- * 
  * @param $node
  *   A query node object
  * @return
@@ -259,30 +257,52 @@ function ecenter_issues_parse_params($param_string) {
 }
 
 /**
- * Given an issue node, get link params
+ * Given a network_query node, get link params
  *
  * @param $node
- *   Issue node object
- * @return 
+ *   network_query node
+ * @return
  *   An array representation of querystring needed to reconstruct permalink
  */
 function ecenter_issues_get_node_query($node) {
-  $query = node_load($node->field_issue_query[0]['nid']);
+  if ($node->type != 'network_query') {
+    return NULL;
+  }
 
-  $start = date_create($query->field_query_start[0]['value'], 
+  $start = date_create($node->field_query_start[0]['value'], 
     timezone_open('UTC'));
-  $end = date_create($query->field_query_end[0]['value'],
+  $end = date_create($node->field_query_end[0]['value'],
     timezone_open('UTC'));
 
   $query = array(
-    'src' => (!empty($query->field_query_src_hub[0]['value'])) ? 
-      'hub:'. $query->field_query_src_hub[0]['value'] :
-      'ip:'. $query->field_query_src_ip[0]['value'],
-    'dst' => (!empty($query->field_query_dst_hub[0]['value'])) ? 
-      'hub:'. $query->field_query_dst_hub[0]['value'] :
-      'ip:'. $query->field_query_dst_ip[0]['value'],
+    'src' => (!empty($node->field_query_src_hub[0]['value'])) ? 
+      'hub:'. $node->field_query_src_hub[0]['value'] :
+      'ip:'. $node->field_query_src_ip[0]['value'],
+    'dst' => (!empty($node->field_query_dst_hub[0]['value'])) ? 
+      'hub:'. $node->field_query_dst_hub[0]['value'] :
+      'ip:'. $node->field_query_dst_ip[0]['value'],
     'start' => date_format($start, 'Y-m-d H:i:s'),
     'end' => date_format($end, 'Y-m-d H:i:s'),
   );
+
   return $query;
+}
+
+/**
+ * Implementation of hook_nodeapi().
+ */
+function ecenter_issues_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
+  // Load query string parameters
+  if ($node->type == 'network_query' && $op == 'load') {
+    $node->query_params = ecenter_issues_get_node_query($node);
+  }
+
+  // Load query nodes for issues
+  if ($node->type == 'issue' && $op == 'load') {
+    $queries = array();
+    foreach ($node->field_issue_query as $query) {
+      $queries[] = node_load((int) $query['nid']);
+    }
+    $node->issue_queries = $queries;
+  }
 }

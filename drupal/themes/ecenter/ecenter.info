@@ -19,11 +19,20 @@ regions[footer] = Footer
 
 ; Unset custom modules
 stylesheets[all][] = "themes/datepicker.css"
-stylesheets[all][] = date.css
+stylesheets[all][] = "date.css"
 stylesheets[all][] = "jquery.ui.all.css"
 stylesheets[all][] = "homebox.css"
+stylesheets[all][] = "oembed.css"
+stylesheets[all][] = "filefield.css"
+stylesheets[all][] = "imagefield.css"
+stylesheets[all][] = "ctools.css"
+stylesheets[all][] = "content-module.css"
+stylesheets[all][] = "og.css"
+stylesheets[all][] = "views.css"
+stylesheets[all][] = "views_slideshow_cycle.css"
 
 ; System styles
+stylesheets[screen][] = css/drupal.css
 stylesheets[screen][] = css/system.css
 stylesheets[screen][] = css/system-menus.css
 

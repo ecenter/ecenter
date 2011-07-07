@@ -87,6 +87,16 @@ sub get_ips {
     return  $HUBS{$self->hub_name}{nets};
 }; 
 
+=head2 get_hubnames
+
+=cut
+
+sub get_hubnames  {
+    my $self = shift; 
+    return  keys %HUBS;
+};
+
+
 =head2 get_hub_blocks
 
 get IP blocks from the ARIN registrant - should be run once on the whole object to populate %HUBS - takes some time.

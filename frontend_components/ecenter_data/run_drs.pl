@@ -84,8 +84,8 @@ $OPTIONS{logdir}  ||= '/tmp';
 
 `/bin/ps auxwww | grep plackup |     grep -v grep | grep -v  nedit  | awk '{print \$2}' | xargs kill -9` if $OPTIONS{clean};
 `/bin/ps auxwww | grep ecenter_data_sharded_gearman  | grep -v grep | grep -v  nedit  | awk '{print \$2}' | xargs kill -9` if $OPTIONS{clean};
-`/bin/ps auxwww | grep starman  | grep master | grep -v grep | grep -v  nedit  | awk '{print \$2}' | xargs kill -9` if $OPTIONS{clean};
-`/bin/ps auxwww | grep starman  | grep worker | grep -v grep | grep -v  nedit  | awk '{print \$2}' | xargs kill -9` if $OPTIONS{clean};
+##`/bin/ps auxwww | grep starman  | grep master | grep -v grep | grep -v  nedit  | awk '{print \$2}' | xargs kill -9` if $OPTIONS{clean};
+##`/bin/ps auxwww | grep starman  | grep worker | grep -v grep | grep -v  nedit  | awk '{print \$2}' | xargs kill -9` if $OPTIONS{clean};
 
 foreach my $port (@ports) {
     my $cmd = "plackup  -E production -s Twiggy -a ecenter_data_sharded_gearman.pl -p $port > $OPTIONS{logdir}/drs_$port.log 2>&1 &";

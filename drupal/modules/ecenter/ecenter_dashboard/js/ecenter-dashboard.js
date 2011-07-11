@@ -9,7 +9,7 @@ Drupal.behaviors.siteView = function(context) {
 
   var node_radius = 9;
   var stroke_width = 5;
-  var width = 300;
+  var width = 340;
   var height = 220;
   var cx = width / 2;
   var cy = height / 2;
@@ -117,6 +117,7 @@ Drupal.behaviors.siteView = function(context) {
         node_box.height + stroke_width
       )
       .attr({
+        'stroke' : '#ffffff',
         'stroke-width' : 0,
         'fill': '#ffffff', 
         'fill-opacity': 0.3,

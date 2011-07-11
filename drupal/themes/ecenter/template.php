@@ -7,7 +7,15 @@ function ecenter_preprocess_page(&$vars) {
   }
   if (arg(0) == 'node' && is_numeric(arg(1))) {
     $node = node_load(arg(1));
-    $vars['page_type'] = node_get_types('name', $node->type);
+
+    // Don't display node type on 'page' nodes, which are are strictly 
+    // informational
+    switch ($node->type) {
+      case 'page':
+        break;
+      default:
+        $vars['page_type'] = node_get_types('name', $node->type);
+    }
   }
   if (arg(0) == 'node' && arg(1) == 'add' || arg(2) == 'edit') {
     $vars['body_classes'] .= ' node-edit';  

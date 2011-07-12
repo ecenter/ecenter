@@ -38,7 +38,7 @@ function template_preprocess_ecenter_network_data(&$vars) {
   );
 
   // Set title
-  drupal_set_title(t('E-Center Network Query | ') . $vars['title']);
+  // drupal_set_title(t('E-Center Network Query | ') . $vars['title']);
 
   // Links and issue queries shouldn't take timezone argument 
   unset($vars['params']['timezone']);

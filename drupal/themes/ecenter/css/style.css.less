@@ -246,7 +246,7 @@ a {
 
 // Text styles
 p, blockquote {
-  margin-bottom: 27px;
+  margin-bottom: 21px;
 }
 em {
   font-style: italic;
@@ -267,7 +267,7 @@ h1 {
 }
 h2 {
   font-size: 28px;
-  line-height: 21px;
+  line-height: 35px;
   margin-bottom: 18px
 }
 h3 {
@@ -549,13 +549,6 @@ form {
   display: block;
 }
 /* }}} */
-// Item list {{{
-.item-list {
-  li {
-    .box;
-  }
-}
-// }}}
 // Page header {{{
 #header-wrapper {
   .container_side_padding;
@@ -1253,8 +1246,10 @@ form {
   }
 
   ul, ol {
+    margin-bottom: 21px;
     li {
-      margin-left: 27px;
+      margin-left: 42px;
+      margin-bottom: 7px;
       ul, ol {
         margin-top: 21px;
       }
@@ -1277,18 +1272,55 @@ form {
     font-size: 14px;
   }
 }
-.node .submitted, .comment .submitted {
-  line-height: 27px;
-  font-size: 13px;
-  margin-bottom: 27px;
-  font-weight: bold;
-  color: #555;
-}
-.node .submitted {
-  margin-top: -14px;
-}
-.terms {
-  margin-bottom: 27px;
+.page-node {
+  h1.title {
+    margin-bottom: 7px;
+  }
+  .node {
+    .submitted {
+      border-bottom: 1px solid #ccc;
+      font-size: 15px;
+      line-height: 27px;
+      padding-bottom: 4px;
+      font-weight: bold;
+      color: #555;
+    }
+    .terms, .groups {
+      font-size: 15px;
+      line-height: 27px;
+      .label {
+        font-weight: bold;
+      }
+      ul, ul.links, ul li, ul.links li, ul li a, ul.link li a {
+        float: none;
+        display: inline;
+        padding: 0;
+        margin: 0;
+      }
+      li:not(:last-child) a:after {
+        content: ", ";
+      }
+    }
+    .content {
+      padding-top: 27px;
+      .field {
+        line-height: 27px;
+        font-size: 15px;
+        margin-top: -27px;
+        margin-bottom: 27px;
+        div {
+          display: inline !important;
+        } 
+        .field-label {
+          display: inline;
+          font-weight: bold;
+        }
+        .field-item:not(:last-child) a:after {
+            content: ", ";
+        }
+      }
+    }
+  }
 }
 // }}}
 // Node editing {{{
@@ -1362,7 +1394,30 @@ form {
   }
 }
 // }}}
-/* Comments {{{ */
+// Profiles {{{
+.profile {
+  h3 {
+    margin-bottom: 21px;
+  }
+  .picture {
+    float: right;
+    margin-left: 20px;
+    margin-bottom: 20px;
+  }
+  ul, ol {
+    margin-bottom: 21px;
+    li {
+      display: inline;
+      float: none;
+    }
+    li:not(:last-child) a:after {
+      content: ", ";
+    }
+  }
+
+}
+// }}}
+// Comments {{{
 .comment-wrapper-title {
   border-bottom: 1px solid #999;
 }
@@ -1682,7 +1737,7 @@ td.jqplot-table-legend > div {
     }
   }
 }
-.view-ecenter-dashboard-activity {
+.view-ecenter-dashboard-activity, .view-og-ghp-ecenter {
   font-size: 15px;
   .node {
     padding: 4px 8px;
@@ -1838,6 +1893,27 @@ table.network-health {
 // Syntax highlighter {{{
 .syntaxhighlighter {
   width: auto !important;
+}
+// }}}
+// Wiki views {{{
+.page-wiki {
+  .group {
+    .box;
+    width: 270px;
+    margin-right: 40px;
+    &:last-child {
+      margin-right: 0;
+    }
+  }
+  .row {
+    .title {
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .date {
+      font-size: 13px;
+    }
+  }
 }
 // }}}
 /* ADS {{{ */

@@ -27,16 +27,20 @@ function ecenter_preprocess_node(&$vars) {
   global $user;
   $node = $vars['node'];
 
-  // Remove group post template suggestion
-  if (($group_post_idx = array_search('node-og-group-post', $vars['template_files'])) !== FALSE) {
+  // Remove Organic Groups' group and group post template suggestions
+  if ((($group_post_idx = array_search('node-og-group-post', $vars['template_files'])) !== FALSE) ||
+      (($group_post_idx = array_search('node-og-group', $vars['template_files'])) !== FALSE)) {
     unset($vars['template_files'][$group_post_idx]);
   }
-
-  if ($node->type == 'group_post') {
+ 
+  // Unset author picture on group node 
+  if ($node->type == 'group') {
     unset($vars['picture']);
   }
 
-  if ($node->type == 'issue' && !$vars['teaser'] && !$vars['build_mode']) {
+  if ($node->type == 'issue' && !empty($node->issue_queries)
+    && !$vars['teaser'] && !$vars['build_mode']) {
+    
     $output = '';
     foreach ($node->issue_queries as $query) {
       $output .= theme('ecenter_network_data',

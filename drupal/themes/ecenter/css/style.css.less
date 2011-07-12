@@ -247,6 +247,9 @@ a {
 // Text styles
 p, blockquote {
   margin-bottom: 21px;
+  &:last-child {
+    margin: 0;
+  }
 }
 em {
   font-style: italic;
@@ -354,7 +357,7 @@ body.sidebar-right #sidebar-right {
     font-size: 1.25em;
     margin-bottom: .75em;
     line-height: 1.5;
-    border-bottom: 1px solid #bbb;
+    border-bottom: 1px solid #999;
   }
 
   form {
@@ -1276,14 +1279,16 @@ form {
   h1.title {
     margin-bottom: 7px;
   }
+  .submitted {
+    font-size: 15px;
+    line-height: 27px;
+    padding-bottom: 4px;
+    font-weight: bold;
+    color: #555;
+  }
   .node {
     .submitted {
       border-bottom: 1px solid #ccc;
-      font-size: 15px;
-      line-height: 27px;
-      padding-bottom: 4px;
-      font-weight: bold;
-      color: #555;
     }
     .terms, .groups {
       font-size: 15px;
@@ -1327,6 +1332,9 @@ form {
 .node-edit {
   #content {
     width: auto;
+  }
+  .tips {
+    font-size: 14px;
   }
   form {
     .body-field-wrapper {
@@ -1420,6 +1428,7 @@ form {
 // Comments {{{
 .comment-wrapper-title {
   border-bottom: 1px solid #999;
+  margin-bottom: 15px;
 }
 #comments {
   .box {
@@ -1577,19 +1586,19 @@ form {
   }
 
   #dashboard-login {
-    label {
-      display: inline;
-      margin-right: 10px;
-    }
-    input {
-      width: 150px;
-    }
-    .form-item {
-      margin-bottom: .75em;
-    }
-    .form-submit {
-      display: block;
-      margin: 0 auto;
+    #edit-name-wrapper, #edit-pass-wrapper {
+      .box;
+      width: 100%;
+      margin-bottom: 9px;
+      label {
+        .box;
+        width: 95px;
+        margin-right: 10px;
+      }
+      input {
+        .box;
+        width: 140px;
+      }
     }
     .item-list {
       ul {
@@ -1737,7 +1746,7 @@ td.jqplot-table-legend > div {
     }
   }
 }
-.view-ecenter-dashboard-activity, .view-og-ghp-ecenter {
+.view-ecenter-dashboard-activity, .view-og-ghp-ecenter, .view-id-ecenter_issues {
   font-size: 15px;
   .node {
     padding: 4px 8px;

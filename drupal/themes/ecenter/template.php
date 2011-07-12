@@ -27,7 +27,16 @@ function ecenter_preprocess_node(&$vars) {
   global $user;
   $node = $vars['node'];
 
-  if ($vars['type'] == 'issue' && !$vars['teaser'] && !$vars['build_mode']) {
+  // Remove group post template suggestion
+  if (($group_post_idx = array_search('node-og-group-post', $vars['template_files'])) !== FALSE) {
+    unset($vars['template_files'][$group_post_idx]);
+  }
+
+  if ($node->type == 'group_post') {
+    unset($vars['picture']);
+  }
+
+  if ($node->type == 'issue' && !$vars['teaser'] && !$vars['build_mode']) {
     $output = '';
     foreach ($node->issue_queries as $query) {
       $output .= theme('ecenter_network_data',
@@ -47,6 +56,7 @@ function ecenter_preprocess_node(&$vars) {
   }
 
   if ($vars['build_mode'] == 'ecenter_activity') {
+    $args = explode('/', $_REQUEST['q']);
     $vars['action'] = ($node->changed > $node->created) ? t('updated by') : t('created by');
     $vars['node_type'] = node_get_types('name', $node->type);
 
@@ -55,12 +65,15 @@ function ecenter_preprocess_node(&$vars) {
       $node->type,
     );
 
-    if (!empty($node->og_groups)) {
+    if ($args[0] != 'group' && !empty($node->og_groups)) {
       $group_links = array();
       foreach ($vars['og_links']['raw'] as $link) {
         $group_links[] = l($link['title'], $link['href']);
       }
       $vars['groups'] = implode($group_links, ', ');
+    }
+    else {
+      unset($vars['groups']);
     }
 
     if ($node->type == 'wiki') {

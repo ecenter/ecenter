@@ -14,13 +14,16 @@
     </div>
   <?php endif; ?>
 
+  <?php if ($terms): ?>
+    <div class="terms terms-inline">
+      <span class="label"><?php print t('Tags:'); ?></span>
+      <?php print $terms ?>
+    </div>
+  <?php endif;?>
+
   <div class="content">
     <?php print $content ?>
   </div>
-
-  <?php if ($terms): ?>
-    <div class="terms terms-inline"><?php print t('Tags:'); ?><?php print $terms ?></div>
-  <?php endif;?>
 
   <?php print $links; ?>
 </div>

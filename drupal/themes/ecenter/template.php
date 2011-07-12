@@ -192,6 +192,27 @@ function _ecenter_format_date($timestamp) {
   return $date;
 }
 
+function ecenter_node_submitted($node) {
+  $og_links = array();
+  
+  if (og_is_group_post_type($node->type) && !empty($node->og_groups_both)) {
+    $current_groups = og_node_groups_distinguish($node->og_groups_both, FALSE);
+    foreach ($current_groups['accessible'] as $gid => $item) {
+      $og_links[] = l($item['title'], 'node/'. $gid);
+    }
+  }
+
+  $group = (!empty($og_links)) ? format_plural(count($og_links), ' in group !groups', ' in groups !groups', array(
+    '!groups' => implode(', ', $og_links),
+  )) : '';
+
+  return t('Submitted by !username on @datetime', 
+    array(
+    '!username' => theme('username', $node), 
+    '@datetime' => format_date($node->created),
+  )) . $group;
+}
+
 /**
  * @function _ecenter_trim
  *

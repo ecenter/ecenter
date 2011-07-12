@@ -1,11 +1,13 @@
 (function($) {
 
 Drupal.behaviors.siteView = function(context) {
-  var data = Drupal.settings.ecenterNetwork.siteData;
-
-  if (data == undefined || data.destinations == undefined) {
+  if (Drupal.settings.ecenterNetwork == undefined
+      || Drupal.settings.ecenterNetwork.siteData == undefined 
+      || Drupal.settings.ecenterNetwork.siteData.destinations == undefined) {
     return;
   }
+
+  var data = Drupal.settings.ecenterNetwork.siteData;
 
   var node_radius = 9;
   var stroke_width = 5;

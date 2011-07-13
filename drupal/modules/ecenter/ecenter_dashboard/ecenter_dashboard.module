@@ -58,7 +58,7 @@ function template_preprocess_ecenter_dashboard(&$vars) {
     $vars['main_content'] = array(
       'site_view' => array(
         'content' => '<div id="site-view-description"><h2>'. t('@site status:', array('@site' => $user->ecenter_default_hub)) .'</h2>' . 
-          '<p>'. t('@start - @end', array('@start' => $start, '@end' => $end)) .'</p></div><div id="site-view-svg"></div>',
+          '<p>'. t('<span class="start">@start</span> <span class="separator">-</span> <span class="end">@end</span>', array('@start' => $start, '@end' => $end)) .'</p></div><div id="site-view-svg"></div>',
       ),
       'activity' => array(
         'subject' => t('Site activity'),

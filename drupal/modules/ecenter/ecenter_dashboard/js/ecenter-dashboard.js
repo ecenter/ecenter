@@ -11,8 +11,8 @@ Drupal.behaviors.siteView = function(context) {
 
   var node_radius = 9;
   var stroke_width = 5;
-  var width = 340;
-  var height = 220;
+  var width = 300;
+  var height = 200;
   var cx = width / 2;
   var cy = height / 2;
   var text_offset = node_radius + stroke_width + 2;
@@ -66,8 +66,7 @@ Drupal.behaviors.siteView = function(context) {
     var text = paper
       .text((flip * text_offset) + destinationX, destinationY, destination.hub)
       .attr({
-        'font-weight' : 'bold',
-        'font-size' : '13pt'
+        'font-size' : '12pt'
       });
 
     if (flip == 1) {
@@ -113,14 +112,14 @@ Drupal.behaviors.siteView = function(context) {
     // Hover bounding box
     var rect = paper
       .rect(
-        bbox_x,
-        node_box.y - (stroke_width / 2), 
-        bbox_width,
-        node_box.height + stroke_width
+        bbox_x - 1,
+        node_box.y - (stroke_width / 2) - 1, 
+        bbox_width + 2,
+        node_box.height + stroke_width + 2
       )
       .attr({
         'stroke' : '#ffffff',
-        'stroke-width' : 0,
+        'stroke-width' : '0px',
         'fill': '#ffffff', 
         'fill-opacity': 0.3,
       })
@@ -176,7 +175,7 @@ Drupal.behaviors.siteView = function(context) {
   var text = paper
     .text(cx, cy, data.source)
     .attr({
-      'font-size' : '15pt',
+      'font-size' : '13pt',
       'font-weight' : 'bold'
     });
 

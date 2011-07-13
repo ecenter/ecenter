@@ -95,7 +95,7 @@ function template_preprocess_ecenter_dashboard(&$vars) {
       ),
     );
     $vars['secondary_content'] = array(
-      'login' => module_invoke('user', 'block', 'view', 0),
+      'login' => module_invoke('ecenter_core', 'block', 'view', 'dashboard_login'),
       'hot-comments' => array(
         'subject' => t('Hot conversations'),
         'description' => t('The most active public conversations in the past 2 weeks'),

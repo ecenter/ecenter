@@ -640,9 +640,26 @@ function theme_ecenter_network_site_centric_snmp_data($row, $direction) {
   
   $table = array();
   foreach ($row as $measurement => $values) {
-    // @TODO add threshold checking
+    $class = 'normal';
+
+    switch ($measurement) {
+      case 'utilization':
+        if ($values['value'] > 95) {
+          $class = 'critical';
+        }
+        else if ($values['value'] > 75) {
+          $class = 'marginal';
+        }
+        break; 
+      case 'errors':
+      case 'drops':
+        if ($values['value'] > 0) {
+          $class = 'critical';
+        }
+        break;
+    }    
     $table[] = array(
-      'class' => 'test',
+      'class' => $class,
       'data' => array(
         t(ucfirst($measurement)),
         sprintf('%.2f', $values['value']),

@@ -41,7 +41,7 @@ function template_preprocess_ecenter_dashboard(&$vars) {
   if ($user->uid) {
     module_load_include('inc', 'date_api', 'date_api_elements');
     $now = time() - 1800;
-    $offset = 3600 * 12;
+    $offset = 3600 * 24;
     $inc = 60;
     $tz = timezone_open('UTC');
     $end = date_make_date($now, $tz, DATE_UNIX);
@@ -113,7 +113,7 @@ function template_preprocess_ecenter_dashboard(&$vars) {
 function ecenter_dashboard_cron() {
   module_load_include('inc', 'date_api', 'date_api_elements');
   $now = time();
-  $offset = 3600 * 12;
+  $offset = 3600 * 24;
   $inc = 60;
   $tz = timezone_open('UTC');
   $end = date_make_date($now, $tz, DATE_UNIX);

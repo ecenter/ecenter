@@ -21,7 +21,7 @@
 @color_yellow:    #ffffaa;
 @color_dark_red:  #700707;
 @color_light_red: #ffa4a4;
-
+@color_dark_blue: #00195e;
 @color_red: #d92020;
 @color_green: #00ff00;
 @color_orange: #f68104;
@@ -1234,8 +1234,15 @@ form {
 }
 // }}}
 // Nodes {{{
+.submitted {
+  font-size: 15px;
+  line-height: 27px;
+  padding-bottom: 4px;
+  font-weight: bold;
+  color: #555;
+}
 .node {
-  margin-bottom: 36px;
+  margin-bottom: 21px;
   .picture {
     .box;
     line-height: 1;
@@ -1247,7 +1254,6 @@ form {
       width: 24px;
     }
   }
-
   ul, ol {
     margin-bottom: 21px;
     li {
@@ -1258,73 +1264,70 @@ form {
       }
     }
   }
-
   ul {
     li {
       list-style-type: disc;
     }
   }
-
   ol {
     li {
       list-style-type: decimal;
     }
   }
-
   pre {
     font-size: 14px;
+  }
+  .submitted {
+    border-bottom: 1px solid @color_grey_80;
+  }
+  ul.links {
+    font-size: 15px;
+    .box;
+    padding: 0;
+    li {
+      display: inline;
+      margin: 0;
+      padding: 0;
+    }
+  }
+  .node-links {
+    margin-top: 21px;
+    border-top: 1px solid @color_grey_80;
+  }
+  .terms, .groups {
+    font-size: 15px;
+    line-height: 27px;
+    .label {
+      .box;
+      margin-right: 7px;
+      font-weight: bold;
+    }
+    li:not(:last-child) a:after {
+      content: ", ";
+    }
+  }
+  .content {
+    .field {
+      line-height: 27px;
+      font-size: 15px;
+      margin-top: -27px;
+      margin-bottom: 27px;
+      div {
+        display: inline !important;
+      } 
+      .field-label {
+        display: inline;
+        font-weight: bold;
+      }
+      .field-item:not(:last-child) a:after {
+          content: ", ";
+      }
+    }
   }
 }
 .page-node {
   h1.title {
     margin-bottom: 7px;
-  }
-  .submitted {
-    font-size: 15px;
-    line-height: 27px;
-    padding-bottom: 4px;
-    font-weight: bold;
-    color: #555;
-  }
-  .node {
-    .submitted {
-      border-bottom: 1px solid #ccc;
-    }
-    .terms, .groups {
-      font-size: 15px;
-      line-height: 27px;
-      .label {
-        font-weight: bold;
-      }
-      ul, ul.links, ul li, ul.links li, ul li a, ul.link li a {
-        float: none;
-        display: inline;
-        padding: 0;
-        margin: 0;
-      }
-      li:not(:last-child) a:after {
-        content: ", ";
-      }
-    }
-    .content {
-      padding-top: 27px;
-      .field {
-        line-height: 27px;
-        font-size: 15px;
-        margin-top: -27px;
-        margin-bottom: 27px;
-        div {
-          display: inline !important;
-        } 
-        .field-label {
-          display: inline;
-          font-weight: bold;
-        }
-        .field-item:not(:last-child) a:after {
-            content: ", ";
-        }
-      }
-    }
   }
 }
 // }}}
@@ -2011,3 +2014,45 @@ table.network-health {
   }
 }
 /* }}} */
+// Views carousel {{{
+#dashboard-carousel {
+  h2 {
+    background-color: @color_grey_80;
+    padding: 0 5px;
+    font-size: 22px;
+  }
+}
+.view-ecenter-dashboard-carousel {
+  .views_slideshow_main {
+    .box;
+    padding: 5px;
+    width: 564px;
+    border-top: 2px solid @color_dark_blue;
+    border-right: 2px solid @color_dark_blue;
+    border-left: 2px solid @color_dark_blue;
+    border-bottom: 2px solid @color_dark_blue;
+    border: 3px solid @color_grey_80;
+  }
+  .views-slideshow-controls-bottom {
+    .views_slideshow_pager_field_item {
+      .box;
+      width: 172px;
+      margin-right: 2px;
+      padding: 5px 10px;
+      background-color: @color_grey_40;
+      color: @color_white;
+      font-weight: bold;
+      height: 45px;
+      font-size: 15px;
+      line-height: 20px;
+      &:last-child {
+        margin-right: 0;
+      }
+      &.active {
+        background-color: @color_grey_80;
+        color: @color_black;
+      }
+    }
+  }
+}
+// }}}

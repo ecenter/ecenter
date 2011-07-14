@@ -9,7 +9,7 @@ function ecenter_dashboard_menu() {
   $items['ecenter-dashboard'] = array(
     'page callback' => 'theme',
     'page arguments' => array('ecenter_dashboard'),
-    'title' => 'E-Center dashboard',
+    'title' => 'Dashboard',
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
   );
@@ -84,8 +84,10 @@ function template_preprocess_ecenter_dashboard(&$vars) {
     );
   }
   else {
+    drupal_set_title('');
     $vars['main_content'] = array(
       'carousel' => array(
+        'subject' => t('What is E-Center?'),
         'content' => views_embed_view('ecenter_dashboard_carousel', 'block'),
       ),
       'activity' => array(

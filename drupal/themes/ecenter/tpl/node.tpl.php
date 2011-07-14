@@ -1,7 +1,6 @@
 <?php
 // $Id$
 ?>
-<?php if($teaser) { print 'teaser'; } ?>
 <div id="node-<?php print $node->nid; ?>" class="node<?php if ($teaser) { print ' teaser'; }?><?php if ($sticky) { print ' sticky'; } ?><?php if (!$status) { print ' node-unpublished'; } ?> clearfix">
 
 <?php if (!$page): ?>
@@ -16,7 +15,7 @@
   <?php endif; ?>
 
   <?php if ($terms): ?>
-    <div class="terms terms-inline">
+    <div class="terms terms-inline clearfix">
       <span class="label"><?php print t('Tags:'); ?></span>
       <?php print $terms ?>
     </div>
@@ -26,5 +25,7 @@
     <?php print $content ?>
   </div>
 
-  <?php print $links; ?>
+  <div class="node-links clearfix">
+    <?php print $links; ?>
+  </div>
 </div>

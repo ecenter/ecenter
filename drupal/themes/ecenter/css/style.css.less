@@ -334,6 +334,11 @@ code, abbr {
   font-family: @font_mono;
   font-weight: strong;
 }
+code {
+  color: @color_black;
+  background-color: @color_grey_87;
+}
+
 // }}}
 // Content {{{
 #content { 
@@ -1514,6 +1519,7 @@ form {
       a {
         .box;
         .button;
+        padding: 2px 4px;
         font-size: 13px;
         line-height: 1;
         margin-right: 4px;
@@ -1824,6 +1830,22 @@ td.jqplot-table-legend > div {
         width: 134px;
         margin: 0;
       }
+    }
+  }
+
+  #dashboard-hot-comments, #dashboard-hot-content {
+    h3 {
+      font-size: 18px;
+      margin-bottom: 0;
+    }
+    .author {
+      font-weight: bold;
+      margin-right: 4px;
+      padding-right: 4px;
+      border-right: 1px solid @color_grey_60;
+    }
+    .author, .comment-count, .type, .last {
+      font-size: 15px;
     }
   }
 

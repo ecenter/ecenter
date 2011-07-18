@@ -10,7 +10,9 @@
  * Theme main data display
  */
 function template_preprocess_ecenter_network_data(&$vars) {
- 
+
+  //dpm($vars);
+
   // Source / dst table
   $hops = ecenter_network_get_hops();
 
@@ -40,26 +42,6 @@ function template_preprocess_ecenter_network_data(&$vars) {
   // Set title
   // drupal_set_title(t('E-Center Network Query | ') . $vars['title']);
 
-  // Links and issue queries shouldn't take timezone argument 
-  unset($vars['params']['timezone']);
-
-  // Generate permalink
-  $vars['permalink'] = l(t('Permanent link (bookmark and share results)'), 'network', array(
-    'query' => $vars['params'],
-    'absolute' => TRUE,
-    'attributes' => array('title' => $vars['title']),
-  ));
-  $permalink_field['permalink'] = array(
-    '#id' => 'ecenter-permalink',
-    '#type' => 'textfield',
-    '#size' => 115,
-    '#attributes' => array('readonly' => 'readonly'),
-    '#value' => url('network', 
-      array('query' => $vars['params'], 'absolute' => TRUE,)
-    ),
-  );
-  $vars['permalink_field'] = drupal_render($permalink_field);
-
   // Generate issue link -- encode params for use with custom ecenter_issues
   // module
   if (module_exists('ecenter_issues') && user_access('create issue content')) {
@@ -88,10 +70,32 @@ function template_preprocess_ecenter_network_data(&$vars) {
 
   // End to end measurements
   $vars['end_to_end'] = theme('ecenter_network_end_to_end',
-    $vars['data']['drs']['end_to_end'], $vars['data']['ads']);
+    $vars['data']['drs']['end_to_end'], $vars['data']['ads'], $vars['params']['timezone']);
 
   // Per-hop measurements
   $vars['hops'] = theme('ecenter_network_hops', $vars['data']['drs']['hops']);
+
+  // Links and issue queries shouldn't take timezone argument
+  unset($vars['params']['timezone']);
+
+  // Generate permalink
+  $vars['permalink'] = l(t('Permanent link (bookmark and share results)'), 'network', array(
+    'query' => $vars['params'],
+    'absolute' => TRUE,
+    'attributes' => array('title' => $vars['title']),
+  ));
+  $permalink_field['permalink'] = array(
+    '#id' => 'ecenter-permalink',
+    '#type' => 'textfield',
+    '#size' => 115,
+    '#attributes' => array('readonly' => 'readonly'),
+    '#value' => url('network',
+      array('query' => $vars['params'], 'absolute' => TRUE,)
+    ),
+  );
+  $vars['permalink_field'] = drupal_render($permalink_field);
+
+
 }
 
 /**
@@ -203,7 +207,7 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
     $vars['table'] = theme('jqplot_table', $headers, $table,
       array('class' => 'end-to-end-table'));
     $vars['data_tables'] = theme('ecenter_network_end_to_end_tables',
-      $data_tables);
+      $data_tables, $vars['timezone']);
   }
   else {
     $vars['table'] = '<p>'. t('No end-to-end results available.') .'</p>';
@@ -386,12 +390,13 @@ function theme_ecenter_network_hops($hops = array()) {
 /**
  * Theme end to end data tables for plotting
  */
-function theme_ecenter_network_end_to_end_tables($tables) {
+function theme_ecenter_network_end_to_end_tables($tables, $timezone = NULL) {
   $output = '';
+  dpm($timezone, 'tz');
   foreach ($tables as $type => $measurements) {
     foreach ($measurements as $measurement => $measurement_data) {
-      $start = _ecenter_network_timestamp_to_local($measurement_data['start'], 'M j, Y H:i');
-      $end = _ecenter_network_timestamp_to_local($measurement_data['end'], 'M j, Y H:i');
+      $start = _ecenter_network_timestamp_to_local($measurement_data['start'], 'M j, Y H:i', $timezone);
+      $end = _ecenter_network_timestamp_to_local($measurement_data['end'], 'M j, Y H:i', $timezone);
 
       unset($measurement_data['start'], $measurement_data['end']);
 

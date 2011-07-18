@@ -96,11 +96,13 @@ function ecenter_network_theme() {
       'arguments' => array(
         'data' => NULL,
         'ads_data' => NULL,
+        'timezone' => NULL,
       ),
     ) + $options,
     'ecenter_network_end_to_end_tables' => array(
       'arguments' => array(
         'tables' => NULL,
+        'timezone' => NULL,
       ),
     ) + $options,
     'ecenter_network_utilization_table' => array(
@@ -557,6 +559,7 @@ function ecenter_network_select_form(&$form_state) {
   else {
     $user_timezone = $timezone;
   }
+  
   $form['network_wrapper']['query']['timezone_name']['#default_value'] = $user_timezone;
 
   // Clear time selection if there's a query
@@ -596,7 +599,7 @@ function ecenter_network_select_form(&$form_state) {
       'dst' => $dst,
       'start' => $start,
       'end' => $end,
-      'timezone' => $timezone,
+      'timezone' => $user_timezone,
     );
 
     // If we've got the data (at bare minimum, a traceroute), delegate to rendering function
@@ -607,7 +610,6 @@ function ecenter_network_select_form(&$form_state) {
         $data['drs']['traceroute']['traceroute_max'])), 'setting');
 
       if ($ads) {
-        //dpm('ads enabled');
         $data['ads'] = ecenter_network_get_ads_data($src, $dst, $start, $end, $algorithm, $detector_type, $sensitivity, $elevation1, $elevation2, $swc);
       }
 

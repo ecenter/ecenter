@@ -22,7 +22,6 @@ function ecenter_preprocess_page(&$vars) {
   }
 }
 
-
 function ecenter_preprocess_node(&$vars) {
   global $user;
   $node = $vars['node'];
@@ -32,19 +31,23 @@ function ecenter_preprocess_node(&$vars) {
       (($group_post_idx = array_search('node-og-group', $vars['template_files'])) !== FALSE)) {
     unset($vars['template_files'][$group_post_idx]);
   }
- 
-  // Unset author picture on group node 
+
+  // Unset author picture on group node
   if ($node->type == 'group') {
     unset($vars['picture']);
   }
 
+  if ($vars['teaser']) {
+    $vars['content'] = _ecenter_trim($node->content['body']['#value'], 250);
+  }
+
   if ($node->type == 'issue' && !empty($node->issue_queries)
     && !$vars['teaser'] && !$vars['build_mode']) {
-    
+
     $output = '';
     foreach ($node->issue_queries as $query) {
       $output .= theme('ecenter_network_data',
-        unserialize($query->field_query_data[0]['value']), 
+        unserialize($query->field_query_data[0]['value']),
         $query->query_params);
     }
     $fieldset = array(
@@ -118,7 +121,7 @@ function ecenter_preprocess_node(&$vars) {
     else {
       $date = $node->changed;
       $author = user_load($node->uid);
-      
+
       $vars['comment_mode'] = FALSE;
 
       // @TODO Instead of trimming body, we might want to use pre-processed
@@ -129,7 +132,7 @@ function ecenter_preprocess_node(&$vars) {
     // If message is for 'you'
     if ($user->uid && $user->uid == $author->uid) {
       $author->name = ($vars['comment_mode']) ? t('You') : t('you');
-      $classes[] = 'self-author'; 
+      $classes[] = 'self-author';
     }
 
     $vars['name'] = theme('username', $author);
@@ -141,8 +144,34 @@ function ecenter_preprocess_node(&$vars) {
   }
 }
 
+function ecenter_node_submitted($node) {
+  $og_links = array();
+  
+  if (og_is_group_post_type($node->type) && !empty($node->og_groups_both)) {
+    $current_groups = og_node_groups_distinguish($node->og_groups_both, FALSE);
+    foreach ($current_groups['accessible'] as $gid => $item) {
+      $og_links[] = l($item['title'], 'node/'. $gid);
+    }
+  }
+
+  $group = (!empty($og_links)) ? format_plural(count($og_links), ' in group !groups', ' in groups !groups', array(
+    '!groups' => implode(', ', $og_links),
+  )) : '';
+
+  return t('Submitted by !username on @datetime', 
+    array(
+    '!username' => theme('username', $node), 
+    '@datetime' => format_date($node->created),
+  )) . $group;
+}
+
 /**
  * Fancy format a date
+ *
+ * @param $timestamp
+ *  A UNIX style timestamp
+ * @return
+ *  A fancy formatted string representation of the date
  */
 function _ecenter_format_date($timestamp) {
   $now = time();
@@ -196,38 +225,15 @@ function _ecenter_format_date($timestamp) {
   return $date;
 }
 
-function ecenter_node_submitted($node) {
-  $og_links = array();
-  
-  if (og_is_group_post_type($node->type) && !empty($node->og_groups_both)) {
-    $current_groups = og_node_groups_distinguish($node->og_groups_both, FALSE);
-    foreach ($current_groups['accessible'] as $gid => $item) {
-      $og_links[] = l($item['title'], 'node/'. $gid);
-    }
-  }
-
-  $group = (!empty($og_links)) ? format_plural(count($og_links), ' in group !groups', ' in groups !groups', array(
-    '!groups' => implode(', ', $og_links),
-  )) : '';
-
-  return t('Submitted by !username on @datetime', 
-    array(
-    '!username' => theme('username', $node), 
-    '@datetime' => format_date($node->created),
-  )) . $group;
-}
-
 /**
- * @function _ecenter_trim
- *
- * Safely trim text
- *
- * @TODO configurable breakpoints?
+ * Trim text for E-Center
  *
  * @param $text
- *   String to trim
+ *   Text to trim
  * @param $size
- *   Maximum length to trim to
+ *   Length to trim the string to
+ * @param $suffix
+ *   A suffix to append once the string is trimmed, such as elipses
  * @return
  *   $text trimmed to a maximum length of $size (or shorter)
  */

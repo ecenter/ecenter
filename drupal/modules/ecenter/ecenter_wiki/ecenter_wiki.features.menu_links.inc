@@ -22,7 +22,7 @@ function ecenter_wiki_menu_default_menu_links() {
     'external' => '0',
     'has_children' => '0',
     'expanded' => '0',
-    'weight' => '21',
+    'weight' => '-49',
     'parent_path' => 'wiki',
   );
   // Exported menu link: primary-links:wiki
@@ -37,7 +37,7 @@ function ecenter_wiki_menu_default_menu_links() {
     'external' => '0',
     'has_children' => '1',
     'expanded' => '0',
-    'weight' => '-47',
+    'weight' => '-46',
   );
   // Translatables
   // Included for use with string extractors like potx.

@@ -76,11 +76,10 @@ function ecenter_core_content_default_fields() {
       'insert' => 1,
       'insert_styles' => array(
         'link' => 'link',
+        'image' => 'image',
         'imagecache_ecenter_content_narrow' => 'imagecache_ecenter_content_narrow',
-        'imagecache_ecenter_dashboard_carousel' => 'imagecache_ecenter_dashboard_carousel',
         'imagecache_ecenter_thumbnail' => 'imagecache_ecenter_thumbnail',
         'auto' => 0,
-        'image' => 0,
       ),
       'insert_default' => 'imagecache_ecenter_thumbnail',
       'insert_class' => '',

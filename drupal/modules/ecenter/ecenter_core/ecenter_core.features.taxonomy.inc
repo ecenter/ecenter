@@ -18,7 +18,9 @@ function ecenter_core_taxonomy_default_vocabularies() {
       'weight' => '0',
       'nodes' => array(
         'blog_post' => 'blog_post',
+        'issue' => 'issue',
         'page' => 'page',
+        'wiki' => 'wiki',
       ),
     ),
   );

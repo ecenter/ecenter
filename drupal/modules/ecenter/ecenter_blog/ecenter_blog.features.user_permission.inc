@@ -11,7 +11,6 @@ function ecenter_blog_user_default_permissions() {
     'name' => 'create blog_post content',
     'roles' => array(
       '0' => 'administrator',
-      '1' => 'trusted user',
     ),
   );
 

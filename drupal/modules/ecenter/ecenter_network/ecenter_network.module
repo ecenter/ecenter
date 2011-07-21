@@ -568,25 +568,29 @@ function ecenter_network_select_form(&$form_state) {
   }
 
   $sources = ecenter_network_get_hops();
-  $src_options[0] = '';
-  foreach ($sources['hubs'] as $key => $hop) {
-    $src_options['hub:'. $key] = theme('ecenter_network_hop_option', $hop);
-  }
-  $form['network_wrapper']['query']['src_wrapper']['src']['#options'] += $src_options;
-  if (!empty($src)) {
-    $form['network_wrapper']['query']['src_wrapper']['src']['#default_value'] = $src;
-    list($src_type, $src_value) = explode(':', $src, 2);
-    $destinations = ecenter_network_get_hops($src_value, $src_type);
-    $dst_options[0] = '';
-    foreach ($destinations['hubs'] as $key => $hop) {
-      $dst_options['hub:'. $key] = theme('ecenter_network_hop_option', $hop);
-    }
-    $form['network_wrapper']['query']['dst_wrapper']['dst']['#options'] += $dst_options;
-    $form['network_wrapper']['query']['dst_wrapper']['dst']['#disabled'] = FALSE;
-  }
 
-  if ($dst) {
-    $form['network_wrapper']['query']['dst_wrapper']['dst']['#default_value'] = $dst;
+  $src_options[0] = '';
+
+  if (!empty($sources)) {
+    foreach ($sources['hubs'] as $key => $hop) {
+      $src_options['hub:'. $key] = theme('ecenter_network_hop_option', $hop);
+    }
+    $form['network_wrapper']['query']['src_wrapper']['src']['#options'] += $src_options;
+    if (!empty($src)) {
+      $form['network_wrapper']['query']['src_wrapper']['src']['#default_value'] = $src;
+      list($src_type, $src_value) = explode(':', $src, 2);
+      $destinations = ecenter_network_get_hops($src_value, $src_type);
+      $dst_options[0] = '';
+      foreach ($destinations['hubs'] as $key => $hop) {
+        $dst_options['hub:'. $key] = theme('ecenter_network_hop_option', $hop);
+      }
+      $form['network_wrapper']['query']['dst_wrapper']['dst']['#options'] += $dst_options;
+      $form['network_wrapper']['query']['dst_wrapper']['dst']['#disabled'] = FALSE;
+    }
+
+    if ($dst) {
+      $form['network_wrapper']['query']['dst_wrapper']['dst']['#default_value'] = $dst;
+    }
   }
 
   if ($src && $dst && $start && $end) {
@@ -1488,6 +1492,10 @@ function ecenter_network_openlayers_layers() {
 function ecenter_network_layers_sites() {
   extract(_ecenter_network_extract_query());
   $sources = ecenter_network_get_hops();
+
+  if (empty($sources)) {
+    return;
+  }
 
   // Calculate destinations
   if (!empty($src)) {

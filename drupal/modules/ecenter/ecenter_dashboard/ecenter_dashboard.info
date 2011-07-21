@@ -1,7 +1,6 @@
 core = "6.x"
 dependencies[] = "buildmodes"
 dependencies[] = "comment"
-dependencies[] = "draggableviews"
 dependencies[] = "features"
 dependencies[] = "flag"
 dependencies[] = "menu"

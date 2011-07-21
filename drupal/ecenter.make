@@ -9,6 +9,13 @@
 core = 6.x
 api = 2
 
+; Drupal core
+projects[drupal][type] = "core"
+projects[drupal][version] = "6.22"
+
+; Patch Drupal to use jQuery 1.4 (see http://drupal.org/node/479368)
+projects[drupal][patch][] = "http://drupal.org/files/issues/do479468-drupal_to_js-expanded-comments-nostatic.patch"
+
 ; Modules
 
 ; Handle multiple jQuery UI versions
@@ -78,6 +85,9 @@ projects[filefield][version] = "3.10"
 projects[flag][subdir] = "contrib"
 projects[flag][version] = "1.3"
 
+projects[fontyourface][subdir] = "contrib"
+projects[fontyourface][version] = "2.8"
+
 projects[geoip][subdir] = "contrib"
 projects[geoip][version] = "1.4"
 
@@ -131,6 +141,9 @@ projects[markdownify][download][url] = "git://github.com/ecenter/markdownify"
 projects[markdownify][subdir] = "ecenter-contrib"
 projects[markdownify][type] = "module"
 
+projects[menu_block][subdir] = "contrib"
+projects[menu_block][version] = "2.4"
+
 projects[oembed][subdir] = "contrib"
 projects[oembed][version] = "0.8"
 
@@ -138,7 +151,7 @@ projects[og][subdir] = "contrib"
 projects[og][version] = "2.1"
 
 projects[openid_selector][subdir] = "contrib"
-projects[openid_selector][version] = "1.5"
+projects[openid_selector][version] = "1.x-dev"
 
 projects[openlayers][subdir] = "contrib"
 projects[openlayers][version] = "2.0-alpha10"
@@ -152,6 +165,9 @@ projects[pathologic][version] = "3.4"
 projects[semanticviews][subdir] = "contrib"
 projects[semanticviews][version] = "1.1"
 
+projects[shib_auth][subdir] = "contrib"
+projects[shib_auth][version] = "4.0-rc6"
+
 projects[simplemenu][subdir] = "contrib"
 projects[simplemenu][version] = "1.13"
 
@@ -164,6 +180,9 @@ projects[strongarm][version] = "2.0"
 projects[syntaxhighlighter][subdir] = "contrib"
 projects[syntaxhighlighter][version] = "1.26"
 
+projects[tableofcontents][subdir] = "contrib"
+projects[tableofcontents][version] = "3.6"
+
 projects[token][subdir] = "contrib"
 projects[token][version] = "1.16"
 
@@ -171,7 +190,7 @@ projects[vertical_tabs][subdir] = "contrib"
 projects[vertical_tabs][version] = "1.0-rc1"
 
 projects[views][subdir] = "contrib"
-projects[views][version] = "3.x-alpha3"
+projects[views][version] = "3.0-alpha3"
 
 projects[views_slideshow][subdir] = "contrib"
 projects[views_slideshow][version] = "3.x-dev"
@@ -190,6 +209,11 @@ projects[seven][type] = "theme"
 projects[seven][version] ="1.0-beta13"
 
 ; Libraries
+
+; Drupal profiler module/library
+libraries[profiler][download][type] = "get"
+libraries[profiler][download][url] = "http://ftp.drupal.org/files/projects/profiler-6.x-2.x-dev.tar.gz"
+libraries[profiler][directory_name] = "profiler"
 
 ; Our convoluted jQuery UI situation -- we need 1.8.x (for combobox) and 1.6.x
 ; (for Homebox) so we'll just throw in 1.7.x for good measure
@@ -249,8 +273,8 @@ libraries[jquery.cycle][download][url] = "https://raw.github.com/malsup/cycle/ma
 libraries[jquery.cycle][directory_name] = "jquery.cycle"
 
 ; qTip library
-libraries[qtip][download][type] = ""
-libraries[qtip][download][url] = ""
+libraries[qtip][download][type] = "get"
+libraries[qtip][download][url] = "https://raw.github.com/Craga89/qTip2/master/dist/jquery.qtip.js"
 libraries[qtip][directory_name] = "qtip"
 
 ; Masonry
@@ -260,5 +284,5 @@ libraries[masonry][directory_name] = "masonry"
 
 ; Raphael
 libraries[raphael][download][type] = "get"
-libraries[raphael][download][url] = "http://github.com/DmitryBaranovskiy/raphael/raw/master/raphael-min.js"
+libraries[raphael][download][url] = "https://raw.github.com/DmitryBaranovskiy/raphael/master/raphael-min.js"
 libraries[raphael][directory_name] = "raphael"

@@ -66,6 +66,13 @@ function _ecenter_profile_post_install() {
 
   // Install syntaxhighlighter and ecenter_editor (must be installed after 
   // everything else)
-  module_enable(array('syntaxhighlighter', 'ecenter_editor'));
-
+  foreach (array('syntaxhighlighter', 'ecenter_editor') as $module) {
+    module_load_install($module);
+    $versions = drupal_get_schema_versions($module);
+    drupal_set_installed_schema_version($module, SCHEMA_UNINSTALLED);
+    module_invoke($module, 'uninstall');
+    _drupal_install_module($module);
+    module_invoke($module, 'enable');
+    drupal_get_schema(NULL, TRUE);
+  }
 }

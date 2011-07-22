@@ -35,5 +35,37 @@ function ecenter_profile_submit($form, &$form_state) {
       variable_set($key, $value);
     }
   }
+  _ecenter_profile_post_install();
 }
 
+/**
+ * Post install function
+ */
+function _ecenter_profile_post_install() {
+  // Required because menu_block doesn't support CTools/Features exportables
+  // see http://drupal.org/node/693302
+  variable_set('menu_block_1_admin_title', 'E-Center: Primary Links');
+  variable_set('menu_block_1_depth', '1');
+  variable_set('menu_block_1_expanded', 0);
+  variable_set('menu_block_1_follow', 0);
+  variable_set('menu_block_1_level', '1');
+  variable_set('menu_block_1_parent', 'primary-links:0');
+  variable_set('menu_block_1_sort', 0);
+  variable_set('menu_block_1_title_link', 0);
+
+  variable_set('menu_block_2_admin_title', 'E-Center: Secondary Links');
+  variable_set('menu_block_2_depth', '1');
+  variable_set('menu_block_2_expanded', 0);
+  variable_set('menu_block_2_follow', 0);
+  variable_set('menu_block_2_level', '2');
+  variable_set('menu_block_2_parent', 'primary-links:0');
+  variable_set('menu_block_2_sort', 0);
+  variable_set('menu_block_2_title_link', 0);
+
+  variable_set('menu_block_ids', array(1, 2));
+
+  // Install syntaxhighlighter and ecenter_editor (must be installed after 
+  // everything else)
+  module_enable(array('syntaxhighlighter', 'ecenter_editor'));
+
+}

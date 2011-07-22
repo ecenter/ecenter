@@ -65,7 +65,7 @@ projects[date][subdir] = "contrib/date"
 projects[date][version] = "2.7"
 
 projects[devel][subdir] = "contrib"
-projects[devel][version] = "1.24"
+projects[devel][version] = "1.26"
 
 projects[diff][subdir] = "contrib"
 projects[diff][version] = "2.1"

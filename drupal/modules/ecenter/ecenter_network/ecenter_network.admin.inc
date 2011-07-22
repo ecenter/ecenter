@@ -12,7 +12,7 @@ function ecenter_network_admin_form() {
     'ads' => t('Anomaly Detection Service'),
   );
 
-  $form = array();
+  $form = array('#tree' => TRUE);
 
   foreach ($services as $type => $name) {
 

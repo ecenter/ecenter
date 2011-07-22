@@ -48,9 +48,12 @@ to work. These settings can be added or changed after installing at
  * The profiler module (which is used to help smooth out installation) may run
 for a fairly long time. If you run into these problems, you may wish to increase
 the `max_execution_time` variable in your php.ini files.
- * Input format defaults provided by the Better Formats module are not configured.
-For security reasons, you should review them at `admin/settings/filters/defaults`
-immediately after installation.
+ * Input format permissions and defaults are not configured out of the box:
+   * Configure the 'WYSIWYG Markdown' filter at `admin/settings/filter` to 
+allow the 'trusted user' role (and any other desired roles) to access the 
+WYSIWYG markdown format. 
+   * Review per-node-type and per-role format defaults at 
+`admin/settings/filters/defaults`.
  * There is a bug in menu item exports which prevents a section's home page from 
 appearing in the secondary navigation (for example, if you visit `/network`, the 
 network weathermap link is missing from the secondary navigation menu). These

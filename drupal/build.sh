@@ -38,12 +38,13 @@ else
 fi
 
 echo -e "Creating Drupal instance in $dir.\n\n"
-drush -y make --working-copy --contrib-destination=profiles/ecenter ecenter.make $dir
+drush -y -v make --working-copy --contrib-destination=profiles/ecenter ecenter.make $dir
 
 ln -s $script_dir/profile/* $dir/profiles/ecenter/
 ln -s $script_dir/modules/ecenter $dir/profiles/ecenter/modules/
 ln -s $script_dir/modules/util $dir/profiles/ecenter/modules/
 ln -s $script_dir/themes/ecenter $dir/profiles/ecenter/themes/
+mkdir $dir/sites/default/files
 
 # See http://drupal.org/node/1050262 - Drush make can't handle untarred,
 # gzipped files

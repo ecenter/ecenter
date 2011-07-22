@@ -135,11 +135,12 @@ projects[mapbox][version] = "1.0-alpha3"
 projects[markdown][subdir] = "contrib"
 projects[markdown][version] = "1.2"
 
-projects[markdownify][branch] = "6.x-1.0-dev"
+projects[markdownify][type] = "module"
+projects[markdownify][subdir] = "ecenter-contrib"
 projects[markdownify][download][type] = "git"
 projects[markdownify][download][url] = "git://github.com/ecenter/markdownify"
-projects[markdownify][subdir] = "ecenter-contrib"
-projects[markdownify][type] = "module"
+projects[markdownify][download][branch] = "6.x-1.0-dev"
+
 
 projects[menu_block][subdir] = "contrib"
 projects[menu_block][version] = "2.4"

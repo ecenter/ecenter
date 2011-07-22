@@ -7,27 +7,37 @@
 # Usage: Run build.sh
 
 ARGS=1
-E_BADARGS=65
-E_NOFILE=66
 
 old_dir=`pwd`
+dir=$1
 script_dir=$(dirname `readlink -f $0`)
 
 if [ $# -ne $ARGS ]  # Correct number of arguments passed to script?
 then
   echo "Usage: `basename $0` target_directory"
-  exit $E_BADARGS
+  exit 1
 fi
 
-#if [ -d "$1" ] # Check if directory exists
-#then
-#  echo 'oh hai'
-  #dir=$1
-  #exit $E_NOFILE
-#fi
+if [ -d "$dir" ] # Check if directory exists
+then
+  echo -e "\nThe target directory ($1) already exists. Would you like to overwrite it"
+  echo -e "and create a new E-center instance? (Y/n): \c"
+  read OVERWRITE
+  if [ $OVERWRITE = "Y" ] || [ $OVERWRITE = "y" ]; then
+    rm -Rf $dir
+  else
+    echo "Couldn't build E-Center in the specified directory, exiting."
+    exit
+  fi
+else
+  echo -e "\nAbout to create a new E-Center instance in $dir. Would you like to continue? (Y/n): \c"
+  read CONFIRM
+  if [ $CONFIRM != "Y" ] && [ $CONFIRM != "y" ]; then
+    exit
+  fi
+fi
 
-dir=$1
-echo "Creating Drupal instance in $dir"
+echo -e "Creating Drupal instance in $dir.\n\n"
 drush -y make --working-copy --contrib-destination=profiles/ecenter ecenter.make $dir
 
 ln -s $script_dir/profile/* $dir/profiles/ecenter/

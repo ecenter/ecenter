@@ -58,6 +58,11 @@ function ecenter_network_admin_form() {
       '#description' => t('The default query resolution.'),
       '#default_value' => variable_get('ecenter_network_'. $type .'_resolution', 50),
     );
+
+    if ($type == 'ads') {
+      $form[$type]['ecenter_network_'. $type .'_resolution']['#default_value'] = 
+        variable_get('ecenter_network_'. $type .'_resolution', 1000);
+    }
   }
 
   // DRS specific settings

@@ -11,8 +11,6 @@
  */
 function template_preprocess_ecenter_network_data(&$vars) {
 
-  //dpm($vars);
-
   // Source / dst table
   $hops = ecenter_network_get_hops();
 
@@ -392,7 +390,6 @@ function theme_ecenter_network_hops($hops = array()) {
  */
 function theme_ecenter_network_end_to_end_tables($tables, $timezone = NULL) {
   $output = '';
-  dpm($timezone, 'tz');
   foreach ($tables as $type => $measurements) {
     foreach ($measurements as $measurement => $measurement_data) {
       $start = _ecenter_network_timestamp_to_local($measurement_data['start'], 'M j, Y H:i', $timezone);

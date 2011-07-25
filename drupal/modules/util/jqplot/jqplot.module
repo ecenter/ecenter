@@ -126,6 +126,7 @@ function jqplot_register_tablechart($selector, $settings = array()) {
  * array_walk_recursive() callback to include renderers
  */
 function _jqplot_add_renderers($item, $key, $path) {
+  $key = (string) $key;
   switch ($key) {
     case 'renderer':
     case 'labelRenderer':

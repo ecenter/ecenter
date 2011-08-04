@@ -17,114 +17,65 @@ $.fn.traceroute = function(data, options) {
   });
 };
 
-// Defaults
-$.fn.traceroute.defaults = {
-  'tracerouteName' : 'default',
-  'diff_y_offset' : 25,
-  'container' : {
-    'style' : {
-      'width' : '100%', // Width of canvas
-      'height' : '100'  // Height of canvas
-    }
-  },
-  'link' : {
-    'match_offset' : 9,
-    'length' : 55,
-    'style' : {
-      'fill' : 'transparent',
-      'stroke' : '#dddddd',
-      'strokeWidth' : 3,
-    }
-  },
-  'arrow' : {
-    'show' : true,
-    'height' : 12,
-    'width' : 12,
-    'style' : {
-      'fill' : '#aaaaaa',
-      'strokeWidth' : 1,
-      'stroke' : '#ffffff'
-    }
-  },
-  'marker' : {
-    'radius' : 10,
-    'style' : {
-      'class' : 'marker',
-      'stroke' : '#aaaaaa',
-      'fill' : '#ffffff',
-      'strokeWidth' : 4
-    }
-  },
-  'hub_label' : {
-    'style' : {
-      'fill' : '#444444',
-      'fontWeight' : 'bold',
-      'fontSize' : '10px',
-      'fontFamily' : '"Droid Sans", Verdana, sans-serif'
-    }
-  },
-  'hub_label_background' : {
-    'style' : {
-      'fill' : '#ffffff',
-      'fillOpacity' : 0.80
-    }
-  },
-  'label' : {
-    'width' : 75,
-    'margin' : 17,
-    'padding_x' : 2,
-    'padding_y' : 2,
-    'style' : {
-      'class' : 'label',
-      'fontSize' : '8px',
-      'fill' : '#000000',
-      'fontFamily' : '"Droid Sans", Verdana, sans-serif'
-    }
-  },
-  'label_background' : {
-    'style' : {
-      'fill' : '#ffffff',
-      'strokeWidth' : 0,
-      'class' : 'label-background',
-    }
-  }
-};
-
 // Traceroute constructor
 $.traceroute = function(el, options, data) {
   this.el = el;
   this.options = options;
-  $(el)
-    .css(options.container.style)
-    .svg();
-  this.svg = $(this.el).svg('get');
+  this.paper = Raphael(el, options.container.width, options.container.height);
+  this.paper.tracerouteOptions = options;
+}
+
+// Callback for hover 'over' event
+$.traceroute.hoverOver = function() {
+  for (var i = 0, ii = this.groups.length; i < ii; ++i) {
+    var set = this.paper.groups[this.groups[i]];
+    for (var j = 0, jj = set.items.length; j < jj; ++j) {
+      var element = set.items[j];
+      switch (element.type) {
+        case 'circle':
+          element.attr(this.paper.tracerouteOptions.marker.overStyle);
+          break;
+        case 'text':
+          element.attr(this.paper.tracerouteOptions.label.overStyle);
+          break;
+      }
+    }
+  }
+}
+
+// Callback for hover 'out' event
+$.traceroute.hoverOut = function() {
+  for (var i = 0, ii = this.groups.length; i < ii; ++i) {
+    var set = this.paper.groups[this.groups[i]];
+    for (var j = 0, jj = set.items.length; j < jj; ++j) {
+      var element = set.items[j];
+      switch (element.type) {
+        case 'circle':
+          element.attr(this.paper.tracerouteOptions.marker.style);
+          break;
+        case 'text':
+          element.attr(this.paper.tracerouteOptions.label.style);
+          break;
+      }
+    }
+  }
 }
 
 $.traceroute.prototype.draw = function(data) {
-  var svg = this.svg;
+  var paper = this.paper;
 
-  var surface = svg.rect(0, 0, '100%', '100%',
-    {id: 'surface', 'fill': 'transparent'}
-  );
-
-  // Calculate some measurements
-
-  // Marker offsets
+  // Marker offsets 
   var marker_center_offset = this.options.marker.radius +
-    (this.options.marker.style.strokeWidth / 2);
-
-  var link_length = this.options.link.length + (2* marker_center_offset);
+    (this.options.marker.style['stroke-width'] / 2);
+  
+  var link_length = parseInt(this.options.link.length) + (2 * marker_center_offset);
 
   // Start at a negative distance so first iteration starts at 0
   var x_offset = -link_length;
 
   // Always vertically center markers
-  var y_offset = this.options.container.style.height / 1.75;
-
-  // Set up groups to hold graphical elements
-  var links = svg.group('links');
-  var nodes = svg.group('nodes');
-
+  var y_offset = parseInt(this.options.container.height) / 1.75;
+  
   // Last hop tracks the last hop in the forward and reverse directions,
   // irrespective of the current step. This allows us to always draw backwards
   // to the appropriate marker.
@@ -135,19 +86,10 @@ $.traceroute.prototype.draw = function(data) {
     var row_type = (row.match != undefined) ? 'match' : 'diff';
     var step = row[row_type];
 
-    var node_group = svg.group(nodes, 'step-' + i, {'class' : row_type});
-
-    if (row_type == 'diff') {
-      var longest_direction = (step.forward.length > step.reverse.length) ?
-        'forward' : 'reverse';
-      var last_diff_x = 0;
-      var adjusted_link_length = link_length - 30; // @TODO properly calculate
-    }
-
-    // Draw markers and labels
-    for (var direction in {forward: 1, reverse: 1}) {
-
-      var y_adjust = (i > 0 && row_type == 'diff' && direction == 'reverse') ? y_offset - this.options.diff_y_offset : y_offset;
+    // Reuse last_hop variable to loop over forward and reverse directions
+    for (direction in last_hop) {
+      var y_adjust = (i > 0 && row_type == 'diff' && direction == 'reverse') ? 
+        y_offset - this.options.diff_y_offset : y_offset;
 
       if (step[direction] == undefined) {
         continue;
@@ -155,7 +97,6 @@ $.traceroute.prototype.draw = function(data) {
 
       for (var j = 0; j < step[direction].length; j++) {
         var hop = step[direction][j];
-
         $.extend(hop, {'ttl' : i, 'type' : row_type, 'direction' : direction, 'y_offset': y_adjust});
 
         if (row_type == 'match') {
@@ -181,133 +122,103 @@ $.traceroute.prototype.draw = function(data) {
           $.extend(hop, {'x_offset' : last_diff_x});
         }
 
-        // Drawing routines
-        var hop_id = row_type + '-' + direction + '-' + hop.id;
-        var hop_class = 'node ' + row_type + '-' + direction + '-' + hop.hub;
-
-        var node = svg.group(node_group, hop_id, {'hop_id' : hop.id, 'class' : hop_class});
-        var marker = svg.circle(node, marker_offset, y_adjust, this.options.marker.radius,
-          this.options.marker.style);
-        var background = svg.group(node, {'class' : 'background'});
-        var label = svg.group(node, {'class' : 'label'});
-        var hub_label = svg.group(node, {'class' : 'hub_label'});
-
-        var font_size = parseInt(this.options.label.style.fontSize);
+        var marker = paper.circle(marker_offset, y_adjust, this.options.marker.radius)
+          .attr(this.options.marker.style);
+        
+        var fontSize = parseInt(this.options.label.style['font-size']);
 
         var label_y = (direction == 'reverse') ?
           y_adjust - this.options.label.margin - (2 * this.options.label.padding_y):
-          y_adjust + font_size + this.options.label.margin + (2 * this.options.label.padding_y);
+          y_adjust + fontSize + this.options.label.margin + (2 * this.options.label.padding_y);
 
-        var label_x = label_offset + this.options.label.padding_x;
+        // @TODO center text...
+        var label_text = paper.text(label_offset, label_y, hop.hop_ip).attr(this.options.label.style);
 
-        var label_text = svg.text(label, label_x, label_y,
-          hop.hop_ip, this.options.label.style);
+        var set = paper.set(hop.hub)
+          .push(marker, label_text)
+          .hover($.traceroute.hoverOver, $.traceroute.hoverOut);
 
-        var label_background = svg.rect(background,
+        /*var label_background = paper.rect(background,
           label_offset, label_y - font_size - this.options.label.padding_y,
           this.options.label.width, font_size + (3 * this.options.label.padding_y),
-          this.options.label_background.style);
-
-        // Hub label
-        if ((direction == 'forward' && row_type == 'diff') ||
-          (row_type == 'match' && !step['reverse']) || direction == 'reverse') {
-          var hub_label_background = svg.rect(hub_label, 5 + label_offset, 
-            y_adjust - (parseInt(this.options.hub_label.style.fontSize) / 2.5) - 1, 
-            55, 
-            parseInt(this.options.hub_label.style.fontSize) + 2, 
-            this.options.hub_label_background.style
-          );
-          var hub_label = svg.text(hub_label, label_offset + 5, 
-            y_adjust + (parseInt(this.options.hub_label.style.fontSize) / 2.5),
-            hop.hub, this.options.hub_label.style);
-        }
-
-        var line_offset = 0;
-        if (last_hop != undefined && last_hop[direction] != undefined) {
-          // Last hop in the same direction as this hop
-          var last_sibling = last_hop[direction];
-
-          var startx = last_sibling.x_offset + marker_center_offset + (this.options.label.width / 4);
-          var endx = marker_offset;
-
-          if (direction == 'forward') {
-
-            // Offset link y-position for parallel forward and reverse "rails"
-            if (last_sibling.ttl + 1 == i && last_sibling.type == 'match' && hop.type == 'match') {
-              var line_offset = this.options.link.match_offset;
-            }
-
-            var link = svg.group(links);
-            var line = svg.line(link,
-                startx, y_adjust + line_offset,
-                endx, y_adjust + line_offset,
-                this.options.link.style);
-
-            // Draw arrow
-            var arrow_start = startx + ((endx - startx) / 2) - (this.options.arrow.width / 2);
-            var arrow_end = arrow_start + this.options.arrow.width;
-            var arrow_top = y_adjust + line_offset + (this.options.arrow.height / 2);
-            var arrow_bottom = y_adjust + line_offset - (this.options.arrow.height / 2);
-            var arrow = svg.polygon(link, [
-                [arrow_start, arrow_top], [arrow_start, arrow_bottom],
-                [arrow_end, y_adjust + line_offset]
-              ],this.options.arrow.style);
-          } else {
-
-            // Non-skip differences: The current TTL is 1 ahead of previous sibling hop's TTL
-            if (last_sibling.ttl + 1 == i || (last_sibling.type == 'diff' && hop.type == 'diff')) {
-
-              // Offset link y-position for parallel forward and reverse "rails"
-              if (hop.type == 'match' && last_sibling.type == 'match') {
-                var line_offset = this.options.link.match_offset;
-              }
-
-              var link = svg.group(links);
-              var line = svg.line(link, startx, last_hop[direction].y_offset - line_offset, endx, y_adjust - line_offset, this.options.link.style);
-
-              // @TODO Rotate arrows
-              if ((hop.type == 'match' && last_sibling.type == 'match') ||
-                (last_sibling.type == 'diff' && hop.type == 'diff')) {
-
-                // Draw arrow
-                var arrow_start = startx + ((endx - startx) / 2) - (this.options.arrow.width / 2);
-                var arrow_end = arrow_start + this.options.arrow.width;
-                var arrow_top = y_adjust - line_offset + (this.options.arrow.height / 2);
-                var arrow_bottom = y_adjust - line_offset - (this.options.arrow.height / 2);
-                var arrow = svg.polygon(link, [
-                    [arrow_end, arrow_top], [arrow_end, arrow_bottom],
-                    [arrow_start, y_adjust - line_offset]
-                  ],this.options.arrow.style);
-              }
-            }
-
-            // Skip links
-            else {
-              var link = svg.group(links);
-              // @TODO remove fudge factor
-              var control_y = y_adjust - (1.35 * this.options.diff_y_offset);
-              var path = svg.createPath();
-              var curve = svg.path(link,
-                path.move(startx, y_adjust).curveC([[startx, control_y, endx, control_y, endx, y_adjust]]),
-                this.options.link.style);
-
-              // Draw arrow
-              var arrow_start = startx + ((endx - startx) / 2) - (this.options.arrow.width / 2);
-              var arrow_end = arrow_start + this.options.arrow.width;
-              var arrow_top = y_adjust - this.options.diff_y_offset + (this.options.arrow.height / 2);
-              var arrow_bottom = y_adjust - this.options.diff_y_offset - (this.options.arrow.height / 2);
-              var arrow = svg.polygon(link, [
-                  [arrow_end, arrow_top], [arrow_end, arrow_bottom],
-                  [arrow_start, y_adjust - this.options.diff_y_offset]
-                ], this.options.arrow.style);
-            }
-
-          }
-        }
-        last_hop[direction] = hop;
+          this.options.label_background.style);*/
+        //.hover($.traceroute.hoverOver, $.traceroute.hoverOut);
       }
     }
   }
 }
+
+// Defaults
+$.fn.traceroute.defaults = {
+  'tracerouteName' : 'default',
+  'diffYOffset' : 25,
+  'container' : {
+    'width' : '100%',
+    'height' : '200px'
+  },
+  'link' : {
+    'match_offset' : 9,
+    'length' : 55,
+    'style' : {
+      'fill' : 'transparent',
+      'stroke' : '#dddddd',
+      'stroke-width' : 3
+    }
+  },
+  'arrow' : {
+    'height' : 12,
+    'width' : 12,
+    'style' : {
+      'fill' : '#aaaaaa',
+      'stroke' : '#ffffff',
+      'stroke-width' : 1
+    }
+  },
+  'marker' : {
+    'radius' : 10,
+    'style' : {
+      'stroke' : '#aaaaaa',
+      'fill' : '#ffffff',
+      'stroke-width' : 4
+    },
+    'overStyle' : {
+      'stroke': '#00aa00',
+    }
+  },
+  'hub_label' : {
+    'style' : {
+      'fill' : '#444444',
+      'font-weight' : 'bold',
+      'font-size' : '10px',
+      'font-family' : '"Anonymous Pro", "Courier New", courier, monospace'
+    }
+  },
+  'hub_label_background' : {
+    'style' : {
+      'fill' : '#ffffff',
+      'fillOpacity' : 0.80
+    }
+  },
+  'label' : {
+    'width' : 75,
+    'margin' : 17,
+    'padding_x' : 2,
+    'padding_y' : 2,
+    'style' : {
+      'font-size' : '10px',
+      'fill' : '#000000',
+      'font-family' : '"Anonymous Pro", "Courier New", courier, monospace',
+    },
+    'overStyle' : {
+      'fill' : '#00aa00',
+    }
+  },
+  'label_background' : {
+    'style' : {
+      'fill' : '#ffffff',
+      'stroke-width' : 0,
+    }
+  }
+};
 
 })(jQuery);

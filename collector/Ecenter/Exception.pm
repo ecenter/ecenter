@@ -22,7 +22,10 @@ use Exception::Class (
           isa         => 'RemoteServiceException',
           description => 'remote service failed'
       },
-    
+      'MalformedParameterException' => {
+          isa         => 'ParameterException',
+          description => 'supplied parameter is malformed'
+      },
       'GearmanServerException' => {
           isa         => 'GearmanException',
           description => 'failed to connect to the Gearman server'

@@ -56,6 +56,10 @@ function ecenter_core_block($op = 'list', $delta = 0, $edit = array()) {
       $blocks['login'] = array(
         'info' => t('E-Center: Login block'),
       );
+      $blocks['dashboard_login'] = array(
+        'info' => t('E-Center: Dashboard login block'),
+        'cache' => BLOCK_NO_CACHE,
+      );
       $blocks['sponsors'] = array(
         'info' => t('E-Center: Sponsors block'),
       );
@@ -81,6 +85,57 @@ function ecenter_core_form_alter(&$form, &$form_state, $form_id) {
     case 'search_block_form':
       unset($form['search_block_form']['#title']);
   }
+}
+
+/**
+ * Dashboard login block form
+ */
+function ecenter_core_dashboard_login() {
+  $form = array(
+    '#action' => url($_GET['q'], array('query' => drupal_get_destination())), 
+    '#id' => 'user-login-form', 
+    '#validate' => user_login_default_validators(), 
+    '#submit' => array('user_login_submit'),
+  ); 
+  $form['name'] = array(
+    '#type' => 'textfield', 
+    '#title' => t('Username'), 
+    '#maxlength' => USERNAME_MAX_LENGTH, 
+    '#size' => 15, 
+    '#required' => TRUE,
+  );
+  $form['pass'] = array(
+    '#type' => 'password', 
+    '#title' => t('Password'), 
+    '#maxlength' => 60, 
+    '#size' => 15, 
+    '#required' => TRUE,
+  );
+  $form['submit'] = array(
+    '#type' => 'submit', 
+    '#value' => t('Log in'),
+  );
+  if (variable_get('user_register', 1)) {
+    $form['create'] = array(
+      '#type' => 'markup',
+      '#value' => l(t('Register new account'), 'user/register', array('attributes' => array('title' => t('Create a new user account.')))),
+      '#prefix' => '<span class="register-link">',
+      '#suffix' => '</span>',
+    );
+  }
+  $form['alt_login'] = array(
+    '#type' => 'markup',
+    '#value' => t('Log in with') .' '. l(t('Shibboleth'), shib_auth_generate_login_url()) .' '. t('or').' '. l(t('OpenID'), 'user'),
+    '#prefix' => '<div class="alt-login-link">',
+    '#suffix' => '</div>',
+  );
+  $form['old_pass'] = array(
+    '#type' => 'markup',
+    '#value' => t('Forgot your password?') .' '. l(t('Request a new one.'), 'user/password', array('attributes' => array('title' => t('Request new password via e-mail.')))),
+    '#prefix' => '<div class="old-pass-link">',
+    '#suffix' => '</div>',
+  );
+  return $form;
 }
 
 /**
@@ -157,3 +212,10 @@ function template_preprocess_ecenter_core_sponsors_block(&$vars) {
  * Theme site info block
  */
 function template_preprocess_ecenter_core_site_info_block(&$vars) {}
+
+/**
+ * Theme dashboard login block
+ */
+function template_preprocess_ecenter_core_dashboard_login_block(&$vars) {
+  $vars['form'] = drupal_get_form('ecenter_core_dashboard_login');
+}

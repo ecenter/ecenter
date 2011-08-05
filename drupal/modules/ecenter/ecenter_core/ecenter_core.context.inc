@@ -5,6 +5,7 @@
  */
 function ecenter_core_context_default_contexts() {
   $export = array();
+
   $context = new stdClass;
   $context->disabled = FALSE; /* Edit this to true to make a default context disabled initially */
   $context->api_version = 3;
@@ -66,7 +67,7 @@ function ecenter_core_context_default_contexts() {
   // Included for use with string extractors like potx.
   t('E-Center sitewide context');
   t('e-center');
-
   $export['ecenter_site'] = $context;
+
   return $export;
 }

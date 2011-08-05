@@ -22,7 +22,7 @@ function ecenter_groups_menu_default_menu_links() {
     'external' => '0',
     'has_children' => '1',
     'expanded' => '0',
-    'weight' => '-46',
+    'weight' => '-45',
   );
   // Exported menu link: primary-links:og/all
   $menu_links['primary-links:og/all'] = array(

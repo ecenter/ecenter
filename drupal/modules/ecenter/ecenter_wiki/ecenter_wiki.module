@@ -3,6 +3,16 @@
 include_once('ecenter_wiki.features.inc');
 
 /**
+ * Implementation of hook_init().
+ */ 
+function ecenter_wiki_init() {
+  if (arg(0) == 'wiki') {
+    drupal_add_js(libraries_get_path('masonry') .'/jquery.masonry.min.js');
+    drupal_add_js(drupal_get_path('module', 'ecenter_wiki') .'/ecenter-wiki.js');
+  }
+}
+
+/**
  * Implementation of hook_form_alter().
  */
 function ecenter_wiki_form_alter(&$form, &$form_state, $form_id) {

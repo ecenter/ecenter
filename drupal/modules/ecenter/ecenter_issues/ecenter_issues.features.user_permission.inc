@@ -11,8 +11,7 @@ function ecenter_issues_user_default_permissions() {
     'name' => 'create issue content',
     'roles' => array(
       '0' => 'administrator',
-      '1' => 'authenticated user',
-      '2' => 'trusted user',
+      '1' => 'trusted user',
     ),
   );
 
@@ -71,8 +70,7 @@ function ecenter_issues_user_default_permissions() {
     'name' => 'edit own issue content',
     'roles' => array(
       '0' => 'administrator',
-      '1' => 'authenticated user',
-      '2' => 'trusted user',
+      '1' => 'trusted user',
     ),
   );
 
@@ -81,6 +79,7 @@ function ecenter_issues_user_default_permissions() {
     'name' => 'edit own network_query content',
     'roles' => array(
       '0' => 'administrator',
+      '1' => 'trusted user',
     ),
   );
 

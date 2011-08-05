@@ -19,7 +19,7 @@ function ecenter_groups_ctools_plugin_api() {
 function ecenter_groups_node_info() {
   $items = array(
     'group' => array(
-      'name' => t('E-Center Group'),
+      'name' => t('Group'),
       'module' => 'features',
       'description' => '',
       'has_title' => '1',

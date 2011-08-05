@@ -643,23 +643,27 @@ $.fn.ecenter_network.plugins.chart = function() {
       control.callbacks.out.call(control, feature);
     }
   });
+}
 
+$.fn.ecenter_network.plugins.show_data_button = function() {
   $('#results .data-wrapper').each(function(i) {
-    var wrapper = this;
-    var show_text = Drupal.t('Show data tables');
-    var hide_text = Drupal.t('Hide data tables');
-    $('.tablechart', this).after('<button class="show-data">' + show_text + '</button>');
-    $('button.show-data', this).toggle(function(e) {
-      $('.data-tables', wrapper).show();
-      $(this).html(hide_text);
-      return false;
-    }, function(e) {
-      $('.data-tables', wrapper).hide();
-      $(this).html(Drupal.t(show_text));
-      return false;
-    });
+    if (!$(this).data('showDataButton')) {
+      var wrapper = this;
+      var show_text = Drupal.t('Show data tables');
+      var hide_text = Drupal.t('Hide data tables');
+      $('.tablechart', this).after('<button class="show-data">' + show_text + '</button>');
+      $('button.show-data', this).toggle(function(e) {
+        $('.data-tables', wrapper).show();
+        $(this).html(hide_text);
+        return false;
+      }, function(e) {
+        $('.data-tables', wrapper).hide();
+        $(this).html(Drupal.t(show_text));
+        return false;
+      });
+      $(this).data('showDataButton', true);
+    }
   });
-
 }
 
 $.fn.ecenter_network.plugins.end_to_end = function() {
@@ -713,6 +717,7 @@ $.fn.ecenter_network.defaults = {
     $.fn.ecenter_network.plugins.change,
     $.fn.ecenter_network.plugins.traceroute,
     $.fn.ecenter_network.plugins.draw_map,
+    $.fn.ecenter_network.plugins.show_data_button
   ]
 };
 

@@ -11,8 +11,7 @@ function ecenter_help_user_default_permissions() {
     'name' => 'view advanced help index',
     'roles' => array(
       '0' => 'administrator',
-      '1' => 'authenticated user',
-      '2' => 'trusted user',
+      '1' => 'trusted user',
     ),
   );
 

@@ -29,12 +29,3 @@ function ecenter_blog_node_info() {
   );
   return $items;
 }
-
-/**
- * Implementation of hook_views_api().
- */
-function ecenter_blog_views_api() {
-  return array(
-    'api' => '3.0-alpha1',
-  );
-}

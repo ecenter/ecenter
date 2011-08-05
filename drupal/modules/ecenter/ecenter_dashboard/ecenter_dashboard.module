@@ -9,7 +9,7 @@ function ecenter_dashboard_menu() {
   $items['ecenter-dashboard'] = array(
     'page callback' => 'theme',
     'page arguments' => array('ecenter_dashboard'),
-    'title' => 'E-Center dashboard',
+    'title' => 'Dashboard',
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
   );
@@ -41,7 +41,7 @@ function template_preprocess_ecenter_dashboard(&$vars) {
   if ($user->uid) {
     module_load_include('inc', 'date_api', 'date_api_elements');
     $now = time() - 1800;
-    $offset = 3600 * 12;
+    $offset = 3600 * 24;
     $inc = 60;
     $tz = timezone_open('UTC');
     $end = date_make_date($now, $tz, DATE_UNIX);
@@ -57,8 +57,8 @@ function template_preprocess_ecenter_dashboard(&$vars) {
 
     $vars['main_content'] = array(
       'site_view' => array(
-        'content' => '<div id="site-view-description"><h2>'. t('@site status:', array('@site' => $user->ecenter_default_hub)) .'</h2>' . 
-          '<p>'. t('@start - @end', array('@start' => $start, '@end' => $end)) .'</p></div><div id="site-view-svg"></div>',
+        'content' => '<div id="site-view-description"><h2>'. t('@site status', array('@site' => $user->ecenter_default_hub)) .'</h2>' . 
+          '<p>'. t('<span class="start">@start</span> <span class="separator">to</span> <span class="end">@end</span>', array('@start' => $start, '@end' => $end)) .'</p></div><div id="site-view-svg"></div>',
       ),
       'activity' => array(
         'subject' => t('Site activity'),
@@ -84,8 +84,10 @@ function template_preprocess_ecenter_dashboard(&$vars) {
     );
   }
   else {
+    drupal_set_title('');
     $vars['main_content'] = array(
       'carousel' => array(
+        'subject' => t('What is E-Center?'),
         'content' => views_embed_view('ecenter_dashboard_carousel', 'block'),
       ),
       'activity' => array(
@@ -95,16 +97,16 @@ function template_preprocess_ecenter_dashboard(&$vars) {
       ),
     );
     $vars['secondary_content'] = array(
-      'login' => module_invoke('user', 'block', 'view', 0),
+      'login' => module_invoke('ecenter_core', 'block', 'view', 'dashboard_login'),
       'hot-comments' => array(
         'subject' => t('Hot conversations'),
         'description' => t('The most active public conversations in the past 2 weeks'),
-        'content' => views_embed_view('ecenter_dashboard_hot_comments', 'block_1'),
+        'content' => views_embed_view('ecenter_dashboard_hot_comments', 'block'),
       ),
       'hot-content' => array(
         'subject' => t('Most popular content'),
         'description' => t('The most popular content in the past month'),
-        'content' => views_embed_view('ecenter_dashboard_hot_content', 'block_1'),
+        'content' => views_embed_view('ecenter_dashboard_hot_content', 'block'),
       ),
     );
   }
@@ -113,7 +115,7 @@ function template_preprocess_ecenter_dashboard(&$vars) {
 function ecenter_dashboard_cron() {
   module_load_include('inc', 'date_api', 'date_api_elements');
   $now = time();
-  $offset = 3600 * 12;
+  $offset = 3600 * 24;
   $inc = 60;
   $tz = timezone_open('UTC');
   $end = date_make_date($now, $tz, DATE_UNIX);

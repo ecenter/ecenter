@@ -325,9 +325,9 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['style_plugin'] = 'slideshow';
   $handler->display->display_options['style_options']['views_slideshow_cycle']['effect'] = 'scrollLeft';
   $handler->display->display_options['style_options']['views_slideshow_cycle']['transition_advanced'] = 1;
-  $handler->display->display_options['style_options']['views_slideshow_cycle']['timeout'] = '10000';
-  $handler->display->display_options['style_options']['views_slideshow_cycle']['speed'] = '500';
-  $handler->display->display_options['style_options']['views_slideshow_cycle']['delay'] = '0';
+  $handler->display->display_options['style_options']['views_slideshow_cycle']['timeout'] = '12000';
+  $handler->display->display_options['style_options']['views_slideshow_cycle']['speed'] = '300';
+  $handler->display->display_options['style_options']['views_slideshow_cycle']['delay'] = '4000';
   $handler->display->display_options['style_options']['views_slideshow_cycle']['pause_on_click'] = 1;
   $handler->display->display_options['style_options']['views_slideshow_cycle']['action_advanced'] = 1;
   $handler->display->display_options['style_options']['views_slideshow_cycle']['start_paused'] = 0;
@@ -403,126 +403,14 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['fields']['title']['hide_empty'] = 0;
   $handler->display->display_options['fields']['title']['empty_zero'] = 0;
   $handler->display->display_options['fields']['title']['link_to_node'] = 0;
-  /* Sort criterion: DraggableViews: Order */
-  $handler->display->display_options['sorts']['value0']['id'] = 'value0';
-  $handler->display->display_options['sorts']['value0']['table'] = 'draggableviews_structure_node0';
-  $handler->display->display_options['sorts']['value0']['field'] = 'value0';
+  /* Sort criterion: Node: Updated date */
+  $handler->display->display_options['sorts']['changed']['id'] = 'changed';
+  $handler->display->display_options['sorts']['changed']['table'] = 'node';
+  $handler->display->display_options['sorts']['changed']['field'] = 'changed';
+  $handler->display->display_options['sorts']['changed']['order'] = 'DESC';
   
 /* Display: Block */
   $handler = $view->new_display('block', 'Block', 'block');
-  
-/* Display: Page */
-  $handler = $view->new_display('page', 'Page', 'page_1');
-  $handler->display->display_options['defaults']['access'] = FALSE;
-  $handler->display->display_options['access']['type'] = 'role';
-  $handler->display->display_options['access']['role'] = array(
-    '3' => 3,
-  );
-  $handler->display->display_options['defaults']['pager'] = FALSE;
-  $handler->display->display_options['pager']['type'] = 'none';
-  $handler->display->display_options['pager']['options']['offset'] = '0';
-  $handler->display->display_options['defaults']['style_plugin'] = FALSE;
-  $handler->display->display_options['style_plugin'] = 'draggabletable';
-  $handler->display->display_options['style_options']['columns'] = array(
-    'body' => 'body',
-    'value0' => 'value0',
-  );
-  $handler->display->display_options['style_options']['default'] = -1;
-  $handler->display->display_options['style_options']['info'] = array(
-    'body' => array(
-      'align' => '',
-      'separator' => '',
-    ),
-    'value0' => array(
-      'sortable' => 0,
-      'align' => '',
-      'separator' => '',
-    ),
-  );
-  $handler->display->display_options['style_options']['override'] = 1;
-  $handler->display->display_options['style_options']['sticky'] = 0;
-  $handler->display->display_options['style_options']['tabledrag_order'] = array(
-    'field' => 'value0',
-    'handler' => 'native',
-  );
-  $handler->display->display_options['style_options']['tabledrag_order_visible'] = array(
-    'visible' => 0,
-  );
-  $handler->display->display_options['style_options']['tabledrag_hierarchy'] = array(
-    'field' => 'none',
-    'handler' => 'native',
-  );
-  $handler->display->display_options['style_options']['tabledrag_hierarchy_visible'] = array(
-    'visible' => 0,
-  );
-  $handler->display->display_options['style_options']['draggableviews_depth_limit'] = '0';
-  $handler->display->display_options['style_options']['draggableviews_repair'] = array(
-    '0' => 'repair',
-    'repair' => 'repair',
-  );
-  $handler->display->display_options['style_options']['tabledrag_expand'] = array(
-    'expand_links' => 0,
-    'collapsed' => 0,
-    'by_uid' => 0,
-  );
-  $handler->display->display_options['style_options']['draggableviews_extensions'] = array(
-    'extension_top' => '3',
-    'extension_bottom' => '3',
-  );
-  $handler->display->display_options['style_options']['tabledrag_lock'] = array(
-    'lock' => 0,
-  );
-  $handler->display->display_options['style_options']['draggableviews_default_on_top'] = '1';
-  $handler->display->display_options['style_options']['draggableviews_arguments'] = array(
-    'use_args' => 0,
-  );
-  $handler->display->display_options['defaults']['style_options'] = FALSE;
-  $handler->display->display_options['defaults']['row_plugin'] = FALSE;
-  $handler->display->display_options['defaults']['row_options'] = FALSE;
-  $handler->display->display_options['defaults']['fields'] = FALSE;
-  /* Field: Node: Body */
-  $handler->display->display_options['fields']['body']['id'] = 'body';
-  $handler->display->display_options['fields']['body']['table'] = 'node_revisions';
-  $handler->display->display_options['fields']['body']['field'] = 'body';
-  $handler->display->display_options['fields']['body']['label'] = '';
-  $handler->display->display_options['fields']['body']['alter']['alter_text'] = 0;
-  $handler->display->display_options['fields']['body']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['body']['alter']['trim'] = 0;
-  $handler->display->display_options['fields']['body']['alter']['word_boundary'] = 1;
-  $handler->display->display_options['fields']['body']['alter']['ellipsis'] = 1;
-  $handler->display->display_options['fields']['body']['alter']['strip_tags'] = 0;
-  $handler->display->display_options['fields']['body']['alter']['html'] = 0;
-  $handler->display->display_options['fields']['body']['hide_empty'] = 0;
-  $handler->display->display_options['fields']['body']['empty_zero'] = 0;
-  /* Field: DraggableViews: Order */
-  $handler->display->display_options['fields']['value0']['id'] = 'value0';
-  $handler->display->display_options['fields']['value0']['table'] = 'draggableviews_structure_node0';
-  $handler->display->display_options['fields']['value0']['field'] = 'value0';
-  $handler->display->display_options['fields']['value0']['alter']['alter_text'] = 0;
-  $handler->display->display_options['fields']['value0']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['value0']['alter']['trim'] = 0;
-  $handler->display->display_options['fields']['value0']['alter']['word_boundary'] = 1;
-  $handler->display->display_options['fields']['value0']['alter']['ellipsis'] = 1;
-  $handler->display->display_options['fields']['value0']['alter']['strip_tags'] = 0;
-  $handler->display->display_options['fields']['value0']['alter']['html'] = 0;
-  $handler->display->display_options['fields']['value0']['hide_empty'] = 0;
-  $handler->display->display_options['fields']['value0']['empty_zero'] = 0;
-  /* Field: Node: Title */
-  $handler->display->display_options['fields']['title']['id'] = 'title';
-  $handler->display->display_options['fields']['title']['table'] = 'node';
-  $handler->display->display_options['fields']['title']['field'] = 'title';
-  $handler->display->display_options['fields']['title']['label'] = '';
-  $handler->display->display_options['fields']['title']['alter']['alter_text'] = 0;
-  $handler->display->display_options['fields']['title']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['title']['alter']['trim'] = 0;
-  $handler->display->display_options['fields']['title']['alter']['word_boundary'] = 1;
-  $handler->display->display_options['fields']['title']['alter']['ellipsis'] = 1;
-  $handler->display->display_options['fields']['title']['alter']['strip_tags'] = 0;
-  $handler->display->display_options['fields']['title']['alter']['html'] = 0;
-  $handler->display->display_options['fields']['title']['hide_empty'] = 0;
-  $handler->display->display_options['fields']['title']['empty_zero'] = 0;
-  $handler->display->display_options['fields']['title']['link_to_node'] = 0;
-  $handler->display->display_options['path'] = 'admin/ecenter/carousel';
 
   $views[$view->name] = $view;
 
@@ -592,19 +480,6 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['fields']['name']['empty_zero'] = 0;
   $handler->display->display_options['fields']['name']['link_to_user'] = 1;
   $handler->display->display_options['fields']['name']['overwrite_anonymous'] = 0;
-  /* Field: Global: Custom text */
-  $handler->display->display_options['fields']['nothing']['id'] = 'nothing';
-  $handler->display->display_options['fields']['nothing']['table'] = 'views';
-  $handler->display->display_options['fields']['nothing']['field'] = 'nothing';
-  $handler->display->display_options['fields']['nothing']['label'] = '';
-  $handler->display->display_options['fields']['nothing']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['nothing']['alter']['trim'] = 0;
-  $handler->display->display_options['fields']['nothing']['alter']['word_boundary'] = 1;
-  $handler->display->display_options['fields']['nothing']['alter']['ellipsis'] = 1;
-  $handler->display->display_options['fields']['nothing']['alter']['strip_tags'] = 0;
-  $handler->display->display_options['fields']['nothing']['alter']['html'] = 0;
-  $handler->display->display_options['fields']['nothing']['hide_empty'] = 0;
-  $handler->display->display_options['fields']['nothing']['empty_zero'] = 0;
   /* Field: Comment: ID */
   $handler->display->display_options['fields']['cid']['id'] = 'cid';
   $handler->display->display_options['fields']['cid']['table'] = 'comments';
@@ -626,7 +501,7 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['fields']['last_comment_timestamp']['table'] = 'node_comment_statistics';
   $handler->display->display_options['fields']['last_comment_timestamp']['field'] = 'last_comment_timestamp';
   $handler->display->display_options['fields']['last_comment_timestamp']['relationship'] = 'nid';
-  $handler->display->display_options['fields']['last_comment_timestamp']['label'] = 'Last';
+  $handler->display->display_options['fields']['last_comment_timestamp']['label'] = 'Last comment';
   $handler->display->display_options['fields']['last_comment_timestamp']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['last_comment_timestamp']['alter']['make_link'] = 0;
   $handler->display->display_options['fields']['last_comment_timestamp']['alter']['trim'] = 0;
@@ -737,19 +612,6 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['fields']['name']['empty_zero'] = 0;
   $handler->display->display_options['fields']['name']['link_to_user'] = 1;
   $handler->display->display_options['fields']['name']['overwrite_anonymous'] = 0;
-  /* Field: Global: Custom text */
-  $handler->display->display_options['fields']['nothing']['id'] = 'nothing';
-  $handler->display->display_options['fields']['nothing']['table'] = 'views';
-  $handler->display->display_options['fields']['nothing']['field'] = 'nothing';
-  $handler->display->display_options['fields']['nothing']['label'] = '';
-  $handler->display->display_options['fields']['nothing']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['nothing']['alter']['trim'] = 0;
-  $handler->display->display_options['fields']['nothing']['alter']['word_boundary'] = 1;
-  $handler->display->display_options['fields']['nothing']['alter']['ellipsis'] = 1;
-  $handler->display->display_options['fields']['nothing']['alter']['strip_tags'] = 0;
-  $handler->display->display_options['fields']['nothing']['alter']['html'] = 0;
-  $handler->display->display_options['fields']['nothing']['hide_empty'] = 0;
-  $handler->display->display_options['fields']['nothing']['empty_zero'] = 0;
   /* Field: Node: Type */
   $handler->display->display_options['fields']['type']['id'] = 'type';
   $handler->display->display_options['fields']['type']['table'] = 'node';

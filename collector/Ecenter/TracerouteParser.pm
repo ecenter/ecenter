@@ -72,7 +72,6 @@ sub parse {
     MalformedParameterException->throw(error => 'no hops were found, wrong traceroute format:: ' . Dumper($self))
         unless $self->hops;
     my $result = {};
-    $logger->debug("Traceroute parsed:", sub {Dumper($self->{hops})});
     my @hops = @{$self->{hops}};
     my $src_ip; # 
     my $dst_ip =  $hops[$self->hops - 1]->[0][1]; # 
@@ -89,6 +88,8 @@ sub parse {
         }
 	$result->{$addr}{$timestamp} = {hop_ip => $addr, hop_delay => $delay/3.,  hop_num => $i};
     }
+    $logger->debug("Traceroute parsed:", sub {Dumper($result)});
+   
     return  { hops =>  $result, src_ip =>  $src_ip, dst_ip =>  $dst_ip };
 }
 

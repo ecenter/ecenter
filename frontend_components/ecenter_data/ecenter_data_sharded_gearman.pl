@@ -498,14 +498,15 @@ sub process_data {
 	    
 	my $ips_str = join (',', map {database('ecenter')->quote($_)} keys %{$hops->{hops}});
 	$traceroute->{direct_traceroute}{hops} = $hops->{hops};
-	my $cmd =    qq|select  distinct   n_hop.netmask, n_hop.ip_noted,  n_hop.nodename, hb.hub, hb.hub_name, hb.longitude, hb.latitude  
+        _fix_sites($hops->{hops}, $ips_str);
+	my $cmd =    qq|select  distinct   n_hop.netmask, n_hop.ip_noted, n_hop.nodename, hb.hub, hb.hub_name, hb.longitude, hb.latitude  
 					             from 
-						            node        n_hop 
+						            node   n_hop 
 						      left join l2_l3_map    llm on( n_hop.ip_addr = llm.ip_addr) 
      	                                              left join l2_port      l2p on(llm.l2_urn = l2p.l2_urn) 
      	                                              left join hub          hb using(hub) 
 						     where  
-						            n_hop.ip_noted in ($ips_str) |;
+						            n_hop.ip_noted in ($ips_str) and hb.hub is not NULL|;
         $logger->debug(" TRACEROUTE SQL_hhops: $cmd");		
         my $hops_ref = database('ecenter')->selectall_hashref($cmd, 'ip_noted');
         $traceroute->{direct_traceroute}{hop_ips} =  $hops_ref;
@@ -521,9 +522,8 @@ sub process_data {
     ## 
     # my $trace_cond = qq|  inet6_mask(md.src_ip, 24) = inet6_mask(inet6_pton('$params{src_ip}'), 24) and $dst_cond |;
     $params{table_map} = $TABLEMAP;
-    return { trace_cond => $trace_cond, traceroute => $traceroute, params => \%params} ;
+    $logger->debug("Traceroute results:", sub {Dumper({ trace_cond => $trace_cond, traceroute => $traceroute, params => \%params})});
     unless($params{only_data}) {
-        my $traceroute = {};
         foreach my $way (qw/direct_traceroute reverse_traceroute/) {
 	    unless( $way eq 'direct_traceroute' && $params{trace}) { ### skip direct raceroute because we got it from the request
                 $traceroute->{$way} = get_traceroute($g_client, $trace_cond->{$way}, \%params);
@@ -644,6 +644,54 @@ sub process_data {
        ##$data->{snmp}{$ip_noted} = \@result;
   }
   return $data; 
+}
+#
+#   fix new sites from the user provided traceroute
+#
+sub _fix_sites {
+    my ($hops_href, $ips_str) = @_;
+    my $now_time = strftime('%Y-%m-%d %H:%M:%S', localtime());
+    my $sql_ips = qq|select ip_noted from node where ip_noted in  ($ips_str)|;
+    $logger->debug("Get list of existing IPs::: $sql_ips");
+    my $skip_these = database('ecenter')->selectall_hashref($sql_ips, 'ip_noted');
+    foreach my $ip (keys %{$hops_href}) {
+        next if exists $skip_these->{$ip};
+        my $hub = Ecenter::Data::Hub->find_hub($ip); 
+	my (undef, $nodename) = get_ip_name($ip);
+	unless ($hub) { 
+	    $logger->error(" Could not find hub, skipping ");
+            next;
+	}
+	my $hub_name = $hub->hub_name;
+	my %subnets =  %{$hub->get_ips()};
+        foreach my $subnet (keys %subnets) {
+            my $sql = qq|select inet6_pton('$ip') as ip_addr, n.ip_noted, n.netmask, l2p.l2_urn from  node n   join l2_l3_map llm using(ip_addr) 
+	                   join l2_port l2p on (llm.l2_urn =l2p.l2_urn) 
+	              where   
+			    inet6_mask(inet6_pton('$ip'), $subnets{$subnet}) =  inet6_mask(n.ip_addr, $subnets{$subnet})
+			    and llm.l2_urn is not NULL  limit 1|;
+	    $logger->debug("Found hub IPs SQL::: $sql"); 
+            my $nodes =   database('ecenter')->selectrow_hashref($sql);
+	    # found all ips for the endsite, lets mark them with made up urns and hub names
+	    $logger->debug("Checking::: $ip");
+	    unless ($nodes && $nodes->{ip_addr}) {
+	         $logger->error(" No matching netblock for $ip");
+		 next;
+	    }
+	    
+	    schema('dbix')->resultset('Node')->update_or_create({ ip_addr => $nodes->{ip_addr},
+	                                                  ip_noted => $ip,
+							  nodename => $nodename,
+							  netmask => $nodes->{netmask}
+							 });
+	    schema('dbix')->resultset('L2L3Map')->update_or_create({ ip_addr => $nodes->{ip_addr},
+	                                                   l2_urn => $nodes->{l2_urn},
+							   updated => $now_time,
+							 },
+							 { key => 'ip_l2_time'});
+	    
+        } 
+    }
 }
 #
 #   initialize GEarman

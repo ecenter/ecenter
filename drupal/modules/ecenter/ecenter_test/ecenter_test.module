@@ -181,6 +181,27 @@ function theme_ecenter_test_data_clients() {
   $output .= kpr($parsed, TRUE);
   $output .= 'Performance: '. round($fn_end - $fn_start, 4) .' sec';
 
+  $traceroute = "traceroute to 198.129.254.146 (198.129.254.146), 30 hops max, 60 byte packets
+ 1  r-s-hub-fcc-vlan87.fnal.gov (131.225.87.200)  0.263 ms  0.512 ms  0.525 ms
+ 2  r-s-edge-1-vlan608.fnal.gov (131.225.102.1)  0.786 ms  0.781 ms  0.775 ms
+ 3  r-s-bdr-vlan375.fnal.gov (131.225.15.202)  0.491 ms  0.495 ms  0.723 ms
+ 4  fnal-mr2.fnal.gov (198.49.208.229)  0.436 ms  0.430 ms  0.405 ms
+ 5  fnalmr3-ip-fnalmr2.es.net (134.55.41.41)  0.417 ms  0.420 ms  0.413 ms
+ 6  chiccr1-ip-fnalmr3.es.net (134.55.219.121)  1.971 ms  1.953 ms  1.939 ms
+ 7  kanscr1-ip-chiccr1.es.net (134.55.221.57)  12.469 ms  12.483 ms  12.476 ms
+ 8  denvcr2-ip-kanscr1.es.net (134.55.209.45)  25.628 ms  25.665 ms  25.666 ms
+ 9  sunncr1-denvcr2.es.net (134.55.220.50)  52.821 ms  52.847 ms  52.847 ms
+10  sunnsdn2-sunncr1.es.net (134.55.209.97)  52.711 ms  52.792 ms  52.793 ms
+11  slacmr2-ip-sunnsdn2.es.net (134.55.217.1)  53.098 ms  53.107 ms  53.090 ms
+12  slac-owamp.es.net (198.129.254.146)  53.087 ms  53.174 ms  53.191 m";
+
+  $traceroute_result = $drs_client->getTraceroute($traceroute, $start, $end, $drs_resolution);
+  $fn_end = microtime(true);
+
+  $output .= '<h3>Traceroute results</h3>';
+  $output .= kpr($traceroute_result, TRUE);
+  $output .= 'Performance: '. round($fn_end - $fn_start, 4) .' sec';
+
   $output .= '<h2>Dynamic anomaly detection request (resolution '. $ads_resolution .')</h2>';
 
   $output .= '<h3>'. $type . '</h3>';

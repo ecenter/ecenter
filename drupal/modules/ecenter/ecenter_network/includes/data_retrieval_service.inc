@@ -100,6 +100,30 @@ class DataRetrievalService extends EcenterService {
   }
 
   /**
+   * Get data from pasted traceroute
+   *
+   * @param $traceroute
+   *   String output from traceroute command
+   * @param $start
+   *   Start time.
+   * @param $end
+   *   End time.
+   * @param $resolution
+   *   (optional) Maximum number of data points to return for any measurement.
+   * @return
+   *   Result for this query.
+   */
+  public function getTraceroute($traceroute, $start, $end, $resolution = 50) {
+    $data = array(
+      'trace' => $traceroute,
+      'start' => $start,
+      'end' => $end,
+      'resolution' => $resolution,
+    );
+    return $this->post('data', $data);
+  }
+
+  /**
    * Get node
    * 
    * @param $ip

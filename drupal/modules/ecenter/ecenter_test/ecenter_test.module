@@ -153,8 +153,8 @@ function theme_ecenter_test_data_clients() {
 
   $src = 'hub:SLAC';
   $dst = 'hub:ORNL';
-  $start = '2011-06-10 10:00:00';
-  $end = '2011-06-10 22:00:00';
+  $start = '2011-08-09 10:00:00';
+  $end = '2011-08-09 22:00:00';
   $type = 'owamp';
   $drs_resolution = 100;
   $ads_resolution = 1000;

@@ -36,6 +36,14 @@ function ecenter_network_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  $items['network/traceroute'] = array(
+    'title' => 'Traceroute', 
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ecenter_network_traceroute_form'),
+    'access arguments' => array('access ecenter network'),
+    'type' => MENU_CALLBACK,
+  );
+
   $items['admin/settings/ecenter'] = array(
     'title' => 'E-Center Network',
     'page callback' => 'drupal_get_form',
@@ -221,6 +229,58 @@ function ecenter_network_init() {
     );
     inline_css_add_css($inline_css);
   }
+}
+
+/**
+ * Traceroute past form
+ *
+ * @TODO Add advanced help
+ */
+function ecenter_network_traceroute_form(&$form_state) {
+  $form = array();
+  $values = $form_state['values'];
+
+  $form['traceroute'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Traceroute'),
+    '#default_value' => (!empty($values['traceroute'])) ? $values['traceroute'] : NULL,
+    '#description' => t('Paste a full traceroute.'),
+  );
+  $form['date'] = array(
+    '#type' => 'date_popup',
+    '#title' => t('Specify day'),
+    '#prefix' => '<div id="date-select">',
+    '#suffix' => '</div>',
+    '#date_format' => 'Y-m-d',
+    '#granularity' => array('year', 'month', 'day'),
+    '#default_value' => (!empty($values['date'])) ? $values['date'] : NULL,
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit traceroute'),
+  );
+  return $form;
+}
+
+/**
+ * Submit traceroute to DRS
+ */
+function ecenter_network_traceroute_form_submit($form, &$form_state) {
+  dpm($form);
+  dpm($form_state);
+
+  $date = $form_state['values']['date'];
+  $day = date_create($date, timezone_open('UTC'));
+
+  $start = date_format($day, 'Y-m-d H:i:s');
+  $end_date = date_modify($day, '+24 hours');
+  $end = date_format($end_date, 'Y-m-d H:i:s');
+
+  $data = ecenter_network_get_traceroute_data($form_state['values']['traceroute'], $start, $end, TRUE);
+
+  dpm($data);
+
+  $form_state['rebuild'] = TRUE;
 }
 
 /**
@@ -832,6 +892,38 @@ function ecenter_network_get_data($src, $dst, $start, $end) {
 
   }
   return $results[$query];
+}
+
+/**
+ * Get/cache traceroute data
+ *
+ * @param $traceroute
+ *   Pasted traceroute
+ * @param $start
+ *   Start time, expressed in UTC, formatted as Y-m-d H:i:s
+ * @param $end
+ *   End time, expressed in UTC, formatted as Y-m-d H:i:s
+ * @return
+ *   An array of parsed data
+ */
+function ecenter_network_get_traceroute_data($traceroute, $start, $end) {
+  global $user;
+  $caching = variable_get('ecenter_network_data_cache_enabled', 0);
+  $resolution = variable_get('ecenter_network_drs_resolution', 50);
+  $client = ecenter_network_get_client();
+  $result = $client->getTraceroute($traceroute, $start, $end, $resolution);
+  
+  //if ($result['code'] == 200) {
+  //  $data = ecenter_network_parse_response($result);
+  //}
+  //else { // Note that the static variable is NOT set in this case
+  //  watchdog('ecenter_network',
+  //    'Request (@url) failed with code @code (@response).',
+  //    array('@url' => $result['url'], '@code' => $result['code'],
+  //    '@response' => $result['response']), WATCHDOG_WARNING);
+  //  return NULL;
+  //}
+  return $data;
 }
 
 /**

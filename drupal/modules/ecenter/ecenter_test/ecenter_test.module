@@ -193,13 +193,58 @@ function theme_ecenter_test_data_clients() {
  9  sunncr1-denvcr2.es.net (134.55.220.50)  52.821 ms  52.847 ms  52.847 ms
 10  sunnsdn2-sunncr1.es.net (134.55.209.97)  52.711 ms  52.792 ms  52.793 ms
 11  slacmr2-ip-sunnsdn2.es.net (134.55.217.1)  53.098 ms  53.107 ms  53.090 ms
-12  slac-owamp.es.net (198.129.254.146)  53.087 ms  53.174 ms  53.191 m";
+12  slac-owamp.es.net (198.129.254.146)  53.087 ms  53.174 ms  53.191 ms";
+
+/*  $traceroute = "traceroute to ornl-owamp.es.net (198.124.238.85), 30 hops max, 60 byte packets
+ 1  r-s-hub-fcc-vlan87.fnal.gov (131.225.87.200)  0.250 ms  0.509 ms  0.500 ms
+ 2  r-s-edge-1-vlan608.fnal.gov (131.225.102.1)  0.503 ms  0.510 ms  1.461 ms
+ 3  r-s-bdr-vlan375.fnal.gov (131.225.15.202)  0.470 ms  0.481 ms  0.694 ms
+ 4  fnal-mr2.fnal.gov (198.49.208.229)  0.396 ms  34.958 ms  0.373 ms
+ 5  fnalmr3-ip-fnalmr2.es.net (134.55.41.41)  0.377 ms  0.369 ms  0.366 ms
+ 6  chiccr1-ip-fnalmr3.es.net (134.55.219.121)  1.976 ms  1.695 ms  1.975 ms
+ 7  nashcr1-chiccr1.es.net (134.55.219.137)  14.652 ms  14.648 ms  14.641 ms
+ 8  atlacr1-nashcr1.es.net (134.55.220.45)  21.434 ms  21.440 ms  21.432 ms
+ 9  ornlrt2-oc48-atlacr1.es.net (134.55.220.30)  26.137 ms  26.137 ms  26.130 ms
+10  ornl-owamp.es.net (198.124.238.85)  26.124 ms  26.117 ms  26.146 ms";
+
+$traceroute = "traceroute to cmu.edu (128.2.42.10), 30 hops max, 60 byte packets
+ 1  r-s-hub-fcc-vlan87.fnal.gov (131.225.87.200)  0.272 ms  0.494 ms  0.478 ms
+ 2  r-s-edge-1-vlan608.fnal.gov (131.225.102.1)  0.465 ms  0.459 ms  0.465 ms
+ 3  r-s-bdr-vlan375.fnal.gov (131.225.15.202)  0.426 ms  0.630 ms  0.618 ms
+ 4  fnal-mr2.fnal.gov (198.49.208.229)  0.293 ms  0.290 ms  0.251 ms
+ 5  fnalmr3-ip-fnalmr2.es.net (134.55.41.41)  0.260 ms  0.430 ms  0.423 ms
+ 6  chiccr1-ip-fnalmr3.es.net (134.55.219.121)  1.977 ms  1.855 ms  1.950 ms
+ 7  clevcr1-ip-chiccr1.es.net (134.55.217.53)  10.983 ms  10.991 ms  10.972 ms
+ 8  bostcr1-ip-clevcr1.es.net (134.55.41.146)  23.948 ms  23.953 ms  23.934 ms
+ 9  aofacr2-ip-bostcr1.es.net (134.55.41.122)  28.883 ms  28.878 ms  28.843 ms
+10  aofasdn1-ip-aofacr2.es.net (134.55.38.50)  28.823 ms  28.810 ms  28.789 ms
+11  198.125.140.225 (198.125.140.225)  27.331 ms  27.341 ms  27.288 ms
+12  vlan-59.phil.layer2.nlr.net.nlr.net (216.24.186.85)  28.348 ms  28.122 ms  28.108 ms
+13  vlan-58.wash.layer2.nlr.net.nlr.net (216.24.186.87)  27.763 ms  27.748 ms  27.749 ms
+14  vlan-56.pitt.layer2.nlr.net.nlr.net (216.24.186.88)  27.705 ms  27.690 ms  27.659 ms
+15  leviathan-nlr-te0-0-0-1-563.3rox.net (192.88.115.166)  29.857 ms  29.497 ms  29.476 ms
+16  rtr-acm.cmu.3rox.net (147.73.16.121)  29.047 ms  29.069 ms  29.053 ms
+17  CORE0-VL986.GW.CMU.NET (128.2.0.249)  29.031 ms  29.029 ms  29.000 ms
+18  POD-D-WEH-VL959.GW.CMU.NET (128.2.0.212)  29.043 ms POD-D-CYH-VL958.GW.CMU.NET (128.2.0.205)  29.043 ms POD-D-WEH-VL959.GW.CMU.NET (128.2.0.212)  29.041 ms
+19  CMU-VIP.ANDREW.CMU.EDU (128.2.42.10)  28.914 ms  28.858 ms  28.900 ms";
+
+$traceroute = "traceroute to ornl.gov (128.219.168.100), 30 hops max, 60 byte packets
+ 1  r-s-hub-fcc-vlan87.fnal.gov (131.225.87.200)  0.228 ms  0.514 ms  0.518 ms
+ 2  r-s-edge-1-vlan608.fnal.gov (131.225.102.1)  0.768 ms  0.764 ms  0.758 ms
+ 3  r-s-bdr-vlan375.fnal.gov (131.225.15.202)  0.727 ms  0.727 ms  0.727 ms
+ 4  fnal-mr2.fnal.gov (198.49.208.229)  0.428 ms  0.421 ms  0.412 ms
+ 5  fnalmr3-ip-fnalmr2.es.net (134.55.41.41)  0.407 ms  0.399 ms  0.393 ms
+ 6  chiccr1-ip-fnalmr3.es.net (134.55.219.121)  1.767 ms  1.932 ms  1.924 ms
+ 7  nashcr1-chiccr1.es.net (134.55.219.137)  14.677 ms  14.687 ms  14.681 ms
+ 8  ornl-esnet-chi.ornl.gov (198.125.140.218)  18.761 ms  18.764 ms  18.756 ms"; */
 
   $traceroute_result = $drs_client->getTraceroute($traceroute, $start, $end, $drs_resolution);
   $fn_end = microtime(true);
 
   $output .= '<h3>Traceroute results</h3>';
   $output .= kpr($traceroute_result, TRUE);
+  $output .= '<h4>Parsed traceroute results</h4>';
+  $output .= kpr(ecenter_network_parse_response($traceroute_result));
   $output .= 'Performance: '. round($fn_end - $fn_start, 4) .' sec';
 
   $output .= '<h2>Dynamic anomaly detection request (resolution '. $ads_resolution .')</h2>';

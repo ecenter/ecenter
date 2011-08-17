@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl -w
+#!/bin/env perl
 
 use strict;
 use warnings;
@@ -193,11 +193,11 @@ sub _initialize {
     } 
      my $dbh;
     if($what_db eq 'dbic') {
-       $dbh =  Ecenter::DB->connect('DBI:mysql:' . $OPTIONS{db},$OPTIONS{user},$OPTIONS{pass},
+       $dbh =  Ecenter::DB->connect("DBI:mysql:database=$OPTIONS{db};hostname=$OPTIONS{host};",$OPTIONS{user},$OPTIONS{pass},
                                     {RaiseError => 1, PrintError => 1});
        $dbh->storage->debug(1) if $OPTIONS{debug};
     } elsif($what_db eq 'dbh') {
-       $dbh =  DBI->connect('DBI:mysql:' . $OPTIONS{db},$OPTIONS{user},$OPTIONS{pass},
+       $dbh =  DBI->connect("DBI:mysql:database=$OPTIONS{db};hostname=$OPTIONS{host};",$OPTIONS{user},$OPTIONS{pass},
                                     {RaiseError => 1, PrintError => 1}) or return "DB error $DBI::errstr"; 
     } else {
         return '  Malformed request - wrong Db parameter';

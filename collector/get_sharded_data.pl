@@ -56,6 +56,11 @@ number of asynchronous procs to spawn ( requests to remote MAs)
 Max number is 40.
 Default: 10
 
+=item --host=[db hostname]
+
+backend DB hostname
+Default: ecenterprod1.fnal.gov
+
 =item --user=[db username]
 
 backend DB username
@@ -104,7 +109,7 @@ local $SIG{CHLD} = 'IGNORE';
 my %OPTIONS;
 
 my @E2E = qw/pinger owamp bwctl hop/;
-my @string_option_keys = qw/password user db procs past/;
+my @string_option_keys = qw/password user db host procs past/;
 GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
             qw/debug help v snmp no_topo anomaly/, @E2E
@@ -121,8 +126,11 @@ my  $logger = Log::Log4perl->get_logger(__PACKAGE__);
 pod2usage(-verbose => 2) 
     if (  $OPTIONS{help} || 
          ($OPTIONS{procs} && $OPTIONS{procs} !~ /^\d{1,2}$/) || 
-	 ($OPTIONS{past}  && ($OPTIONS{past}<0 || $OPTIONS{past}>1000)));
+	 ($OPTIONS{past}  && ($OPTIONS{past}<0 || $OPTIONS{past}>1000)) ||
+	 ($OPTIONS{host} && $OPTIONS{host} !~ /^[\w\.-]+$/)
+       );
 
+my $db_host =  $OPTIONS{host}?$OPTIONS{host}:'ecenterprod1.fnal.gov';
 $MAX_THREADS = $OPTIONS{procs} if $OPTIONS{procs}  && $OPTIONS{procs}  < 40;
 # number days back from now for the data ( more than 7 days for anomalies search)
 my $PAST_START =  $OPTIONS{past} && (!$OPTIONS{anomaly} || $OPTIONS{past}>7)?$OPTIONS{past}:7;
@@ -134,14 +142,14 @@ my $pm = '';
 $OPTIONS{db} ||= 'ecenter_data';
 $OPTIONS{user} ||= 'ecenter';
 unless($OPTIONS{password}) {
-    $OPTIONS{password} = `cat /etc/my_ecenter`;
+    $OPTIONS{password} = `cat /etc/my_ecenter_$OPTIONS{host}`;
     chomp $OPTIONS{password};
 }
 
 my $parser = XML::LibXML->new();
 our $IP_TOPOLOGY = 'ps.es.net';
 my @esnet_hosts = qw/ps1 ps2 ps3/;
-my $dbh =  Ecenter::DB->connect('DBI:mysql:' . $OPTIONS{db},  $OPTIONS{user}, $OPTIONS{password}, 
+my $dbh =  Ecenter::DB->connect("DBI:mysql:database=$OPTIONS{db};hostname=$OPTIONS{host};", $OPTIONS{user}, $OPTIONS{password}, 
                                     {RaiseError => 1, PrintError => 1});
 $dbh->storage->debug(1)  if $OPTIONS{debug} || $OPTIONS{v};
 #

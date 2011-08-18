@@ -130,7 +130,7 @@ pod2usage(-verbose => 2)
 	 ($OPTIONS{host} && $OPTIONS{host} !~ /^[\w\.-]+$/)
        );
 
-my $db_host =  $OPTIONS{host}?$OPTIONS{host}:'ecenterprod1.fnal.gov';
+$OPTIONS{host} ||= 'ecenterprod1.fnal.gov';
 $MAX_THREADS = $OPTIONS{procs} if $OPTIONS{procs}  && $OPTIONS{procs}  < 40;
 # number days back from now for the data ( more than 7 days for anomalies search)
 my $PAST_START =  $OPTIONS{past} && (!$OPTIONS{anomaly} || $OPTIONS{past}>7)?$OPTIONS{past}:7;

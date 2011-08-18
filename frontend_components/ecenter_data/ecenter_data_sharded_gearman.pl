@@ -40,6 +40,10 @@ my %logger_opts = (
 );
 Log::Log4perl->easy_init(\%logger_opts);
 our  $logger = Log::Log4perl->get_logger(__PACKAGE__);
+
+# default error to send back - Not Implemented - 501
+#
+my $DEFAULT_ERROR = 501;
  
 =head1 NAME
 
@@ -125,7 +129,7 @@ any [ 'post' ] =>  '/data/:data.:format' =>
 	    $data = process_data( %{$request}, %{$post} );
 	};
 	if(my $e = Exception::Class->caught()) {
-	    send_error("Failed with " . $e->trace->as_string);
+	    return send_error("Failed with " .  ($logger->is_debug?$e->trace->as_string:$e->error), $DEFAULT_ERROR );
 	}
 	return $data;
     };
@@ -143,8 +147,8 @@ any [ 'post'] =>  '/data.:format' =>
                if exists $request->{format};
 	    $data = process_data( %{$request}, %{$post} );
 	};
-	if(my $e = Exception::Class->caught()) {
-	    send_error("Failed with " . $e->trace->as_string);
+	if(my $e = Exception::Class->caught()) { 
+	    return send_error("Failed with " .  ($logger->is_debug?$e->trace->as_string:$e->error), $DEFAULT_ERROR);
 	}
 	return $data;
     };
@@ -156,7 +160,7 @@ any ['get'] =>  '/data/:data.:format' =>
 	   $data = process_data( data_type => params->{data}, params('query'));
 	};
 	if(my $e = Exception::Class->caught()) {
-	    send_error("Failed with " . $e->trace->as_string);
+	    return send_error("Failed with " .  ($logger->is_debug?$e->trace->as_string:$e->error), $DEFAULT_ERROR);
 	}
 	return $data;
     };
@@ -168,7 +172,7 @@ any ['get'] =>  '/data.:format' =>
 	   $data = process_data( params('query'));
 	};
 	if(my $e = Exception::Class->caught()) {
-	    send_error("Failed with " . $e->trace->as_string);
+	    return send_error("Failed with " .  ($logger->is_debug?$e->trace->as_string:$e->error), $DEFAULT_ERROR);
 	}
 	return $data;
     };    
@@ -180,7 +184,7 @@ any ['get', 'post'] =>  '/site.:format' =>
 	   $data = process_site( params('query'));
 	};
 	if(my $e = Exception::Class->caught()) {
-	    send_error("Failed with " . $e->trace->as_string);
+	    return send_error("Failed with " .  ($logger->is_debug?$e->trace->as_string:$e->error), $DEFAULT_ERROR);
 	}
 	return $data;
     };
@@ -510,6 +514,9 @@ sub process_data {
         $logger->debug(" TRACEROUTE SQL_hhops: $cmd");		
         my $hops_ref = database('ecenter')->selectall_hashref($cmd, 'ip_noted');
         $traceroute->{direct_traceroute}{hop_ips} =  $hops_ref;
+	MalformedParameterException->throw( error => 'No HUBs were found for the provided traceroute')
+	    unless    $hops->{src_ip} && $hops->{dst_ip} 
+	           && $hops_ref->{$hops->{src_ip}}{hub_name} &&  $hops_ref->{$hops->{dst_ip}}{hub_name};
         $params{src_hub} = $hops_ref->{$hops->{src_ip}}{hub_name};
 	$params{dst_hub} = $hops_ref->{$hops->{dst_ip}}{hub_name};
     }
@@ -656,10 +663,10 @@ sub _fix_sites {
     my $skip_these = database('ecenter')->selectall_hashref($sql_ips, 'ip_noted');
     foreach my $ip (keys %{$hops_href}) {
         next if exists $skip_these->{$ip};
-        my $hub = Ecenter::Data::Hub->find_hub($ip); 
 	my (undef, $nodename) = get_ip_name($ip);
+        my $hub = Ecenter::Data::Hub->find_hub($ip, $nodename);
 	unless ($hub) { 
-	    $logger->error(" Could not find hub, skipping ");
+	    $logger->error(" Could not find hub - $ip, skipping ");
             next;
 	}
 	my $hub_name = $hub->hub_name;

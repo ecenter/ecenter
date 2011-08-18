@@ -69,7 +69,8 @@ our $TABLEMAP = { bwctl      => {table => 'BwctlData',  class => 'Bwctl',      d
 
 sub db_connect {
     my ($OPTIONS) = shift;
-    my $dbh = DBI->connect_cached('DBI:mysql:' . $OPTIONS->{db},  $OPTIONS->{user}, $OPTIONS->{password}, {RaiseError => 1, PrintError => 1});
+    my $dbh = DBI->connect_cached("DBI:mysql:database=$OPTIONS->{db};hostname=$OPTIONS->{host};", 
+                                   $OPTIONS->{user}, $OPTIONS->{password}, {RaiseError => 1, PrintError => 1});
     $logger->logdie(" DBI connect failed:  $DBI::errstr") unless $dbh;
     return $dbh; 
 }

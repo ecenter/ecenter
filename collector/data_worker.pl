@@ -27,6 +27,11 @@ debugging info logged, check corresponded logger.conf file
 
 =item --host=<hostname|localhost>
 
+hostname of the server where db is located
+Default: localhost
+
+=item --g_host=<hostname|localhost>
+
 hostname of the server where gearmand is running
 Default: localhost
 
@@ -98,7 +103,7 @@ my $DATA = { bwctl	=> {table => 'BwctlData',   class => 'Bwctl',      data => [q
      	     traceroute => {table => 'HopData',     callback  => \&process_trace, class => 'Traceroute', data => [qw/hop_ip   hop_num  hop_delay/]},
      	   };
 my %OPTIONS;
-my @string_option_keys = qw/port host pass user db period timeout/;
+my @string_option_keys = qw/port host g_host pass user db period timeout/;
 GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
             qw/debug help/,
@@ -115,7 +120,9 @@ my  $logger = Log::Log4perl->get_logger(__PACKAGE__);
 pod2usage(-verbose => 2) if ( $OPTIONS{help} || ($OPTIONS{procs} && $OPTIONS{procs} !~ /^\d\d?$/));
 
 my $worker = new Gearman::Worker;
-$OPTIONS{host} ||= 'localhost';
+$OPTIONS{host} ||= 'ecenterprod1.fnal.gov';
+$OPTIONS{g_host} ||= 'xenmon.fnal.gov';
+
 $OPTIONS{port} ||= 10221;
 $OPTIONS{user} ||= 'ecenter';
 $OPTIONS{period} ||= 1800;
@@ -129,10 +136,10 @@ local $SIG{PIPE} = 'IGNORE';
 local $SIG{CHLD} = 'IGNORE';
 
 unless($OPTIONS{pass}) {
-    $OPTIONS{pass} = `cat /etc/my_ecenter`;
+    $OPTIONS{pass} = `cat /etc/my_ecenter_$OPTIONS{host}`;
     chomp $OPTIONS{pass};
 } 
-$worker->job_servers( "$OPTIONS{host}:$OPTIONS{port}" );
+$worker->job_servers( "$OPTIONS{g_host}:$OPTIONS{port}" );
 ##   -try to get local data and then send request for remote data if no data
 $worker->register_function("dispatch_data" => \&dispatch_data);
 ##   - get local data

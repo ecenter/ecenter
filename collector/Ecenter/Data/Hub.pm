@@ -144,12 +144,14 @@ a static call - returns found Hub object for the supplied ip address if there is
 =cut
 
 sub find_hub {
-    my ( $self, $ip) = @_;
+    my ( $self, $ip, $nodename) = @_;
     my $hub;
+    my $logger = ref $self && $self->logger?$self->logger:get_logger(__PACKAGE__);
     foreach my $hubname (keys %HUBS) {
         foreach my $subnet (keys %{$HUBS{$hubname}->{nets}}) {
+	    $logger->debug( " Checking  $ip   vs $hubname=  $subnet/$HUBS{$hubname}->{nets}{$subnet} ");
             my $block = Net::Netmask->new("$subnet/$HUBS{$hubname}->{nets}{$subnet}");
-	    if($block->match($ip)) {
+	    if($nodename =~ m/$hubname\./i || $block->match($ip)) {
 	        return Ecenter::Data::Hub->new(hub_name => $hubname);
 	    }
 	}

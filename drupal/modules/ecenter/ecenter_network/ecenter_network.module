@@ -441,43 +441,17 @@ function _ecenter_network_select_form() {
     '#granularity' => array('year', 'month', 'day'),
     '#default_value' => NULL,
   );
-
-<<<<<<< HEAD
-=======
-  $form['network_wrapper']['query']['timezone_name'] = array(
-    '#type' => 'combobox',
-    '#title' => t('Timezone'),
-    '#prefix' => '<div id="timezone-select">',
-    '#suffix' => '</div>',
-    '#default_value' => NULL,
-    '#options' => date_timezone_names(),
-  );
-
-  $form['network_wrapper']['query']['help'] = array('#value' =>
-    '<p class="instructions">'. t("The timezone used to display results. Default
-    timezone is determined from your system time and location.") .'</p>',
-  );
-
-  $form['network_wrapper']['query']['date_description'] = array(
-    '#prefix' => '<div id="date-description-wrapper"><p>',
-    '#suffix' => '</p></div>',
-  );
-
->>>>>>> d9b818336036ba050b66c2354ddecb5d9a1ed737
   $form['network_wrapper']['query']['traceroute_paste'] = array(
     '#title' => t('Traceroute'),
     '#type' => 'textarea',
     '#prefix' => '<div id="traceroute-paste-wrapper">',
     '#suffix' => '</div>',
     '#attributes' => array('id' => 'traceroute-paste'),
-<<<<<<< HEAD
     '#ahah' => array(
       'event' => 'change',
       'path' => ahah_helper_path(array('results_wrapper', 'results')),
       'wrapper' => 'results-wrapper',
     ),
-=======
->>>>>>> d9b818336036ba050b66c2354ddecb5d9a1ed737
   );
 
   // Submit button
@@ -933,7 +907,6 @@ function ecenter_network_get_traceroute_data($traceroute, $start, $end) {
   $client = ecenter_network_get_client();
   $result = $client->getTraceroute($traceroute, $start, $end, $resolution);
 
-<<<<<<< HEAD
   switch ($result['code']) {
     case 200:
       return ecenter_network_parse_response($result);
@@ -950,7 +923,6 @@ function ecenter_network_get_traceroute_data($traceroute, $start, $end) {
         array('@url' => $result['url'], '@code' => $result['code'],
         '@response' => $result['response']), WATCHDOG_WARNING);
       return FALSE;
-=======
   if ($result['code'] == 200) {
     return ecenter_network_parse_response($result);
   }
@@ -961,7 +933,6 @@ function ecenter_network_get_traceroute_data($traceroute, $start, $end) {
       array('@url' => $result['url'], '@code' => $result['code'],
       '@response' => $result['response']), WATCHDOG_WARNING);
     return NULL;
->>>>>>> d9b818336036ba050b66c2354ddecb5d9a1ed737
   }
 }
 

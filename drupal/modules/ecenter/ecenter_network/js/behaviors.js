@@ -681,7 +681,6 @@ $.fn.ecenter_network.plugins.ads = function() {
 }
 
 $.fn.ecenter_network.plugins.traceroute_paste = function() {
-<<<<<<< HEAD
   var target = $('#edit-network-wrapper-query-traceroute-paste-wrapper');
   var dialog = target.hide().clone().attr('id', 'traceroute-paste-copy');
   $('body').append(dialog);
@@ -706,7 +705,6 @@ $.fn.ecenter_network.plugins.traceroute_paste = function() {
         }
       }
     });
-=======
   var dialog = $('#edit-network-wrapper-query-traceroute-paste-wrapper').dialog({ 
     autoOpen : false,
     closeText : null,
@@ -726,7 +724,6 @@ $.fn.ecenter_network.plugins.traceroute_paste = function() {
       }
     }
   });
->>>>>>> d9b818336036ba050b66c2354ddecb5d9a1ed737
 
   var button = $('<button>'+ Drupal.t('Paste traceroute') +'</button>')
     .click(function() {
@@ -734,13 +731,7 @@ $.fn.ecenter_network.plugins.traceroute_paste = function() {
       return false; 
     });
 
-<<<<<<< HEAD
   $(target).after(button);
-
-
-=======
-  $('#traceroute-paste-wrapper').append(button, dialog.clone().hide());
->>>>>>> d9b818336036ba050b66c2354ddecb5d9a1ed737
 }
 
 

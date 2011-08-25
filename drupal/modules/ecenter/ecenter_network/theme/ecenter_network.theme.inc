@@ -10,18 +10,18 @@
  * Theme main data display
  */
 function template_preprocess_ecenter_network_data(&$vars) {
+  $params = $vars['data']['drs']['parameters'];
 
   // Source / dst table
   $hops = ecenter_network_get_hops();
-
-  $src_hop = $hops['combined'][$vars['params']['src']];
-  $dst_hop = $hops['combined'][$vars['params']['dst']];
+  $src_hop = $hops['combined'][$params['src']];
+  $dst_hop = $hops['combined'][$params['dst']];
 
   // Generate date range -- internal date is stored as UTC
   $dates = array();
   foreach (array('start', 'end') as $val) {
-    $dates[$val] = _ecenter_network_utc_to_local($vars['params'][$val], 
-      'M j, Y H:i', $vars['params']['timezone']);
+    $dates[$val] = _ecenter_network_utc_to_local($params[$val], 
+      'M j, Y H:i', $params['timezone']);
   }
 
   $vars['title'] = t('<span class="src-dst">@src_hub_name (@src_hub) to
@@ -44,7 +44,8 @@ function template_preprocess_ecenter_network_data(&$vars) {
   // module
   if (module_exists('ecenter_issues') && user_access('create issue content')) {
     $issue_params = array();
-    foreach ($vars['params'] as $key=>$param) {
+    $issue_query_params = array();
+    foreach ($params as $key => $param) {
       $issue_params[] = "$key=$param";
     }
     $issue_query = urlencode(implode('&', $issue_params));
@@ -55,7 +56,7 @@ function template_preprocess_ecenter_network_data(&$vars) {
       )
     );
 
-    $query = ecenter_issues_get_query_node($vars['params']);
+    $query = ecenter_issues_get_query_node($params);
     if ($query->nid) {
       $issue_links = array();
       $issues = ecenter_issues_get_query_issues($query);
@@ -78,7 +79,7 @@ function template_preprocess_ecenter_network_data(&$vars) {
 
   // Generate permalink
   $vars['permalink'] = l(t('Permanent link (bookmark and share results)'), 'network', array(
-    'query' => $vars['params'],
+    'query' => $params,
     'absolute' => TRUE,
     'attributes' => array('title' => $vars['title']),
   ));
@@ -88,7 +89,7 @@ function template_preprocess_ecenter_network_data(&$vars) {
     '#size' => 115,
     '#attributes' => array('readonly' => 'readonly'),
     '#value' => url('network',
-      array('query' => $vars['params'], 'absolute' => TRUE,)
+      array('query' => $params, 'absolute' => TRUE,)
     ),
   );
   $vars['permalink_field'] = drupal_render($permalink_field);

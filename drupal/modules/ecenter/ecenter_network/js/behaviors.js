@@ -98,11 +98,29 @@ $.fn.ecenter_network.plugins.ajax = function() {
   // Use bind; ajax_form events do not bubble to the top of the DOM
   $(el).bind({
     'ajaxSend' : function(e, xhr, s) {
+      var overlay = $('#loading-overlay');
+      overlay.css({
+        'position' : 'absolute',
+        'top' : 0,
+        'left' : 0,
+        'width' : $('#network-wrapper').outerWidth(),
+        'height' : $('#network-wrapper').height(),
+        'z-index' : 5,
+      });
+      overlay.fadeIn('slow');
+
       $('button.cancel').click(function(e) {
         e.stopPropagation();
         xhr.aborted = true;
         xhr.abort();
         return false;
+      });
+
+      $('#results').slideUp(600, function() {
+        $(this).remove();
+      });
+      $('#recent-queries').slideUp(600, function() {
+        $(this).remove();
       });
     },
     'ajaxSuccess' : function(e) {
@@ -176,8 +194,6 @@ $.fn.ecenter_network.plugins.date = function() {
       dst.data('autocomplete')._trigger('change');
     }
   });
-
-  $.fn.ecenter_network.plugins.date.setTimezone.call(this);
 }
 
 
@@ -246,51 +262,17 @@ $.fn.ecenter_network.plugins.change = function() {
       input.val('');
       input.data('autocomplete')._trigger('change');
     });
-    $('#src-wrapper select').bind('change', function(e) {
-      var overlay = $('#loading-overlay');
-      overlay.css({
-        'position' : 'absolute',
-        'top' : 0,
-        'left' : 0,
-        'width' : $('#network-wrapper', self.el).outerWidth(),
-        'height' : $('#network-wrapper', self.el).height(),
-        'z-index' : 5,
-      });
-      $('button', overlay).css({'display' : 'none'});
-      overlay.fadeIn('slow');
-    });
+    $('#src-wrapper select').data('ecenterProcessed', true);
   }
 
-  var processed = $('#dst-wrapper select').data('ecenterProcessed');
+  /*var processed = $('#dst-wrapper select').data('ecenterProcessed');
  
   // Clear out old results when destination select changes
   if (!processed) {
     $('#dst-wrapper select', this.el).bind('change', function(e) {
-      $('#results', self.el).slideUp(600, function() {
-        $(this).remove();
-      });
-
-      $('#recent-queries', self.el).slideUp(600, function() {
-        $(this).remove();
-      });
-
-      // Add overlay.
-      $(self.el).addClass('data-loading').css('position', 'relative');
-
-      var overlay = $('#loading-overlay');
-      overlay.css({
-        'position' : 'absolute',
-        'top' : 0,
-        'left' : 0,
-        'width' : $('#network-wrapper', self.el).outerWidth(),
-        'height' : $('#network-wrapper', self.el).height(),
-        'z-index' : 5,
-        'display' : 'none',
-      });
-      overlay.fadeIn('slow');
-      $(this).data('ecenterProcessed', true);
     });
-  }
+    $('#dst-wrapper select').data('ecenterProcessed', true);
+  }*/
 }
 
 /**
@@ -669,7 +651,6 @@ $.fn.ecenter_network.plugins.show_data_button = function() {
 $.fn.ecenter_network.plugins.end_to_end = function() {
   $('#end-to-end-results tbody tr', this.el).hover(function(e) {
     var class_list = $(this).attr('class').split(/\s+/);
-    //$(class_list[0];
   }, function(e) {
     console.log('out', this);
   });
@@ -699,6 +680,69 @@ $.fn.ecenter_network.plugins.ads = function() {
   });
 }
 
+$.fn.ecenter_network.plugins.traceroute_paste = function() {
+<<<<<<< HEAD
+  var target = $('#edit-network-wrapper-query-traceroute-paste-wrapper');
+  var dialog = target.hide().clone().attr('id', 'traceroute-paste-copy');
+  $('body').append(dialog);
+  
+  var dialog = $('#traceroute-paste-copy')
+    .dialog({ 
+      autoOpen : false,
+      closeText : null,
+      modal: true,
+      width: 700,
+      buttons: {
+        'Submit traceroute' : function() {
+          // Copy the value
+          var traceroute = $('textarea', this).val();
+          $('textarea', target)
+            .val(traceroute)
+            .trigger('change');
+          $(this).dialog('close');
+        },
+        'Cancel' : function() {
+          $(this).dialog('close');
+        }
+      }
+    });
+=======
+  var dialog = $('#edit-network-wrapper-query-traceroute-paste-wrapper').dialog({ 
+    autoOpen : false,
+    closeText : null,
+    modal: true,
+    width: 700,
+    buttons: {
+      'Submit traceroute' : function() {
+        var traceroute = $('textarea', this).val();
+        // Copy the value
+        $('#ecenter-network-select-form #edit-network-wrapper-query-traceroute-paste-wrapper textarea').val(traceroute);
+        $(this).dialog('close');
+        var dst = $('#dst-wrapper input', this.el);
+        dst.data('autocomplete')._trigger('change');
+      },
+      'Cancel' : function() {
+        $(this).dialog('close');
+      }
+    }
+  });
+>>>>>>> d9b818336036ba050b66c2354ddecb5d9a1ed737
+
+  var button = $('<button>'+ Drupal.t('Paste traceroute') +'</button>')
+    .click(function() {
+      dialog.dialog('open');
+      return false; 
+    });
+
+<<<<<<< HEAD
+  $(target).after(button);
+
+
+=======
+  $('#traceroute-paste-wrapper').append(button, dialog.clone().hide());
+>>>>>>> d9b818336036ba050b66c2354ddecb5d9a1ed737
+}
+
 
 /**
  * Default options: Define default plugins to call
@@ -710,7 +754,8 @@ $.fn.ecenter_network.defaults = {
     $.fn.ecenter_network.plugins.map,
     $.fn.ecenter_network.plugins.date,
     $.fn.ecenter_network.plugins.chart,
-    $.fn.ecenter_network.plugins.ads
+    $.fn.ecenter_network.plugins.ads,
+    $.fn.ecenter_network.plugins.traceroute_paste
   ],
   // Drawing plugins
   draw_plugins : [

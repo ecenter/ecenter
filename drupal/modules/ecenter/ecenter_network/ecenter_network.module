@@ -187,7 +187,7 @@ function ecenter_network_init() {
       .'/openlayers/ecenter_network_behavior_select.js');
 
     // jQuery UI: Force version 1.8, load libraries for datepicker and combobox
-    jquery_ui_add(array('ui.widget', 'ui.mouse', 'ui.button', 'ui.position', 'ui.autocomplete', 'ui.datepicker'), '1.8');
+    jquery_ui_add(array('ui.widget', 'ui.mouse', 'ui.button', 'ui.position', 'ui.autocomplete', 'ui.datepicker', 'ui.dialog'), '1.8');
 
     // jqPlot
     $jq_path = _jqplot_get_path();
@@ -274,6 +274,8 @@ function ecenter_network_traceroute_form_submit($form, &$form_state) {
   $end = date_format($end_date, 'Y-m-d H:i:s');
 
   $data = ecenter_network_get_traceroute_data($form_state['values']['traceroute'], $start, $end, TRUE);
+
+  dpm($data);
 
   $form_state['rebuild'] = TRUE;
 }
@@ -440,6 +442,8 @@ function _ecenter_network_select_form() {
     '#default_value' => NULL,
   );
 
+<<<<<<< HEAD
+=======
   $form['network_wrapper']['query']['timezone_name'] = array(
     '#type' => 'combobox',
     '#title' => t('Timezone'),
@@ -459,25 +463,21 @@ function _ecenter_network_select_form() {
     '#suffix' => '</p></div>',
   );
 
-  $form['network_wrapper']['query']['traceroute_wrapper'] = array(
-    '#type' => 'fieldset',
+>>>>>>> d9b818336036ba050b66c2354ddecb5d9a1ed737
+  $form['network_wrapper']['query']['traceroute_paste'] = array(
     '#title' => t('Traceroute'),
-    '#prefix' => '<div id="traceroute-wrapper">',
-    '#suffix' => '</div>',
-  );
-
-  $form['network_wrapper']['query']['traceroute_wrapper']['traceroute'] = array(
     '#type' => 'textarea',
-  );
-
-  $form['network_wrapper']['query']['traceroute_wrapper']['traceroute_submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Submit traceroute'),
+    '#prefix' => '<div id="traceroute-paste-wrapper">',
+    '#suffix' => '</div>',
+    '#attributes' => array('id' => 'traceroute-paste'),
+<<<<<<< HEAD
     '#ahah' => array(
-      'event' => 'click',
-      'path' => ahah_helper_path(array('network_wrapper', 'query', 'traceroute_wrapper')),
-      'wrapper' => 'traceroute-wrapper',
+      'event' => 'change',
+      'path' => ahah_helper_path(array('results_wrapper', 'results')),
+      'wrapper' => 'results-wrapper',
     ),
+=======
+>>>>>>> d9b818336036ba050b66c2354ddecb5d9a1ed737
   );
 
   // Submit button
@@ -697,7 +697,7 @@ function ecenter_network_select_form(&$form_state) {
     }
 
     // If we've got the data (at bare minimum, a traceroute), delegate to rendering function
-    if ($data) {
+    if ($data['drs']) {
       drupal_add_js(array('ecenterNetwork' => array('tracerouteData' => 
         $data['drs']['traceroute']['diff'])), 'setting');
       drupal_add_js(array('ecenterNetwork' => array('tracerouteMaxLength' => 
@@ -708,12 +708,6 @@ function ecenter_network_select_form(&$form_state) {
       $form['results_wrapper']['recent']['#value'] =
         theme('ecenter_network_recent_queries', TRUE);
     }
-    else {
-      $form['results_wrapper']['results']['#value'] = '<p>'. t('Whoops! No data was available for this query. If you believe there should be data for this query, send the site administrator feedback along with executed query, provided below.') .'</p>';
-      $form['results_wrapper']['results']['#value'] .=
-        '<p>'. l(t('Permalink'), 'network', array('query' => $params)) .'</p>';
-    }
-
   }
   else {
     $form['results_wrapper']['#value'] = theme('ecenter_network_recent_queries');
@@ -935,20 +929,39 @@ function ecenter_network_get_data($src, $dst, $start, $end) {
  */
 function ecenter_network_get_traceroute_data($traceroute, $start, $end) {
   global $user;
-  $caching = variable_get('ecenter_network_data_cache_enabled', 0);
   $resolution = variable_get('ecenter_network_drs_resolution', 50);
   $client = ecenter_network_get_client();
   $result = $client->getTraceroute($traceroute, $start, $end, $resolution);
- 
+
+<<<<<<< HEAD
+  switch ($result['code']) {
+    case 200:
+      return ecenter_network_parse_response($result);
+    case 501:
+      drupal_set_message(t('There was an error in your pasted traceroute. Please try again.'));
+      return FALSE;
+    default:
+      drupal_set_message(t('The data retrieval service experienced an error.'));
+      if (!empty($result['parameters'])) {
+        drupal_set_message(t('Include this URL when reporting this error: <a href="@href">@href</a>', array('@href' => url('network', array('query' => $result['parameters'], 'absolute' => TRUE))))); 
+      }
+      watchdog('ecenter_network',
+        'Request (@url) failed with code @code (@response).',
+        array('@url' => $result['url'], '@code' => $result['code'],
+        '@response' => $result['response']), WATCHDOG_WARNING);
+      return FALSE;
+=======
   if ($result['code'] == 200) {
     return ecenter_network_parse_response($result);
   }
   else { // Note that the static variable is NOT set in this case
+    dpm($result, 'error');
     watchdog('ecenter_network',
       'Request (@url) failed with code @code (@response).',
       array('@url' => $result['url'], '@code' => $result['code'],
       '@response' => $result['response']), WATCHDOG_WARNING);
     return NULL;
+>>>>>>> d9b818336036ba050b66c2354ddecb5d9a1ed737
   }
 }
 
@@ -1134,8 +1147,15 @@ function ecenter_network_get_node($ip) {
  *   An array of parsed data
  */
 function ecenter_network_parse_response($response) {
-  $parsed_data = array();
+  $parsed_data = array(
+    'parameters' => $response['parameters'],
+  );
   $data = $response['response'];
+
+  if (!empty($response['post'])) {
+    $parsed_data['parameters']['start'] = $response['post']['start'];
+    $parsed_data['parameters']['end'] = $response['post']['end'];
+  } 
 
   // Add hops to data structure
   foreach ($data['traceroute_nodes'] as $node_ip => $node) {
@@ -1159,8 +1179,6 @@ function ecenter_network_parse_response($response) {
         usort($series, '_ecenter_network_sort_series');
         $hop = array_shift($series);
         if (empty($parsed_data['hops'][$hop['hop_ip']])) {
-          dpm($parsed_data, 'error!!!');
-          dpm($hop);
           continue;
         }
         $hop += $parsed_data['hops'][$hop['hop_ip']];
@@ -1185,6 +1203,21 @@ function ecenter_network_parse_response($response) {
       $parsed_data['traceroute'][$direction] = $traceroute;
     }
   }
+
+  // Determine source and destination 
+  if (!empty($parsed_data['traceroute']['forward'])) {
+    $copy = $parsed_data['traceroute']['forward'];
+    $src = array_shift($copy);
+    $dst = array_pop($copy);
+  }
+  else {
+    $copy = $parsed_data['traceroute']['reverse'];
+    $dst = array_shift($copy);
+    $src = array_pop($copy);
+  }
+
+  $parsed_data['parameters']['src'] = 'hub:'. $src['hub_name'];
+  $parsed_data['parameters']['dst'] = 'hub:'. $dst['hub_name'];
 
   // Determine source and destination hubs based on parsed traceroute for
   // later comparison
@@ -2051,7 +2084,7 @@ function _ecenter_network_extract_query() {
       'elevation2' => $_REQUEST['elevation2'],
       'swc' => $_REQUEST['swc'],
 
-      'traceroute' => $_REQUEST['network_wrapper']['query']['traceroute_wrapper']['traceroute'],
+      'traceroute' => $_REQUEST['network_wrapper']['query']['traceroute_paste'],
     );
   }
 

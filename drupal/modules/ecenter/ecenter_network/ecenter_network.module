@@ -1166,19 +1166,25 @@ function ecenter_network_parse_response($response) {
   }
 
   // Determine source and destination 
-  if (!empty($parsed_data['traceroute']['forward'])) {
-    $copy = $parsed_data['traceroute']['forward'];
-    $src = array_shift($copy);
-    $dst = array_pop($copy);
-  }
-  else {
-    $copy = $parsed_data['traceroute']['reverse'];
-    $dst = array_shift($copy);
-    $src = array_pop($copy);
-  }
+  if (!empty($parsed_data['traceroute']['forward']) || !empty($parsed_data['traceroute']['reverse'])) {
+    if (!empty($parsed_data['traceroute']['forward'])) {
+      $copy = $parsed_data['traceroute']['forward'];
+      $src = array_shift($copy);
+      $dst = array_pop($copy);
+    }
+    else {
+      $copy = $parsed_data['traceroute']['reverse'];
+      $dst = array_shift($copy);
+      $src = array_pop($copy);
+    }
 
-  $parsed_data['parameters']['src'] = 'hub:'. $src['hub_name'];
-  $parsed_data['parameters']['dst'] = 'hub:'. $dst['hub_name'];
+    $parsed_data['parameters']['src'] = 'hub:'. $src['hub_name'];
+    $parsed_data['parameters']['dst'] = 'hub:'. $dst['hub_name'];
+  }
+  else { // Fall back to query
+    $parsed_data['parameters']['src'] = $response['parameters']['src'];
+    $parsed_data['parameters']['dst'] = $response['parameters']['dst'];
+  }
 
   // Determine source and destination hubs based on parsed traceroute for
   // later comparison

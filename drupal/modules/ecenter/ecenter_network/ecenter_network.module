@@ -187,7 +187,7 @@ function ecenter_network_init() {
       .'/openlayers/ecenter_network_behavior_select.js');
 
     // jQuery UI: Force version 1.8, load libraries for datepicker and combobox
-    jquery_ui_add(array('ui.widget', 'ui.mouse', 'ui.button', 'ui.position', 'ui.autocomplete', 'ui.datepicker'), '1.8');
+    jquery_ui_add(array('ui.widget', 'ui.mouse', 'ui.button', 'ui.position', 'ui.autocomplete', 'ui.datepicker', 'ui.dialog'), '1.8');
 
     // jqPlot
     $jq_path = _jqplot_get_path();
@@ -274,6 +274,8 @@ function ecenter_network_traceroute_form_submit($form, &$form_state) {
   $end = date_format($end_date, 'Y-m-d H:i:s');
 
   $data = ecenter_network_get_traceroute_data($form_state['values']['traceroute'], $start, $end, TRUE);
+
+  dpm($data);
 
   $form_state['rebuild'] = TRUE;
 }
@@ -459,25 +461,12 @@ function _ecenter_network_select_form() {
     '#suffix' => '</p></div>',
   );
 
-  $form['network_wrapper']['query']['traceroute_wrapper'] = array(
-    '#type' => 'fieldset',
+  $form['network_wrapper']['query']['traceroute_paste'] = array(
     '#title' => t('Traceroute'),
-    '#prefix' => '<div id="traceroute-wrapper">',
-    '#suffix' => '</div>',
-  );
-
-  $form['network_wrapper']['query']['traceroute_wrapper']['traceroute'] = array(
     '#type' => 'textarea',
-  );
-
-  $form['network_wrapper']['query']['traceroute_wrapper']['traceroute_submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Submit traceroute'),
-    '#ahah' => array(
-      'event' => 'click',
-      'path' => ahah_helper_path(array('network_wrapper', 'query', 'traceroute_wrapper')),
-      'wrapper' => 'traceroute-wrapper',
-    ),
+    '#prefix' => '<div id="traceroute-paste-wrapper">',
+    '#suffix' => '</div>',
+    '#attributes' => array('id' => 'traceroute-paste'),
   );
 
   // Submit button
@@ -939,11 +928,12 @@ function ecenter_network_get_traceroute_data($traceroute, $start, $end) {
   $resolution = variable_get('ecenter_network_drs_resolution', 50);
   $client = ecenter_network_get_client();
   $result = $client->getTraceroute($traceroute, $start, $end, $resolution);
- 
+
   if ($result['code'] == 200) {
     return ecenter_network_parse_response($result);
   }
   else { // Note that the static variable is NOT set in this case
+    dpm($result, 'error');
     watchdog('ecenter_network',
       'Request (@url) failed with code @code (@response).',
       array('@url' => $result['url'], '@code' => $result['code'],

@@ -699,6 +699,36 @@ $.fn.ecenter_network.plugins.ads = function() {
   });
 }
 
+$.fn.ecenter_network.plugins.traceroute_paste = function() {
+  var dialog = $('#edit-network-wrapper-query-traceroute-paste-wrapper').dialog({ 
+    autoOpen : false,
+    closeText : null,
+    modal: true,
+    width: 700,
+    buttons: {
+      'Submit traceroute' : function() {
+        var traceroute = $('textarea', this).val();
+        // Copy the value
+        $('#ecenter-network-select-form #edit-network-wrapper-query-traceroute-paste-wrapper textarea').val(traceroute);
+        $(this).dialog('close');
+        var dst = $('#dst-wrapper input', this.el);
+        dst.data('autocomplete')._trigger('change');
+      },
+      'Cancel' : function() {
+        $(this).dialog('close');
+      }
+    }
+  });
+
+  var button = $('<button>'+ Drupal.t('Paste traceroute') +'</button>')
+    .click(function() {
+      dialog.dialog('open');
+      return false; 
+    });
+
+  $('#traceroute-paste-wrapper').append(button, dialog.clone().hide());
+}
+
 
 /**
  * Default options: Define default plugins to call
@@ -710,7 +740,8 @@ $.fn.ecenter_network.defaults = {
     $.fn.ecenter_network.plugins.map,
     $.fn.ecenter_network.plugins.date,
     $.fn.ecenter_network.plugins.chart,
-    $.fn.ecenter_network.plugins.ads
+    $.fn.ecenter_network.plugins.ads,
+    $.fn.ecenter_network.plugins.traceroute_paste
   ],
   // Drawing plugins
   draw_plugins : [

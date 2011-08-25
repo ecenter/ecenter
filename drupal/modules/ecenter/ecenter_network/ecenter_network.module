@@ -923,16 +923,6 @@ function ecenter_network_get_traceroute_data($traceroute, $start, $end) {
         array('@url' => $result['url'], '@code' => $result['code'],
         '@response' => $result['response']), WATCHDOG_WARNING);
       return FALSE;
-  if ($result['code'] == 200) {
-    return ecenter_network_parse_response($result);
-  }
-  else { // Note that the static variable is NOT set in this case
-    dpm($result, 'error');
-    watchdog('ecenter_network',
-      'Request (@url) failed with code @code (@response).',
-      array('@url' => $result['url'], '@code' => $result['code'],
-      '@response' => $result['response']), WATCHDOG_WARNING);
-    return NULL;
   }
 }
 

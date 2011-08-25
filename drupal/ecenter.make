@@ -284,6 +284,6 @@ libraries[masonry][download][url] = "http://masonry.desandro.com/jquery.masonry.
 libraries[masonry][directory_name] = "masonry"
 
 ; Raphael
-libraries[raphael][download][type] = "get"
-libraries[raphael][download][url] = "https://raw.github.com/DmitryBaranovskiy/raphael/master/raphael-min.js"
+libraries[raphael][download][type] = "git"
+libraries[raphael][download][url] = "https://github.com/ecenter/raphael.git"
 libraries[raphael][directory_name] = "raphael"

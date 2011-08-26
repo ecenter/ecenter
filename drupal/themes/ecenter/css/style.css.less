@@ -9,7 +9,7 @@
 
 /* --- Less CSS Variables --- */
 /* Variables: Measurements {{{ */
-@default_corner_radius: 8px;
+@default_corner_radius: 5px;
 @intense_corner_radius: 14px;
 @container_padding_horizontal: 12px;
 @container_padding_vertical: 18px;
@@ -136,7 +136,7 @@
 // For making things look like buttons
 .button {
   .vertical_glass_gradient(@color_grey_93; @color_grey_73; @color_grey_80);
-  .round_corner(@intense_corner_radius; @intense_corner_radius; @intense_corner_radius; @intense_corner_radius;);
+  .round_corner(@default_corner_radius; @default_corner_radius; @default_corner_radius; @default_corner_radius;);
   text-shadow: 0 1px 1px #fff;
   border: 1px solid @color_grey_53;
   color: @color_grey_20;
@@ -601,7 +601,6 @@ form {
     .box;
     width: 100%;
     font-size: 16px;
-    line-height: 16px;
     a { 
       display: block;
       text-shadow: 1px 1px 1px rgba(255,255,255,.5);
@@ -616,18 +615,26 @@ form {
       margin-left: @container_padding_horizontal;
     }
     &.menu-level-1 {
+      font-size: 16px;
+      line-height: 16px;
+      font-weight: bold;
       padding-top: 4px;
       padding-bottom: 4px;
       border-bottom: 1px solid @color_grey_60;
       .vertical_glass_gradient(@color_grey_93; @color_grey_73; @color_grey_67);
       a {
-        .round_corner(13px; 13px; 13px; 13px;);
+        .round_corner(@default_corner_radius; @default_corner_radius; @default_corner_radius; @default_corner_radius;);
         margin-right: 3px;
-        padding: 3px 8px 3px 8px;
-        :hover, &.active, &.active-trail { 
+        padding: 3px 6px 5px 6px;
+        color: @color_grey_20;
+        &.active, &.active-trail { 
+          background-color: @color_grey_93; 
+          border: 1px solid @color_grey_67;
+        }
+        :hover { 
           color: @color_black;
-          background-color: @color_white; 
-          border: 1px solid @color_grey_47;
+          background-color: @color_grey_93; 
+          border: 1px solid @color_grey_67;
         }
       }
     }
@@ -642,7 +649,7 @@ form {
       a {
         margin-right: 4px;
         padding: 3px 7px;
-        .round_corner(10px; 10px; 10px; 10px;);
+        .round_corner(@default_corner_radius; @default_corner_radius; @default_corner_radius; @default_corner_radius;);
         :hover, &.active { 
           color: @color_white;
           text-shadow: none;
@@ -757,11 +764,11 @@ form {
   }
   input {
     margin: 0;
-    height: 18px;
+    height: 19px;
     padding: 2px 4px;
   }
   .form-text {
-    .round_corner(@intense_corner_radius; 0; 0; @intense_corner_radius;);
+    .round_corner(@default_corner_radius; 0; 0; @default_corner_radius;);
     width: 160px;
     .box;
     border: 1px solid @color_grey_60;
@@ -772,7 +779,7 @@ form {
   .form-submit {
     .box;
     width: 50px;
-    .round_corner(0; @intense_corner_radius; @intense_corner_radius; 0;);
+    .round_corner(0; @default_corner_radius; @default_corner_radius; 0;);
     border-color: @color_grey_53;
     border-left: 1px solid @color_grey_73;
     text-align: center;
@@ -834,10 +841,25 @@ form {
       line-height: 1.4;
     } // }}}
     label {
-      font-size: 13px;
+      font-size: 12px;
     }
     input {
       font-size: 12px;
+    }
+    #traceroute-paste-wrapper {
+      button {
+        font-size: 13px;
+      }
+      textarea {
+        margin-top: 8px;
+        color: @color_black;
+        font-size: 10px;
+        width: 280px;
+        height: 60px;
+      }
+      label {
+        display: none;
+      }
     }
     .container-inline-date { // {{{
       #edit-network-wrapper-query-start-datepicker-popup-0-wrapper, #edit-network-wrapper-query-end-datepicker-popup-0-wrapper {
@@ -866,8 +888,10 @@ form {
     #recent-select {
       .box;
       width: 300px;
+      border-top: 1px solid #aaa;
       margin-bottom: 1em;
-      margin-top: .75em;
+      margin-top: 1em;
+      padding-top: 1em;
       .form-option {
         float: left;
         width: 140px;
@@ -882,16 +906,15 @@ form {
       margin-bottom: 1em;
       line-height: 1;
       padding: 3px 0;
-      text-transform: uppercase;
+      text-transform: lowercase;
       text-align: center;
-      border-top: 1px solid #aaa;
-      border-bottom: 1px solid #aaa;
+      background-color: @color_grey_87;
     }
     #ads-settings-wrapper {
       .box;
       margin-top: .75em;
     }
-    #src-wrapper, #dst-wrapper, #date-select, #timezone-select, #ads-settings { // {{{
+    #src-wrapper, #dst-wrapper, #date-select, #ads-settings { // {{{
       .box;
       width: 300px;
       .form-item {
@@ -900,13 +923,13 @@ form {
         .form-item { margin: 0 9px 0 0; };
         label {
           float: left;
-          width: 85px;
+          width: 95px;
           margin-top: 2px;
         }
       }
       input {
         .box;
-        width: 140px;
+        width: 150px;
         margin-top: 2px;
       }
       input.ui-widget {
@@ -1010,7 +1033,7 @@ form {
         font-size: @font_size_21;
       }
       &.collapsible {
-        .round_corner(@intense_corner_radius; @intense_corner_radius; @intense_corner_radius; @intense_corner_radius;);
+        .round_corner(@default_corner_radius; @default_corner_radius; @default_corner_radius; @default_corner_radius;);
         background-color: @color_grey_87;
         .fieldset-title {
           font-size: @font_size_17;
@@ -2057,5 +2080,27 @@ table.network-health {
       }
     }
   }
+}
+// }}}
+// UI Dialog {{{
+.ui-dialog {
+  padding: 20px;
+  border: 1px solid @color_black;
+  .shadow(2px; 5px; 7px; @color_grey_43;);
+  background-color: @color_white;
+  textarea {
+    padding: 4px;
+    background-color: @color_white;
+    height: 225px;
+    font-size: 12px;
+    line-height: 18px;
+    font-family: @font_mono;
+  }
+}
+.ui-widget-overlay {
+  background-color: rgba(255, 255, 255, 0.75);
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 // }}}

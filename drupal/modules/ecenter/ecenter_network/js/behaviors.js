@@ -98,11 +98,32 @@ $.fn.ecenter_network.plugins.ajax = function() {
   // Use bind; ajax_form events do not bubble to the top of the DOM
   $(el).bind({
     'ajaxSend' : function(e, xhr, s) {
+      var overlay = $('#loading-overlay');
+      overlay.css({
+        'position' : 'absolute',
+        'top' : 0,
+        'left' : 0,
+        'width' : $('#network-wrapper').outerWidth(),
+        'height' : $('#network-wrapper').height(),
+        'z-index' : 5,
+      });
+      overlay.fadeIn('slow');
+
       $('button.cancel').click(function(e) {
         e.stopPropagation();
         xhr.aborted = true;
         xhr.abort();
         return false;
+      });
+
+      $('.messages').fadeOut(900, function() {
+        $(this).remove();
+      });
+      $('#results').fadeOut(900, function() {
+        $(this).remove();
+      });
+      $('#recent-queries').slideUp(900, function() {
+        $(this).remove();
       });
     },
     'ajaxSuccess' : function(e) {
@@ -163,63 +184,32 @@ $.fn.ecenter_network.plugins.ajax = function() {
 $.fn.ecenter_network.plugins.date = function() {
   // @TODO This is a little DRY violation, maybe delegate instead?
   $('#recent-select input', this.el).bind('change', function() {
-    var dst = $('#dst-wrapper input', this.el);
     $('#date-select input').val('');
+    var traceroute = $('#traceroute-paste-wrapper textarea', this.el);
+    if (traceroute.val()) {
+      traceroute.trigger('change');
+      return;
+    }
+    var dst = $('#dst-wrapper input', this.el);
     if (dst.val()) {
       dst.data('autocomplete')._trigger('change');
+      return;
     }
   });
   $('#date-select input', this.el).bind('change', function() {
     var dst = $('#dst-wrapper input', this.el);
     $('#recent-select input').attr('checked', false);
+    var traceroute = $('#traceroute-paste-wrapper textarea', this.el);
+    if (traceroute.val()) {
+      traceroute.trigger('change');
+      return;
+    }
+    var dst = $('#dst-wrapper input', this.el);
     if (dst.val()) {
       dst.data('autocomplete')._trigger('change');
+      return;
     }
   });
-
-  $.fn.ecenter_network.plugins.date.setTimezone.call(this);
-}
-
-
-/**
- * Set timezone
- */
-$.fn.ecenter_network.plugins.date.setTimezone = function() {
-  self = this;
-  if (!$('#timezone-select', self.el).val()) {
-    var date_string = Date();
-
-    var matches = Date().match(/\(([A-Z]{3,5})\)/);
-    var abbr = matches ? matches[1] : false;
-    
-    var now = new Date();
-    var offset = now.getTimezoneOffset() * -60;
-
-    var jan = new Date(now.getFullYear(), 0, 1, 12, 0, 0, 0);
-    var jul = new Date(now.getFullYear(), 6, 1, 12, 0, 0, 0);
-    var stOffset = jan.getTimezoneOffset() * -60;
-    var dstOffset = jul.getTimezoneOffset() * -60;
-    var maxOffset = Math.max(stOffset, dstOffset);
-
-    // UTC offset is same in Jan and July -- no DST in locale
-    if (stOffset == dstOffset) {
-      var dst = '';
-    }
-    // Current offset and maxoffset match, meaning it is DST
-    else if (maxOffset == offset) {
-      var dst = 1;
-    }
-    else {
-      dst = 0;
-    }
-
-    var path = 'ecenter/timezone/' + abbr + '/' + offset + '/' + dst;
-    $.getJSON(Drupal.settings.basePath, { q: path, date: date_string }, function (data) {
-      if (data) {
-        $('#timezone-select input, #timezone-select select', self.el).val(data);
-      }
-    });
-  }
 }
 
 /**
@@ -246,50 +236,22 @@ $.fn.ecenter_network.plugins.change = function() {
       input.val('');
       input.data('autocomplete')._trigger('change');
     });
-    $('#src-wrapper select').bind('change', function(e) {
-      var overlay = $('#loading-overlay');
-      overlay.css({
-        'position' : 'absolute',
-        'top' : 0,
-        'left' : 0,
-        'width' : $('#network-wrapper', self.el).outerWidth(),
-        'height' : $('#network-wrapper', self.el).height(),
-        'z-index' : 5,
-      });
-      $('button', overlay).css({'display' : 'none'});
-      overlay.fadeIn('slow');
+    $('#src-wrapper select', this.el).bind('change', function(e) {
+      $('#edit-network-wrapper-query-traceroute-paste-wrapper').fadeOut();
+      $('#traceroute-paste-wrapper textarea').val('');
     });
+    $('#src-wrapper select').data('ecenterProcessed', true);
   }
 
   var processed = $('#dst-wrapper select').data('ecenterProcessed');
  
-  // Clear out old results when destination select changes
+  // Clear out some values when destination changes
   if (!processed) {
     $('#dst-wrapper select', this.el).bind('change', function(e) {
-      $('#results', self.el).slideUp(600, function() {
-        $(this).remove();
-      });
-
-      $('#recent-queries', self.el).slideUp(600, function() {
-        $(this).remove();
-      });
-
-      // Add overlay.
-      $(self.el).addClass('data-loading').css('position', 'relative');
-
-      var overlay = $('#loading-overlay');
-      overlay.css({
-        'position' : 'absolute',
-        'top' : 0,
-        'left' : 0,
-        'width' : $('#network-wrapper', self.el).outerWidth(),
-        'height' : $('#network-wrapper', self.el).height(),
-        'z-index' : 5,
-        'display' : 'none',
-      });
-      overlay.fadeIn('slow');
-      $(this).data('ecenterProcessed', true);
+      $('#edit-network-wrapper-query-traceroute-paste-wrapper').fadeOut();
+      $('#traceroute-paste-wrapper textarea').val('');
     });
+    $('#dst-wrapper select').data('ecenterProcessed', true);
   }
 }
 
@@ -669,7 +631,6 @@ $.fn.ecenter_network.plugins.show_data_button = function() {
 $.fn.ecenter_network.plugins.end_to_end = function() {
   $('#end-to-end-results tbody tr', this.el).hover(function(e) {
     var class_list = $(this).attr('class').split(/\s+/);
-    //$(class_list[0];
   }, function(e) {
     console.log('out', this);
   });
@@ -699,6 +660,43 @@ $.fn.ecenter_network.plugins.ads = function() {
   });
 }
 
+$.fn.ecenter_network.plugins.traceroute_paste = function() {
+  var target = $('#edit-network-wrapper-query-traceroute-paste-wrapper');
+  var dialog = target.hide().clone().attr('id', 'traceroute-paste-copy');
+  $('body').append(dialog);
+  
+  var dialog = $('#traceroute-paste-copy').dialog({ 
+    autoOpen : false,
+    closeText : null,
+    modal: true,
+    width: 700,
+    buttons: {
+      'Submit traceroute' : function() {
+        // Debug by showing field
+        $('#edit-network-wrapper-query-traceroute-paste-wrapper').fadeIn();
+        // Copy the value
+        $('#src-wrapper input, #dst-wrapper input').val(null);
+        var traceroute = $('textarea', this).val();
+        $('textarea', target)
+          .val(traceroute)
+          .trigger('change');
+        $(this).dialog('close');
+      },
+      'Cancel' : function() {
+        $(this).dialog('close');
+      }
+    }
+  });
+ 
+  var button = $('<button>'+ Drupal.t('Paste traceroute') +'</button>')
+    .click(function() {
+      dialog.dialog('open');
+      return false; 
+    });
+
+  $(target).before(button);
+}
+
 
 /**
  * Default options: Define default plugins to call
@@ -707,6 +705,7 @@ $.fn.ecenter_network.defaults = {
   // Initialization plugins
   init_plugins : [
     $.fn.ecenter_network.plugins.ajax,
+    $.fn.ecenter_network.plugins.traceroute_paste,
     $.fn.ecenter_network.plugins.map,
     $.fn.ecenter_network.plugins.date,
     $.fn.ecenter_network.plugins.chart,

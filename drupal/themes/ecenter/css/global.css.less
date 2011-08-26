@@ -225,7 +225,6 @@ body {
   font-size: 18px;
   line-height: 24px;
   color: @color_grey_20;
-  background-color: @color_grey_33;
 }
 // }}}
 // Page wrapper {{{
@@ -246,55 +245,21 @@ a {
 
 // Text styles
 p, blockquote {
-  margin-bottom: 21px;
   &:last-child {
     margin: 0;
   }
-}
-em {
-  font-style: italic;
-}
-table {
-  width: auto;
 }
 
 // Headings
 h1, h2, h3, h4, h5, h6 {
   font-family: @font_heading;
-  font-weight: bold;
 }
-h1 {
-  font-size: 32px;
-  line-height: 42px;
-  margin-bottom: 21px;
-}
-h2 {
-  font-size: 28px;
-  line-height: 35px;
-  margin-bottom: 18px
-}
-h3 {
-  font-size: 24px;
-}
-h4 {
-  font-size: 20px;
-}
-
-// Lists
-ul, ol {
-  margin: 0;
-}
-li {
-  margin-bottom: 21px;
-}
-
 
 // Tables
 table {
   border-collapse: collapse;
   thead th {
     font-weight: bold;
-    font-size: 0.875em;
     color: @color_grey_40;
   }
   thead th.empty {
@@ -307,14 +272,11 @@ table {
   }
   td, th {
     text-align: left;
-    padding: 2px 11px 2px 11px;
-    border: 2px solid @color_white;
   }
   td {
     font-weight: bold;
     background-color: @color_grey_87;
     color: @color_grey_27;
-    line-height: 1.5;
   }
   tr:hover td, tbody tr:hover th {
     background-color: @color_grey_80;
@@ -324,7 +286,6 @@ table {
     margin: 0;
     td, th {
       padding-left: 0;
-      border: none;
       background-color: transparent;
     }
   }

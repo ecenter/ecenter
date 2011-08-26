@@ -44,7 +44,6 @@ function template_preprocess_ecenter_network_data(&$vars) {
   // module
   if (module_exists('ecenter_issues') && user_access('create issue content')) {
     $issue_params = array();
-    $issue_query_params = array();
     foreach ($params as $key => $param) {
       $issue_params[] = "$key=$param";
     }

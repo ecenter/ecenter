@@ -116,10 +116,13 @@ $.fn.ecenter_network.plugins.ajax = function() {
         return false;
       });
 
-      $('#results').slideUp(600, function() {
+      $('.messages').fadeOut(900, function() {
         $(this).remove();
       });
-      $('#recent-queries').slideUp(600, function() {
+      $('#results').fadeOut(900, function() {
+        $(this).remove();
+      });
+      $('#recent-queries').slideUp(900, function() {
         $(this).remove();
       });
     },
@@ -181,61 +184,32 @@ $.fn.ecenter_network.plugins.ajax = function() {
 $.fn.ecenter_network.plugins.date = function() {
   // @TODO This is a little DRY violation, maybe delegate instead?
   $('#recent-select input', this.el).bind('change', function() {
-    var dst = $('#dst-wrapper input', this.el);
     $('#date-select input').val('');
+    var traceroute = $('#traceroute-paste-wrapper textarea', this.el);
+    if (traceroute.val()) {
+      traceroute.trigger('change');
+      return;
+    }
+    var dst = $('#dst-wrapper input', this.el);
     if (dst.val()) {
       dst.data('autocomplete')._trigger('change');
+      return;
     }
   });
   $('#date-select input', this.el).bind('change', function() {
     var dst = $('#dst-wrapper input', this.el);
     $('#recent-select input').attr('checked', false);
+    var traceroute = $('#traceroute-paste-wrapper textarea', this.el);
+    if (traceroute.val()) {
+      traceroute.trigger('change');
+      return;
+    }
+    var dst = $('#dst-wrapper input', this.el);
     if (dst.val()) {
       dst.data('autocomplete')._trigger('change');
+      return;
     }
   });
-}
-
-
-/**
- * Set timezone
- */
-$.fn.ecenter_network.plugins.date.setTimezone = function() {
-  self = this;
-  if (!$('#timezone-select', self.el).val()) {
-    var date_string = Date();
-
-    var matches = Date().match(/\(([A-Z]{3,5})\)/);
-    var abbr = matches ? matches[1] : false;
-    
-    var now = new Date();
-    var offset = now.getTimezoneOffset() * -60;
-
-    var jan = new Date(now.getFullYear(), 0, 1, 12, 0, 0, 0);
-    var jul = new Date(now.getFullYear(), 6, 1, 12, 0, 0, 0);
-    var stOffset = jan.getTimezoneOffset() * -60;
-    var dstOffset = jul.getTimezoneOffset() * -60;
-    var maxOffset = Math.max(stOffset, dstOffset);
-
-    // UTC offset is same in Jan and July -- no DST in locale
-    if (stOffset == dstOffset) {
-      var dst = '';
-    }
-    // Current offset and maxoffset match, meaning it is DST
-    else if (maxOffset == offset) {
-      var dst = 1;
-    }
-    else {
-      dst = 0;
-    }
-
-    var path = 'ecenter/timezone/' + abbr + '/' + offset + '/' + dst;
-    $.getJSON(Drupal.settings.basePath, { q: path, date: date_string }, function (data) {
-      if (data) {
-        $('#timezone-select input, #timezone-select select', self.el).val(data);
-      }
-    });
-  }
 }
 
 /**
@@ -262,17 +236,23 @@ $.fn.ecenter_network.plugins.change = function() {
       input.val('');
       input.data('autocomplete')._trigger('change');
     });
+    $('#src-wrapper select', this.el).bind('change', function(e) {
+      $('#edit-network-wrapper-query-traceroute-paste-wrapper').fadeOut();
+      $('#traceroute-paste-wrapper textarea').val('');
+    });
     $('#src-wrapper select').data('ecenterProcessed', true);
   }
 
-  /*var processed = $('#dst-wrapper select').data('ecenterProcessed');
+  var processed = $('#dst-wrapper select').data('ecenterProcessed');
  
-  // Clear out old results when destination select changes
+  // Clear out some values when destination changes
   if (!processed) {
     $('#dst-wrapper select', this.el).bind('change', function(e) {
+      $('#edit-network-wrapper-query-traceroute-paste-wrapper').fadeOut();
+      $('#traceroute-paste-wrapper textarea').val('');
     });
     $('#dst-wrapper select').data('ecenterProcessed', true);
-  }*/
+  }
 }
 
 /**
@@ -692,7 +672,10 @@ $.fn.ecenter_network.plugins.traceroute_paste = function() {
     width: 700,
     buttons: {
       'Submit traceroute' : function() {
+        // Debug by showing field
+        $('#edit-network-wrapper-query-traceroute-paste-wrapper').fadeIn();
         // Copy the value
+        $('#src-wrapper input, #dst-wrapper input').val(null);
         var traceroute = $('textarea', this).val();
         $('textarea', target)
           .val(traceroute)
@@ -711,7 +694,7 @@ $.fn.ecenter_network.plugins.traceroute_paste = function() {
       return false; 
     });
 
-  $(target).after(button);
+  $(target).before(button);
 }
 
 

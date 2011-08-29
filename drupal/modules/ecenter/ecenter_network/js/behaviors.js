@@ -99,32 +99,35 @@ $.fn.ecenter_network.plugins.ajax = function() {
   $(el).bind({
     'ajaxSend' : function(e, xhr, s) {
       var overlay = $('#loading-overlay');
-      overlay.css({
-        'position' : 'absolute',
-        'top' : 0,
-        'left' : 0,
-        'width' : $('#network-wrapper').outerWidth(),
-        'height' : $('#network-wrapper').height(),
-        'z-index' : 5,
-      });
-      overlay.fadeIn('slow');
+      var url_parts = s.url.replace(Drupal.settings.basePath, '').split('/');
+      if (url_parts[0] == 'ahah_helper') {
+        overlay.css({
+          'position' : 'absolute',
+          'top' : 0,
+          'left' : 0,
+          'width' : $('#network-wrapper').outerWidth(),
+          'height' : $('#network-wrapper').height(),
+          'z-index' : 5,
+        });
+        overlay.fadeIn('slow');
 
-      $('button.cancel').click(function(e) {
-        e.stopPropagation();
-        xhr.aborted = true;
-        xhr.abort();
-        return false;
-      });
+        $('button.cancel').click(function(e) {
+          e.stopPropagation();
+          xhr.aborted = true;
+          xhr.abort();
+          return false;
+        });
 
-      $('.messages').fadeOut(900, function() {
-        $(this).remove();
-      });
-      $('#results').fadeOut(900, function() {
-        $(this).remove();
-      });
-      $('#recent-queries').slideUp(900, function() {
-        $(this).remove();
-      });
+        $('.messages').fadeOut(900, function() {
+          $(this).remove();
+        });
+        $('#results').fadeOut(900, function() {
+          $(this).remove();
+        });
+        $('#recent-queries').slideUp(900, function() {
+          $(this).remove();
+        });
+      }
     },
     'ajaxSuccess' : function(e) {
       $(el).removeClass('data-loading');

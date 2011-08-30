@@ -698,7 +698,7 @@ function ecenter_network_select_form_submit($form, &$form_state) {
   // Do what AHAH helper does on an AJAX call, to make form constructor a
   // little less crazy
   $inc = variable_get('ecenter_network_time_increment', 10);
-  $tz = 'UTC';
+  $tz = timezone_open('UTC');
 
   if ($form_state['values']['network_wrapper']['query']['recent_select']
     && !$form_state['values']['network_wrapper']['query']['date_select']) {

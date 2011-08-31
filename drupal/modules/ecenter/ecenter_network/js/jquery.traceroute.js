@@ -5,24 +5,74 @@
 (function($) {
 
 // @TODO account for redrawing
-$.fn.traceroute = function(data, options) {
+$.fn.traceroute = function(data, directions, options) {
   var options = $.extend(true, {}, $.fn.traceroute.defaults, options);
   return this.each(function(i) {
     var traceroutes = $(this).data('traceroute') || {};
     if (traceroutes[options.tracerouteName] == undefined) {
-      traceroutes[options.tracerouteName] = new $.traceroute(this, options);
+      traceroutes[options.tracerouteName] = new $.traceroute(this, options, data, directions);
       $(this).data('traceroute', traceroutes);
-      traceroutes[options.tracerouteName].draw(data);
+      traceroutes[options.tracerouteName].draw();
     }
   });
 };
 
-// Traceroute constructor
+/**
+ * Traceroute constructor
+ * @param el 
+ *   Element
+ * @param options
+ *   Options
+ * @param data
+ *   Traceroute data
+ */
 $.traceroute = function(el, options, data) {
+  // Properties
   this.el = el;
   this.options = options;
+  this.data = data;
+  this.tracerouteDirections = { 'forward' : false, 'reverse' : false };
+  
   this.paper = Raphael(el, options.container.width, options.container.height);
-  this.paper.tracerouteOptions = options;
+  this.paper.tracerouteOptions = options; // Needed for event handlers scoped to Raphael object
+
+  // Container dimensions
+  this.height = $(this.paper.canvas).height();
+  this.width = $(this.paper.canvas).width();
+
+  // Marker dimensions
+  this.marker = { 
+    'size' : (2 * parseInt(options.marker.radius + options.markerBackground.radiusAdjust)) + parseInt(options.markerBackground.style['stroke-width']),
+    'xOffset' : options.link.width / 2,
+    'forwardYOffset' : parseInt(options.marker.radius + options.markerBackground.radiusAdjust) + (parseInt(options.markerBackground.style['stroke-width']) / 2),
+    'reverseYOffset' : parseInt(options.marker.radius + options.markerBackground.radiusAdjust) + (parseInt(options.markerBackground.style['stroke-width']) / 2) + (parseInt(options.label.style['font-size']) / 2) 
+  };
+
+  this.label = {
+    'yOffset' : (this.marker.size / 2) + (parseInt(options.label.style['font-size']) / 4)
+  };
+
+  
+  // Marker + label bounding box dimensions 
+  this.bbox = { 'height' : this.marker.size, 'width' : options.link.width };
+
+  // Check for directions present in traceroute (if only one or other, drawing will
+  // be different).
+  for (var direction in this.tracerouteDirections) {
+    for (var j = 0, dataLen = data.length; j < dataLen; j++) {
+      var row = data[j];
+      var row_type = (row.match != undefined) ? 'match' : 'diff';
+      var step = row[row_type];
+
+      if (step[direction] != undefined) {
+        this.tracerouteDirections[direction] = true;
+        break;
+      }
+    }
+  }
+  
+  // Y offset
+  this.diffYOffset = this.height - (this.bbox.height * 1.5);
 }
 
 // Callback for hover 'over' event
@@ -61,88 +111,102 @@ $.traceroute.hoverOut = function() {
   }
 }
 
-$.traceroute.prototype.draw = function(data) {
-  var paper = this.paper;
-
-  // Marker offsets 
-  var marker_center_offset = this.options.marker.radius +
-    (this.options.marker.style['stroke-width'] / 2);
+$.traceroute.prototype.draw = function() {
+  var paper = this.paper, 
+    data = this.data, 
+    boxOffset = -this.bbox.width,
+    //lastHop = {'forward': null, 'reverse' : null}; // Lines are drawn backwards to last hop(s)
+    lastHop = { 'forward': false, 'reverse' : false };
   
-  var link_length = parseInt(this.options.link.length) + (2 * marker_center_offset);
-
-  // Start at a negative distance so first iteration starts at 0
-  var x_offset = -link_length;
-
-  // Always vertically center markers
-  var y_offset = parseInt(this.options.container.height) / 1.75;
-  
-  // Last hop tracks the last hop in the forward and reverse directions,
-  // irrespective of the current step. This allows us to always draw backwards
-  // to the appropriate marker.
-  var last_hop = {'forward': null, 'reverse' : null};
-
   for (var i = 0; i < data.length; i++) {
-    var row = data[i];
-    var row_type = (row.match != undefined) ? 'match' : 'diff';
-    var step = row[row_type];
+    var row = data[i],
+      row_type = (row.match != undefined) ? 'match' : 'diff',
+      step = row[row_type];
 
-    // Reuse last_hop variable to loop over forward and reverse directions
-    for (direction in last_hop) {
-      var y_adjust = (i > 0 && row_type == 'diff' && direction == 'reverse') ? 
-        y_offset - this.options.diff_y_offset : y_offset;
+    if (row_type == 'diff') {
+      var longestDirection = (step.forward.length > step.reverse.length) ?
+        'forward' : 'reverse';
+      var shortestDirection = (step.forward.length > step.reverse.length) ?
+        'reverse' : 'forward';
+      var lastDiffX = 0;
+      if (step[shortestDirection].length) {
+        var adjustedBoxWidth = (step[longestDirection].length * this.options.link.width) / step[shortestDirection].length;
+      }
+      else {
+        var adjustedBoxWidth = step[longestDirection].length * this.options.link.width;
+      }
+    }
 
-      if (step[direction] == undefined) {
+    for (direction in this.tracerouteDirections) {
+      var yOffset = (i > 0 && row_type == 'diff' && direction == 'reverse') ? 
+        this.diffYOffset : 0; 
+
+      if (step[direction].length == 0) {
         continue;
       }
 
       for (var j = 0; j < step[direction].length; j++) {
-        var hop = step[direction][j];
-        $.extend(hop, {'ttl' : i, 'type' : row_type, 'direction' : direction, 'y_offset': y_adjust});
+        var hop = step[direction][j],
+          labelOffset = yOffset + this.label.yOffset,
+          set = paper.set(hop.hub),
+          markerRadius = this.options.marker.radius;
 
+        if (direction == 'forward' && step['reverse'].length) {
+          var markerYOffset = yOffset + this.marker.forwardYOffset;
+        } else if (direction == 'reverse' && step['forward'].length) {
+          var markerYOffset = yOffset + this.marker.reverseYOffset;
+        }
+        else {
+          markerRadius = markerRadius * 1.35;
+          var markerYOffset = yOffset + this.label.yOffset;
+        }
+        
         if (row_type == 'match') {
           // Only increment x counter once on matches
           if (direction == 'forward' || !step['forward']) {
-            x_offset += link_length;
+            boxOffset += this.bbox.width;
           }
-          label_offset = x_offset;
-          marker_offset = marker_center_offset + label_offset + (this.options.label.width / 4);
-          $.extend(hop, {'x_offset' : x_offset});
         } else {
-          // Increment global x_offset when working in longest direction
-          if (direction == longest_direction) {
-            x_offset += link_length;
-            last_diff_x = x_offset;
+          // ...
+          if (direction == longestDirection) {
+            boxOffset += this.bbox.width;
           }
           else {
-            // @TODO test this...
-            last_diff_x = (j > 0) ? last_diff_x + adjusted_link_length : x_offset + adjusted_link_length;
+            boxOffset += adjustedBoxWidth;
           }
-          label_offset = last_diff_x;
-          marker_offset = marker_center_offset + label_offset + (this.options.label.width / 4);
-          $.extend(hop, {'x_offset' : last_diff_x});
+        }
+ 
+        if (!set.length) {
+          set = paper.set(hop.hub);
+          label = paper.text(boxOffset + this.marker.xOffset, labelOffset, hop.hub).attr(this.options.label.style); 
+          var bbox = label.getBBox();
+          labelBox = paper.rect(bbox.x - (2 * this.options.labelBox.padding), bbox.y - this.options.labelBox.padding, bbox.width + (this.options.labelBox.padding * 4), bbox.height + (this.options.labelBox.padding * 2)).attr(this.options.labelBox.style);
+          set.push(label, labelBox); 
         }
 
-        var marker = paper.circle(marker_offset, y_adjust, this.options.marker.radius)
+        var markerBackground = paper.circle(boxOffset + this.marker.xOffset, markerYOffset, markerRadius + this.options.markerBackground.radiusAdjust).attr(this.options.markerBackground.style);
+        markerBackground.toBack();
+        var marker = paper.circle(boxOffset + this.marker.xOffset, markerYOffset, markerRadius)
           .attr(this.options.marker.style);
         
-        var fontSize = parseInt(this.options.label.style['font-size']);
+        set.push(marker);
+        
+        labelBox.toFront();
+        label.toFront();
 
-        var label_y = (direction == 'reverse') ?
-          y_adjust - this.options.label.margin - (2 * this.options.label.padding_y):
-          y_adjust + fontSize + this.options.label.margin + (2 * this.options.label.padding_y);
+        // Problematic to do this many times...
+        set.hover($.traceroute.hoverOver, $.traceroute.hoverOut);
 
-        // @TODO center text...
-        var label_text = paper.text(label_offset, label_y, hop.hop_ip).attr(this.options.label.style);
+        $.extend(hop, {'type' : row_type, 'ttl' : i, 'xOffset' : boxOffset + this.marker.xOffset, 'yOffset' : markerYOffset });
+        
+        if (lastHop[direction]) {
+          var l = lastHop[direction];
+          var offset = (direction == 'forward') ? -this.options.link.offset : this.options.link.offset;
+          var link = paper.path("M"+ l.xOffset +' '+ (l.yOffset + offset) +'L'+ hop.xOffset +' '+ (hop.yOffset + offset)).attr(this.options.link.style);
+          link.toBack();
+        }
 
-        var set = paper.set(hop.hub)
-          .push(marker, label_text)
-          .hover($.traceroute.hoverOver, $.traceroute.hoverOut);
-
-        /*var label_background = paper.rect(background,
-          label_offset, label_y - font_size - this.options.label.padding_y,
-          this.options.label.width, font_size + (3 * this.options.label.padding_y),
-          this.options.label_background.style);*/
-        //.hover($.traceroute.hoverOver, $.traceroute.hoverOut);
+        lastHop[direction] = hop;
       }
     }
   }
@@ -151,14 +215,13 @@ $.traceroute.prototype.draw = function(data) {
 // Defaults
 $.fn.traceroute.defaults = {
   'tracerouteName' : 'default',
-  'diffYOffset' : 25,
   'container' : {
     'width' : '100%',
-    'height' : '200px'
+    'height' : '70px'
   },
   'link' : {
-    'match_offset' : 9,
-    'length' : 55,
+    'width' : 65,
+    'offset' : 3,
     'style' : {
       'fill' : 'transparent',
       'stroke' : '#dddddd',
@@ -177,46 +240,40 @@ $.fn.traceroute.defaults = {
   'marker' : {
     'radius' : 10,
     'style' : {
-      'stroke' : '#aaaaaa',
+      'stroke' : '#888888',
       'fill' : '#ffffff',
-      'stroke-width' : 4
+      'stroke-width' : 3
     },
     'overStyle' : {
-      'stroke': '#00aa00',
+      'stroke': '#00aa00'
     }
   },
-  'hub_label' : {
+  'markerBackground' : {
+    'radiusAdjust' : 6,
+    'style' : {
+      'stroke' : 'none',
+      'stroke-width' : 0,
+      'fill' : '#ffffff',
+    },
+  },
+
+  'label' : {
     'style' : {
       'fill' : '#444444',
       'font-weight' : 'bold',
-      'font-size' : '10px',
-      'font-family' : '"Anonymous Pro", "Courier New", courier, monospace'
-    }
-  },
-  'hub_label_background' : {
-    'style' : {
-      'fill' : '#ffffff',
-      'fillOpacity' : 0.80
-    }
-  },
-  'label' : {
-    'width' : 75,
-    'margin' : 17,
-    'padding_x' : 2,
-    'padding_y' : 2,
-    'style' : {
-      'font-size' : '10px',
-      'fill' : '#000000',
-      'font-family' : '"Anonymous Pro", "Courier New", courier, monospace',
+      'font-size' : '12px',
+      'font-family' : 'Helvetica, Arial, sans-serif'
     },
     'overStyle' : {
-      'fill' : '#00aa00',
+      'fill' : '#00aa00'
     }
   },
-  'label_background' : {
+  'labelBox' : {
+    'padding' : 2,
     'style' : {
       'fill' : '#ffffff',
-      'stroke-width' : 0,
+      'stroke' : 'none',
+      'stroke-width' : 0
     }
   }
 };

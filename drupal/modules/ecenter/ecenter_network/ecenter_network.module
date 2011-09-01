@@ -402,6 +402,7 @@ function _ecenter_network_select_form() {
     '#type' => 'textarea',
     '#prefix' => '<div id="traceroute-paste-wrapper">',
     '#suffix' => '</div>',
+    '#description' => t('<strong>Paste traceroute results (experimental):</strong>: Many factors may affect E-Center\'s ability to create a query from a pasted traceroute. Your pasted traceroute will use the selected day or time range when querying.'),
     '#attributes' => array('id' => 'traceroute-paste'),
     '#ahah' => array(
       'event' => 'change',

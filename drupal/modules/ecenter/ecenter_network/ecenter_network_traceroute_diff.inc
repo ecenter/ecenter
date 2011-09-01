@@ -15,6 +15,8 @@
  */
 
 function ecenter_network_traceroute_diff($forward, $reverse) {
+  $maxlen = 0;
+
   foreach ($forward as $findex => $ovalue) {
     // Find matching sequences
     $rkeys = ecenter_network_traceroute_array_keys($reverse, $ovalue);

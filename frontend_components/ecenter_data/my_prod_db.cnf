@@ -1,0 +1,79 @@
+[mysqld]
+datadir=/data/mysql_ecenter
+#socket=/var/lib/mysql/mysql.sock
+socket=/tmp/mysql.sock
+# Default to using old password format for compatibility with mysql 3.x
+# clients (those using the mysqlclient10 compatibility package).
+old_passwords=1
+#skip-networking
+skip-name-resolve
+skip-show-database
+safe-user-create
+#plugin_dir=/usr/local/mysql/lib/mysql/plugin
+
+log_warnings=2
+
+back_log=100
+binlog_cache_size = 16M
+max_connections=1000
+#
+key_buffer_size=1024M
+max_allowed_packet=16M
+table_cache=4096
+#
+sort_buffer_size=64M
+read_buffer_size=64M
+join_buffer_size=64M
+read_rnd_buffer_size=64M
+#
+max_heap_table_size=512M
+tmp_table_size=512M
+#
+wait_timeout=28800
+interactive_timeout = 28800
+net_read_timeout=120
+net_write_timeout=120
+#
+thread_concurrency=24
+thread_cache=512
+thread_cache_size = 24
+thread_stack = 1024K
+#
+#
+default-storage_engine=innodb
+#innodb_force_recovery=4
+#innodb_data_file_path=ibdata1:10G:autoextend
+#innodb_use_sys_malloc=1
+innodb_buffer_pool_size=56G
+innodb_additional_mem_pool_size=512M
+innodb_log_file_size=1G
+innodb_log_buffer_size=64M
+innodb_flush_log_at_trx_commit=2
+innodb_lock_wait_timeout=90
+innodb_thread_concurrency=32
+#innodb_adaptive_hash_index=1
+innodb_flush_method=O_DIRECT 
+innodb_max_dirty_pages_pct = 80
+#
+#
+myisam_sort_buffer_size=256M
+
+# increase until threads_created doesnt grow anymore
+
+query_cache_type=1
+query_cache_limit=16M
+query_cache_size=512M
+query_alloc_block_size = 64K
+
+# Try number of CPU's*2 for thread_concurrency
+[mysql.server]
+user=mysql
+basedir=/usr/local/mysql
+log_slow_queries
+log-slow-queries=/tmp/my_slow_queries.log
+long_query_time=5
+#
+[mysqld_safe]
+log-error=/var/log/mysqld.log
+pid-file=/var/run/mysqld/mysqld.pid
+open-files-limit = 16384

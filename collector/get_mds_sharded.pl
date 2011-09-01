@@ -48,6 +48,10 @@ print help
 backend DB name
 Default: ecenter_data
 
+=item --host=[db hostname]
+
+backend DB hostname
+Default: ecenterprod1.fnal.gov
 
 =item --user=[db username]
 
@@ -136,7 +140,7 @@ our $DISCOVERY_EVENTTYPE = 'http://ogf.org/ns/nmwg/tools/org/perfsonar/service/l
 our $QUERY_EVENTTYPE     = 'http://ogf.org/ns/nmwg/tools/org/perfsonar/service/lookup/query/xquery/2.0';
 
 my %OPTIONS;
-my @string_option_keys = qw/key password user db procs hls_file/;
+my @string_option_keys = qw/key password user host db procs hls_file/;
 GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
             qw/debug help/,
@@ -152,6 +156,7 @@ my  $logger = Log::Log4perl->get_logger(__PACKAGE__);
 
 pod2usage(-verbose => 2) if ( $OPTIONS{help} || ($OPTIONS{procs} && $OPTIONS{procs} !~ /^\d\d?$/));
 
+$OPTIONS{host} ||= 'ecenterprod1.fnal.gov';
 $MAX_THREADS = $OPTIONS{procs} if $OPTIONS{procs} && $OPTIONS{procs} > 0   && $OPTIONS{procs}  < 40;
 my @hlses = ();
 if($OPTIONS{hls_file} && -e $OPTIONS{hls_file}) {
@@ -270,7 +275,7 @@ exit(0);
 sub remote_ls {
     my ($accessPoint, $serviceName, $serviceType,   $eventtype ) = @_;
     my $now_str = strftime('%Y-%m-%d %H:%M:%S', localtime());
-    my $dbh =  Ecenter::DB->connect('DBI:mysql:' . $OPTIONS{db},  $OPTIONS{user}, $OPTIONS{password}, {RaiseError => 1, PrintError => 1});
+    my $dbh =  Ecenter::DB->connect("DBI:mysql:database=$OPTIONS{db};hostname=$OPTIONS{host};", $OPTIONS{user}, $OPTIONS{password}, {RaiseError => 1, PrintError => 1});
     $dbh->storage->debug(1) if $OPTIONS{debug};
     try {	      
     	$logger->info("\t\thLS:\t$accessPoint");

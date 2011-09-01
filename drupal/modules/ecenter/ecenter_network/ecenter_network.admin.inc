@@ -11,8 +11,7 @@ function ecenter_network_admin_form() {
     'drs' => t('Data Retrieval Service'),
     'ads' => t('Anomaly Detection Service'),
   );
-
-  $form = array('#tree' => TRUE);
+  $form = array(); 
 
   foreach ($services as $type => $name) {
 

@@ -1,8 +1,8 @@
 diff --git a/jquery_ui.install b/jquery_ui.install
-index 11afaec..0a5f1d7 100644
+index 5d74f07..1994e33 100644
 --- a/jquery_ui.install
 +++ b/jquery_ui.install
-@@ -7,41 +7,6 @@
+@@ -6,43 +6,6 @@
   */
  
  /**
@@ -30,9 +30,11 @@ index 11afaec..0a5f1d7 100644
 -    $requirements['jquery_ui']['value'] = $t('Not found');
 -    // Provide a download link to the jQuery UI development bundle. The provided
 -    // link will list the latest 1.6.x build.
--    $requirements['jquery_ui']['description'] = $t('The <a href="@jqueryui">jQuery UI</a> plugin is missing. <a href="@download">Download</a> and extract it to your <em>jquery_ui</em> module directory.', array(
+-    $requirements['jquery_ui']['description'] = $t('The <a href="@jqueryui">jQuery UI</a> plugin is missing. <a href="@download">Download</a> and extract it into the <code>@directory</code> directory. Rename the extracted folder to <code>@library-folder</code>.', array(
 -      '@jqueryui' => 'http://jqueryui.com',
 -      '@download' => 'http://code.google.com/p/jquery-ui/downloads/list?q=1.6',
+-      '@directory' => 'sites/all/libraries',
+-      '@library-folder' => 'jquery.ui',
 -    ));
 -    $requirements['jquery_ui']['severity'] = REQUIREMENT_ERROR;
 -  }
@@ -45,25 +47,26 @@ index 11afaec..0a5f1d7 100644
   */
  function jquery_ui_uninstall() {
 diff --git a/jquery_ui.module b/jquery_ui.module
-index 0ae9fd9..a058f43 100644
+index 8e47caa..8c47871 100644
 --- a/jquery_ui.module
 +++ b/jquery_ui.module
-@@ -34,9 +34,12 @@ else {
+@@ -19,10 +19,13 @@
   *   An array of what additional files (other than UI core) should be loaded
   *   on the page, or a string with a single file name.
   */
 -function jquery_ui_add($files = array()) {
 +function jquery_ui_add($files = array(), $version = NULL) {
    static $loaded_files, $ui_core, $effects_core;
--  $jquery_ui_path = JQUERY_UI_PATH . '/ui';
+ 
+-  $jquery_ui_path = jquery_ui_get_path();
 +  if (!$version || ($version != '1.8' && $version != '1.7' && $version != '1.6')) {
 +    $version = variable_get('jquery_ui_default_version', '1.7');
 +  }
-+  $jquery_ui_path = JQUERY_UI_PATH .'-'.$version. '/ui';
-   $compression = variable_get('jquery_update_compression_type', 'mini');
- 
-   // Convert file to an array if it's not one already, to compensate for
-@@ -46,38 +49,40 @@ function jquery_ui_add($files = array()) {
++  $jquery_ui_path = jquery_ui_get_path($version);
+   if ($jquery_ui_path === FALSE) {
+     return FALSE;
+   }
+@@ -36,10 +39,12 @@ function jquery_ui_add($files = array()) {
    }
  
    // If core hasn't been added yet, add it.
@@ -74,18 +77,12 @@ index 0ae9fd9..a058f43 100644
 +    $ui_core[$version] = TRUE;
 +    jquery_ui_add(array('ui.core'), $version);
    }
- 
++  
 +  $prefix = ($version == '1.8') ? 'jquery.' : '';
-+
+ 
    // Loop through list of files to include and add them to the page.
    foreach ($files as $file) {
-     // Any effects files require the effects core file.
--    if (!isset($effects_core) && strpos($file, 'effects.') === 0) {
--      $effects_core = TRUE;
--      jquery_ui_add(array('effects.core'));
-+    if (!isset($effects_core[$version]) && strpos($file, 'effects.') === 0) {
-+      $effects_core[$version] = TRUE;
-+      jquery_ui_add(array('effects.core'), $version);
+@@ -50,24 +55,24 @@ function jquery_ui_add($files = array()) {
      }
  
      // Load other files.
@@ -115,3 +112,59 @@ index 0ae9fd9..a058f43 100644
      }
    }
  }
+@@ -75,25 +80,28 @@ function jquery_ui_add($files = array()) {
+ /**
+  * Returns the path to the jQuery UI library or FALSE if not found.
+  */
+-function jquery_ui_get_path() {
+-  static $path;
++function jquery_ui_get_path($version = NULL) {
++  static $paths;
++
++  $key = ($version !== NULL) ? $version : 'default';
++  $suffix = ($version !== NULL) ? '-'. $version : '';
+ 
+-  if (isset($path)) {
+-    return $path;
++  if (isset($paths[$key])) {
++    return $paths[$key];
+   }
+   $path = FALSE;
+ 
+   // Libraries API integration.
+   if (function_exists('libraries_get_path')) {
+-    $path = libraries_get_path('jquery.ui');
++    $path = libraries_get_path('jquery.ui'. $suffix);
+     // Libraries API 1.x returns a default path; 2.x returns FALSE.
+     if ($path !== FALSE && !file_exists($path)) {
+       $path = FALSE;
+     }
+   }
+   // Manually check sites/all/libraries in case Libraries API is not available.
+-  elseif (file_exists('./sites/all/libraries/jquery.ui')) {
+-    $path = 'sites/all/libraries/jquery.ui';
++  elseif (file_exists('./sites/all/libraries/jquery.ui'. $suffix)) {
++    $path = 'sites/all/libraries/jquery.ui'. $suffix;
+   }
+ 
+   // Check the module directory for backwards compatibility if other methods
+@@ -103,16 +111,17 @@ function jquery_ui_get_path() {
+     if (defined('MAINTENANCE_MODE') && MAINTENANCE_MODE == 'install') {
+       $path = drupal_substr(dirname(__FILE__), drupal_strlen(getcwd()) + 1);
+       $path = strtr($path, '\\', '/');
+-      $path .= '/jquery.ui';
++      $path .= '/jquery.ui'. $suffix;
+     }
+     else {
+-      $path = drupal_get_path('module', 'jquery_ui') . '/jquery.ui';
++      $path = drupal_get_path('module', 'jquery_ui') . '/jquery.ui'. $suffix;
+     }
+     if (!file_exists($path)) {
+       $path = FALSE;
+     }
+   }
+ 
++  $paths[$key] = $path;
+   return $path;
+ }
+ 

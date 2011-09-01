@@ -10,6 +10,7 @@ use DateTime;
 use DateTime::Format::MySQL;
 use Ecenter::Exception;
 use Ecenter::Utils;
+use Ecenter::TracerouteParser;
 use Ecenter::Data::Hub;
 use Ecenter::ADS::Detector::APD;
 
@@ -39,6 +40,10 @@ my %logger_opts = (
 );
 Log::Log4perl->easy_init(\%logger_opts);
 our  $logger = Log::Log4perl->get_logger(__PACKAGE__);
+
+# default error to send back - Not Implemented - 501
+#
+my $DEFAULT_ERROR = 501;
  
 =head1 NAME
 
@@ -105,30 +110,72 @@ any ['get', 'post'] =>  "/service.:format" =>
         };
     }
 }
+#########   get data - only one type POST with trace parameter---------------------------------
+any [ 'post' ] =>  '/data/:data.:format' => 
+    sub {
+        my $data = {};
+        eval { 
+	    my $request = params;
+            my $post = params('body');
+	    $request->{data_type} = $request->{data};
+	    delete $request->{data} 
+                if exists $request->{data};
+            $logger->debug("POST::::" . Dumper  $request);
+	    ParameterException->throw(error => "trace paramter is mandatory")  
+	        unless $request && $request->{trace};
+	    delete $request->{format} 
+               if exists $request->{format};
+	       
+	    $data = process_data( %{$request}, %{$post} );
+	};
+	if(my $e = Exception::Class->caught()) {
+	    return send_error("Failed with " .  ($logger->is_debug?$e->trace->as_string:$e->error), $DEFAULT_ERROR );
+	}
+	return $data;
+    };
+#########   get data - all POST with trace parameter -------------------------------------------
+any [ 'post'] =>  '/data.:format' => 
+    sub {
+        my $data = {};
+        eval {
+	    my $request = params;
+            my $post = params('body');
+            $logger->debug("POST::::" . Dumper  $request); 
+	    ParameterException->throw(error => "trace paramter is mandatory")  
+	        unless $request && $request->{trace};
+	    delete $request->{format} 
+               if exists $request->{format};
+	    $data = process_data( %{$request}, %{$post} );
+	};
+	if(my $e = Exception::Class->caught()) { 
+	    return send_error("Failed with " .  ($logger->is_debug?$e->trace->as_string:$e->error), $DEFAULT_ERROR);
+	}
+	return $data;
+    };
 #########   get data - only one type ----------------------------------------------------------
-any ['get', 'post'] =>  '/data/:data.:format' => 
+any ['get'] =>  '/data/:data.:format' => 
     sub {
         my $data = {};
         eval {
 	   $data = process_data( data_type => params->{data}, params('query'));
 	};
 	if(my $e = Exception::Class->caught()) {
-	    send_error("Failed with " . $e->trace->as_string);
+	    return send_error("Failed with " .  ($logger->is_debug?$e->trace->as_string:$e->error), $DEFAULT_ERROR);
 	}
 	return $data;
     };
 #########   get data - all ----------------------------------------------------------
-any ['get', 'post'] =>  '/data.:format' => 
+any ['get'] =>  '/data.:format' => 
     sub {
         my $data = {};
         eval {
 	   $data = process_data( params('query'));
 	};
 	if(my $e = Exception::Class->caught()) {
-	    send_error("Failed with " . $e->trace->as_string);
+	    return send_error("Failed with " .  ($logger->is_debug?$e->trace->as_string:$e->error), $DEFAULT_ERROR);
 	}
 	return $data;
-    };
+    };    
 #########   get data - Site Centric View (SCV)  ----------------------------------------------------------
 any ['get', 'post'] =>  '/site.:format' => 
     sub {
@@ -137,7 +184,7 @@ any ['get', 'post'] =>  '/site.:format' =>
 	   $data = process_site( params('query'));
 	};
 	if(my $e = Exception::Class->caught()) {
-	    send_error("Failed with " . $e->trace->as_string);
+	    return send_error("Failed with " .  ($logger->is_debug?$e->trace->as_string:$e->error), $DEFAULT_ERROR);
 	}
 	return $data;
     };
@@ -405,16 +452,18 @@ sub process_data {
      %params = validate(@_, { data_type  => {type => SCALAR, regex => qr/^(snmp|bwctl|owamp|pinger|traceroute)$/i, optional => 1}, 
                               id	 => {type => SCALAR, regex => qr/^\d+$/, optional => 1}, 
                               src_ip	 => {type => SCALAR, regex => $REG_IP,   optional => 1}, 
-			      src_hub	 => {type => SCALAR, regex => qr/^\w+$/i,   optional => 1}, 
-                              dst_hub	 => {type => SCALAR, regex => qr/^\w+$/i,    optional => 1}, 
+			      src_hub	 => {type => SCALAR, regex => qr/^\w+$/i,optional => 1}, 
+                              dst_hub	 => {type => SCALAR, regex => qr/^\w+$/i,optional => 1}, 
                               dst_ip	 => {type => SCALAR, regex => $REG_IP,   optional => 1}, 
 		              start	 => {type => SCALAR, regex => $REG_DATE, optional => 1},
 		              end	 => {type => SCALAR, regex => $REG_DATE, optional => 1},
 			      resolution => {type => SCALAR, regex => qr/^\d+$/, optional => 1},
 			      timeout	 => {type => SCALAR, regex => qr/^\d+$/, optional => 1},
-			      only_data =>  {type => SCALAR, regex => qr/^(0|1)$/, optional => 1},
+			      only_data  => {type => SCALAR, regex => qr/^(0|1)$/, optional => 1},
+      		              trace      => {type => SCALAR, regex => qr/traceroute/xim, optional => 1},
 			   }
 		 );
+		 
     # debug Dumper(\%params );
     ### query allowed  as:?src_ip=131.225.1.1&dst_ip=212.4.4.4&start=2010-05-02%20:01:02&end=2010-05-02%20:01:02
     
@@ -436,56 +485,70 @@ sub process_data {
    
     my $date_params  =  params_to_date({start => $params{start},end => $params{end}});
     map { $params{$_} = $date_params->{$_} } keys %{$date_params};
-    my $trace_cond = {};
-    unless($params{only_data}) {
-	if($params{src_ip}) {
-            $trace_cond->{direct_traceroute}{src}  = qq| AND md.src_ip =  inet6_pton('$params{src_ip}')|;
-            $trace_cond->{reverse_traceroute}{src} = qq| AND  md.dst_ip  =  inet6_pton('$params{src_ip}') |;
-	} 
-	if ($params{src_hub}) {
-
-	   $trace_cond->{direct_traceroute}{src}  = qq| AND  n_src.nodename like   '%$params{src_hub}%' |;
-	   $trace_cond->{reverse_traceroute}{src} = qq| AND  n_src.nodename like   '%$params{dst_hub}%' |;
-	}
-	if($params{dst_ip}) {
-            $trace_cond->{direct_traceroute}{dst}   =   qq| AND   md.dst_ip =  inet6_pton('$params{dst_ip}') |;
-            $trace_cond->{reverse_traceroute}{dst}  =   qq|  AND  md.src_ip =  inet6_pton('$params{dst_ip}')  |; 
-	} 
-	if ($params{dst_hub}) {
-	  $trace_cond->{direct_traceroute}{dst}   = qq| AND   n_dst.nodename like   '%$params{dst_hub}%' |;
-	  $trace_cond->{reverse_traceroute}{dst}  = qq| AND  n_dst.nodename like    '%$params{src_hub}%' |;
-	}
-    }
+    my $traceroute = {};
+    my %allhops = ();
     ################ starting the client
     #
     #
     my $g_client =  _get_gearman();
+    ### parse traceroute and get hops, reverse trqaceoute between identified HUBs and e2e metrics
+    ###
+    if($params{trace}) {
+        my $tr  = Ecenter::TracerouteParser->new();
+	$tr->text($params{trace}); 
+        my $hops = $tr->parse();# get hops
+	MalformedParameterException->throw( error => 'No hops were found in the provided traceroute')
+	    unless $tr->hops;
+	    
+	my $ips_str = join (',', map {database('ecenter')->quote($_)} keys %{$hops->{hops}});
+	$traceroute->{direct_traceroute}{hops} = $hops->{hops};
+        _fix_sites($hops->{hops}, $ips_str);
+	my $cmd =    qq|select  distinct   n_hop.netmask, n_hop.ip_noted, n_hop.nodename, hb.hub, hb.hub_name, hb.longitude, hb.latitude  
+					             from 
+						            node   n_hop 
+						      left join l2_l3_map    llm on( n_hop.ip_addr = llm.ip_addr) 
+     	                                              left join l2_port      l2p on(llm.l2_urn = l2p.l2_urn) 
+     	                                              left join hub          hb using(hub) 
+						     where  
+						            n_hop.ip_noted in ($ips_str) and hb.hub is not NULL|;
+        $logger->debug(" TRACEROUTE SQL_hhops: $cmd");		
+        my $hops_ref = database('ecenter')->selectall_hashref($cmd, 'ip_noted');
+        $traceroute->{direct_traceroute}{hop_ips} =  $hops_ref;
+	MalformedParameterException->throw( error => 'No HUBs were found for the provided traceroute')
+	    unless    $hops->{src_ip} && $hops->{dst_ip} 
+	           && $hops_ref->{$hops->{src_ip}}{hub_name} &&  $hops_ref->{$hops->{dst_ip}}{hub_name};
+        $params{src_hub} = $hops_ref->{$hops->{src_ip}}{hub_name};
+	$params{dst_hub} = $hops_ref->{$hops->{dst_ip}}{hub_name};
+    }
+    my $trace_cond = get_trace_conditions( %params );
     #
-#
+    #
     # my $dst_cond = $params{dst_ip}?"inet6_mask(md.dst_ip, 24)= inet6_mask(inet6_pton('$params{dst_ip}'), 24)":"md.dst_ip = '0'";
     ##
     ## get direct and reverse traceroutes
     ## 
     # my $trace_cond = qq|  inet6_mask(md.src_ip, 24) = inet6_mask(inet6_pton('$params{src_ip}'), 24) and $dst_cond |;
     $params{table_map} = $TABLEMAP;
-    my $traceroute = {}; 
-    my %allhops = ();
+    $logger->debug("Traceroute results:", sub {Dumper({ trace_cond => $trace_cond, traceroute => $traceroute, params => \%params})});
     unless($params{only_data}) {
-        my $traceroute = {};
         foreach my $way (qw/direct_traceroute reverse_traceroute/) {
-            $traceroute->{$way}  = get_traceroute($g_client, $trace_cond->{$way}, \%params);
-            $data->{$way} = $traceroute->{$way}{hops} 
+	    unless( $way eq 'direct_traceroute' && $params{trace}) { ### skip direct raceroute because we got it from the request
+                $traceroute->{$way} = get_traceroute($g_client, $trace_cond->{$way}, \%params);
+            }
+	    $data->{$way} = $traceroute->{$way}{hops}
                               if($traceroute->{$way} && $traceroute->{$way}{hops} && 
 			         ref $traceroute->{$way}{hops} &&  %{$traceroute->{$way}{hops}}); 
         }
         ### snmp data for each hop - all unique hop IPs
     	%allhops = (%{$traceroute->{direct_traceroute}{hop_ips}}, %{$traceroute->{reverse_traceroute}{hop_ips}});
 	$data->{traceroute_nodes} = \%allhops;
-	debug "HOPS:::" . Dumper(\%allhops);
 	return $data unless $traceroute->{direct_traceroute}{hop_ips} || $traceroute->{reverse_traceroute}{hop_ips};
     } else {
         %allhops = ( $params{src_ip} => 1 );
     }
+    
+    $logger->debug("HOPS:::", sub{Dumper(\%allhops)});
+
     $task_set = $g_client->new_task_set; 
     $data->{snmp} = {};
     if(!$params{data_type} || $params{data_type} =~ /^snmp$/i) {
@@ -571,7 +634,7 @@ sub process_data {
       GeneralException->throw(error => $EVAL_ERROR ); 
   }
   $logger->debug(" +++++ Waiting  +++++++++++");
-  $task_set->wait(timeout => $params{timeout});
+  $task_set->wait(timeout => $params{timeout}) if $task_set;
   $logger->debug(" +++++ E2E is DONE  +++++++++++");
   foreach my $ip_noted (keys %{$data->{snmp}}) { 
         my @result =(); 
@@ -588,6 +651,54 @@ sub process_data {
        ##$data->{snmp}{$ip_noted} = \@result;
   }
   return $data; 
+}
+#
+#   fix new sites from the user provided traceroute
+#
+sub _fix_sites {
+    my ($hops_href, $ips_str) = @_;
+    my $now_time = strftime('%Y-%m-%d %H:%M:%S', localtime());
+    my $sql_ips = qq|select ip_noted from node where ip_noted in  ($ips_str)|;
+    $logger->debug("Get list of existing IPs::: $sql_ips");
+    my $skip_these = database('ecenter')->selectall_hashref($sql_ips, 'ip_noted');
+    foreach my $ip (keys %{$hops_href}) {
+        next if exists $skip_these->{$ip};
+	my (undef, $nodename) = get_ip_name($ip);
+        my $hub = Ecenter::Data::Hub->find_hub($ip, $nodename);
+	unless ($hub) { 
+	    $logger->error(" Could not find hub - $ip, skipping ");
+            next;
+	}
+	my $hub_name = $hub->hub_name;
+	my %subnets =  %{$hub->get_ips()};
+        foreach my $subnet (keys %subnets) {
+            my $sql = qq|select inet6_pton('$ip') as ip_addr, n.ip_noted, n.netmask, l2p.l2_urn from  node n   join l2_l3_map llm using(ip_addr) 
+	                   join l2_port l2p on (llm.l2_urn =l2p.l2_urn) 
+	              where   
+			    inet6_mask(inet6_pton('$ip'), $subnets{$subnet}) =  inet6_mask(n.ip_addr, $subnets{$subnet})
+			    and llm.l2_urn is not NULL  limit 1|;
+	    $logger->debug("Found hub IPs SQL::: $sql"); 
+            my $nodes =   database('ecenter')->selectrow_hashref($sql);
+	    # found all ips for the endsite, lets mark them with made up urns and hub names
+	    $logger->debug("Checking::: $ip");
+	    unless ($nodes && $nodes->{ip_addr}) {
+	         $logger->error(" No matching netblock for $ip");
+		 next;
+	    }
+	    
+	    schema('dbix')->resultset('Node')->update_or_create({ ip_addr => $nodes->{ip_addr},
+	                                                  ip_noted => $ip,
+							  nodename => $nodename,
+							  netmask => $nodes->{netmask}
+							 });
+	    schema('dbix')->resultset('L2L3Map')->update_or_create({ ip_addr => $nodes->{ip_addr},
+	                                                   l2_urn => $nodes->{l2_urn},
+							   updated => $now_time,
+							 },
+							 { key => 'ip_l2_time'});
+	    
+        } 
+    }
 }
 #
 #   initialize GEarman
@@ -696,7 +807,31 @@ sub  get_traceroute_mds {
     $logger->debug(" TRACEROUTE SQL_mds: $cmd");						     
     my $trace_ref =  database('ecenter')->selectall_hashref($cmd, 'metaid');
     return $trace_ref;
-} 
+}
+#
+#  get_traceroute_conditions
+#
+sub get_trace_conditions {
+    my %params = @_;
+    my $trace_cond = {};
+    if($params{src_ip}) {
+    	$trace_cond->{direct_traceroute}{src}  = qq| AND md.src_ip =  inet6_pton('$params{src_ip}')|;
+    	$trace_cond->{reverse_traceroute}{src} = qq| AND  md.dst_ip  =  inet6_pton('$params{src_ip}') |;
+    } 
+    if ($params{src_hub}) {
+       $trace_cond->{direct_traceroute}{src}  = qq| AND  n_src.nodename like   '%$params{src_hub}%' |;
+       $trace_cond->{reverse_traceroute}{src} = qq| AND  n_src.nodename like   '%$params{dst_hub}%' |;
+    }
+    if($params{dst_ip}) {
+    	$trace_cond->{direct_traceroute}{dst}	=   qq| AND   md.dst_ip =  inet6_pton('$params{dst_ip}') |;
+    	$trace_cond->{reverse_traceroute}{dst}  =   qq|  AND  md.src_ip =  inet6_pton('$params{dst_ip}')  |; 
+    } 
+    if ($params{dst_hub}) {
+      $trace_cond->{direct_traceroute}{dst}   = qq| AND   n_dst.nodename like	'%$params{dst_hub}%' |;
+      $trace_cond->{reverse_traceroute}{dst}  = qq| AND  n_dst.nodename like	'%$params{src_hub}%' |;
+    }
+    return $trace_cond;
+}
 #
 #  get traceroute data 
 #

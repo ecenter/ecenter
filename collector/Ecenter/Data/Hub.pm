@@ -137,30 +137,59 @@ sub get_hub_blocks {
     return keys %HUBS;
 }; 
 
+=head2 find_hub 
+
+a static call - returns found Hub object for the supplied ip address if there is anetblock match
+
+=cut
+
+sub find_hub {
+    my ( $self, $ip, $nodename) = @_;
+    my $hub;
+    my $logger = ref $self && $self->logger?$self->logger:get_logger(__PACKAGE__);
+    foreach my $hubname (keys %HUBS) {
+        foreach my $subnet (keys %{$HUBS{$hubname}->{nets}}) {
+	    $logger->debug( " Checking  $ip   vs $hubname=  $subnet/$HUBS{$hubname}->{nets}{$subnet} ");
+            my $block = Net::Netmask->new("$subnet/$HUBS{$hubname}->{nets}{$subnet}");
+	    if($nodename =~ m/$hubname\./i || $block->match($ip)) {
+	        return Ecenter::Data::Hub->new(hub_name => $hubname);
+	    }
+	}
+    }
+    return $hub;
+};
+
+
 =head2 match
+ 
+for the named argument - ip which is of <Ecenter::Types::IP_addr>, it will return 1 if 
+it belongs to the current HUB
 
 =cut
 
 sub match {
- my ( $self, %arg ) =   validated_hash(
+    my ( $self, %arg ) =   validated_hash(
                              \@_,  
                              ip   => { isa => 'Ecenter::Types::IP_addr' });
     my $ips = $self->get_ips(@_);
     foreach my $subnet (keys %{$ips}) {
         my $block = Net::Netmask->new("$subnet/$ips->{$subnet}");
 	if($block->match($arg{ip}->ip())) {
-	   return 1;
+	    return 1;
 	}
     }
     return;
 };
 
+#
+#  auxiliary function
+#
 sub _get_net {
     my ($self,  $net_obj ) =  @_;
     if(exists $net_obj->{net} && $net_obj->{net}{netBlocks} && $net_obj->{net}{netBlocks}{netBlock}  ) {
         $self->logger->debug("netBlock::", sub{Dumper($net_obj->{net}{netBlocks}{netBlock} )});
 	$net_obj->{net}{netBlocks}{netBlock} = [ $net_obj->{net}{netBlocks}{netBlock} ] 
-	   unless ref $net_obj->{net}{netBlocks}{netBlock} eq ref [];
+	    unless ref $net_obj->{net}{netBlocks}{netBlock} eq ref [];
 	my @return = ();
 	foreach my $block (@{$net_obj->{net}{netBlocks}{netBlock}}) {
      	    push @return, [$block->{startAddress}{'$'}, $block->{cidrLength}{'$'}];

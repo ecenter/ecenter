@@ -9,12 +9,12 @@ auto_reload: 0
 port: 8055
 gearman:
    servers: 
-       localhost: ['10121', '10131', '10141' ]
+       localhost: ['10121']
 plugins:
    DBIC:
      dbix:
        schema_class: Ecenter::DB
-       dsn: dbi:mysql:localhost:dbname=ecenter_data
+       dsn: dbi:mysql:ecenterprod1.fnal.gov:dbname=ecenter_data
        user: ecenter
        pass: ecenter2010
        debug: 0
@@ -28,7 +28,7 @@ plugins:
        ecenter:
           driver: mysql
           database: ecenter_data
-          host: localhost
+          host: ecenterprod1.fnal.gov
           username: ecenter
           password: ecenter2010
           connection_check_threshold: 10

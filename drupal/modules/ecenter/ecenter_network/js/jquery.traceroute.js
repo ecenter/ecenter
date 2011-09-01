@@ -115,9 +115,8 @@ $.traceroute.prototype.draw = function() {
   var paper = this.paper, 
     data = this.data, 
     boxOffset = -this.bbox.width,
-    //lastHop = {'forward': null, 'reverse' : null}; // Lines are drawn backwards to last hop(s)
-    lastHop = { 'forward': false, 'reverse' : false };
-  
+    lastHops = { 'forward': false, 'reverse' : false };
+
   for (var i = 0; i < data.length; i++) {
     var row = data[i],
       row_type = (row.match != undefined) ? 'match' : 'diff',
@@ -139,7 +138,8 @@ $.traceroute.prototype.draw = function() {
 
     for (direction in this.tracerouteDirections) {
       var yOffset = (i > 0 && row_type == 'diff' && direction == 'reverse') ? 
-        this.diffYOffset : 0; 
+        this.diffYOffset : 0,
+        oppositeDirection = (direction == 'forward') ? 'reverse' : 'forward'; 
 
       if (step[direction].length == 0) {
         continue;
@@ -153,7 +153,7 @@ $.traceroute.prototype.draw = function() {
 
         if (direction == 'forward' && step['reverse'].length) {
           var markerYOffset = yOffset + this.marker.forwardYOffset;
-        } else if (direction == 'reverse' && step['forward'].length) {
+        } else if (direction == 'reverse' && row_type == 'match') {
           var markerYOffset = yOffset + this.marker.reverseYOffset;
         }
         else {
@@ -164,7 +164,7 @@ $.traceroute.prototype.draw = function() {
         if (row_type == 'match') {
           // Only increment x counter once on matches
           if (direction == 'forward' || !step['forward']) {
-            boxOffset += this.bbox.width;
+            boxOffset +=  this.bbox.width;
           }
         } else {
           // ...
@@ -197,16 +197,24 @@ $.traceroute.prototype.draw = function() {
         // Problematic to do this many times...
         set.hover($.traceroute.hoverOver, $.traceroute.hoverOut);
 
-        $.extend(hop, {'type' : row_type, 'ttl' : i, 'xOffset' : boxOffset + this.marker.xOffset, 'yOffset' : markerYOffset });
-        
-        if (lastHop[direction]) {
-          var l = lastHop[direction];
-          var offset = (direction == 'forward') ? -this.options.link.offset : this.options.link.offset;
-          var link = paper.path("M"+ l.xOffset +' '+ (l.yOffset + offset) +'L'+ hop.xOffset +' '+ (hop.yOffset + offset)).attr(this.options.link.style);
+        $.extend(hop, {'type' : row_type, 'direction' : direction, 'ttl' : i, 'xOffset' : boxOffset + this.marker.xOffset, 'yOffset' : markerYOffset });
+      
+        // Draw lines backwards
+        if (lastHops[direction]) {
+          var l = lastHops[direction], 
+              o = lastHops[oppositeDirection];
+          
+          if (direction == 'reverse' && hop.ttl > (l.ttl + 1)) {
+            var link = paper.path("M"+ l.xOffset +' '+ (l.yOffset + offset) +'C '+ l.xOffset +' '+ this.height +' '+ hop.xOffset +' '+ this.height +' '+ hop.xOffset +' '+ (hop.yOffset + offset)).attr(this.options.link.style);
+            link.toBack();
+          }
+          else {
+            var offset = (direction == 'forward') ? -this.options.link.offset : this.options.link.offset;
+            var link = paper.path("M"+ l.xOffset +' '+ (l.yOffset + offset) +'L'+ hop.xOffset +' '+ (hop.yOffset + offset)).attr(this.options.link.style);
+          }
           link.toBack();
         }
-
-        lastHop[direction] = hop;
+        lastHops[direction] = hop;
       }
     }
   }
@@ -256,7 +264,6 @@ $.fn.traceroute.defaults = {
       'fill' : '#ffffff',
     },
   },
-
   'label' : {
     'style' : {
       'fill' : '#444444',

@@ -47,8 +47,8 @@
 
 <h2>Missing single hops</h2>
 <div id="missing-hop" class="clearfix traceroute-test-wrapper">
-  <div class="clearfix">
   <div class="visual-traceroute-wrapper"></div>
+  <div class="clearfix">
     <div class="traceroute-test-col">
       <h3>Missing single hop</h3>
       <?php print theme('table', $headers, $traceroutes['missing_one']); ?>

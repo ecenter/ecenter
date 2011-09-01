@@ -68,7 +68,7 @@ projects[devel][subdir] = "contrib"
 projects[devel][version] = "1.26"
 
 projects[diff][subdir] = "contrib"
-projects[diff][version] = "2.1"
+projects[diff][version] = "2.3"
 
 projects[exportables][subdir] = "contrib"
 projects[exportables][version] = "2.x-dev"
@@ -155,7 +155,7 @@ projects[openid_selector][subdir] = "contrib"
 projects[openid_selector][version] = "1.x-dev"
 
 projects[openlayers][subdir] = "contrib"
-projects[openlayers][version] = "2.0-alpha10"
+projects[openlayers][version] = "2.0-beta1"
 
 projects[pathauto][subdir] = "contrib"
 projects[pathauto][version] = "1.5"
@@ -170,7 +170,7 @@ projects[shib_auth][subdir] = "contrib"
 projects[shib_auth][version] = "4.0-rc6"
 
 projects[simplemenu][subdir] = "contrib"
-projects[simplemenu][version] = "1.13"
+projects[simplemenu][version] = "1.14"
 
 projects[statistics_granularity][subdir] = "contrib"
 projects[statistics_granularity][version] = "1.0"
@@ -188,7 +188,7 @@ projects[token][subdir] = "contrib"
 projects[token][version] = "1.16"
 
 projects[vertical_tabs][subdir] = "contrib"
-projects[vertical_tabs][version] = "1.0-rc1"
+projects[vertical_tabs][version] = "1.0-rc2"
 
 projects[views][subdir] = "contrib"
 projects[views][version] = "3.0-alpha3"
@@ -284,6 +284,6 @@ libraries[masonry][download][url] = "http://masonry.desandro.com/jquery.masonry.
 libraries[masonry][directory_name] = "masonry"
 
 ; Raphael
-libraries[raphael][download][type] = "get"
-libraries[raphael][download][url] = "https://raw.github.com/DmitryBaranovskiy/raphael/master/raphael-min.js"
+libraries[raphael][download][type] = "git"
+libraries[raphael][download][url] = "https://github.com/ecenter/raphael.git"
 libraries[raphael][directory_name] = "raphael"

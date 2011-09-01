@@ -41,7 +41,7 @@ function template_preprocess_ecenter_dashboard(&$vars) {
   if ($user->uid) {
     module_load_include('inc', 'date_api', 'date_api_elements');
     $now = time() - 1800;
-    $offset = 3600 * 24;
+    $offset = 3600 * 6;
     $inc = 60;
     $tz = timezone_open('UTC');
     $end = date_make_date($now, $tz, DATE_UNIX);
@@ -57,7 +57,7 @@ function template_preprocess_ecenter_dashboard(&$vars) {
 
     $vars['main_content'] = array(
       'site_view' => array(
-        'content' => '<div id="site-view-description"><h2>'. t('@site status', array('@site' => $user->ecenter_default_hub)) .'</h2>' . 
+        'content' => '<div id="site-view-description"><h2>'. t('@site status', array('@site' => $hub)) .'</h2>' . 
           '<p>'. t('<span class="start">@start</span> <span class="separator">to</span> <span class="end">@end</span>', array('@start' => $start, '@end' => $end)) .'</p></div><div id="site-view-svg"></div>',
       ),
       'activity' => array(
@@ -115,7 +115,7 @@ function template_preprocess_ecenter_dashboard(&$vars) {
 function ecenter_dashboard_cron() {
   module_load_include('inc', 'date_api', 'date_api_elements');
   $now = time();
-  $offset = 3600 * 24;
+  $offset = 3600 * 6;
   $inc = 60;
   $tz = timezone_open('UTC');
   $end = date_make_date($now, $tz, DATE_UNIX);

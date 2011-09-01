@@ -4,6 +4,14 @@
  */
 (function($) {
 
+Raphael.fn.triangle = function(x, y, size) {
+  console.log(x);
+  var path = ["M", x - (size / 2), y - (size / 2)];
+  path = path.concat(["L", (x + (size / 2)), y]);
+  path = path.concat(["L", (x - (size / 2)), (y + (size / 2))]);
+  return this.path(path.concat(["z"]).join(" "));
+};
+
 // @TODO account for redrawing
 $.fn.traceroute = function(data, options) {
   var options = $.extend(true, {}, $.fn.traceroute.defaults, options);
@@ -167,7 +175,6 @@ $.traceroute.prototype.draw = function() {
             boxOffset +=  this.bbox.width;
           }
         } else {
-          // ...
           if (direction == longestDirection) {
             boxOffset += this.bbox.width;
           }
@@ -180,7 +187,7 @@ $.traceroute.prototype.draw = function() {
           set = paper.set(hop.hub);
           label = paper.text(boxOffset + this.marker.xOffset, labelOffset, hop.hub).attr(this.options.label.style); 
           var bbox = label.getBBox();
-          labelBox = paper.rect(bbox.x - (2 * this.options.labelBox.padding), bbox.y - this.options.labelBox.padding, bbox.width + (this.options.labelBox.padding * 4), bbox.height + (this.options.labelBox.padding * 2)).attr(this.options.labelBox.style);
+          labelBox = paper.rect(bbox.x - (2 * this.options.labelBox.padding), bbox.y - this.options.labelBox.padding, bbox.width + (this.options.labelBox.padding * 4), bbox.height + (this.options.labelBox.padding * 2), 3).attr(this.options.labelBox.style);
           set.push(label, labelBox); 
         }
 
@@ -198,6 +205,8 @@ $.traceroute.prototype.draw = function() {
         set.hover($.traceroute.hoverOver, $.traceroute.hoverOut);
 
         $.extend(hop, {'type' : row_type, 'direction' : direction, 'ttl' : i, 'xOffset' : boxOffset + this.marker.xOffset, 'yOffset' : markerYOffset });
+
+        var directionOffset = (direction == 'forward') ? -this.options.link.offset : this.options.link.offset;
       
         // Draw lines backwards
         if (lastHops[direction]) {
@@ -205,12 +214,21 @@ $.traceroute.prototype.draw = function() {
               o = lastHops[oppositeDirection];
           
           if (direction == 'reverse' && hop.ttl > (l.ttl + 1)) {
-            var link = paper.path("M"+ l.xOffset +' '+ (l.yOffset + offset) +'C '+ l.xOffset +' '+ this.height +' '+ hop.xOffset +' '+ this.height +' '+ hop.xOffset +' '+ (hop.yOffset + offset)).attr(this.options.link.style);
-            link.toBack();
+            var link = paper.path("M"+ l.xOffset +' '+ (l.yOffset + directionOffset) +'C '+ l.xOffset +' '+ this.height +' '+ hop.xOffset +' '+ this.height +' '+ hop.xOffset +' '+ (hop.yOffset + directionOffset)).attr(this.options.link.style);
           }
           else {
-            var offset = (direction == 'forward') ? -this.options.link.offset : this.options.link.offset;
-            var link = paper.path("M"+ l.xOffset +' '+ (l.yOffset + offset) +'L'+ hop.xOffset +' '+ (hop.yOffset + offset)).attr(this.options.link.style);
+            var arrowOffset = (direction == 'forward') ? this.options.arrow.size / 8 : - this.options.arrow.size / 8;
+            arrowOffset += l.xOffset + ((hop.xOffset - l.xOffset) / 2);
+
+            var link = paper.path("M"+ l.xOffset +' '+ (l.yOffset + directionOffset) +'L'+ hop.xOffset +' '+ (hop.yOffset + directionOffset)).attr(this.options.link.style);
+
+            var arrow = paper.triangle(arrowOffset, hop.yOffset + directionOffset, this.options.arrow.size).attr(this.options.arrow.style);
+
+            if (direction == 'reverse') {
+              arrow.rotate(180, true);
+            }
+            arrow.toBack();
+
           }
           link.toBack();
         }
@@ -228,19 +246,18 @@ $.fn.traceroute.defaults = {
     'height' : '70px'
   },
   'link' : {
-    'width' : 65,
-    'offset' : 3,
+    'width' : 75,
+    'offset' : 4,
     'style' : {
       'fill' : 'transparent',
-      'stroke' : '#dddddd',
+      'stroke' : '#cccccc',
       'stroke-width' : 3
     }
   },
   'arrow' : {
-    'height' : 12,
-    'width' : 12,
+    'size' : 12,
     'style' : {
-      'fill' : '#aaaaaa',
+      'fill' : '#bbbbbb',
       'stroke' : '#ffffff',
       'stroke-width' : 1
     }
@@ -278,7 +295,7 @@ $.fn.traceroute.defaults = {
   'labelBox' : {
     'padding' : 2,
     'style' : {
-      'fill' : '#ffffff',
+      'fill' : '#dddddd',
       'stroke' : 'none',
       'stroke-width' : 0
     }

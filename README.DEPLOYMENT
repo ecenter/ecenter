@@ -1,4 +1,4 @@
-How to run data workers on remote host
+How to run data workers or DRS on remote host
 --------------------------------------
 
 
@@ -13,9 +13,11 @@ perl -MCPAN -e 'force install CPANPLUS'
 
 -- then:
 
-cpanp -i --prereqs   Gearman  Moose MooseX::Types namespace::autoclean Dancer Dancer::Plugin::REST Dancer::Plugin::Database\
- DateTime DateTime::Format::MySQL XML::LibXML  DBIx::Class Dancer::Plugin::DBIC\
- Log::Log4perl forks JSON::XS NetAddr::IP::Util Net::IPv6Addr Net::CIDR Data::Validate::IP\
+cpanp -i --prereqs  YAML Exception::Class forks JSON::XS Gearman  Moose MooseX::Types MooseX::Params::Validate\
+ DBD::mysql DBIx::Class\
+ namespace::autoclean Dancer Dancer::Plugin::REST Dancer::Plugin::Database\
+ DateTime DateTime::Format::MySQL XML::LibXML  Dancer::Plugin::DBIC\
+ Log::Log4perl  NetAddr::IP::Util Net::IPv6Addr Net::CIDR Data::Validate::IP\
  Data::Validate::Domain Socket6 Net::DNS   Data::UUID  aliased Readonly Class::Fields Date::Manip
 
 -- the XML::LibXML tests may fail, install it anyway ( choose "y" )
@@ -34,6 +36,15 @@ cd ~netadmin
 as netadmin:
 
 tar -zxvf ecenter_xxxxx.tgz
+
+or install it from the GIT repository:
+
+git clone ssh://p-ecenter@cdcvs.fnal.gov/cvs/projects/ecenter
+
+and install perfSONAR-PS library:
+
+svn checkout https://svn.internet2.edu/svn/perfSONAR-PS/trunk
+
 
 cd ecenter/collector
 

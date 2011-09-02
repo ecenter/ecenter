@@ -16,7 +16,7 @@ perl -MCPAN -e 'force install CPANPLUS'
 cpanp -i --prereqs  YAML Exception::Class forks JSON::XS Gearman  Moose MooseX::Types MooseX::Params::Validate\
  DBD::mysql DBIx::Class\
  namespace::autoclean Dancer Dancer::Plugin::REST Dancer::Plugin::Database\
- DateTime DateTime::Format::MySQL XML::LibXML  Dancer::Plugin::DBIC\
+ DateTime DateTime::Format::MySQL XML::LibXML   Plack Palck::Handler::Twiggy Dancer::Plugin::DBIC\
  Log::Log4perl  NetAddr::IP::Util Net::IPv6Addr Net::CIDR Data::Validate::IP\
  Data::Validate::Domain Socket6 Net::DNS   Data::UUID  aliased Readonly Class::Fields Date::Manip
 
@@ -44,6 +44,8 @@ git clone ssh://p-ecenter@cdcvs.fnal.gov/cvs/projects/ecenter
 and install perfSONAR-PS library:
 
 svn checkout https://svn.internet2.edu/svn/perfSONAR-PS/trunk
+
+If GIT is not installed then install it as:
 
 
 cd ecenter/collector

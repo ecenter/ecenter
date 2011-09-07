@@ -45,7 +45,7 @@ has 'logger'     => (is => 'rw', isa => 'Log::Log4perl::Logger');
 has 'hub_name' => (is => 'rw', isa => 'Ecenter::Types::HubName');
 # handle is the registered handle at whois.arin.net  - ARIN IP registar
 my %HUBS = ( FNAL  => {nets => {'131.225.0.0' => 16, '198.49.208.0' => 24}, handle => 'FERMIL'}, #FERMIL
-             LBL   => {names => [qw/LLBL/], nets => {'131.243.0.0' => 16, '128.3.121.0' => 24},  handle => 'LBNL'}, # LBNL
+             LBL   => {names => [qw/LLBL/], nets => {'131.243.0.0' => 16, '128.3.121.0' => 24, '198.128.1.0' => 24},  handle => 'LBNL'}, # LBNL
 	     ORNL  => {nets => {'192.31.0.0' => 16 },                       handle => 'ORNL'},
 	     SLAC  => {nets => {'134.79.0.0' => 16,  '198.51.111.0' => 24}, handle => 'THELE-44-Z'},
 	     BNL   => {nets => {'192.12.15.0' => 24},                       handle => 'BNL'},

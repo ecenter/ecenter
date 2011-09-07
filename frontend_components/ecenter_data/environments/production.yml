@@ -9,7 +9,7 @@ auto_reload: 0
 port: 8055
 gearman:
    servers: 
-       localhost: ['10121']
+       xenmon.fnal.gov: ['10121']
 plugins:
    DBIC:
      dbix:

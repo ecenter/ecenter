@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl -w
+#!/bin/env perl
 
 use Dancer;
 use Dancer::Plugin::REST;

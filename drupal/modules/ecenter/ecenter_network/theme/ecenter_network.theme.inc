@@ -12,6 +12,11 @@
 function template_preprocess_ecenter_network_data(&$vars) {
   $params = $vars['data']['drs']['parameters'];
 
+  drupal_add_js(array('ecenterNetwork' => array('tracerouteData' =>
+    $vars['data']['drs']['traceroute']['diff'])), 'setting');
+  drupal_add_js(array('ecenterNetwork' => array('tracerouteMaxLength' =>
+    $vars['data']['drs']['traceroute']['traceroute_max'])), 'setting');
+
   // Source / dst table
   $hops = ecenter_network_get_hops();
   $src_hop = $hops['combined'][$params['src']];

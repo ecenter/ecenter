@@ -660,11 +660,6 @@ function ecenter_network_select_form(&$form_state) {
 
     // If we've got the data (at bare minimum, a traceroute), delegate to rendering function
     if ($data['drs']) {
-      drupal_add_js(array('ecenterNetwork' => array('tracerouteData' => 
-        $data['drs']['traceroute']['diff'])), 'setting');
-      drupal_add_js(array('ecenterNetwork' => array('tracerouteMaxLength' => 
-        $data['drs']['traceroute']['traceroute_max'])), 'setting');
-
       $form['results_wrapper']['results']['#value'] =
         theme('ecenter_network_data', $data, $params);
       $form['results_wrapper']['recent']['#value'] =

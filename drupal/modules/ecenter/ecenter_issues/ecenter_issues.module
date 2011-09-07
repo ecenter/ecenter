@@ -149,9 +149,9 @@ function ecenter_issues_issue_add_data($form, &$form_state) {
       $node->$dst_field_name = array(array('value' => $dst_value));
 
       // @TODO this should go in the network_query save routine somehow...
-      $data = ecenter_network_get_data($params['src'], $params['dst'],
-        $params['start'], $params['end']);
-      
+      $data = array('drs' => ecenter_network_get_data($params['src'], $params['dst'],
+        $params['start'], $params['end']));
+
       $node->field_query_data = array(array('value' => serialize($data)));
       $node->field_query_start = array(array(
         'value' => $params['start'],

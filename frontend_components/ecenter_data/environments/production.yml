@@ -15,8 +15,8 @@ plugins:
      dbix:
        schema_class: Ecenter::DB
        dsn: dbi:mysql:ecenterprod1.fnal.gov:dbname=ecenter_data
-       user: ecenter
-       pass: ecenter2010
+       user: xxxxxxxxxxxx
+       pass: xxxxxxxxxxx
        debug: 0
        options:
           ShowErrorStatement: 1
@@ -29,8 +29,8 @@ plugins:
           driver: mysql
           database: ecenter_data
           host: ecenterprod1.fnal.gov
-          username: ecenter
-          password: ecenter2010
+          username: xxxxxxxxxxx
+          password: xxxxxxxxxxx
           connection_check_threshold: 10
           debug: 0
           dbi_params:

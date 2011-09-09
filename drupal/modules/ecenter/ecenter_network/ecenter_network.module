@@ -82,7 +82,7 @@ function ecenter_network_theme() {
       'template' => 'ecenter-network-data',
       'arguments' => array(
         'data' => NULL,
-        'params' => NULL,
+        'standalone' => FALSE,
       )
     ) + $options,
    'ecenter_network_recent_queries' => array(
@@ -103,8 +103,9 @@ function ecenter_network_theme() {
       'template' => 'ecenter-network-end-to-end',
       'arguments' => array(
         'data' => NULL,
-        'ads_data' => NULL,
         'timezone' => NULL,
+        'ads' => FALSE,
+        'ads_data' => NULL,
       ),
     ) + $options,
     'ecenter_network_end_to_end_tables' => array(
@@ -171,68 +172,67 @@ function ecenter_network_theme() {
  */
 function ecenter_network_init() {
   if (arg(0) == 'network' && !arg(1)) {
-    // Compression type
-    $compression = variable_get('jquery_update_compression_type', 'none');
-    $min = ($compression != 'none') ? '.'. $compression : '';
-
-    // Openlayers
-    openlayers_include();
-    drupal_add_js(drupal_get_path('module', 'openlayers') .
-      '/includes/layer_types/js/raw.js');
-    drupal_add_js(drupal_get_path('module', 'ecenter_network')
-      .'/js/openlayers.js');
-    drupal_add_js(drupal_get_path('module', 'ecenter_network')
-      .'/openlayers/ecenter_network_behavior_dynamicload.js');
-    drupal_add_js(drupal_get_path('module', 'ecenter_network')
-      .'/openlayers/ecenter_network_behavior_select.js');
-
-    // jQuery UI: Force version 1.8, load libraries for datepicker and combobox
-    jquery_ui_add(array('ui.widget', 'ui.mouse', 'ui.button', 'ui.position', 'ui.autocomplete', 'ui.datepicker', 'ui.dialog'), '1.8');
-
-    // jqPlot
-    $jq_path = _jqplot_get_path();
-    $tablechart_path = _jqplot_get_tablechart_path();
-    drupal_add_css($jq_path .'/jquery.jqplot.css');
-    drupal_add_js($jq_path .'/excanvas.min.js');
-    drupal_add_js($jq_path .'/jquery.jqplot.js');
-    drupal_add_js($jq_path .'/plugins/jqplot.dateAxisRenderer'. $min .'.js');
-    drupal_add_js($jq_path .'/plugins/jqplot.highlighter'. $min .'.js');
-    drupal_add_js($jq_path .'/plugins/jqplot.cursor'. $min .'.js');
-    drupal_add_js($jq_path .'/plugins/jqplot.barRenderer'. $min .'.js');
-    drupal_add_js($jq_path .'/plugins/jqplot.canvasTextRenderer'. $min .'.js');
-    drupal_add_js($jq_path .'/plugins/jqplot.canvasAxisLabelRenderer'. $min .'.js');
-    drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jqplot/jqplot.linehighlighter.js');
-    drupal_add_js($tablechart_path .'/jquery.tablechart.js');
-    drupal_add_js(drupal_get_path('module', 'jqplot') .'/js/jqplot-behaviors.js');
-
-    // SVG
-    drupal_add_css(libraries_get_path('jquery-svg') .'/jquery.svg.css');
-    drupal_add_js(libraries_get_path('jquery-svg') .'/jquery.svg.js');
-
-    // Traceroute
-    drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.traceroute.js');
-
-    // Timezone handling
-    drupal_add_js(drupal_get_path('module', 'date_timezone') .'/date_timezone.js');
-
-    // Page behaviors
-    drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/behaviors.js');
-
-    // Advanced help styling
-    drupal_add_css(drupal_get_path('module', 'advanced_help') .'/help-icon.css');
-
-    // @TODO overhaul
-    $inline_css = array(
-      '.ecenter-critical' => array('color' => variable_get('ecenter_network_threshold_critical_color', '#cc0000')),
-      '.ecenter-marginal' => array('color' => variable_get('ecenter_network_threshold_marginal_color', '#fe890c')),
-      '.ecenter-good' => array('color' => variable_get('ecenter_network_threshold_marginal_color', '#1c8a24')),
-    );
-    inline_css_add_css($inline_css);
+    _ecenter_network_add_behaviors();
   }
 }
 
 /**
- * Traceroute past form
+ * Helper: Add behaviors
+ */
+function _ecenter_network_add_behaviors() {
+  // Compression type
+  $compression = variable_get('jquery_update_compression_type', 'none');
+  $min = ($compression != 'none') ? '.'. $compression : '';
+
+  // Openlayers
+  openlayers_include();
+  drupal_add_js(drupal_get_path('module', 'openlayers') .
+    '/includes/layer_types/js/raw.js');
+  drupal_add_js(drupal_get_path('module', 'ecenter_network')
+    .'/js/openlayers.js');
+  drupal_add_js(drupal_get_path('module', 'ecenter_network')
+    .'/openlayers/ecenter_network_behavior_dynamicload.js');
+  drupal_add_js(drupal_get_path('module', 'ecenter_network')
+    .'/openlayers/ecenter_network_behavior_select.js');
+
+  // jQuery UI: Force version 1.8, load libraries for datepicker and combobox
+  jquery_ui_add(array('ui.widget', 'ui.mouse', 'ui.button', 'ui.position', 'ui.autocomplete', 'ui.datepicker', 'ui.dialog'), '1.8');
+
+  // jqPlot
+  $jq_path = _jqplot_get_path();
+  $tablechart_path = _jqplot_get_tablechart_path();
+  drupal_add_css($jq_path .'/jquery.jqplot.css');
+  drupal_add_js($jq_path .'/excanvas.min.js');
+  drupal_add_js($jq_path .'/jquery.jqplot.js');
+  drupal_add_js($jq_path .'/plugins/jqplot.dateAxisRenderer'. $min .'.js');
+  drupal_add_js($jq_path .'/plugins/jqplot.highlighter'. $min .'.js');
+  drupal_add_js($jq_path .'/plugins/jqplot.cursor'. $min .'.js');
+  drupal_add_js($jq_path .'/plugins/jqplot.barRenderer'. $min .'.js');
+  drupal_add_js($jq_path .'/plugins/jqplot.canvasTextRenderer'. $min .'.js');
+  drupal_add_js($jq_path .'/plugins/jqplot.canvasAxisLabelRenderer'. $min .'.js');
+  drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jqplot/jqplot.linehighlighter.js');
+  drupal_add_js($tablechart_path .'/jquery.tablechart.js');
+  drupal_add_js(drupal_get_path('module', 'jqplot') .'/js/jqplot-behaviors.js');
+
+  // SVG
+  drupal_add_css(libraries_get_path('jquery-svg') .'/jquery.svg.css');
+  drupal_add_js(libraries_get_path('jquery-svg') .'/jquery.svg.js');
+
+  // Traceroute
+  drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.traceroute.js');
+
+  // Timezone handling
+  drupal_add_js(drupal_get_path('module', 'date_timezone') .'/date_timezone.js');
+
+  // Page behaviors
+  drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/behaviors.js');
+
+  // Advanced help styling
+  drupal_add_css(drupal_get_path('module', 'advanced_help') .'/help-icon.css');
+}
+
+/**
+ * Traceroute post form
  *
  * @TODO Add advanced help
  */
@@ -661,7 +661,7 @@ function ecenter_network_select_form(&$form_state) {
     // If we've got the data (at bare minimum, a traceroute), delegate to rendering function
     if ($data['drs']) {
       $form['results_wrapper']['results']['#value'] =
-        theme('ecenter_network_data', $data, $params);
+        theme('ecenter_network_data', $data);
       $form['results_wrapper']['recent']['#value'] =
         theme('ecenter_network_recent_queries', TRUE);
     }
@@ -670,21 +670,6 @@ function ecenter_network_select_form(&$form_state) {
     $form['results_wrapper']['#value'] = theme('ecenter_network_recent_queries');
   }
   return $form;
-}
-
-/**
- * Display ecenter data
- */
-function ecenter_network_display_data() {
-  if ($_GET['modal']) {
-    modalframe_child_js();
-  }
-  $query = _ecenter_network_extract_query();
-  $data = ecenter_network_get_data($query['src'], $query['dst'], $query['start'], $query['end']);
-  $preset = openlayers_preset_load('ecenter_network');
-  $map = openlayers_render_map($preset->data, $preset->name);
-  return '<div class="page-network"><div id="content"><div id="network-wrapper">'.
-   $map . theme('ecenter_network_data', $data, $query) .'</div></div></div>';
 }
 
 /**

@@ -43,12 +43,12 @@ function ecenter_preprocess_node(&$vars) {
 
   if ($node->type == 'issue' && !empty($node->issue_queries)
     && !$vars['teaser'] && !$vars['build_mode']) {
-
+    _ecenter_network_add_behaviors();
     $output = '';
     foreach ($node->issue_queries as $query) {
       $output .= theme('ecenter_network_data',
         unserialize($query->field_query_data[0]['value']),
-        $query->query_params);
+        TRUE);
     }
     $fieldset = array(
       '#title' => t('Query results'),
@@ -59,7 +59,7 @@ function ecenter_preprocess_node(&$vars) {
       '#suffix' => '</div>',
       '#value' => $output,
     );
-    $vars['content'] = drupal_render($fieldset) . $vars['content'];
+    $vars['content'] .= drupal_render($fieldset);
   }
 
   if ($vars['build_mode'] == 'ecenter_activity') {

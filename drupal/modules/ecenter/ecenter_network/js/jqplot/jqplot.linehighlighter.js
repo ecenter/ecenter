@@ -199,8 +199,12 @@
             }
           }
 
-          imagedata = series_ctx.getImageData(xleft, ytop, boxW, boxH);
-          max = Math.max.apply(Math, imagedata.data);
+          // Chrome's handling of the pixel data means we cannot use Math.max.apply()
+          // trick to find max. So we coerce the type.
+          var imagedata = series_ctx.getImageData(xleft, ytop, boxW, boxH);
+          var pixelData = imagedata.data;
+          var pixelArray = $.makeArray(pixelData);
+          var max = Math.max.apply(Math, pixelArray);
 
           if (!max && s.isHighlightingLine) {
             lh.unhighlightSeries(i, plot);

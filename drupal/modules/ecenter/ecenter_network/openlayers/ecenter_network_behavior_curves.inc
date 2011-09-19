@@ -12,8 +12,8 @@ class ecenter_network_behavior_curves extends openlayers_behavior {
     return array(
       'layers' => array(),
       'style' => NULL,
-      'arrows' => 0,
-      'divisions' => 20,
+      'arrow_style' => NULL,
+      'divisions' => 21,
     );
   }
 
@@ -47,18 +47,12 @@ class ecenter_network_behavior_curves extends openlayers_behavior {
         '#default_value' => !empty($defaults['style']) ?
           $defaults['styles'] : NULL,
       ),
-      'arrows' => array(
-        '#type' => 'checkbox',
-        '#title' => t('Show arrows'),
-        '#description' => t('Show directional arrows on each curve'),
-        '#default_value' => ($defaults['arrows']) ? 1 : 0,
-      ),
       'divisions' => array(
         '#type' => 'textfield',
         '#title' => t('Divisions'),
         '#description' => t('Number of divisions in curve'),
         '#default_value' => !empty($defaults['divisions']) ?
-          $defaults['divisions'] : 20,
+          $defaults['divisions'] : 21,
       ),
     );
   }

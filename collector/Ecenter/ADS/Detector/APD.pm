@@ -203,8 +203,8 @@ after 'process_data' => sub {
 	$self->add_result(  $key,   \%status, { plateau_size => $tri_duration,
                                                 swc          => $self->swc,
                                                 sensitivity  => $self->sensitivity,
-                                                elevation1   => $ele->[0],
-                                                elevation2   => $ele->[1] }
+                                                elevation1   => $ele[0],
+                                                elevation2   => $ele[1] }
 	);
     }
     return $self->results;

@@ -28,32 +28,37 @@ Drupal.behaviors.ecenter_network_behavior_curves = function(context) {
           var curve = new Curve(old_feature, feature, 2.25, options.divisions,
             options.arrows);
           var line = new OpenLayers.Geometry.LineString(curve.points);
+          features.push(new OpenLayers.Feature.Vector(line, null, options.style));
 
-          if (!options.arrows) {
-            features.push(new OpenLayers.Feature.Vector(line, null, options.style));
-          }
-          else {
-            // @TODO create proper arrow...
-            //console.log('---');
-            //console.log(curve.points.length);
-            /*var midpoint = Math.floor(curve.points.length / 2);
-            console.log(midpoint);
-            console.log(curve.points[midpoint]);
-            p1 = curve.points[midpoint].clone();
-            p2 = curve.points[midpoint].clone();
-            p3 = curve.points[midpoint].clone();
-            console.log(p1);
-            p2.x += 200000;
-            p2.y += 100000;
-            p3.x += 200000;
-            p3.y -= 100000;
-            var arrow = new OpenLayers.Feature.Vector(new OpenLayers.Geometry.LinearRing([p1, p2, p3]), null, options.style);
-            features.push(arrow);*/
-            features.push(line);
+          // Draw arrows
+          if (curve.points != undefined) {
+            var midIdx = Math.floor(curve.points.length / 2);
+            var p1 = curve.points[midIdx];
+            var p2 = curve.points[midIdx + 1];
+            
+            // Rotate "backwards"
+            var rot = 2 * Math.PI - Math.tan((p2.y - p1.y) / (p2.x - p1.x));
+            
+            // Account for horizontal direction by rotating 90 degs one way or other
+            var angle = (p1.x > p2.x) ? rot - Math.PI / 2 : rot + Math.PI / 2;
+
+            var arrow_style = OpenLayers.Util.extend({}, OpenLayers.Feature.Vector.style['default']);
+            arrow_style.graphicName = 'triangle';
+            arrow_style.pointRadius = 4;
+            arrow_style.fillColor = '#0000cc';
+            arrow_style.fillOpacity = 1;
+            arrow_style.strokeWidth = 0.5;
+            arrow_style.strokeColor = '#ffffff';
+            arrow_style.strokeOpacity = 1;
+            arrow_style.rotation = (angle * 180) / Math.PI;
+
+            var arrow = new OpenLayers.Feature.Vector(p1, null, arrow_style);
+            features.push(arrow);
           }
         }
         old_feature = layers[i].features[j];
       }
+
       layers[i].addFeatures(features);
       layers[i].redraw();
     }

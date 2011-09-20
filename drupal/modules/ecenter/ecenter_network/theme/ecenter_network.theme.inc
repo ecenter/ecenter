@@ -10,7 +10,13 @@
  * Theme main data display
  */
 function template_preprocess_ecenter_network_data(&$vars) {
-  $params = $vars['data']['drs']['parameters'];
+  $data = $vars['data'];
+  $params = $data['drs']['parameters'];
+
+  drupal_add_js(array('ecenterNetwork' => array('tracerouteData' => 
+    $data['drs']['traceroute']['diff'])), 'setting');
+  drupal_add_js(array('ecenterNetwork' => array('tracerouteMaxLength' => 
+    $data['drs']['traceroute']['traceroute_max'])), 'setting');
 
   // Source / dst table
   $hops = ecenter_network_get_hops();
@@ -23,7 +29,7 @@ function template_preprocess_ecenter_network_data(&$vars) {
     $dates[$val] = _ecenter_network_utc_to_local($params[$val], 
       'M j, Y H:i', $params['timezone']);
   }
-
+  
   $vars['title'] = t('<span class="src-dst">@src_hub_name (@src_hub) to
 @dst_hub_name (@dst_hub)</span><span class="separator">, </span>
 <span class="date-range">@start - @end</span>',
@@ -37,41 +43,43 @@ function template_preprocess_ecenter_network_data(&$vars) {
     )
   );
 
-  // Set title
-  // drupal_set_title(t('E-Center Network Query | ') . $vars['title']);
+  if (!$vars['standalone']) {
+    // Set title
+    drupal_set_title(t('E-Center Network Query | ') . $vars['title']);
 
-  // Generate issue link -- encode params for use with custom ecenter_issues
-  // module
-  if (module_exists('ecenter_issues') && user_access('create issue content')) {
-    $issue_params = array();
-    foreach ($params as $key => $param) {
-      $issue_params[] = "$key=$param";
-    }
-    $issue_query = urlencode(implode('&', $issue_params));
-
-    $vars['issuelink'] = l('Create issue from these results', 'node/add/issue',
-      array(
-        'query' => array('query' => $issue_query),
-      )
-    );
-
-    $query = ecenter_issues_get_query_node($params);
-    if ($query->nid) {
-      $issue_links = array();
-      $issues = ecenter_issues_get_query_issues($query);
-      foreach ($issues as $issue) {
-        $issue_links[] = l($issue->title, 'node/'. $issue->nid) . t(' by ') . $issue->name;
+    // Generate issue link -- encode params for use with custom ecenter_issues
+    // module
+    if (module_exists('ecenter_issues') && user_access('create issue content')) {
+      $issue_params = array();
+      foreach ($params as $key => $param) {
+        $issue_params[] = "$key=$param";
       }
-      $vars['issues'] = '<label>'. t('Issues from this query: ') .'</label>'. implode(', ', $issue_links);
+      $issue_query = urlencode(implode('&', $issue_params));
+
+      $vars['issuelink'] = l('Create issue from these results', 'node/add/issue',
+        array(
+          'query' => array('query' => $issue_query),
+        )
+      );
+
+      $query = ecenter_issues_get_query_node($params);
+      if ($query->nid) {
+        $issue_links = array();
+        $issues = ecenter_issues_get_query_issues($query);
+        foreach ($issues as $issue) {
+          $issue_links[] = l($issue->title, 'node/'. $issue->nid) . t(' by ') . $issue->name;
+        }
+        $vars['issues'] = '<label>'. t('Issues from this query: ') .'</label>'. implode(', ', $issue_links);
+      }
     }
   }
 
   // End to end measurements
   $vars['end_to_end'] = theme('ecenter_network_end_to_end',
-    $vars['data']['drs']['end_to_end'], $vars['data']['ads'], $vars['params']['timezone']);
+    $data['drs']['end_to_end'], $vars['params']['timezone'], !$vars['standalone'], $data['ads']);
 
   // Per-hop measurements
-  $vars['hops'] = theme('ecenter_network_hops', $vars['data']['drs']['hops']);
+  $vars['hops'] = theme('ecenter_network_hops', $data['drs']['hops']);
 
   // Links and issue queries shouldn't take timezone argument
   unset($vars['params']['timezone']);
@@ -92,8 +100,6 @@ function template_preprocess_ecenter_network_data(&$vars) {
     ),
   );
   $vars['permalink_field'] = drupal_render($permalink_field);
-
-
 }
 
 /**
@@ -109,8 +115,10 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
     return;
   }
 
-  $ads = ecenter_network_ads_form();
-  $vars['ads'] = drupal_render($ads);
+  if ($vars['ads']) {
+    $ads = ecenter_network_ads_form();
+    $vars['ads'] = drupal_render($ads);
+  }
 
   foreach ($data as $test => $directions) {
     $start = 0;

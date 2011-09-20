@@ -384,10 +384,6 @@ $.fn.ecenter_network.plugins.map = function() {
         }
       }
     });
-
-    // Bind to feature select: Set value, then call autocomplete's change function
-    $(id).live('featureClick', function(e, feature, layer) {
-    });
   }
 }
 

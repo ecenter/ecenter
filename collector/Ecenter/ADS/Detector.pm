@@ -9,7 +9,7 @@ use English qw( -no_match_vars );
 
 =head1 NAME
 
-E-Center::ADS::Detector -  base  class for the Anomalous Detection Algorithm implmentation
+E-Center::ADS::Detector -  base  class for the Anomalous Detection Algorithm implmentation or any other data analysis
 
 =head1 DESCRIPTION
 
@@ -18,6 +18,7 @@ more specific analysis implementations.
 It accepts some parameters ( named attributes to the class ) and  parses data from the 'data' attribute and 
 then it processess  data and returns results where results
 are stored in the 'results' attribute.
+It serves as the base class for any other data analysis service ( forecasting for example).
 
 =head1 SYNOPSIS 
 
@@ -29,13 +30,12 @@ see Ecenter::DataClient, Ecenter::Client for the subclassing examples. Normal us
  after 'process_data' => {
      # actual implementation
  };
- 
 
 =head1 ATTRIBUTES
 
 =over
 
-=item  
+=item
 
 
 =item  logger
@@ -57,7 +57,7 @@ has logger      =>  (is => 'rw', isa => 'Log::Log4perl::Logger');
 has parsed_data =>  (is => 'rw', isa => 'HashRef');
 has data_type   =>  (is => 'rw', isa => 'Str', required => 1);
 
-my $METRIC = {owamp => [qw/max_delay min_delay/], bwctl => [qw/throughput/]};
+my $METRIC = {owamp => [qw/max_delay min_delay/], bwctl => [qw/throughput/], snmp => [qw/utilization/]};
 
 sub BUILD {
     my ($self, $args) = @_;
@@ -118,28 +118,18 @@ sub parse_data {
         }
     }
     
-    $self->logger->debug("Parsed Data", sub{Dumper($parsed_data)});
+    #$self->logger->debug("Parsed Data", sub{Dumper($parsed_data)});
     return $self->parsed_data($parsed_data);
 }
 =head1 add_results
 
-add result for the src/dst pair to the anomaly results hashref
+add result for the src/dst pair to the results hashref
 
 =cut
 
 sub add_result {
-    my ( $self, $tri_duration, $key, $ele, $status, $metaid) = @_;
+    my ( $self,  $key,  $status, $response) = @_;
     my ($src, $dst) = split('__', $key);
-    
-    my $response = {
-         %{$metaid}, 
-	 plateau_size => $tri_duration,
-         swc          => $self->swc,
-         sensitivity  => $self->sensitivity,
-         elevation1   => $ele->[0],
-         elevation2   => $ele->[1],
-    };
-
     if($status && !$status->{critical}){
         $response->{status} = 'OK';
     } else {

@@ -406,7 +406,27 @@ sub process_site {
         if($EVAL_ERROR) {
 	    $logger->error("  No SNMP data - failed $EVAL_ERROR");
         }
-	$task_set->wait(timeout => $params{timeout}); 
+	my @data_keys = qw/bwctl owamp pinger/;
+	map {$data->{$_} = {}} @data_keys;
+	eval {
+	    foreach my $dir (qw/direct reverse/) {
+	        my $md_href = get_e2e_mds( $trace_cond->{"$dir\_traceroute"}{src} );
+		#debug " MD for the E2E ::: " . Dumper $md_href;
+		unless($md_href && %{$md_href}) {
+		   $logger->error("No metadata for e2e on $dir ....");
+		   next;
+		}
+		foreach my $e_type (@data_keys)  {
+		    $logger->debug(" ...  Running  ------------  $e_type");
+		    get_e2e($task_set, $data->{$e_type}, \%params, $md_href, $e_type, 'site_view');
+		    $logger->debug(" +++++ Done  $dir ------------  $e_type");
+		}
+	    }
+        };
+        if($EVAL_ERROR) {
+            $logger->error( "e2e data call  failed - $EVAL_ERROR");
+        }
+	$task_set->wait(timeout => $params{timeout});
 	my $hub = Ecenter::Data::Hub->new;
 	foreach my $way (qw/direct_traceroute reverse_traceroute/) {
 	    foreach my $dst_hub (keys %{$utilization->{$way}}) {
@@ -429,9 +449,7 @@ sub process_site {
 	    	    }
 	        }
 	    }
-	    
 	}
-	
     };
     if($EVAL_ERROR) {
       $logger->error("site centric call  failed - $EVAL_ERROR");
@@ -562,10 +580,6 @@ sub process_data {
      #return $data;
     # end to end data  stats if available
     ### return $data unless $params{src_ip} && $params{dst_ip};
-    
-    
-    my %directions = (direct => ['src_ip', 'dst_ip'], reverse => ['dst_ip', 'src_ip'] );
-    
     my @data_keys = ();
     if($params{data_type}) {
         @data_keys = ($params{data_type}) if  $params{data_type} =~ /^bwctl|owamp|pinger$/i;
@@ -573,54 +587,17 @@ sub process_data {
         @data_keys =  qw/bwctl owamp pinger/;
     }
     # my @data_keys = qw/owamp/;
-    my %e2e_mds = ();
     map {$data->{$_} = {}} @data_keys;
     #
     # B logic - get list of slowest pinger and owamp services and creat exclusion list to avoid them  
     #
-  
     if(@data_keys) {
-	foreach my $dir (keys %directions) {
-	    my $slow_services  =  database('ecenter')->selectall_hashref(q|select distinct s.service   from service_performance sp 
-                                                                    join metadata md using(metaid)
-								    join  node n_src on(md.src_ip = n_src.ip_addr) 
-								    join  node n_dst on(md.dst_ip = n_dst.ip_addr) 
-								    join eventtype e on(md.eventtype_id = e.ref_id) 
-								    join service s using(service) 
-								    where e.service_type in ('pinger') 
-								    and sp.response > | . config->{slow_service_limit} . 
-								    qq| $trace_cond->{"$dir\_traceroute"}{src} $trace_cond->{"$dir\_traceroute"}{dst}|, 'service');  
-            my $exclude_services_sql =  join (' AND ', map {  "  s.service !='$_' " } keys %{$slow_services});
-            $exclude_services_sql =  $exclude_services_sql?"($exclude_services_sql)":'1';
-	    my $e2e_sql = qq|select   md.metaid, n_src.ip_noted as src_ip, md.subject, e.service_type as type, hb1.hub_name as src_hub, hb2.hub_name as dst_hub,
-	                              n_dst.ip_noted  as dst_ip, 
-                                                        	  n_src.nodename as src_name, n_dst.nodename as dst_name, s.service
-	                                        	       from 
-						        		  metadata md
-					        		    join  node n_src on(md.src_ip = n_src.ip_addr) 
-								    join  node n_dst on(md.dst_ip = n_dst.ip_addr) 
-								    left join l2_l3_map    llm1 on(n_src.ip_addr=llm1.ip_addr) 
-     	                                                            left join l2_port      l2p1 on(llm1.l2_urn =l2p1.l2_urn) 
-     	                                                            left join hub          hb1  on(hb1.hub =l2p1.hub)
-								    left join l2_l3_map    llm2 on(n_dst.ip_addr=llm2.ip_addr) 
-     	                                                            left join l2_port      l2p2 on(llm2.l2_urn =l2p2.l2_urn) 
-     	                                                            left join hub          hb2  on(hb2.hub =l2p2.hub)
-								    join eventtype e on(md.eventtype_id = e.ref_id)
-								    join service s  on (e.service = s.service)
-							      where  
-								    $exclude_services_sql and e.service_type in ( 'bwctl','owamp', 'pinger') 
-								    $trace_cond->{"$dir\_traceroute"}{src}   $trace_cond->{"$dir\_traceroute"}{dst}
-					        	 group by src_ip, dst_ip, service, type|;
-	    debug " E2E SQL:: $e2e_sql";
-	    my $md_href =  database('ecenter')->selectall_hashref($e2e_sql, 'metaid');   
-	    #debug " MD for the E2E ::: " . Dumper $md_href;	
-
+	foreach my $dir (qw/direct reverse/) {
+	    my $md_href = get_e2e_mds($trace_cond->{"$dir\_traceroute"}{src}, $trace_cond->{"$dir\_traceroute"}{dst});
 	    unless($md_href && %{$md_href}) {
 	       $logger->error("No metadata for e2e on $dir ....");
 	       next;
 	    }
-            %e2e_mds = (%e2e_mds, %{$md_href});
-
 	    foreach my $e_type (@data_keys)  {
 		$logger->debug(" ...  Running  ------------  $e_type");
 		get_e2e($task_set, $data->{$e_type}, \%params, $md_href, $e_type );
@@ -652,6 +629,52 @@ sub process_data {
   }
   return $data; 
 }
+#
+# get list of metadata ids for the e2e data and some src/dts conditions
+sub get_e2e_mds {
+    my ($src_cond, $dst_cond) = @_;
+    my $e2e_conditions = $src_cond;
+    $e2e_conditions .= " $dst_cond" if $dst_cond;
+    my $slow_services  =  database('ecenter')->selectall_hashref(q|select distinct s.service   from service_performance sp 
+                                                            join metadata md using(metaid)
+							    join  node n_src on(md.src_ip = n_src.ip_addr)
+							    join  node n_dst on(md.dst_ip = n_dst.ip_addr)
+							    join l2_l3_map    llm1 on(n_src.ip_addr=llm1.ip_addr)
+							    join l2_port      l2p1 on(llm1.l2_urn =l2p1.l2_urn)
+                                                            join hub	      hb1  on(hb1.hub =l2p1.hub)
+							    join l2_l3_map    llm2 on(n_dst.ip_addr=llm2.ip_addr)
+                                                            join l2_port      l2p2 on(llm2.l2_urn =l2p2.l2_urn)
+							    join hub	      hb2  on(hb2.hub =l2p2.hub)
+							    join eventtype e on(md.eventtype_id = e.ref_id)
+							    join service s using(service) 
+							    where e.service_type in ('pinger') 
+							    and sp.response > | . config->{slow_service_limit} . 
+							    qq|  $e2e_conditions |, 'service');  
+    my $exclude_services_sql =  join (' AND ', map {  "  s.service !='$_' " } keys %{$slow_services});
+    $exclude_services_sql =  $exclude_services_sql?"($exclude_services_sql)":'1';
+    my $e2e_sql = qq|select   md.metaid, n_src.ip_noted as src_ip, md.subject, e.service_type as type, hb1.hub_name as src_hub, hb2.hub_name as dst_hub,
+                              n_dst.ip_noted  as dst_ip, 
+                                                	  n_src.nodename as src_name, n_dst.nodename as dst_name, s.service
+                                        	       from 
+					        		  metadata md
+				        		    join  node n_src on(md.src_ip = n_src.ip_addr) 
+							    join  node n_dst on(md.dst_ip = n_dst.ip_addr) 
+							    left join l2_l3_map    llm1 on(n_src.ip_addr=llm1.ip_addr) 
+                                                            left join l2_port      l2p1 on(llm1.l2_urn =l2p1.l2_urn) 
+                                                            left join hub          hb1  on(hb1.hub =l2p1.hub)
+							    left join l2_l3_map    llm2 on(n_dst.ip_addr=llm2.ip_addr) 
+                                                            left join l2_port      l2p2 on(llm2.l2_urn =l2p2.l2_urn) 
+                                                            left join hub          hb2  on(hb2.hub =l2p2.hub)
+							    join eventtype e on(md.eventtype_id = e.ref_id)
+							    join service s  on (e.service = s.service)
+						      where  
+							    $exclude_services_sql and e.service_type in ( 'bwctl','owamp', 'pinger') 
+							    $e2e_conditions
+				        	 group by src_ip, dst_ip, service, type|;
+    $logger->debug(" E2E SQL:: $e2e_sql");
+    return database('ecenter')->selectall_hashref($e2e_sql, 'metaid');
+}
+#
 #
 #   fix new sites from the user provided traceroute
 #
@@ -720,7 +743,7 @@ sub _get_gearman {
 #  get bwctl/owamp/pinger data for end2end, first for the src_ip, then for the dst_ip
 #
 sub get_e2e{
-    my ($task_set,  $data_hr,  $params,   $md_href, $type) = @_; 
+    my ($task_set,  $data_hr,  $params,   $md_href, $type, $site_view) = @_; 
     my %result = ();
     ### my $task_set = $g_client->new_task_set;
     my $FAILED = 0;
@@ -733,7 +756,7 @@ sub get_e2e{
         $logger->info(" ------ FOUND METADATA:: $type md =$metaid  :::" .
 	              " SRC=$md_row->{src_ip} DST= $md_row->{dst_ip} start=$params->{$type}{start} " .
 		      " end=$params->{$type}{end} slice=$time_slice");
-	$data_hr->{$md_row->{src_ip}}{$md_row->{dst_ip}} = {};
+	$data_hr->{$md_row->{src_ip}}{$md_row->{dst_ip}} = {} unless $site_view;
 	for(my $st_time = $params->{$type}{start}; $st_time < $params->{$type}{end}; $st_time +=  $time_slice) {
 	    my $data_table = strftime "%Y%m", localtime($st_time);
 	    my $st_end_i = $st_time +  $time_slice;   
@@ -760,12 +783,20 @@ sub get_e2e{
 								         $logger->error("FAILED: datum malformed", sub{Dumper($datum)});
 									 next;
 								     }
-								
 								     my %result_clip =    map {$_ => $datum->[1]{$_}} grep($data_filter{$_}, keys %{$datum->[1]});
-								     $data_hr->{$md_row->{src_ip}}{$md_row->{dst_ip}}{metaid}  = $metaid;
-								     $data_hr->{$md_row->{src_ip}}{$md_row->{dst_ip}}{src_hub} = $md_row->{src_hub};
-								     $data_hr->{$md_row->{src_ip}}{$md_row->{dst_ip}}{dst_hub} = $md_row->{dst_hub};
-				                                     $data_hr->{$md_row->{src_ip}}{$md_row->{dst_ip}}{data}{$datum->[0]} = \%result_clip;
+								     if($site_view) {
+								         # for site view get extreme values
+								         map{ $data_hr->{$md_row->{dst_hub}}{$_} = $result_clip{$_} 
+									         if $result_clip{$_} && (!$data_hr->{$md_row->{dst_hub}}{$_} ||
+										  ($_ =~ /min/ && $data_hr->{$md_row->{dst_hub}}{$_} > $result_clip{$_}) ||
+										  $data_hr->{$md_row->{dst_hub}}{$_} < $result_clip{$_}) 
+									 } keys %result_clip;
+								     } else {
+								         $data_hr->{$md_row->{src_ip}}{$md_row->{dst_ip}}{metaid}  = $metaid;
+								         $data_hr->{$md_row->{src_ip}}{$md_row->{dst_ip}}{src_hub} = $md_row->{src_hub};
+								         $data_hr->{$md_row->{src_ip}}{$md_row->{dst_ip}}{dst_hub} = $md_row->{dst_hub};
+				                                         $data_hr->{$md_row->{src_ip}}{$md_row->{dst_ip}}{data}{$datum->[0]} = \%result_clip;
+								     }
 								 }
 								 $logger->debug("DATA for $type: md=$metaid times=$st_time - $end_time :::" . scalar(@{$returned->{data}}));
 			    	                                 
@@ -786,6 +817,8 @@ sub get_e2e{
 # 
 sub  get_traceroute_mds {
     my ($trace_cond) = @_;
+    my $trace_cond_string =  $trace_cond->{src};
+    $trace_cond_string .= " $trace_cond->{dst}" if $trace_cond->{dst};
     my  $cmd =   qq|select  distinct md.metaid as metaid, md.src_ip, md.dst_ip, md.subject, hb1.hub_name as src_hub, hb2.hub_name as dst_hub,
                              s.service  from 
 	                                                    metadata md 
@@ -801,8 +834,7 @@ sub  get_traceroute_mds {
 						       join service s   on(s.service = e.service)
 						    where  
 						         e.service_type = 'traceroute' and   s.service like '%raceroute%'
-							 $trace_cond->{src}
-							 $trace_cond->{dst}|;
+							  $trace_cond_string|;
   
     $logger->debug(" TRACEROUTE SQL_mds: $cmd");						     
     my $trace_ref =  database('ecenter')->selectall_hashref($cmd, 'metaid');

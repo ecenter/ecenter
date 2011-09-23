@@ -821,6 +821,27 @@ form {
     .shadow(2px; 5px; 7px; @color_grey_43;);
     position: relative;
   } // }}}
+  #traceroute-paste-wrapper { // {{{
+    width: 620px;
+    height: 360px;
+    padding: 20px;
+    background-color: rgba(220, 220, 220, 0.75);
+    z-index: 2;
+    position: absolute;
+    textarea {
+      color: @color_grey_33;
+      font-size: 12px;
+      width: 600px;
+      height: 315px;
+      border: 1px solid @color_grey_73;
+    }
+    label {
+      text-align: center;
+    }
+    .description, .ahah-progress-throbber {
+      display: none;
+    }
+  } // }}}
   #traceroute-wrapper { // {{{
     margin-bottom: .75em;
     #traceroute {
@@ -865,7 +886,7 @@ form {
         width: 280px;
         height: 60px;
       }
-      label {
+      label, .description {
         display: none;
       }
     }
@@ -2071,6 +2092,7 @@ table.network-health {
     font-size: 12px;
     line-height: 18px;
     font-family: @font_mono;
+    width: 100%;
   }
 }
 .ui-widget-overlay {

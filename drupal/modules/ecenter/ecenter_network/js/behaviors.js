@@ -160,6 +160,9 @@ $.fn.ecenter_network.plugins.ajax = function() {
       dst.val('');
       $('#dst-wrapper input').val('');
 
+      $('#traceroute-paste-wrapper').fadeOut();
+      $('#traceroute-paste-wrapper textarea').val('');
+
       $(el).removeClass('data-loading');
       var overlay = $('#loading-overlay', self.el)
         .fadeOut('fast');
@@ -240,7 +243,7 @@ $.fn.ecenter_network.plugins.change = function() {
       input.data('autocomplete')._trigger('change');
     });
     $('#src-wrapper select', this.el).bind('change', function(e) {
-      $('#edit-network-wrapper-query-traceroute-paste-wrapper').fadeOut();
+      $('#traceroute-paste-wrapper').fadeOut();
       $('#traceroute-paste-wrapper textarea').val('');
     });
     $('#src-wrapper select').data('ecenterProcessed', true);
@@ -251,7 +254,7 @@ $.fn.ecenter_network.plugins.change = function() {
   // Clear out some values when destination changes
   if (!processed) {
     $('#dst-wrapper select', this.el).bind('change', function(e) {
-      $('#edit-network-wrapper-query-traceroute-paste-wrapper').fadeOut();
+      $('#traceroute-paste-wrapper').fadeOut();
       $('#traceroute-paste-wrapper textarea').val('');
     });
     $('#dst-wrapper select').data('ecenterProcessed', true);
@@ -660,8 +663,10 @@ $.fn.ecenter_network.plugins.ads = function() {
 }
 
 $.fn.ecenter_network.plugins.traceroute_paste = function() {
-  var target = $('#edit-network-wrapper-query-traceroute-paste-wrapper');
+  var target = $('#traceroute-paste-wrapper');
   var dialog = target.hide().clone().attr('id', 'traceroute-paste-copy');
+  $('textarea', dialog).attr('readonly', false);
+
   $('body').append(dialog);
   
   var dialog = $('#traceroute-paste-copy').dialog({ 
@@ -672,7 +677,7 @@ $.fn.ecenter_network.plugins.traceroute_paste = function() {
     buttons: {
       'Submit traceroute' : function() {
         // Debug by showing field
-        $('#edit-network-wrapper-query-traceroute-paste-wrapper').fadeIn();
+        $('#traceroute-paste-wrapper').fadeIn();
         // Copy the value
         $('#src-wrapper input, #dst-wrapper input').val(null);
         var traceroute = $('textarea', this).val();
@@ -693,7 +698,7 @@ $.fn.ecenter_network.plugins.traceroute_paste = function() {
       return false; 
     });
 
-  $(target).before(button);
+  $('#dst-wrapper').after(button);
 }
 
 

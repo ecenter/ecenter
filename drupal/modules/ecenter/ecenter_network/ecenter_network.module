@@ -157,10 +157,9 @@ function ecenter_network_theme() {
         'cached_data_count' => 0,
       ),
     ) + $options,
-    'ecenter_network_site_centric_snmp_data' => array(
+    'ecenter_network_site_centric_data' => array(
       'arguments' => array(
-        'row' => NULL,
-        'direction' => NULL,
+        'data' => NULL,
       ),
     ) + $options,
   );
@@ -1275,9 +1274,16 @@ function ecenter_network_parse_site_data($data, $site) {
   );
   foreach (array('direct_traceroute' => 'forward', 'reverse_traceroute' => 'reverse') as $key => $direction) {
     foreach ($data[$key] as $hub => $results) {
-      $parsed_data['destinations'][$hub][$direction]['data'] = $results['snmp'];
-      $parsed_data['destinations'][$hub][$direction]['themed'] = 
-        theme('ecenter_network_site_centric_snmp_data', $results['snmp'], $direction);
+      if ($hub != $site) {
+        $parsed_data['destinations'][$hub]['traceroute'][$direction]['snmp'] = $results['snmp'];
+      }
+    }
+  }
+  foreach (array('bwctl', 'owamp', 'pinger') as $key) {
+    foreach ($data[$key] as $hub => $measurements) {
+      if ($hub != $site) {
+        $parsed_data['destinations'][$hub]['e2e'][$key] = $measurements;
+      }
     }
   }
   return $parsed_data;

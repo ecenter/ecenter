@@ -52,8 +52,17 @@ function template_preprocess_ecenter_dashboard(&$vars) {
     $end = date_format($end, 'Y-m-d H:i:00');
 
     $hub = (!empty($user->ecenter_default_hub)) ? $user->ecenter_default_hub : variable_get('ecenter_site_default_hub', 'FNAL');
-    $data = ecenter_network_get_site_centric_data($hub, $start, $end);
-    drupal_add_js(array('ecenterNetwork' => array('siteData' => $data)), 'setting');
+    $raw_data = ecenter_network_get_site_centric_data($hub, $start, $end);
+
+    $site_data = array('source' => $raw_data['source'], 'destinations' => array());
+    foreach ($raw_data['destinations'] as $hub => $data) {
+      $site_data['destinations'][] = array(
+        'hub' => $hub,
+        'data' => $data,
+        'markup' => theme('ecenter_network_site_centric_data', $data),
+      );
+    }
+    drupal_add_js(array('ecenterNetwork' => array('siteData' => $site_data)), 'setting');
 
     $vars['main_content'] = array(
       'site_view' => array(

@@ -645,41 +645,60 @@ function theme_ecenter_network_health_row($metadata_count = 0, $cached_data_coun
 /**
  * Theme SNMP data in site-centric view
  */
-function theme_ecenter_network_site_centric_snmp_data($row, $direction) {
-  $headers = array(t('Measurement'), t('Value'), t('Interface'));
-  
-  $table = array();
-  foreach ($row as $measurement => $values) {
-    $class = 'normal';
+function theme_ecenter_network_site_centric_data($data) {
+  $tables = array();
 
-    switch ($measurement) {
-      case 'utilization':
-        if ($values['value'] > 95) {
-          $class = 'critical';
-        }
-        else if ($values['value'] > 75) {
-          $class = 'marginal';
-        }
-        break; 
-      case 'errors':
-      case 'drops':
-        if ($values['value'] > 0) {
-          $class = 'critical';
-        }
-        break;
-    }    
-    $table[] = array(
-      'class' => $class,
-      'data' => array(
-        t(ucfirst($measurement)),
-        sprintf('%.2f', $values['value']),
-        $values['ip'],
-      ),
-    );
+  $headers = array();
+  $row = array();
+  foreach ($data['e2e'] as $type => $measurements) {
+    unset($measurements['sent']);
+    foreach ($measurements as $measurement => $value) {
+      $headers[$measurement] = ucfirst(str_replace('_', ' ', $measurement));
+      $row[] = array(
+        'data' => theme('ecenter_network_format_default', $value, $type, $measurement)
+      );
+    }
   }
-  
-  return '<h2>'. t(ucfirst($direction)) .'</h2>'. 
-    theme('jqplot_table', $headers, $table);
+  $tables[] = '<h2>'. t('End to end') .'</h2>'. 
+    theme('jqplot_table', $headers, array($row));
+
+  $headers = array(t('Measurement'), t('Value'), t('Interface'));
+  if (!empty($data['traceroute'])) {
+    foreach ($data['traceroute'] as $direction => $traceroute_data) {
+      $table = array();
+      foreach ($traceroute_data['snmp'] as $measurement => $values) {
+          $class = 'normal';
+
+          switch ($measurement) {
+            case 'utilization':
+              if ($values['value'] > 95) {
+                $class = 'critical';
+              }
+              else if ($values['value'] > 75) {
+                $class = 'marginal';
+              }
+              break; 
+            case 'errors':
+            case 'drops':
+              if ($values['value'] > 0) {
+                $class = 'critical';
+              }
+              break;
+          }
+          $table[] = array(
+            'class' => $class,
+            'data' => array(
+              t(ucfirst($measurement)),
+              sprintf('%.2f', $values['value']),
+              $values['ip'],
+            ),
+          );
+      }
+      $tables[] = '<h2>'. t(ucfirst($direction)) .'</h2>'. 
+        theme('jqplot_table', $headers, $table);
+    }
+  }
+  return implode('', $tables);
 }
 
 /**

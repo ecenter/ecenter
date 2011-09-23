@@ -207,7 +207,7 @@ sub _initialize {
        $dbh =  DBI->connect("DBI:mysql:database=$OPTIONS{db};hostname=$OPTIONS{host};",$OPTIONS{user},$OPTIONS{pass},
                                     {RaiseError => 1, PrintError => 1}) or return "DB error $DBI::errstr"; 
     } else {
-        return '  Malformed request - wrong Db parameter';
+        return 'Malformed request - wrong Db parameter';
     }
     return $dbh;
 #

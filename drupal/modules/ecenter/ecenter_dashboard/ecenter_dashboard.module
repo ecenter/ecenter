@@ -40,7 +40,7 @@ function template_preprocess_ecenter_dashboard(&$vars) {
 
   if ($user->uid) {
     module_load_include('inc', 'date_api', 'date_api_elements');
-    $now = time() - 1800;
+    $now = time() - 3600;
     $offset = 3600 * 3;
     $inc = 60;
     $tz = timezone_open('UTC');

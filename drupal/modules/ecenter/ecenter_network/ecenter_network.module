@@ -344,6 +344,22 @@ function _ecenter_network_select_form() {
     '#prefix' => '<div id="network-wrapper" class="clear-block">',
     '#suffix' => '</div>',
   );
+
+  $form['network_wrapper']['traceroute_paste'] = array(
+    '#title' => t('Traceroute'),
+    '#type' => 'textarea',
+    '#resizable' => FALSE,
+    '#prefix' => '<div id="traceroute-paste-wrapper">',
+    '#suffix' => '</div>',
+    '#description' => t('<strong>Paste traceroute results (experimental):</strong>: Many factors may affect E-Center\'s ability to create a query from a pasted traceroute. Your pasted traceroute will use the selected day or time range when querying.'),
+    '#attributes' => array('id' => 'traceroute-paste', 'readonly' => TRUE),
+    '#ahah' => array(
+      'event' => 'change',
+      'path' => ahah_helper_path(array('results_wrapper', 'results')),
+      'wrapper' => 'results-wrapper',
+    ),
+  );
+
   $form['network_wrapper']['network'] = array(
     '#prefix' => '<div id="network-map">',
     '#value' => $map,
@@ -390,20 +406,6 @@ function _ecenter_network_select_form() {
     '#options' => array('' => t('Select a destination')),
     '#prefix' => '<div class="dst-wrapper">',
     '#suffix' => '</div>',
-    '#ahah' => array(
-      'event' => 'change',
-      'path' => ahah_helper_path(array('results_wrapper', 'results')),
-      'wrapper' => 'results-wrapper',
-    ),
-  );
-
-  $form['network_wrapper']['query']['traceroute_paste'] = array(
-    '#title' => t('Traceroute'),
-    '#type' => 'textarea',
-    '#prefix' => '<div id="traceroute-paste-wrapper">',
-    '#suffix' => '</div>',
-    '#description' => t('<strong>Paste traceroute results (experimental):</strong>: Many factors may affect E-Center\'s ability to create a query from a pasted traceroute. Your pasted traceroute will use the selected day or time range when querying.'),
-    '#attributes' => array('id' => 'traceroute-paste'),
     '#ahah' => array(
       'event' => 'change',
       'path' => ahah_helper_path(array('results_wrapper', 'results')),
@@ -2003,8 +2005,8 @@ function _ecenter_network_extract_query() {
       'elevation1' => $_REQUEST['elevation1'],
       'elevation2' => $_REQUEST['elevation2'],
       'swc' => $_REQUEST['swc'],
-
-      'traceroute' => $_REQUEST['network_wrapper']['query']['traceroute_paste'],
+      
+      'traceroute' => $_REQUEST['network_wrapper']['traceroute_paste'],
     );
   }
 

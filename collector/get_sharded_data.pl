@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl -w
+#!/bin/env perl
 
 use strict;
 use warnings;
@@ -374,7 +374,7 @@ sub get_anomaly {
 	     pool_control($MAX_THREADS,undef);
 	     threads->new({'context' => 'scalar'},
 	                              sub { 
-		my $dbh =  Ecenter::DB->connect('DBI:mysql:' . $OPTIONS{db},  $OPTIONS{user}, $OPTIONS{password},
+		my $dbh =  Ecenter::DB->connect("DBI:mysql:database=$OPTIONS{db};hostname=$OPTIONS{host};",  $OPTIONS{user}, $OPTIONS{password},
                                 	        { RaiseError => 1, PrintError => 1 } );
         	$dbh->storage->debug(1)  if $OPTIONS{debug} || $OPTIONS{v};
         	my $dbi =  db_connect(\%OPTIONS);
@@ -470,55 +470,55 @@ sub get_e2e {
     my ($pm, $PAST_START, $e2e) = @_;
     my $type = $e2e;
     $type = 'traceroute' if $e2e eq 'hop';
-    my @metadata = $dbh->resultset('Metadata')->search({'eventtype.service_type' => $type, 'service.is_alive' => 1 },
-                                                        { 'join' => {'eventtype' =>  'service'},
-						          '+select' => [qw/eventtype.ref_id service.service inet6_ntop(me.src_ip) inet6_ntop(me.dst_ip)/],
-						        }
-						    );
-				
+    my $dbi1 =  db_connect(\%OPTIONS);
+    my $metadata_hr = $dbi1->selectall_hashref(q|SELECT m.metaid as metaid,   m.subject as subject, s.service as service
+                         FROM metadata m 
+			 JOIN eventtype e  ON (e.ref_id = m.eventtype_id)
+			 JOIN service   s  ON (s.service = e.service)
+			 WHERE  e.service_type = | .  $dbi1->quote($type) . q| AND s.is_alive = '1'|, 'metaid');
+      	
      my $now_table = strftime('%Y%m', localtime());
      my $table_name = ucfirst($e2e);
      
-     my $dbi1 =  db_connect(\%OPTIONS);
      my $hosts  =  $dbi1->selectall_hashref('select ip_noted, nodename from node','ip_noted');
      $dbi1->disconnect if $dbi1;
-     foreach my $md (@metadata) {
+     foreach my $md (keys %{$metadata_hr}) {
          #my $pid = $pm->start and next;
 	 ###next unless  $md->eventtype->service->service =~ /bnl|anl/;
-	 unless($md->eventtype && $md->eventtype->service && $md->eventtype->service->service) {
-             $logger->error("NO Service for MD::", sub{Dumper($md )});
+	 unless($metadata_hr->{$md}{service}) {
+             $logger->error("NO Service for MD::", sub{Dumper($metadata_hr->{$md})});
 	     next;
 	 }
 	 pool_control($MAX_THREADS,undef);
 	 threads->new({'context' => 'scalar'},
 	                          sub { 
-	    my $dbh =  Ecenter::DB->connect('DBI:mysql:' . $OPTIONS{db},  $OPTIONS{user}, $OPTIONS{password},
+	    my $dbh =  Ecenter::DB->connect("DBI:mysql:database=$OPTIONS{db};hostname=$OPTIONS{host};",  $OPTIONS{user}, $OPTIONS{password},
                                     {RaiseError => 1, PrintError => 1});
             $dbh->storage->debug(1)  if $OPTIONS{debug} || $OPTIONS{v};
             my $dbi =  db_connect(\%OPTIONS);
 	    my $last_time = $dbi->selectall_hashref( "select metaid, timestamp from $e2e\_data_$now_table where metaid='" . 
-	                             $md->metaid . "' ORDER BY timestamp DESC LIMIT 1", 'metaid');
+	                             $md . "' ORDER BY timestamp DESC LIMIT 1", 'metaid');
 	    # my $last_time = $dbh->resultset("${table_name}Data$now_table")->search( { metaid => $md->metaid },
 	    #						      {   order_by => { -desc => 'timestamp'} }
 	    #						    )->single;
-	     my $secs_past = ($last_time && $last_time->{$md->metaid}{timestamp} && $last_time->{$md->metaid}{timestamp} >  $PAST_START)?
-	                         $last_time->{$md->metaid}{timestamp}:$PAST_START;
+	     my $secs_past = ($last_time && $last_time->{$md}{timestamp} && $last_time->{$md}{timestamp} >  $PAST_START)?
+	                         $last_time->{$md}{timestamp}:$PAST_START;
     	     my $e2e_data = []; 
 	     $dbi->disconnect if $dbi;
 	     my $t1 = time();
              my $t_delta = 0; 
 	     eval {
 		$e2e_data =   Ecenter::Client->new({ type    => $type,  
-	                                             url     => $md->eventtype->service->service,
+	                                             url     => $metadata_hr->{$md}{service},
 	                                             start   => $secs_past,
     	    			                     end     => $t1,
 						     resolution => 10000,
 						     args => {
-						        subject => $md->subject
+						        subject =>  $metadata_hr->{$md}{subject}
 						     }
 	    		      })->get_data;
 		 $t_delta = time() - $t1;
-		 $dbh->resultset('ServicePerformance')->create( { metaid =>  $md->metaid,
+		 $dbh->resultset('ServicePerformance')->create( { metaid =>   $md,
 	                                                     requested_start =>  $secs_past,
 	                                                     requested_time => ($t1 - $secs_past), 
 	                                                     response => $t_delta, 
@@ -526,7 +526,7 @@ sub get_e2e {
 							     } ); 
 	     };
 	     if($EVAL_ERROR) {
-	       $dbh->resultset('ServicePerformance')->create( { metaid =>  $md->metaid,
+	       $dbh->resultset('ServicePerformance')->create( { metaid =>  $md,
 	                                                     requested_start =>  $secs_past,
 	                                                     requested_time => ($t1 - $secs_past), 
 	                                                     response => $t_delta, 
@@ -539,7 +539,7 @@ sub get_e2e {
     	     ##$logger->debug("Data :: ", sub{Dumper(  $e2e_data )});
     	     ##$pm->finish unless   $e2e_data  && @{  $e2e_data };
 	     unless($e2e_data  && @{  $e2e_data }) { 
-	        $logger->error(" No Data for $type: start=$secs_past " . $md->eventtype->service->service . ' md=' . $md->subject);
+	        $logger->error(" No Data for $type: start=$secs_past " . $metadata_hr->{$md}{service}  . ' md=' . $metadata_hr->{$md}{subject} );
 	        $dbh->storage->disconnect if $dbh;
 		return;
 	     }
@@ -561,7 +561,7 @@ sub get_e2e {
 					    
 		 }
 		 eval {
-    		     $dbh->resultset("${table_name}Data$now_table")->update_or_create({ metaid =>  $md->metaid,
+    		     $dbh->resultset("${table_name}Data$now_table")->update_or_create({ metaid =>  $md,
     	    									   timestamp => $data->[0],
     	    									   %{$data->[1]},
     	    									},
@@ -652,7 +652,7 @@ sub get_snmp {
 	    threads->new({'context' => 'scalar'}, 
 	                          sub { 
 		# get last timestamp
-		 my $dbh =  Ecenter::DB->connect('DBI:mysql:' . $OPTIONS{db},  $OPTIONS{user}, $OPTIONS{password}, 
+		 my $dbh =  Ecenter::DB->connect("DBI:mysql:database=$OPTIONS{db};hostname=$OPTIONS{host};",  $OPTIONS{user}, $OPTIONS{password}, 
                                 	    {RaiseError => 1, PrintError => 1});
         	$dbh->storage->debug(1)  if $OPTIONS{debug}|| $OPTIONS{v};
 		my $snmp_ma =  Ecenter::Data::Snmp->new({ url => $service->service});

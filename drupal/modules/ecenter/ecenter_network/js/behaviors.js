@@ -313,7 +313,7 @@ $.fn.ecenter_network.plugins.map = function() {
     $(id).live('featureOver', function(e, feature, layer, control) {
       if (feature.ecenterID) {
         if (layer.drupalID == 'ecenter_network_traceroute') {
-          var hub = Drupal.settings.ecenterNetwork.seriesLookupByHub[feature.ecenterID];
+          var hub = Drupal.settings.ecenterNetwork.seriesLookupByNetblock[feature.netblockID];
           var tc = $('#utilization-tables').data('tablechart');
 
           if (tc) {
@@ -366,7 +366,7 @@ $.fn.ecenter_network.plugins.map = function() {
               "default");
         }
         if (layer.drupalID == 'ecenter_network_traceroute') {
-          var hub = Drupal.settings.ecenterNetwork.seriesLookupByHub[feature.ecenterID];
+          var hub = Drupal.settings.ecenterNetwork.seriesLookupByNetblock[feature.netblockID];
           var tc = $('#utilization-tables').data('tablechart');
 
           if (tc) {
@@ -509,7 +509,7 @@ $.fn.ecenter_network.plugins.traceroute = function() {
             var map = ol.openlayers;
             var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
             var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
-            var feature = layer.getFeatureBy('ecenterID', hop.hub);
+            var feature = layer.getFeatureBy('netblockID', hop.netblockID);
 
             control.callbacks.over.call(control, feature);
           }
@@ -544,7 +544,7 @@ $.fn.ecenter_network.plugins.traceroute = function() {
             var map = ol.openlayers;
             var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
             var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
-            var feature = layer.getFeatureBy('ecenterID', hop.hub);
+            var feature = layer.getFeatureBy('netblockID', hop.netblockID);
 
             control.callbacks.out.call(control, feature);
           }
@@ -586,7 +586,7 @@ $.fn.ecenter_network.plugins.chart = function() {
       var map = ol.openlayers;
       var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
       var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
-      var feature = layer.getFeatureBy('ecenterID', hop.hub);
+      var feature = layer.getFeatureBy('netblockID', hop.netblockID);
 
       if (feature) {
         control.callbacks.over.call(control, feature);
@@ -601,7 +601,7 @@ $.fn.ecenter_network.plugins.chart = function() {
     var map = ol.openlayers;
     var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
     var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
-    var feature = layer.getFeatureBy('ecenterID', hop.hub);
+    var feature = layer.getFeatureBy('netblockID', hop.netblockID);
 
     if (feature) {
       control.callbacks.out.call(control, feature);

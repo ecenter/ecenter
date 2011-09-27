@@ -79,7 +79,7 @@ function template_preprocess_ecenter_network_data(&$vars) {
     $data['drs']['end_to_end'], $vars['params']['timezone'], !$vars['standalone'], $data['ads']);
 
   // Per-hop measurements
-  $vars['hops'] = theme('ecenter_network_hops', $data['drs']['hops']);
+  $vars['hops'] = theme('ecenter_network_hops', $data['drs']['traceroute']['diff']);
 
   // Links and issue queries shouldn't take timezone argument
   unset($vars['params']['timezone']);
@@ -305,10 +305,10 @@ function theme_ecenter_network_recent_query($query, $time) {
  * @TODO We might want to make this more flexible. However, this data isn't
  * likely to change soon.
  */
-function theme_ecenter_network_hops($hops = array()) {
+function theme_ecenter_network_hops($traceroute = array()) {
   $tables = array();
 
-  if (empty($hops)) {
+  if (empty($traceroute)) {
     return t('No traceroute available.');
   }
 
@@ -316,50 +316,54 @@ function theme_ecenter_network_hops($hops = array()) {
 
   $sidx = 0;
 
-  // Create tables for scraping
-  foreach ($hops as $hop) {
-    // @TODO Iterate over all types, use measurement / type callbacks
-    $table = array();
+  foreach ($traceroute as $ttl => $diff_data) {
+    $match = (!empty($diff_data['match'])) ? TRUE : FALSE;
+    $data = array_pop($diff_data);
 
-    $settings['ecenterNetwork']['seriesLookupByIndex'][] = array(
-      'id' => $hop['id'], 
-      'hub' => $hop['hub']
-    );
-    $settings['ecenterNetwork']['seriesLookupByID'][$hop['id']] = array(
-      'sidx' => $sidx,
-      'hub' => $hop['hub'],
-    );
-    $settings['ecenterNetwork']['seriesLookupByHub'][$hop['hub']]['id'][] = $hop['id'];
-    $settings['ecenterNetwork']['seriesLookupByHub'][$hop['hub']]['sidx'][] = $sidx;
-    $sidx++;
+    foreach (array('forward', 'reverse') as $direction) {
+      if (empty($data[$direction])) {
+        continue;
+      }
+      foreach ($data[$direction] as $hop_index => $hop) {
+        $table = array();
 
+        if (!empty($hop['data']['snmp'])) {
+          $netblock_id = $ttl .'-'. $hop['netblock']; // .'-'. $hop['hop_num'];
+          $settings['ecenterNetwork']['seriesLookupByIndex'][] = array(
+            'id' => $hop['id'], 
+            'netblockID' => $netblock_id,
+          );
+          $settings['ecenterNetwork']['seriesLookupByID'][$hop['id']] = array(
+            'sidx' => $sidx,
+            'netblockID' => $netblock_id,
+          );
+          $settings['ecenterNetwork']['seriesLookupByNetblock'][$netblock_id]['id'][] = $hop['id'];
+          $settings['ecenterNetwork']['seriesLookupByNetblock'][$netblock_id]['sidx'][] = $sidx;
+          $sidx++;
 
-    foreach ($hop['data']['snmp'] as $timeseries) {
-
-      if (!empty($timeseries)) {
-        $time = _ecenter_network_timestamp_to_local($timeseries[0]);
-        $table[] = array(
-          'label' => array(
-            'data' => $time,
-            'header' => TRUE,
-          ),
-          'utilization' => array(
-            'data' => sprintf('%01.4f',
-              100 * ($timeseries[1]['utilization'] / $timeseries[1]['capacity'])),
-            'class' => $class,
-          ),
-        );
+          foreach ($hop['data']['snmp'] as $timeseries) {
+            $time = _ecenter_network_timestamp_to_local($timeseries[0]);
+            $table[] = array(
+              'label' => array(
+                'data' => $time,
+                'header' => TRUE,
+              ),
+              'utilization' => array(
+                'data' => sprintf('%01.4f',
+                  100 * ($timeseries[1]['utilization'] / $timeseries[1]['capacity'])),
+                'class' => $class,
+              ),
+            );
+          }
+        }
+        $tables[] = theme('ecenter_network_utilization_table', $table, $hop, $direction);
       }
     }
-    if (!empty($table)) {
-      $tables[] = theme('ecenter_network_utilization_table', $table, $hop);
-    }
   }
-  
+
   drupal_add_js($settings, 'setting');
 
   if (!empty($tables)) {
-
     $plot_options = _ecenter_network_plot_options_template();
     $plot_options['seriesDefaults']['markerOptions']['show'] = FALSE;
     $plot_options['seriesDefaults']['lineWidth'] = 0.85;
@@ -391,6 +395,7 @@ function theme_ecenter_network_hops($hops = array()) {
   else {
     return t('No per-hop data available.');
   }
+
 }
 
 /**
@@ -449,7 +454,6 @@ function theme_ecenter_network_end_to_end_tables($tables, $timezone = NULL) {
 
     }
   }
-
   return $output;
 }
 
@@ -545,14 +549,21 @@ function theme_ecenter_network_format_value($value, $units = NULL) {
 /**
  * Theme utilization table
  */
-function theme_ecenter_network_utilization_table($table, $hop) {
+function theme_ecenter_network_utilization_table($table, $hop, $direction) {
   $attributes = array();
   $attributes['class'] = $direction;
 
-  $headers = array(t('Time'), t('Percent utilization'));
   $output = '<div class="data-table">';
-  $output .= '<h3>'. $hop['nodename'] .' ('. $hop['ip_noted'] .')</h3>';
-  $output .= theme('jqplot_table', $headers, $table, $attributes);
+  $output .= '<h3>'. ucfirst($direction) .': '. $hop['nodename'] .' ('. $hop['hub'] .')</h3>';
+
+  if (!empty($table)) {
+    $headers = array(t('Time'), t('Percent utilization'));
+    $output .= theme('jqplot_table', $headers, $table, $attributes);
+  } 
+  else {
+    $output .= '<p>'. t('No SNMP utilization data available.') .'</p>';
+  }
+
   $output .= '</div>';
   return $output;
 }

@@ -96,7 +96,7 @@ function ecenter_network_theme() {
     ) + $options,
     'ecenter_network_hops' => array(
       'arguments' => array(
-        'hops' => array(),
+        'traceroute' => array(),
       ),
     ) + $options,
     'ecenter_network_end_to_end' => array(
@@ -118,6 +118,7 @@ function ecenter_network_theme() {
       'arguments' => array(
         'table' => NULL,
         'hop' => NULL,
+        'direction' => NULL,
       ),
     ) + $options,
     'ecenter_network_format_default' => array(
@@ -1126,10 +1127,14 @@ function ecenter_network_parse_response($response) {
       // Sort by hop number
       ksort($traceroute);
 
-      // Filter out hops which don't have SNMP data
-      // @TODO may require differentiation between no SNMP data and no 
-      // *available* SNMP data. 
-      //$traceroute = array_filter($traceroute, '_ecenter_network_filter_traceroute');
+      // Strip doubled or empty hops from beginning and end of traceroute
+      for ($i = 0; $i < 2; $i++) {
+        $traceroute = array_reverse($traceroute);
+        while (empty($traceroute[0]['data']['snmp']) || $traceroute[0]['hub_name'] == $traceroute[1]['hub_name']) {
+          array_shift($traceroute);
+        }
+      }
+
       $parsed_data['traceroute'][$direction] = $traceroute;
     }
   }
@@ -1195,10 +1200,14 @@ function ecenter_network_parse_response($response) {
   // Calculate diff
   if (!empty($parsed_data['traceroute']['forward']) 
     && !empty($parsed_data['traceroute']['reverse'])) {
+
     $forward = $parsed_data['traceroute']['forward'];
     $reverse = array_reverse($parsed_data['traceroute']['reverse']);
 
-    $parsed_data['traceroute']['diff'] = ecenter_network_traceroute_diff($forward, $reverse);
+    // Diff forward and reverse
+    $diff = ecenter_network_traceroute_diff($forward, $reverse);
+
+    $parsed_data['traceroute']['diff'] = $diff;
     $parsed_data['traceroute']['traceroute_max'] = (count($forward) > count($reverse)) ? 
       count($forward) : count($reverse);
   }
@@ -1287,13 +1296,6 @@ function ecenter_network_parse_site_data($data, $site) {
     }
   }
   return $parsed_data;
-}
-
-/**
- * Filter traceroute results
- */
-function _ecenter_network_filter_traceroute($hop) {
-  return (!empty($hop['data']['snmp']));
 }
 
 /**
@@ -1746,41 +1748,43 @@ function ecenter_network_layers_traceroute() {
 
     $data = ecenter_network_get_data($src, $dst, $start, $end);
 
-    $traceroute = (!empty($data['traceroute']['forward'])) ?
-      $data['traceroute']['forward'] : $data['traceroute']['reverse'];
+    $direction = (!empty($data['traceroute']['forward'])) ? 'forward' : 'reverse';
 
-    if ($data && !empty($traceroute)) {
+    if ($data && !empty($data['traceroute'][$direction])) {
 
       // Initialize some counters, etc
       $old_hop = NULL;
       $count = count($traceroute);
-      $i = 0;
 
       $features = array();
-      foreach ($traceroute as $hop) {
-        if ($hop['longitude'] && $hop['latitude']) {
-          $features[] = array(
-            'wkt' => "POINT({$hop['longitude']} {$hop['latitude']})",
-            'projection' => "4326",
-            'style' => array(
-              'pointRadius' => 5,
-              'fillColor' => '#ffffff',
-              'strokeColor' => '#0000ff',
-              'strokeWidth' => 3,
-              'fillOpacity' => 1,
-              'label' => $hop['hub'],
-              'labelYOffset' => -16,
-              'fontWeight' => 'bold',
-              'fontSize' => '12px',
-              'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',
-              'fontColor' => '#222222',
-            ),
-            'extra' => array('ecenterID' => $hop['hub']),
-          );
+      foreach ($data['traceroute']['diff'] as $ttl => $diff_data) {
+        $hops = array_pop($diff_data);
+        foreach ($hops[$direction] as $hop) {
+          if ($hop['longitude'] && $hop['latitude']) {
+            $features[] = array(
+              'wkt' => "POINT({$hop['longitude']} {$hop['latitude']})",
+              'projection' => "4326",
+              'style' => array(
+                'pointRadius' => 5,
+                'fillColor' => '#ffffff',
+                'strokeColor' => '#0000ff',
+                'strokeWidth' => 3,
+                'fillOpacity' => 1,
+                'label' => $hop['hub'],
+                'labelYOffset' => -16,
+                'fontWeight' => 'bold',
+                'fontSize' => '12px',
+                'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',
+                'fontColor' => '#222222',
+              ),
+              'extra' => array(
+                'ecenterID' => $hop['hub'],
+                'netblockID' => $ttl .'-'. $hop['netblock'], //$hop['hop_num'],
+              ),
+            );
+          }
+          $old_hop = $hop;
         }
-        $old_hop = $hop;
-        $i += 1;
-
       }
     }
 
@@ -1788,7 +1792,6 @@ function ecenter_network_layers_traceroute() {
       _ecenter_network_layers_traceroute_rejigger($features);
     }
     $layer->data['features'] = $features;
-
   }
   return $layer;
 }

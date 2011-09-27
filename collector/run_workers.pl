@@ -37,6 +37,17 @@ print usage info
 number  of worker nodes
 Default: 4
 
+=item --host=[hostname]
+
+hostname for the backend DB server
+Default: ecenterprod1.fnal.gov
+
+
+=item --g_host=[hostname]
+
+hostname for the Gearmand server
+Default: xenmon.fnal.gov
+
 =item --db=[database name]
 
 backend DB name
@@ -70,7 +81,7 @@ use Pod::Usage;
 use Log::Log4perl qw(:easy);
 use Getopt::Long;
 my %OPTIONS;
-my @string_option_keys = qw/workers port db logdir timeout/;
+my @string_option_keys = qw/workers port db logdir timeout host g_host/;
 GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
             qw/debug help clean/
@@ -92,11 +103,15 @@ $OPTIONS{port}    ||= 10221;
 $OPTIONS{timeout} ||= 120;
 $OPTIONS{workers} ||= 4;
 $OPTIONS{db}      ||= 'ecenter_data';
-$OPTIONS{logdir}  ||= '/tmp'; 
+$OPTIONS{logdir}  ||= '/tmp';
+$OPTIONS{host}    ||= 'ecenterprod1.fnal.gov';
+$OPTIONS{g_host}  ||= 'xenmon.fnal.gov';
+
+
 
 `/bin/ps auxwww | grep 'data_worker' | grep $OPTIONS{port} | grep -v grep | grep -v  nedit  | awk '{print \$2}' | xargs kill -9` if $OPTIONS{clean};
 for(my $i=0;$i<$OPTIONS{workers};$i++) {
-    my $cmd = "$Bin/data_worker.pl --db=$OPTIONS{db} " . ($OPTIONS{debug}?'--debug':'') . "  --port=$OPTIONS{port}  > $OPTIONS{logdir}/log_worker_$OPTIONS{port}\_$i.log  2>&1 &";
+    my $cmd = "$Bin/data_worker.pl --db=$OPTIONS{db} " . ($OPTIONS{debug}?'--debug':'') . " --host=$OPTIONS{host}  --g_host=$OPTIONS{g_host} --port=$OPTIONS{port}  > $OPTIONS{logdir}/log_worker_$OPTIONS{port}\_$i.log  2>&1 &";
     $logger->debug("CMD:$cmd");
     system($cmd)==0 or $logger->error("....failed");;
 }

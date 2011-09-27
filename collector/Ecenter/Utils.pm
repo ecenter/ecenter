@@ -13,6 +13,7 @@ use forks::shared
 use version;our $VERSION = qv("v1.0");
 use NetAddr::IP::Util qw(ipv6_aton inet_any2n ipv4to6 isIPv4);
 use Net::IPv6Addr;
+use Net::Telnet;
 use Net::CIDR;
 use Data::Validate::IP qw(is_ipv4 is_ipv6);
 use Data::Validate::Domain qw( is_domain is_hostname);
@@ -47,7 +48,7 @@ our $logger =   Log::Log4perl->get_logger(__PACKAGE__);
  
 # exported functions  
 
-our @EXPORT = qw/get_ip_name pack_snmp_data params_to_date get_shards get_datums refactor_result
+our @EXPORT = qw/get_ip_name gearman_status pack_snmp_data params_to_date get_shards get_datums refactor_result
                  db_connect update_create_fixed pool_control ip_ton nto_ip $DAYS7_SECS $REG_IP $REG_DATE @HEALTH_NAMES $TABLEMAP/;
  
 
@@ -75,6 +76,32 @@ sub db_connect {
     return $dbh; 
 }
 
+=head2 gearman_status 
+
+get status of the gearman queues for the DRS
+
+=cut
+
+sub gearman_status {
+    my ($host, $port) = @_;
+    my $telnet = new Net::Telnet( Host => $host,
+                                  Port => $port,
+                                  Timeout=> 10,
+				  Errmode => sub{$logger->logdie("Telnet to Gearman daemon failed")} 
+		);
+    $telnet->print( "status" );
+    my ($status) = $telnet->waitfor('/\./');
+    $telnet->close;
+    # Process the output from telnet
+    my $result= {};
+    foreach (split(/\n/, $status)) {
+        my @line = split(/\t/);
+        $result->{$line[0]}{queued}    =  $line[1];
+	$result->{$line[0]}{running}   =  $line[2];
+	$result->{$line[0]}{available} =  $line[3];
+    }
+    return $result;
+}
 
 =head2 get_shards
 

@@ -50,11 +50,14 @@ my $DEFAULT_ERROR = 501;
    ecenter_data.pl - standalone RESTfull service, provides interface for the Ecenter data and dispatch
 
 =cut
-
 ##  status URL
 any ['get'] =>  "/status.:format" => 
        sub {
- 	       return  { status => 'ok' }
+               my $status = {};
+	       foreach my $host ( %{config->{gearman}{servers}}) {
+    	           map { $status->{$host}{$_} = gearman_status($host, $_) } @{config->{gearman}{servers}{$host}};
+               }
+ 	       return  { status => 'ok', gearman => $status }
        };
 # health service
 any ['get'] =>  "/health.:format" => 
@@ -729,7 +732,7 @@ sub _fix_sites {
 sub _get_gearman {
     my $g_client = new Gearman::Client;
     my @servers = ();
-    foreach my $host ( %{config->{gearman}{servers}}) {
+    foreach my $host (keys %{config->{gearman}{servers}}) {
     	push @servers, (map { $host . ":$_"} @{config->{gearman}{servers}{$host}});
     }
     unless($g_client->job_servers( @servers ) ) {

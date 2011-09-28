@@ -4,13 +4,19 @@
  */
 (function($) {
 
+// Raphael plugin to create triangle
 Raphael.fn.triangle = function(x, y, size) {
-  console.log(x);
   var path = ["M", x - (size / 2), y - (size / 2)];
   path = path.concat(["L", (x + (size / 2)), y]);
   path = path.concat(["L", (x - (size / 2)), (y + (size / 2))]);
   return this.path(path.concat(["z"]).join(" "));
 };
+
+Raphael.fn.halfCircle = function(x, y, radius, flip) {
+  var flip = (flip) ? 0 : 1;
+  var path = ["M", x - radius, y, "A", radius, radius * .9, 0, 0, flip, x + radius, y, "z"];
+  return this.path(path.join(" ")); 
+}
 
 // @TODO account for redrawing
 $.fn.traceroute = function(data, options) {
@@ -50,10 +56,10 @@ $.traceroute = function(el, options, data) {
 
   // Marker dimensions
   this.marker = { 
-    'size' : (2 * parseInt(options.marker.radius + options.markerBackground.radiusAdjust)) + parseInt(options.markerBackground.style['stroke-width']),
+    'size' : (2 * parseInt(options.marker.radius)) + parseInt(options.marker.style['stroke-width']),
     'xOffset' : options.link.width / 2,
-    'forwardYOffset' : parseInt(options.marker.radius + options.markerBackground.radiusAdjust) + (parseInt(options.markerBackground.style['stroke-width']) / 2),
-    'reverseYOffset' : parseInt(options.marker.radius + options.markerBackground.radiusAdjust) + (parseInt(options.markerBackground.style['stroke-width']) / 2) + (parseInt(options.label.style['font-size']) / 2) 
+    'forwardYOffset' : parseInt(options.marker.radius) + (parseInt(options.marker.style['stroke-width']) / 2),
+    'reverseYOffset' : parseInt(options.marker.radius) + (parseInt(options.marker.style['stroke-width']) / 2) + (parseInt(options.label.style['font-size']) / 2) 
   };
 
   this.label = {
@@ -91,6 +97,7 @@ $.traceroute.hoverOver = function() {
       var element = set.items[j];
       switch (element.type) {
         case 'circle':
+        case 'path':
           element.attr(this.paper.tracerouteOptions.marker.overStyle);
           break;
         case 'text':
@@ -109,6 +116,7 @@ $.traceroute.hoverOut = function() {
       var element = set.items[j];
       switch (element.type) {
         case 'circle':
+        case 'path':
           element.attr(this.paper.tracerouteOptions.marker.style);
           break;
         case 'text':
@@ -120,7 +128,8 @@ $.traceroute.hoverOut = function() {
 }
 
 $.traceroute.prototype.draw = function() {
-  var paper = this.paper, 
+  var set, 
+    paper = this.paper, 
     data = this.data, 
     boxOffset = -this.bbox.width,
     lastHops = { 'forward': false, 'reverse' : false };
@@ -147,7 +156,8 @@ $.traceroute.prototype.draw = function() {
     for (direction in this.tracerouteDirections) {
       var yOffset = (i > 0 && row_type == 'diff' && direction == 'reverse') ? 
         this.diffYOffset : 0,
-        oppositeDirection = (direction == 'forward') ? 'reverse' : 'forward'; 
+        oppositeDirection = (direction == 'forward') ? 'reverse' : 'forward',
+        markerWidth = (this.options.marker.radius * 2) + this.options.marker.style['stroke-width']; 
 
       if (step[direction].length == 0) {
         continue;
@@ -156,8 +166,7 @@ $.traceroute.prototype.draw = function() {
       for (var j = 0; j < step[direction].length; j++) {
         var hop = step[direction][j],
           labelOffset = yOffset + this.label.yOffset,
-          set = paper.set(hop.hub),
-          markerRadius = this.options.marker.radius;
+          set = paper.set(hop.hub);
 
         if (direction == 'forward' && step['reverse'].length) {
           var markerYOffset = yOffset + this.marker.forwardYOffset;
@@ -165,7 +174,6 @@ $.traceroute.prototype.draw = function() {
           var markerYOffset = yOffset + this.marker.reverseYOffset;
         }
         else {
-          markerRadius = markerRadius * 1.35;
           var markerYOffset = yOffset + this.label.yOffset;
         }
         
@@ -183,25 +191,34 @@ $.traceroute.prototype.draw = function() {
           }
         }
  
-        if (!set.length) {
-          set = paper.set(hop.hub);
-          label = paper.text(boxOffset + this.marker.xOffset, labelOffset, hop.hub).attr(this.options.label.style); 
-          var bbox = label.getBBox();
-          labelBox = paper.rect(bbox.x - (2 * this.options.labelBox.padding), bbox.y - this.options.labelBox.padding, bbox.width + (this.options.labelBox.padding * 4), bbox.height + (this.options.labelBox.padding * 2), 3).attr(this.options.labelBox.style);
-          set.push(label, labelBox); 
-        }
-
-        var markerBackground = paper.circle(boxOffset + this.marker.xOffset, markerYOffset, markerRadius + this.options.markerBackground.radiusAdjust).attr(this.options.markerBackground.style);
-        markerBackground.toBack();
-        var marker = paper.circle(boxOffset + this.marker.xOffset, markerYOffset, markerRadius)
-          .attr(this.options.marker.style);
+        // Draw label
+        set = paper.set(hop.hub);
+        var label = paper.text(boxOffset + this.marker.xOffset, labelOffset, hop.hub)
+          .attr(this.options.label.style); 
         
+        var bbox = label.getBBox();
+        var labelWidth = (bbox.width > markerWidth) ? bbox.width : markerWidth;
+        var labelCenterOffset = (bbox.width > markerWidth) ? 0 : (markerWidth - bbox.width) / 2;
+
+        labelBox = paper.rect(bbox.x - this.options.labelBox.paddingX - labelCenterOffset, bbox.y - this.options.labelBox.paddingY, labelWidth + (this.options.labelBox.paddingX * 2), bbox.height + (this.options.labelBox.paddingY * 2))
+          .attr(this.options.labelBox.style);
+
+        set.push(label, labelBox);
+        
+        // Draw marker
+        if (row_type == 'match') {
+          var flip = (direction != 'forward') ? true : false;
+          var marker = paper.halfCircle(boxOffset + this.marker.xOffset, markerYOffset, this.options.marker.radius, flip)
+        } else {
+          // Note the fudge factor
+          var marker = paper.circle(boxOffset + this.marker.xOffset, markerYOffset, this.options.marker.radius * 1.15)
+        }
+        marker.attr(this.options.marker.style);
         set.push(marker);
         
         labelBox.toFront();
         label.toFront();
 
-        // Problematic to do this many times...
         set.hover($.traceroute.hoverOver, $.traceroute.hoverOut);
 
         $.extend(hop, {'type' : row_type, 'direction' : direction, 'ttl' : i, 'xOffset' : boxOffset + this.marker.xOffset, 'yOffset' : markerYOffset });
@@ -212,23 +229,38 @@ $.traceroute.prototype.draw = function() {
         if (lastHops[direction]) {
           var l = lastHops[direction], 
               o = lastHops[oppositeDirection];
-          
+         
+          // Skip link
           if (direction == 'reverse' && hop.ttl > (l.ttl + 1)) {
-            var link = paper.path("M"+ l.xOffset +' '+ (l.yOffset + directionOffset) +'C '+ l.xOffset +' '+ this.height +' '+ hop.xOffset +' '+ this.height +' '+ hop.xOffset +' '+ (hop.yOffset + directionOffset)).attr(this.options.link.style);
+            var path = ["M", l.xOffset, l.yOffset + directionOffset, "C",  l.xOffset, this.height, hop.xOffset, this.height, hop.xOffset, hop.yOffset + directionOffset];
+            var link = paper.path(path.join(' ')).attr(this.options.link.style);
+
+            var link_bbox = link.getBBox();
+            var arrow = paper.triangle(link_bbox.x + (link_bbox.width / 2), link_bbox.y + link_bbox.height, this.options.arrow.size)
+              .attr(this.options.arrow.style)
+              .rotate(180, true);
+            arrow.toBack();
           }
           else {
-            var arrowOffset = (direction == 'forward') ? this.options.arrow.size / 8 : - this.options.arrow.size / 8;
-            arrowOffset += l.xOffset + ((hop.xOffset - l.xOffset) / 2);
+            var arrowXOffset = (direction == 'forward') ? this.options.arrow.size / 8 : - this.options.arrow.size / 8;
+            arrowXOffset += l.xOffset + ((hop.xOffset - l.xOffset) / 2);
 
-            var link = paper.path("M"+ l.xOffset +' '+ (l.yOffset + directionOffset) +'L'+ hop.xOffset +' '+ (hop.yOffset + directionOffset)).attr(this.options.link.style);
+            var path = ["M", l.xOffset, l.yOffset + directionOffset, "L", hop.xOffset, hop.yOffset + directionOffset];
+            var link = paper.path(path.join(" ")).attr(this.options.link.style);
 
-            var arrow = paper.triangle(arrowOffset, hop.yOffset + directionOffset, this.options.arrow.size).attr(this.options.arrow.style);
+            var arrowYOffset = hop.yOffset + directionOffset;
+            var rotation = 0;
+            
+            if (l.yOffset != hop.yOffset) {
+              arrowYOffset = (parseInt(this.options.arrow.size) / 2) + l.yOffset - ((l.yOffset - hop.yOffset) / 2);
+              rotation = (180 / Math.PI) * Math.atan( (l.yOffset - hop.yOffset) / (l.xOffset - hop.xOffset));
+            }
 
+            var arrow = paper.triangle(arrowXOffset, arrowYOffset, this.options.arrow.size).attr(this.options.arrow.style);
             if (direction == 'reverse') {
-              arrow.rotate(180, true);
+              arrow.rotate(180 + rotation, true);
             }
             arrow.toBack();
-
           }
           link.toBack();
         }
@@ -246,7 +278,7 @@ $.fn.traceroute.defaults = {
     'height' : '70px'
   },
   'link' : {
-    'width' : 75,
+    'width' : 65,
     'offset' : 4,
     'style' : {
       'fill' : 'transparent',
@@ -255,7 +287,7 @@ $.fn.traceroute.defaults = {
     }
   },
   'arrow' : {
-    'size' : 12,
+    'size' : 10,
     'style' : {
       'fill' : '#bbbbbb',
       'stroke' : '#ffffff',
@@ -263,7 +295,7 @@ $.fn.traceroute.defaults = {
     }
   },
   'marker' : {
-    'radius' : 10,
+    'radius' : 12,
     'style' : {
       'stroke' : '#888888',
       'fill' : '#ffffff',
@@ -272,14 +304,6 @@ $.fn.traceroute.defaults = {
     'overStyle' : {
       'stroke': '#00aa00'
     }
-  },
-  'markerBackground' : {
-    'radiusAdjust' : 6,
-    'style' : {
-      'stroke' : 'none',
-      'stroke-width' : 0,
-      'fill' : '#ffffff',
-    },
   },
   'label' : {
     'style' : {
@@ -293,9 +317,10 @@ $.fn.traceroute.defaults = {
     }
   },
   'labelBox' : {
-    'padding' : 2,
+    'paddingX' : 2,
+    'paddingY' : 2,
     'style' : {
-      'fill' : '#dddddd',
+      'fill' : '#ffffff',
       'stroke' : 'none',
       'stroke-width' : 0
     }

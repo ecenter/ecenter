@@ -740,6 +740,11 @@ function ecenter_network_get_client($status_check = FALSE, $type = 'drs', $name 
       $klass = 'DataRetrievalService';
       $name = ($name) ? $name : 'drs_default';
       break;
+    case 'drs_sitecentric':
+      require_once(dirname(__FILE__) . '/includes/data_retrieval_service.inc');
+      $klass = 'DataRetrievalService';
+      $name = ($name) ? $name : 'drs_sitecentric';
+      break;
     case 'ads':
       require_once(dirname(__FILE__) . '/includes/anomaly_detection_service.inc');
       $klass = 'AnomalyDetectionService';
@@ -968,7 +973,7 @@ function ecenter_network_get_site_centric_data($site, $start, $end) {
     }
     else {
       $resolution = variable_get('ecenter_network_site_data_resolution', 50);
-      $client = ecenter_network_get_client();
+      $client = ecenter_network_get_client(FALSE, 'drs_sitecentric');
       $result = $client->getSiteCentricData($site, $start, $end);
       if ($result['code'] == 200) {
         $data = $result['response'];

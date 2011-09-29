@@ -154,7 +154,20 @@ class DataRetrievalService extends EcenterService {
   }
 
   /**
+   * Get site centric data
    *
+   * @param $site
+   *   Hubname to get data for
+   * @param $start
+   *   Start time.
+   * @param $end
+   *   End time.
+   * @param $only_data
+   *   Only return basic data (no additional information).
+   * @param $resolution
+   *   (optional) Maximum number of data points to return for any measurement.
+   * @return
+   *   Result for this query.
    */
   public function getSiteCentricData($site, $start, $end, $only_data = FALSE, $resolution = 50) {
     $params = array(

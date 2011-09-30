@@ -1,10 +1,58 @@
 /**
- * This plugin takes a specially formed array and turns it into a traceroute
- * "subway map".
+ * @file jquery.traceroute.js
+ *
+ * A jQuery plugin that creates a visual representation of a traceroute.
+ *
+ * Created by David Eads (davideads__at__gmail_com), 2011 for the US
+ * Department of Energy E-Center Project (https://ecenter.fnal.gov).
+ * 
+ * Released under the Fermitools license (modified BSD). See LICENSE.txt for 
+ * more information.
+ *
+ * Requires jQuery 1.3+ (http://jquery.com)
+ * Requires the E-Center fork of RaphaelJS 1.5 (https://github.com/ecenter/raphael)
+ *
+ * Usage and behavior:
+ *
+ * Invoke with $('#drawing-target-selector').traceroute(data, options)
+ * 
+ * Data must be an array representation of a diffed traceroute of the following
+ * form:
+ *
+ * [ { 'match': { 'forward' : [hop,] , 'reverse' : [hop,] } },
+ *   { 'diff' : { 'forward' : [hop, hop2, ...], 'reverse' : [hop, hop2, ...]} },
+ *   ...]
+ *
+ * Each item of the array is an object which represents a section of the path.
+ * The object's key is used to differentiate between two types of sections:
+ *
+ *  - A traceroute match (forward and reverse hops correspond to the same 
+ *    device, location, or interface) with a single forward hop and/or a 
+ *    single reverse hop.
+ *  - A traceroute diff (forward and reverse hops diverge for this section
+ *    of the path) with one or more forward and/or reverse hops. 
+ *
+ * Because of the complicated and data-dependent nature of the drawing routine,
+ * no effort has been made to generalize the plugin to support configurable
+ * rendering callbacks or similar customization tricks. However, the rendering
+ * pipeline is split into several helper functions ($.traceroute.drawMarker(),
+ * $.traceroute.drawLabel() and $.traceroute.drawConnectors()) that can be
+ * overridden.
+ *
+ * See $.fn.traceroute.defaults for an overview of traceroute options.
  */
 (function($) {
 
-// Raphael plugin to create triangle
+/**
+ * Raphael plugin to create equilateral triangle
+ * 
+ * @param x
+ *   x-coordinate of triangle center.
+ * @param y
+ *   y-coordinate of triangle center.
+ * @param size
+ *   Triangle size (tip to opposite side)
+ */
 Raphael.fn.triangle = function(x, y, size) {
   var path = ["M", x - (size / 2), y - (size / 2)];
   path = path.concat(["L", (x + (size / 2)), y]);
@@ -12,19 +60,38 @@ Raphael.fn.triangle = function(x, y, size) {
   return this.path(path.concat(["z"]).join(" "));
 };
 
+/** 
+ * Raphael plugin to create slightly elliptical half circle
+ *
+ * @param x
+ *   x-coordinate of half-circle center.
+ * @param y
+ *   y-coordinate of half-circle's flat segment.
+ * @param radius
+ *   Radius of half circle.
+ * @param flip
+ *   If true, drawn half circle downwards rather than upwards.
+ */
 Raphael.fn.halfCircle = function(x, y, radius, flip) {
   var flip = (flip) ? 0 : 1;
   var path = ["M", x - radius, y, "A", radius, radius * .9, 0, 0, flip, x + radius, y, "z"];
   return this.path(path.join(" ")); 
 }
 
-// @TODO account for redrawing
+/**
+ * Traceroute plugin 
+ *
+ * @param data
+ *   Traceroute array (see introductory documentation).
+ * @param options
+ *   Plugin options
+ */
 $.fn.traceroute = function(data, options) {
   var options = $.extend(true, {}, $.fn.traceroute.defaults, options);
   return this.each(function(i) {
     var traceroutes = $(this).data('traceroute') || {};
     if (traceroutes[options.tracerouteName] == undefined) {
-      traceroutes[options.tracerouteName] = new $.traceroute(this, options, data);
+      traceroutes[options.tracerouteName] = new $.traceroute(this, data, options);
       $(this).data('traceroute', traceroutes);
       traceroutes[options.tracerouteName].draw();
     }
@@ -32,7 +99,8 @@ $.fn.traceroute = function(data, options) {
 };
 
 /**
- * Traceroute constructor
+ * Traceroute object constructor
+ *
  * @param el 
  *   Element
  * @param options
@@ -272,11 +340,17 @@ $.traceroute.prototype.draw = function() {
 
 // Defaults
 $.fn.traceroute.defaults = {
+  // Attach multiple traceroutes to the same selector by specifying an
+  // alternate name
   'tracerouteName' : 'default',
+
+  // Style for drawing container
   'container' : {
     'width' : '100%',
     'height' : '70px'
   },
+
+  // Width, offset from vertical center, and style for link connector lines
   'link' : {
     'width' : 65,
     'offset' : 4,
@@ -286,6 +360,8 @@ $.fn.traceroute.defaults = {
       'stroke-width' : 3
     }
   },
+
+  // Size and style for link arrows
   'arrow' : {
     'size' : 10,
     'style' : {
@@ -294,6 +370,8 @@ $.fn.traceroute.defaults = {
       'stroke-width' : 1
     }
   },
+
+  // Radius and styles for hop markers
   'marker' : {
     'radius' : 12,
     'style' : {
@@ -305,6 +383,8 @@ $.fn.traceroute.defaults = {
       'stroke': '#00aa00'
     }
   },
+
+  // Set style of hop label
   'label' : {
     'style' : {
       'fill' : '#444444',
@@ -316,6 +396,8 @@ $.fn.traceroute.defaults = {
       'fill' : '#00aa00'
     }
   },
+
+  // Set padding and style of box behind label
   'labelBox' : {
     'paddingX' : 2,
     'paddingY' : 2,
@@ -324,6 +406,13 @@ $.fn.traceroute.defaults = {
       'stroke' : 'none',
       'stroke-width' : 0
     }
+  },
+  
+  // Bind callbacks to events fired on each set of hops
+  'behavior' : {
+    'click' : $.noop(),
+    'over' : $.noop(),
+    'out'  : $.noop(),
   }
 };
 

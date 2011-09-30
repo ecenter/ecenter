@@ -108,7 +108,7 @@ $.fn.traceroute = function(data, options) {
  * @param data
  *   Traceroute data
  */
-$.traceroute = function(el, options, data) {
+$.traceroute = function(el, data, options) {
   // Properties
   this.el = el;
   this.options = options;
@@ -134,7 +134,6 @@ $.traceroute = function(el, options, data) {
     'yOffset' : (this.marker.size / 2) + (parseInt(options.label.style['font-size']) / 4)
   };
 
-  
   // Marker + label bounding box dimensions 
   this.bbox = { 'height' : this.marker.size, 'width' : options.link.width };
 

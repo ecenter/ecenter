@@ -1975,14 +1975,11 @@ function _ecenter_network_utc_to_local($date, $format = 'Y-m-d H:i:s', $tz = '')
  * @return string
  *   Formatted, converted date
  */
-function _ecenter_network_timestamp_to_local($date, $format = 'Y-m-d H:i:s', $tz = '') {
+function _ecenter_network_timestamp_to_local($date, $format = 'Y-m-d H:i:s', $tz = FALSE) {
   if (empty($date)) {
     return NULL;
   }
 
-  if (empty($tz)) {
-    $tz = date_default_timezone_name(TRUE);
-  }
   $adjusted = date_make_date($date, timezone_open('UTC'), DATE_UNIX);
   if (empty($tz)) {
     $tz = date_default_timezone_name(TRUE);

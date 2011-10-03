@@ -109,6 +109,11 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
   $statistics_table = array();
   $data_tables = array();
 
+  // Set timezone to null if not provided
+  if ($vars['timezone'] == 1 || $vars['timezone'] === TRUE) {
+    $vars['timezone'] = NULL;
+  }
+
   if (!$data) {
     return;
   }

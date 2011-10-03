@@ -231,7 +231,7 @@ $.traceroute.prototype.draw = function() {
       for (var j = 0; j < step[direction].length; j++) {
         var hop = step[direction][j],
           labelOffset = yOffset + this.label.yOffset,
-          set = paper.set(hop.hub_name);
+          set = paper.set(hop.hub);
 
         if (direction == 'forward' && step['reverse'].length) {
           var markerYOffset = yOffset + this.marker.forwardYOffset;
@@ -257,7 +257,7 @@ $.traceroute.prototype.draw = function() {
         }
  
         // Draw label
-        var label = paper.text(boxOffset + this.marker.xOffset, labelOffset, hop.hub)
+        var label = paper.text(boxOffset + this.marker.xOffset, labelOffset, hop.hub_name)
           .attr(this.options.label.style); 
         
         var bbox = label.getBBox();
@@ -370,7 +370,7 @@ $.fn.traceroute.defaults = {
 
   // Width, offset from vertical center, and style for link connector lines
   'link' : {
-    'width' : 65,
+    'width' : 60,
     'offset' : 4,
     'style' : {
       'fill' : 'transparent',
@@ -391,7 +391,7 @@ $.fn.traceroute.defaults = {
 
   // Radius and styles for hop markers
   'marker' : {
-    'radius' : 12,
+    'radius' : 11,
     'style' : {
       'stroke' : '#888888',
       'fill' : '#ffffff',
@@ -407,7 +407,7 @@ $.fn.traceroute.defaults = {
     'style' : {
       'fill' : '#444444',
       'font-weight' : 'bold',
-      'font-size' : '12px',
+      'font-size' : '11px',
       'font-family' : 'Helvetica, Arial, sans-serif'
     },
     'overStyle' : {

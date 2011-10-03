@@ -13,6 +13,7 @@ use forks::shared
 use version;our $VERSION = qv("v1.0");
 use NetAddr::IP::Util qw(ipv6_aton inet_any2n ipv4to6 isIPv4);
 use Net::IPv6Addr;
+use Net::Telnet;
 use Net::CIDR;
 use Data::Validate::IP qw(is_ipv4 is_ipv6);
 use Data::Validate::Domain qw( is_domain is_hostname);
@@ -47,7 +48,7 @@ our $logger =   Log::Log4perl->get_logger(__PACKAGE__);
  
 # exported functions  
 
-our @EXPORT = qw/get_ip_name pack_snmp_data params_to_date get_shards get_datums refactor_result
+our @EXPORT = qw/get_ip_name gearman_status pack_snmp_data params_to_date get_shards get_datums refactor_result
                  db_connect update_create_fixed pool_control ip_ton nto_ip $DAYS7_SECS $REG_IP $REG_DATE @HEALTH_NAMES $TABLEMAP/;
  
 
@@ -75,6 +76,38 @@ sub db_connect {
     return $dbh; 
 }
 
+=head2 gearman_status 
+
+get status of the gearman queues for the DRS
+
+=cut
+
+sub gearman_status {
+    my ($host, $port) = @_;
+    my $telnet;
+    eval {
+        $telnet = new Net::Telnet( Host => $host,
+                                   Port => $port,
+                                   Timeout=> 10,
+				   Errmode => sub{$logger->logdie("Telnet to Gearman daemon failed")}
+		);
+    };
+    if($EVAL_ERROR) {
+        return { status => 'error', error => 'Connection rejected' };
+    }
+    $telnet->print( 'status' );
+    my ($status) = $telnet->waitfor('/\./');
+    $telnet->close;
+    # Process the output from telnet
+    my $result= {};
+    foreach (split(/\n/, $status)) {
+        my @line = split(/\t/);
+        $result->{$line[0]}{queued}    =  $line[1];
+	$result->{$line[0]}{running}   =  $line[2];
+	$result->{$line[0]}{available} =  $line[3];
+    }
+    return $result;
+}
 
 =head2 get_shards
 
@@ -181,15 +214,18 @@ sub  pack_snmp_data {
 =cut
 
 sub get_datums {
-    my ($datas, $result, $datum_names, $type, $resolution) = @_; 
-    my $end_time = -1; 
+    my ($datas, $result, $datum_names, $type, $resolution) = @_;
+    my $end_time = -1;
     my $start_time =  40000000000;
     my $results_raw = [];
     my $count = 0;
-    return ($start_time, $end_time) unless $datas && @{$datas}; 
+    return ($start_time, $end_time) unless $datas && @{$datas};
     foreach my $datum (@{$datas}) {
-        my %result_row = (timestamp   => $datum->timestamp);
-        map {$result_row{$_} = $datum->$_ } @{$datum_names}; ##$params->{table_map}{$type}{data}
+        my %result_row = (timestamp => $datum->timestamp);
+	foreach my $d_name (@{$datum_names}) {
+          ref $d_name? map {$result_row{$d_name} = $datum->$d_name->$_? } @{$d_name}:
+	      $result_row{$d_name} = $datum->$d_name;
+	}
 	###$result_row{hop_ip} =  ipv4to6($result_row{hop_ip}) if exists $result_row{hop_ip} && isIPv4($result_row{hop_ip});
         push @{$results_raw}, [$datum->timestamp, \%result_row];
         $end_time   =  $datum->timestamp if  $datum->timestamp > $end_time;
@@ -201,7 +237,7 @@ sub get_datums {
         @{$result} =  @{$results_raw};
     }
     #fixing up resolution - only return no more than requested number of points
-    return  ($start_time, $end_time); 
+    return  ($start_time, $end_time);
 }
 
 =head2 get_ip_name()

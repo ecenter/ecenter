@@ -1,4 +1,4 @@
-#!/bin/env perl
+#!/usr/bin/perl -w
 
 use strict;
 use warnings;
@@ -100,7 +100,7 @@ use DBI;
 my $DATA = { bwctl	=> {table => 'BwctlData',   class => 'Bwctl',      data => [qw/throughput/]},
      	     owamp	=> {table => 'OwampData',   class => 'Owamp',      data => [qw/sent loss min_delay max_delay duplicates/]},
      	     pinger	=> {table => 'PingerData',  class => 'PingER',     data => [qw/meanRtt maxRtt medianRtt minRtt maxIpd meanIpd minIpd iqrIpd lossPercent/]},
-     	     traceroute => {table => 'HopData',     callback  => \&process_trace, class => 'Traceroute', data => [qw/hop_ip   hop_num  hop_delay/]},
+     	     traceroute => {table => 'HopData',     callback  => \&process_trace, class => 'Traceroute', data => [[qw/ip_addr ip_noted nodename/], 'hop_num', 'hop_delay']},
      	   };
 my %OPTIONS;
 my @string_option_keys = qw/port host g_host pass user db period timeout/;
@@ -179,8 +179,8 @@ sub get_data  {
     return encode_json {status => 'error', data => $dbh} unless ref $dbh;
     my $result = {status => 'ok', data => []};
     push @{$result->{data}}, 
-             $dbh->resultset($request->{table})->search({ metaid =>  $request->{metaid}, 
-                                                          timestamp => { '>=' => $request->{start}, 
+             $dbh->resultset($request->{table})->search({ metaid =>  $request->{metaid},
+                                                          timestamp => { '>=' => $request->{start},
 							                 '<=' => $request->{end}
 								      }
 						       });
@@ -193,19 +193,25 @@ sub get_data  {
 sub _initialize {
     my ($request, $what_db,  @names) = @_;
     if($request && ref $request eq ref {}) {
-        map {return  " Empty or malformed request - missing -  $_" unless $request->{$_}} 
+        map {return  " Empty or malformed request - missing -  $_" unless $request->{$_}}
 	    @names if @names;
     } else {
        return ' Empty or malformed request ';
-    } 
-     my $dbh;
+    }
+    my $dbh;
     if($what_db eq 'dbic') {
-       $dbh =  Ecenter::DB->connect("DBI:mysql:database=$OPTIONS{db};hostname=$OPTIONS{host};",$OPTIONS{user},$OPTIONS{pass},
-                                    {RaiseError => 1, PrintError => 1});
-       $dbh->storage->debug(1) if $OPTIONS{debug};
+        eval {
+            $dbh =  Ecenter::DB->connect("DBI:mysql:database=$OPTIONS{db};hostname=$OPTIONS{host};",$OPTIONS{user},$OPTIONS{pass},
+                                     {RaiseError => 1, PrintError => 1});
+        };
+        if($EVAL_ERROR) {
+            $logger->error("DB init failed with $EVAL_ERROR");
+	    return "DB init failed with $EVAL_ERROR";
+        }
+        $dbh->storage->debug(1) if $OPTIONS{debug};
     } elsif($what_db eq 'dbh') {
-       $dbh =  DBI->connect("DBI:mysql:database=$OPTIONS{db};hostname=$OPTIONS{host};",$OPTIONS{user},$OPTIONS{pass},
-                                    {RaiseError => 1, PrintError => 1}) or return "DB error $DBI::errstr"; 
+        $dbh =  DBI->connect("DBI:mysql:database=$OPTIONS{db};hostname=$OPTIONS{host};",$OPTIONS{user},$OPTIONS{pass},
+                                    {RaiseError => 1, PrintError => 1}) or return "DB error $DBI::errstr";
     } else {
         return 'Malformed request - wrong Db parameter';
     }
@@ -213,7 +219,7 @@ sub _initialize {
 #
 #  send remote request, store data into the db and sends json back
 #  accepts request as json encoded structure: 
-#      {metaid=>string,md_row=>{},type=>string,start=>timestamp,end=>timestamp,resolution=>number} 
+#      {metaid=>string,md_row=>{},type=>string,start=>timestamp,end=>timestamp,resolution=>number}
 #
 sub get_remote_data  {
     my ($job) = @_;
@@ -222,11 +228,10 @@ sub get_remote_data  {
     return encode_json {status => 'error', data => $dbh} unless ref $dbh;
     return _get_remote_data($request, $dbh);
 }}
-
 #
 #  send remote request, store data into the db and sends json back
 #  accepts request as json encoded structure: 
-#      {metaid=>string,md_row=>{},type=>string,start=>timestamp,end=>timestamp,resolution=>number} 
+#      {metaid=>string,md_row=>{},type=>string,start=>timestamp,end=>timestamp,resolution=>number}
 #
 sub get_remote_snmp  {
     my ($job) = @_;
@@ -238,7 +243,7 @@ sub get_remote_snmp  {
 #
 #  send remote request, store data into the db and sends json back
 #  accepts request as json encoded structure: 
-#      {metaid=>string,md_row=>{},type=>string,start=>timestamp,end=>timestamp,resolution=>number} 
+#      {metaid=>string,md_row=>{},type=>string,start=>timestamp,end=>timestamp,resolution=>number}
 #
 sub _get_remote_data  {
     my ($request, $dbh) = @_;
@@ -255,7 +260,7 @@ sub _get_remote_data  {
 	               if  $request->{type} =~ /traceroute|pinger/; ### pinger has no ns definition in the md
 	# fix for short time periods because bwctl only runs every 4 hours or even less frequently
 	$logger->debug("SUBJECT::::::::: $subject");
-        my $ma_request = { 
+        my $ma_request = {
         		subject =>  $subject,
         		start   =>  DateTime->from_epoch( epoch =>  $request->{start}),
         		end     =>  DateTime->from_epoch( epoch =>  $request->{end}),
@@ -265,27 +270,25 @@ sub _get_remote_data  {
 	$t_delta = time() - $t1;
 	$logger->info("$request->{md_row}{service} $request->{md_row}{src_hub}-$request->{md_row}{dst_hub} - $request->{type} - Entries=" . @{$ma->data});
         $logger->debug("$request->{md_row}{service} MA - $request->{type} - Entries=", sub {Dumper($ma->data)});
-      
-        
-	if($ma->data && @{$ma->data}) { 
+	if($ma->data && @{$ma->data}) {
 	    $dbh->resultset('ServicePerformance')->create( { metaid =>  $request->{metaid},
 	                                                     requested_start => $request->{start},
-	                                                     requested_time => ($request->{end}- $request->{start}), 
-	                                                     response => $t_delta, 
+	                                                     requested_time => ($request->{end}- $request->{start}),
+	                                                     response => $t_delta,
 							     is_data => 1} );
 	    $logger->debug('..process data...traceroutes found =' . @{$ma->data});
-	    foreach my $ma_data (@{$ma->data}) { 
+	    foreach my $ma_data (@{$ma->data}) {
                 my $sql_datum = {  metaid => $request->{metaid},  timestamp => $ma_data->[0]};
                 foreach my $data_id (keys %{$ma_data->[1]}) {
         	    $sql_datum->{$data_id} = $ma_data->[1]{$data_id};
                 }
 		#    ----------   post-processing callback - if exists
-	        if(exists  $DATA->{$request->{type}}{callback} && 
+	        if(exists  $DATA->{$request->{type}}{callback} &&
 		 	ref $DATA->{$request->{type}}{callback} eq ref sub{}) {
 		    $DATA->{$request->{type}}{callback}->($dbh, $sql_datum, $result);
 		} else {
 		    push @{$result->{data}}, [$ma_data->[0], $sql_datum];
-		}         
+		}
                 eval {
 		   $dbh->resultset($request->{table})->find_or_create( $sql_datum, { key => 'meta_time'} );
 		};
@@ -298,15 +301,15 @@ sub _get_remote_data  {
     if($EVAL_ERROR) {
          $logger->error(" remote call failed - $EVAL_ERROR  ");
 	 $result->{status} = 'error';
-	 $result->{data} =  " remote call failed - $EVAL_ERROR "; 
+	 $result->{data} =  " remote call failed - $EVAL_ERROR ";
     }
     $dbh->resultset('ServicePerformance')->create( { metaid =>  $request->{metaid},
 	                                             requested_start => $request->{start},
-	                                             requested_time => ($request->{end}- $request->{start}), 
-	                                             response => $t_delta, 
+	                                             requested_time => ($request->{end}- $request->{start}),
+	                                             response => $t_delta,
 						     is_data => 0} )
         if $EVAL_ERROR || !@{$result->{data}};
-    $logger->info("..Done processing data...");   
+    $logger->info("..Done processing data...");
     return encode_json $result;
 }
 #
@@ -320,8 +323,8 @@ sub _get_remote_snmp {
     my $t_delta = 0;
     eval {
 	$snmp_ma =  Ecenter::Data::Snmp->new({ url => $request->{service} });
-	$snmp_ma->get_data({ direction =>  $request->{direction}, 
-			     ifAddress =>  $request->{snmp_ip}, 
+	$snmp_ma->get_data({ direction =>  $request->{direction},
+			     ifAddress =>  $request->{snmp_ip},
 			     start =>  DateTime->from_epoch( epoch =>  $request->{start}),
 			     end =>  DateTime->from_epoch( epoch =>  $request->{end}),
 			     resolution => 5,
@@ -330,8 +333,8 @@ sub _get_remote_snmp {
     if($EVAL_ERROR) {
         $dbh->resultset('ServicePerformance')->create( { metaid =>  $request->{metaid},
 	                                                 requested_start => $request->{start},
-	                                                 requested_time => ($request->{end}- $request->{start}), 
-	                                                 response =>  time() - $t1, 
+	                                                 requested_time => ($request->{end}- $request->{start}),
+	                                                 response =>  time() - $t1,
 							 is_data => 0} );
 	$logger->error(" Remote MA --  $request->{service} failed $EVAL_ERROR");
         $result->{status} = 'error';
@@ -345,8 +348,8 @@ sub _get_remote_snmp {
     if($snmp_ma->data && @{$snmp_ma->data}) {
         $dbh->resultset('ServicePerformance')->create( { metaid =>  $request->{metaid},
 	                                                 requested_start => $request->{start},
-	                                                 requested_time => ($request->{end}- $request->{start}), 
-	                                                 response => $t_delta, 
+	                                                 requested_time => ($request->{end}- $request->{start}),
+	                                                 response => $t_delta,
 							 is_data => 1} );
 	 foreach my $data (@{$snmp_ma->data}) {
 	     eval {
@@ -361,7 +364,6 @@ sub _get_remote_snmp {
 							               );
 		  $datum->{capacity} = $data->[4];
 	          $result->{data}{$data->[0]} = $datum;
-		
 	     };
 	     if($EVAL_ERROR) {
 		$logger->error("  Some error with insertion    $EVAL_ERROR");
@@ -370,8 +372,8 @@ sub _get_remote_snmp {
     } else {
         $dbh->resultset('ServicePerformance')->create( { metaid =>  $request->{metaid},
 	                                                 requested_start => $request->{start},
-	                                                 requested_time => ($request->{end}- $request->{start}), 
-	                                                 response =>  $t_delta, 
+	                                                 requested_time => ($request->{end}- $request->{start}),
+	                                                 response =>  $t_delta,
 							 is_data => 0} );
     }
     return encode_json $result;
@@ -396,23 +398,21 @@ sub _get_snmp_from_db{
 		       e.service_type = 'snmp' and
 		       n.ip_noted =   $ip_quoted
 		  |;
-    my $md_href = $dbh->selectall_hashref( $cmd, 'metaid');	
-    return  {data => {}, md => $md_href, start_time => $start_time, end_time => $end_time} unless $md_href && %{$md_href};	
+    my $md_href = $dbh->selectall_hashref( $cmd, 'metaid');
+    return  {data => {}, md => $md_href, start_time => $start_time, end_time => $end_time} unless $md_href && %{$md_href};
     my $mds = join(",", map {$dbh->quote($_)}  keys %{$md_href});
-    $cmd = qq|select   distinct  m.metaid,  sd.timestamp as timestamp,  
+    $cmd = qq|select distinct  m.metaid,  sd.timestamp as timestamp,
                                               sd.utilization as utilization , sd.errors as errors, sd.drops as drops
-	                              from 
+	                              from
 			  	        metadata m
                         	       join $request->{table} sd on(sd.metaid = m.metaid)
-				       where 
+				       where
 			  		   sd.timestamp >=  $request->{start} and
 			  		   sd.timestamp <= $request->{end}  and
 			  		   m.metaid IN ($mds)|;
-				 
     my $data_ref =  $dbh->selectall_hashref( $cmd, 'timestamp');
-   
     if($data_ref) {
-        foreach my $time (grep {$_} keys %{$data_ref}) { 
+        foreach my $time (grep {$_} keys %{$data_ref}) {
 	    $end_time = $time if $time > $end_time;
 	    $start_time = $time if $time < $start_time;
 	    $data_ref->{$time}{capacity} = $md_href->{$data_ref->{$time}{metaid}}{capacity};
@@ -425,17 +425,16 @@ sub _get_snmp_from_db{
 #
 sub dispatch_snmp {
     my ($job) = @_;
-    my $request = decode_json $job->arg(); 
+    my $request = decode_json $job->arg();
     my %snmp=();
-    my $dbh  = _initialize($request, 'dbh',   qw/snmp_ip table class start end/);
-    my $dbic  = _initialize($request, 'dbic');
-   
-    return encode_json {status => 'error', data => $dbh} unless ref $dbh; 
+    my $dbic  = _initialize($request, 'dbic');  
+    my $dbh  = _initialize($request, 'dbh', qw/snmp_ip table class start end/);
+    return encode_json {status => 'error', data => $dbh} unless ref $dbh;
     my $result = {status => 'ok', data => []};
     
     my $data_ref    = _get_snmp_from_db($dbh, $request);
-    $logger->info("---------SNMP:: IP=$request->{snmp_ip}  Found Times: start= $data_ref->{start_time} start_dif=" . 
-                   ($data_ref->{start_time} - $request->{start}) . 
+    $logger->info("---------SNMP:: IP=$request->{snmp_ip}  Found Times: start= $data_ref->{start_time} start_dif=" .
+                   ($data_ref->{start_time} - $request->{start}) .
     	           "... end=$data_ref->{end_time} end_dif=" . ( $request->{end} - $data_ref->{end_time}));
     ##################### no metadata, skip
     return encode_json  $result  unless  $data_ref && %{$data_ref->{md}};
@@ -449,13 +448,13 @@ sub dispatch_snmp {
     	return  _get_remote_snmp({ table  => $request->{class},
 				   service =>$request_params->{service},
 				   metaid => $request_params->{metaid},
-				   snmp_ip => $request_params->{snmp_ip}, 
+				   snmp_ip => $request_params->{snmp_ip},
 				   direction => 'out', 
 				   start => $request->{start},
 				   end => $request->{end}}, $dbic);
     } 
     else {
-        $result->{data}  =  $data_ref->{data}; 
+        $result->{data}  =  $data_ref->{data};
     }
     return encode_json $result;
 }
@@ -463,14 +462,14 @@ sub dispatch_snmp {
 #  traceroute callback
 #
 sub  process_trace {
-    my ($dbh, $sql_datum, $results ) = @_; 
+    my ($dbh, $sql_datum, $results ) = @_;
     $dbh->resultset('Node')->find_or_create(
    					{ip_addr  => $sql_datum->{hop_ip},
    					 nodename => $sql_datum->{ip_noted},
    					 ip_noted => $sql_datum->{ip_noted}
    					});
     my %tmp = %$sql_datum;
-    $tmp{hop_ip} =  ref  $tmp{hop_ip}?$tmp{hop_ip}->ip_addr:$tmp{hop_ip};			
+    $tmp{hop_ip} =  ref  $tmp{hop_ip}?$tmp{hop_ip}->ip_addr:$tmp{hop_ip};
     push @{$results->{data}}, \%tmp;
     delete $sql_datum->{ip_noted};
     #delete $sql_datum->{ip_noted};
@@ -483,22 +482,21 @@ sub dispatch_data {
     my $request = decode_json $job->arg();
     my $dbh  = _initialize($request, 'dbic',   qw/metaid  md_row start table end resolution type/);
     return encode_json {status => 'error', data => $dbh} unless ref $dbh;
-    my $result = {status => 'ok', data => []};   			 
-    my @datas = $dbh->resultset($request->{table})->search({ metaid =>  $request->{metaid}, 
-                                                             timestamp => { '>=' => $request->{start}, 
+    my $result = {status => 'ok', data => []};
+    my @datas = $dbh->resultset($request->{table})->search({ metaid =>  $request->{metaid},
+                                                             timestamp => { '>=' => $request->{start},
 							                    '<=' => $request->{end}
 								          }
 						          });
     my ($start_time, $end_time) = get_datums(\@datas,  $result->{data},
                                              $DATA->{$request->{type}}{data}, $request->{type}, $request->{resolution});
-    $logger->debug("$request->{type} ---  Times: start_dif=" . 
+    $logger->debug("$request->{type} ---  Times: start_dif=" .
                      abs($start_time - $request->{start}) .  
 		   "... end_dif=" . abs( $request->{end} -  $end_time ));
-     
     if( abs($end_time   -  $request->{end})	> $OPTIONS{period} ||
      	abs($start_time -  $request->{start}) > $OPTIONS{period} ) {
      	  @{$result->{data}} = () if    $result->{data};
-     	  $logger->info("$request->{type} --- params to ma: ip=  $request->{md_row}{service} start= $request->{start} end= $request->{end} ");
+     	  $logger->info("$request->{type} --- params to ma: ip=$request->{md_row}{service} start= $request->{start} end= $request->{end} ");
      	  return _get_remote_data($request, $dbh);
     }
     
@@ -511,15 +509,6 @@ __END__
 =head1 SEE ALSO
 
 L<Getopt::Long>, L<Data::Dumper>,L<perfSONAR-PS>,L<Gearman::XS>,L<DBIx::Class>
-
-The E-center subversion repository is located at:
- 
-   https://ecenter.googlecode.com/svn
-   
-
-The perfSONAR-PS subversion repository is located at:
-
-  https://svn.internet2.edu/svn/perfSONAR-PS
 
 Questions and comments can be directed to the author, or the mailing list.  Bugs,
 feature requests, and improvements can be directed here:

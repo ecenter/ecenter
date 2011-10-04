@@ -96,7 +96,7 @@ function ecenter_network_theme() {
     ) + $options,
     'ecenter_network_hops' => array(
       'arguments' => array(
-        'traceroute' => array(),
+        'hops' => array(),
       ),
     ) + $options,
     'ecenter_network_end_to_end' => array(
@@ -172,67 +172,67 @@ function ecenter_network_theme() {
  */
 function ecenter_network_init() {
   if (arg(0) == 'network' && !arg(1)) {
-    _ecenter_network_add_behaviors();
+    // Compression type
+    $compression = variable_get('jquery_update_compression_type', 'none');
+    $min = ($compression != 'none') ? '.'. $compression : '';
+
+    // Openlayers
+    openlayers_include();
+    drupal_add_js(drupal_get_path('module', 'openlayers') .
+      '/includes/layer_types/js/raw.js');
+    drupal_add_js(drupal_get_path('module', 'ecenter_network')
+      .'/js/openlayers.js');
+    drupal_add_js(drupal_get_path('module', 'ecenter_network')
+      .'/openlayers/ecenter_network_behavior_dynamicload.js');
+    drupal_add_js(drupal_get_path('module', 'ecenter_network')
+      .'/openlayers/ecenter_network_behavior_select.js');
+
+    // jQuery UI: Force version 1.8, load libraries for datepicker and combobox
+    jquery_ui_add(array('ui.widget', 'ui.mouse', 'ui.button', 'ui.position', 'ui.autocomplete', 'ui.datepicker', 'ui.dialog'), '1.8');
+
+    // jqPlot
+    $jq_path = _jqplot_get_path();
+    $tablechart_path = _jqplot_get_tablechart_path();
+    drupal_add_css($jq_path .'/jquery.jqplot.css');
+    drupal_add_js($jq_path .'/excanvas.min.js');
+    drupal_add_js($jq_path .'/jquery.jqplot.js');
+    drupal_add_js($jq_path .'/plugins/jqplot.dateAxisRenderer'. $min .'.js');
+    drupal_add_js($jq_path .'/plugins/jqplot.highlighter'. $min .'.js');
+    drupal_add_js($jq_path .'/plugins/jqplot.cursor'. $min .'.js');
+    drupal_add_js($jq_path .'/plugins/jqplot.barRenderer'. $min .'.js');
+    drupal_add_js($jq_path .'/plugins/jqplot.canvasTextRenderer'. $min .'.js');
+    drupal_add_js($jq_path .'/plugins/jqplot.canvasAxisLabelRenderer'. $min .'.js');
+    drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jqplot/jqplot.linehighlighter.js');
+    drupal_add_js($tablechart_path .'/jquery.tablechart.js');
+    drupal_add_js(drupal_get_path('module', 'jqplot') .'/js/jqplot-behaviors.js');
+
+    // Raphael
+    drupal_add_js(libraries_get_path('raphael') .'/raphael-min.js');
+
+    // Traceroute
+    drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.traceroute.js');
+
+    // Timezone handling
+    drupal_add_js(drupal_get_path('module', 'date_timezone') .'/date_timezone.js');
+
+    // Page behaviors
+    drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/behaviors.js');
+
+    // Advanced help styling
+    drupal_add_css(drupal_get_path('module', 'advanced_help') .'/help-icon.css');
+
+    // @TODO overhaul
+    $inline_css = array(
+      '.ecenter-critical' => array('color' => variable_get('ecenter_network_threshold_critical_color', '#cc0000')),
+      '.ecenter-marginal' => array('color' => variable_get('ecenter_network_threshold_marginal_color', '#fe890c')),
+      '.ecenter-good' => array('color' => variable_get('ecenter_network_threshold_marginal_color', '#1c8a24')),
+    );
+    inline_css_add_css($inline_css);
   }
 }
 
 /**
- * Helper: Add behaviors
- */
-function _ecenter_network_add_behaviors() {
-  // Compression type
-  $compression = variable_get('jquery_update_compression_type', 'none');
-  $min = ($compression != 'none') ? '.'. $compression : '';
-
-  // Openlayers
-  openlayers_include();
-  drupal_add_js(drupal_get_path('module', 'openlayers') .
-    '/includes/layer_types/js/raw.js');
-  drupal_add_js(drupal_get_path('module', 'ecenter_network')
-    .'/js/openlayers.js');
-  drupal_add_js(drupal_get_path('module', 'ecenter_network')
-    .'/openlayers/ecenter_network_behavior_dynamicload.js');
-  drupal_add_js(drupal_get_path('module', 'ecenter_network')
-    .'/openlayers/ecenter_network_behavior_select.js');
-
-  // jQuery UI: Force version 1.8, load libraries for datepicker and combobox
-  jquery_ui_add(array('ui.widget', 'ui.mouse', 'ui.button', 'ui.position', 'ui.autocomplete', 'ui.datepicker', 'ui.dialog'), '1.8');
-
-  // jqPlot
-  $jq_path = _jqplot_get_path();
-  $tablechart_path = _jqplot_get_tablechart_path();
-  drupal_add_css($jq_path .'/jquery.jqplot.css');
-  drupal_add_js($jq_path .'/excanvas.min.js');
-  drupal_add_js($jq_path .'/jquery.jqplot.js');
-  drupal_add_js($jq_path .'/plugins/jqplot.dateAxisRenderer'. $min .'.js');
-  drupal_add_js($jq_path .'/plugins/jqplot.highlighter'. $min .'.js');
-  drupal_add_js($jq_path .'/plugins/jqplot.cursor'. $min .'.js');
-  drupal_add_js($jq_path .'/plugins/jqplot.barRenderer'. $min .'.js');
-  drupal_add_js($jq_path .'/plugins/jqplot.canvasTextRenderer'. $min .'.js');
-  drupal_add_js($jq_path .'/plugins/jqplot.canvasAxisLabelRenderer'. $min .'.js');
-  drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jqplot/jqplot.linehighlighter.js');
-  drupal_add_js($tablechart_path .'/jquery.tablechart.js');
-  drupal_add_js(drupal_get_path('module', 'jqplot') .'/js/jqplot-behaviors.js');
-
-  // SVG
-  drupal_add_css(libraries_get_path('jquery-svg') .'/jquery.svg.css');
-  drupal_add_js(libraries_get_path('jquery-svg') .'/jquery.svg.js');
-
-  // Traceroute
-  drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.traceroute.js');
-
-  // Timezone handling
-  drupal_add_js(drupal_get_path('module', 'date_timezone') .'/date_timezone.js');
-
-  // Page behaviors
-  drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/behaviors.js');
-
-  // Advanced help styling
-  drupal_add_css(drupal_get_path('module', 'advanced_help') .'/help-icon.css');
-}
-
-/**
- * Traceroute post form
+ * Traceroute past form
  *
  * @TODO Add advanced help
  */
@@ -344,22 +344,6 @@ function _ecenter_network_select_form() {
     '#prefix' => '<div id="network-wrapper" class="clear-block">',
     '#suffix' => '</div>',
   );
-
-  $form['network_wrapper']['traceroute_paste'] = array(
-    '#title' => t('Traceroute'),
-    '#type' => 'textarea',
-    '#resizable' => FALSE,
-    '#prefix' => '<div id="traceroute-paste-wrapper">',
-    '#suffix' => '</div>',
-    '#description' => t('<strong>Paste traceroute results (experimental):</strong>: Many factors may affect E-Center\'s ability to create a query from a pasted traceroute. Your pasted traceroute will use the selected day or time range when querying.'),
-    '#attributes' => array('id' => 'traceroute-paste', 'readonly' => TRUE),
-    '#ahah' => array(
-      'event' => 'change',
-      'path' => ahah_helper_path(array('results_wrapper', 'results')),
-      'wrapper' => 'results-wrapper',
-    ),
-  );
-
   $form['network_wrapper']['network'] = array(
     '#prefix' => '<div id="network-map">',
     '#value' => $map,
@@ -406,6 +390,19 @@ function _ecenter_network_select_form() {
     '#options' => array('' => t('Select a destination')),
     '#prefix' => '<div class="dst-wrapper">',
     '#suffix' => '</div>',
+    '#ahah' => array(
+      'event' => 'change',
+      'path' => ahah_helper_path(array('results_wrapper', 'results')),
+      'wrapper' => 'results-wrapper',
+    ),
+  );
+
+  $form['network_wrapper']['query']['traceroute_paste'] = array(
+    '#title' => t('Traceroute'),
+    '#type' => 'textarea',
+    '#prefix' => '<div id="traceroute-paste-wrapper">',
+    '#suffix' => '</div>',
+    '#attributes' => array('id' => 'traceroute-paste'),
     '#ahah' => array(
       'event' => 'change',
       'path' => ahah_helper_path(array('results_wrapper', 'results')),
@@ -1209,10 +1206,7 @@ function ecenter_network_parse_response($response) {
     $forward = $parsed_data['traceroute']['forward'];
     $reverse = array_reverse($parsed_data['traceroute']['reverse']);
 
-    // Diff forward and reverse
-    $diff = ecenter_network_traceroute_diff($forward, $reverse);
-
-    $parsed_data['traceroute']['diff'] = $diff;
+    $parsed_data['traceroute']['diff'] = ecenter_network_traceroute_diff($forward, $reverse);
     $parsed_data['traceroute']['traceroute_max'] = (count($forward) > count($reverse)) ? 
       count($forward) : count($reverse);
   }
@@ -2016,8 +2010,8 @@ function _ecenter_network_extract_query() {
       'elevation1' => $_REQUEST['elevation1'],
       'elevation2' => $_REQUEST['elevation2'],
       'swc' => $_REQUEST['swc'],
-      
-      'traceroute' => $_REQUEST['network_wrapper']['traceroute_paste'],
+
+      'traceroute' => $_REQUEST['network_wrapper']['query']['traceroute_paste'],
     );
   }
 

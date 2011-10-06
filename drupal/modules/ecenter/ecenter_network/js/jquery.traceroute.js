@@ -37,6 +37,20 @@
  * rendering callbacks or similar customization tricks. 
  *
  * See $.fn.traceroute.defaults for an overview of traceroute options.
+ *
+ * The E-Center fork of RaphaelJS enables complex interaction by allowing 
+ * named groups. This plugin wraps that functionality in a further layer
+ * of synthetic events triggered from the top level drawing node. These
+ * events occur in the context of the $.traceroute object and use an 
+ * 'element' prefix to distinguish them from actual events on the top level
+ * of the canvas element. An example event binding:
+ *
+ * $(traceroute.paper.canvas).bind('elementclick', function(e, element) { 
+ *   console.log(this.options); // Traceroute object options
+ *   console.log(this.paper);   // Traceroute object Raphael object
+ *   console.log(element);      // Element object
+ * });
+ *
  */
 (function($) {
 

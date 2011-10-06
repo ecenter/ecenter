@@ -130,8 +130,8 @@ $.traceroute = function(el, data, options) {
   this.paper.tracerouteOptions = options; // Needed for event handlers scoped to Raphael object
 
   // Container dimensions
-  this.height = $(this.paper.canvas).height();
-  this.width = $(this.paper.canvas).width();
+  this.height = $(this.el).height(); 
+  this.width = $(this.el).width(); 
 
   // Marker dimensions
   this.marker = { 

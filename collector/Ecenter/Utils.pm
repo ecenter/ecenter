@@ -29,6 +29,8 @@ use Time::HiRes qw(usleep);
 use DBI;
 use Params::Validate qw(:all);
 use DateTime::Format::MySQL;
+use Ecenter::Exception;
+use Gearman::Client;
 use base 'Exporter';
 
 
@@ -48,7 +50,7 @@ our $logger =   Log::Log4perl->get_logger(__PACKAGE__);
  
 # exported functions  
 
-our @EXPORT = qw/get_ip_name gearman_status pack_snmp_data params_to_date get_shards get_datums refactor_result
+our @EXPORT = qw/get_ip_name get_gearman gearman_status pack_snmp_data params_to_date get_shards get_datums refactor_result
                  db_connect update_create_fixed pool_control ip_ton nto_ip $DAYS7_SECS $REG_IP $REG_DATE @HEALTH_NAMES $TABLEMAP/;
  
 
@@ -73,8 +75,27 @@ sub db_connect {
     my $dbh = DBI->connect_cached("DBI:mysql:database=$OPTIONS->{db};hostname=$OPTIONS->{host};", 
                                    $OPTIONS->{user}, $OPTIONS->{password}, {RaiseError => 1, PrintError => 1});
     $logger->logdie(" DBI connect failed:  $DBI::errstr") unless $dbh;
-    return $dbh; 
+    return $dbh;
 }
+=head2 get_gearman
+
+initialize Gearman
+
+=cut
+
+sub get_gearman {
+    my ($g_servers) = @_;
+    my $g_client = new Gearman::Client;
+    my @servers = ();
+    foreach my $host ( %{$g_servers} ) {
+    	push @servers, (map { $host . ":$_"} @{$g_servers->{$host}});
+    }
+    unless($g_client->job_servers( @servers ) ) {
+    	$logger->error("Failed to add Gearman  servers ");
+    	GearmanServerException->throw(" Failed to add Gearman  servers  ");
+    }
+    return $g_client;
+} 
 
 =head2 gearman_status 
 
@@ -214,7 +235,7 @@ sub  pack_snmp_data {
 =cut
 
 sub get_datums {
-    my ($datas, $result, $datum_names, $type, $resolution) = @_;
+    my ($datas, $result, $datum_names, $type, $resolution, $db_callback) = @_;
     my $end_time = -1;
     my $start_time =  40000000000;
     my $results_raw = [];
@@ -222,12 +243,15 @@ sub get_datums {
     return ($start_time, $end_time) unless $datas && @{$datas};
     foreach my $datum (@{$datas}) {
         my %result_row = (timestamp => $datum->timestamp);
-	foreach my $d_name (@{$datum_names}) {
-          ref $d_name? map {$result_row{$d_name} = $datum->$d_name->$_? } @{$d_name}:
-	      $result_row{$d_name} = $datum->$d_name;
+	if($db_callback && ref $db_callback eq 'CODE') {
+	    %result_row = ( %result_row, %{$db_callback->($datum)});
+	    push @{$results_raw},   \%result_row;
+	} else {
+	     map { $result_row{$_} = $datum->$_} @{$datum_names};
+	     push @{$results_raw}, [$datum->timestamp, \%result_row];
 	}
 	###$result_row{hop_ip} =  ipv4to6($result_row{hop_ip}) if exists $result_row{hop_ip} && isIPv4($result_row{hop_ip});
-        push @{$results_raw}, [$datum->timestamp, \%result_row];
+        
         $end_time   =  $datum->timestamp if  $datum->timestamp > $end_time;
         $start_time =  $datum->timestamp if  $datum->timestamp < $start_time;
     }

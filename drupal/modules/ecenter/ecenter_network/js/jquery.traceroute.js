@@ -168,44 +168,6 @@ $.traceroute = function(el, data, options) {
   this.diffYOffset = this.height - (this.bbox.height * 1.5);
 }
 
-// Callback for hover 'over' event
-$.traceroute.hoverOver = function() {
-  for (var i = 0, ii = this.groups.length; i < ii; ++i) {
-    var set = this.paper.groups[this.groups[i]];
-    for (var j = 0, jj = set.items.length; j < jj; ++j) {
-      var element = set.items[j];
-      switch (element.type) {
-        case 'circle':
-        case 'path':
-          element.attr(this.paper.tracerouteOptions.marker.overStyle);
-          break;
-        case 'text':
-          element.attr(this.paper.tracerouteOptions.label.overStyle);
-          break;
-      }
-    }
-  }
-}
-
-// Callback for hover 'out' event
-$.traceroute.hoverOut = function() {
-  for (var i = 0, ii = this.groups.length; i < ii; ++i) {
-    var set = this.paper.groups[this.groups[i]];
-    for (var j = 0, jj = set.items.length; j < jj; ++j) {
-      var element = set.items[j];
-      switch (element.type) {
-        case 'circle':
-        case 'path':
-          element.attr(this.paper.tracerouteOptions.marker.style);
-          break;
-        case 'text':
-          element.attr(this.paper.tracerouteOptions.label.style);
-          break;
-      }
-    }
-  }
-}
-
 $.traceroute.prototype.draw = function() {
   var set, 
     paper = this.paper, 
@@ -244,8 +206,10 @@ $.traceroute.prototype.draw = function() {
 
       for (var j = 0; j < step[direction].length; j++) {
         var hop = step[direction][j],
-          labelOffset = yOffset + this.label.yOffset,
-          set = paper.set(hop.hub);
+          labelOffset = yOffset + this.label.yOffset;
+
+        var set_id = i + '_' + hop.hub_name;
+        set = paper.set(set_id);
 
         if (direction == 'forward' && step['reverse'].length) {
           var markerYOffset = yOffset + this.marker.forwardYOffset;
@@ -269,22 +233,22 @@ $.traceroute.prototype.draw = function() {
             boxOffset += adjustedBoxWidth;
           }
         }
- 
+
         // Draw label
         var label = paper.text(boxOffset + this.marker.xOffset, labelOffset, hop.hub_name)
-          .attr(this.options.label.style); 
-        
+          .attr(this.options.label.style);
+
         var bbox = label.getBBox();
         var labelWidth = (bbox.width > markerWidth) ? bbox.width : markerWidth;
         var labelCenterOffset = (bbox.width > markerWidth) ? 0 : (markerWidth - bbox.width) / 2;
 
-        labelBox = paper.rect(bbox.x - this.options.labelBox.paddingX - labelCenterOffset, 
+        labelBox = paper.rect(bbox.x - this.options.labelBox.paddingX - labelCenterOffset,
             bbox.y - this.options.labelBox.paddingY, labelWidth + (this.options.labelBox.paddingX * 2),
             bbox.height + (this.options.labelBox.paddingY * 2))
           .attr(this.options.labelBox.style);
 
         set.push(label, labelBox);
-        
+
         // Draw marker
         if (row_type == 'match') {
           var flip = (direction != 'forward') ? true : false;
@@ -292,27 +256,29 @@ $.traceroute.prototype.draw = function() {
             this.options.marker.radius, flip)
         } else {
           // Note the fudge factor
-          var marker = paper.circle(boxOffset + this.marker.xOffset, markerYOffset, 
+          var marker = paper.circle(boxOffset + this.marker.xOffset, markerYOffset,
             this.options.marker.radius * 1.15)
         }
         marker.attr(this.options.marker.style);
+        marker['class'] = direction;
+
         set.push(marker);
-        
+
         labelBox.toFront();
         label.toFront();
 
         //set.hover($.traceroute.hoverOver, $.traceroute.hoverOut);
 
-        $.extend(hop, {'type' : row_type, 'direction' : direction, 'ttl' : i, 
+        $.extend(hop, {'type' : row_type, 'direction' : direction, 'ttl' : i,
           'xOffset' : boxOffset + this.marker.xOffset, 'yOffset' : markerYOffset });
 
         var directionOffset = (direction == 'forward') ? -this.options.link.offset : this.options.link.offset;
-      
+
         // Draw lines backwards
         if (lastHops[direction]) {
-          var l = lastHops[direction], 
+          var l = lastHops[direction],
               o = lastHops[oppositeDirection];
-         
+
           // Skip link
           if (direction == 'reverse' && hop.ttl > (l.ttl + 1)) {
             var path = ["M", l.xOffset, l.yOffset + directionOffset, "C",  l.xOffset,
@@ -322,7 +288,7 @@ $.traceroute.prototype.draw = function() {
             // Use bbox to align arrow instead of more complex mathematical
             // tricks to find intersection with bezier curve.
             var link_bbox = link.getBBox();
-            var arrow = paper.triangle(link_bbox.x + (link_bbox.width / 2), 
+            var arrow = paper.triangle(link_bbox.x + (link_bbox.width / 2),
                 link_bbox.y + link_bbox.height, this.options.arrow.size)
               .attr(this.options.arrow.style)
               .rotate(180, true);
@@ -337,7 +303,7 @@ $.traceroute.prototype.draw = function() {
 
             var arrowYOffset = hop.yOffset + directionOffset;
             var rotation = 0;
-            
+
             if (l.yOffset != hop.yOffset) {
               if (direction == 'reverse') {
                 var arrowYOffset = l.yOffset - ((l.yOffset - hop.yOffset) / 2) + (parseInt(this.options.arrow.size) / 2);
@@ -385,11 +351,11 @@ $.fn.traceroute.defaults = {
   // Width, offset from vertical center, and style for link connector lines
   'link' : {
     'width' : 60,
-    'offset' : 4,
+    'offset' : 3,
     'style' : {
       'fill' : 'transparent',
       'stroke' : '#cccccc',
-      'stroke-width' : 3
+      'stroke-width' : 4
     }
   },
 
@@ -405,11 +371,11 @@ $.fn.traceroute.defaults = {
 
   // Radius and styles for hop markers
   'marker' : {
-    'radius' : 11,
+    'radius' : 12,
     'style' : {
-      'stroke' : '#888888',
+      'stroke' : '#aaaaaa',
       'fill' : '#ffffff',
-      'stroke-width' : 3
+      'stroke-width' : 4
     },
     'overStyle' : {
       'stroke': '#00aa00'
@@ -419,34 +385,38 @@ $.fn.traceroute.defaults = {
   // Set style of hop label
   'label' : {
     'style' : {
-      'fill' : '#444444',
+      'fill' : '#555555',
       'font-weight' : 'bold',
       'font-size' : '11px',
       'font-family' : 'Helvetica, Arial, sans-serif'
     },
     'overStyle' : {
-      'fill' : '#00aa00'
+      'fill' : '#000000'
     }
   },
 
   // Set padding and style of box behind label
   'labelBox' : {
-    'paddingX' : 2,
-    'paddingY' : 2,
+    'paddingX' : 1,
+    'paddingY' : 1,
     'style' : {
       'fill' : '#ffffff',
       'stroke' : 'none',
       'stroke-width' : 0
     }
   },
-  
+
   // Bind callbacks to events fired on each set of hops
-  'behavior' : {
-    // Uncomment to debug
-    //'mouseover'  : function() { console.log('over'); },
-    //'mouseout'  : function() { console.log('out'); },
-    //'click'  : function() { console.log('click'); },
-  }
+  'behavior' : {}
 };
+
+// Create synthetic events from real Raphael events
+var events = 'click dblclick mousedown mousemove mouseout mouseover mouseup touchstart touchmove touchend orientationchange touchcancel gesturestart gesturechange gestureend'.split(' ');
+for (var i = 0, length = events.length; i < length; i++) {
+  var evt = events[i];
+  $.fn.traceroute.defaults.behavior[evt] = function(e) {
+    $(this.paper.canvas).trigger('element' + e.type, this);
+  }
+}
 
 })(jQuery);

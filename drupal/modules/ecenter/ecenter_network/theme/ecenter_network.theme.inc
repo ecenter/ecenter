@@ -331,17 +331,17 @@ function theme_ecenter_network_hops($traceroute = array()) {
         $table = array();
 
         if (!empty($hop['data']['snmp'])) {
-          $netblock_id = $ttl .'-'. $hop['netblock']; // .'-'. $hop['hop_num'];
+          $hub_id = $ttl .'_'. $hop['hub_name']; //$hop['netblock']; // .'-'. $hop['hop_num'];
           $settings['ecenterNetwork']['seriesLookupByIndex'][] = array(
             'id' => $hop['id'], 
-            'netblockID' => $netblock_id,
+            'hubID' => $hub_id,
           );
           $settings['ecenterNetwork']['seriesLookupByID'][$hop['id']] = array(
             'sidx' => $sidx,
-            'netblockID' => $netblock_id,
+            'hubID' => $hub_id,
           );
-          $settings['ecenterNetwork']['seriesLookupByNetblock'][$netblock_id]['id'][] = $hop['id'];
-          $settings['ecenterNetwork']['seriesLookupByNetblock'][$netblock_id]['sidx'][] = $sidx;
+          $settings['ecenterNetwork']['seriesLookupByHub'][$hub_id]['id'][] = $hop['id'];
+          $settings['ecenterNetwork']['seriesLookupByHub'][$hub_id]['sidx'][] = $sidx;
           $sidx++;
 
           foreach ($hop['data']['snmp'] as $timeseries) {
@@ -363,7 +363,7 @@ function theme_ecenter_network_hops($traceroute = array()) {
       }
     }
   }
-
+  
   drupal_add_js($settings, 'setting');
 
   if (!empty($tables)) {

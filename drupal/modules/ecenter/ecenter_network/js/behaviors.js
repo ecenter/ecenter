@@ -29,7 +29,7 @@ $.fn.tablechart.defaults.attachMethod = function(container) {
  * Drupal behavior to attach network weathermap behaviors
  */
 Drupal.behaviors.EcenterNetwork = function(context) {
-  $('#ecenter-network-select-form').ecenter_network(); 
+  $('#ecenter-network-select-form').ecenter_network();
 }
 
 /**
@@ -66,6 +66,63 @@ $.ecenter_network = function(el, options) {
     plugin.call(this);
   }
 }
+
+// Callback for hover 'over' event
+$.ecenter_network.hoverOver = function() {
+  for (var i = 0, ii = this.groups.length; i < ii; ++i) {
+    var forward_style = {}, reverse_style = {},
+      hub_id = this.groups[i],
+      hop = Drupal.settings.ecenterNetwork.seriesLookupByHub[hub_id],
+      set = this.paper.groups[hub_id],
+      tc = $('#utilization-tables').data('tablechart');
+
+    if (tc) {
+      var fwd_idx = hop.sidx[0] % tc['default'].chart.seriesColors.length;
+      forward_style['stroke'] = tc['default'].chart.seriesColors[fwd_idx];
+      if (hop.sidx[1] != undefined) {
+        var rev_idx = hop.sidx[1] % tc['default'].chart.seriesColors.length;
+        reverse_style['stroke'] = tc['default'].chart.seriesColors[rev_idx];
+      }
+    }
+
+    for (var j = 0, jj = set.items.length; j < jj; ++j) {
+      var element = set.items[j];
+      switch (element.type) {
+        case 'circle':
+        case 'path':
+          if (element['class'] == 'forward') {
+            element.attr(forward_style);
+          } else {
+            element.attr(reverse_style);
+          }
+          break;
+        case 'text':
+          element.attr(this.paper.tracerouteOptions.label.overStyle);
+          break;
+      }
+    }
+  }
+}
+
+// Callback for hover 'out' event
+$.ecenter_network.hoverOut = function() {
+  for (var i = 0, ii = this.groups.length; i < ii; ++i) {
+    var set = this.paper.groups[this.groups[i]];
+    for (var j = 0, jj = set.items.length; j < jj; ++j) {
+      var element = set.items[j];
+      switch (element.type) {
+        case 'circle':
+        case 'path':
+          element.attr(this.paper.tracerouteOptions.marker.style);
+          break;
+        case 'text':
+          element.attr(this.paper.tracerouteOptions.label.style);
+          break;
+      }
+    }
+  }
+}
+
 
 /**
  * E-Center Network draw method
@@ -250,7 +307,7 @@ $.fn.ecenter_network.plugins.change = function() {
   }
 
   var processed = $('#dst-wrapper select').data('ecenterProcessed');
- 
+
   // Clear out some values when destination changes
   if (!processed) {
     $('#dst-wrapper select', this.el).bind('change', function(e) {
@@ -291,7 +348,7 @@ $.fn.ecenter_network.plugins.map = function() {
           control.select(feature);
           Drupal.ecenterSelect.over.call(control, feature); // Highlight
         }
-        
+
         if (layer.selectedFeatures.length == 0) {
           var input = $('#src-wrapper input', this.el);
           input.val('');
@@ -310,21 +367,16 @@ $.fn.ecenter_network.plugins.map = function() {
       }
     });
 
-    $(id).live('featureOver', function(e, feature, layer, control) {
+    $(id).live('featureOver', function(e, feature, layer, control, cancel) {
       if (feature.ecenterID) {
         if (layer.drupalID == 'ecenter_network_traceroute') {
-          var hub = Drupal.settings.ecenterNetwork.seriesLookupByNetblock[feature.netblockID];
+          var hub = Drupal.settings.ecenterNetwork.seriesLookupByHub[feature.ecenterID];
           var tc = $('#utilization-tables').data('tablechart');
 
           if (tc) {
-            var lh = tc['default'].chart.plugins.linehighlighter;
-
-            for (key in hub.sidx) {
-              lh.highlightSeries(hub.sidx[key], tc['default'].chart);
-              var length = tc['default'].chart.seriesColors.length;
-              var sidx = hub.sidx[key] % length;
-              var color = tc['default'].chart.seriesColors[sidx];
-            }
+            var length = tc['default'].chart.seriesColors.length;
+            var sidx = hub.sidx[0] % length;
+            var color = tc['default'].chart.seriesColors[sidx];
           }
 
           var selectStyle = {
@@ -336,12 +388,10 @@ $.fn.ecenter_network.plugins.map = function() {
           };
 
           var traceroutes = $('#traceroute').data('traceroute');
-          if (traceroutes) {
-            var traceroute = traceroutes['default'].svg;
-            for (id in hub.id) {
-              var group = $('g[hop_id="'+ hub.id[id] +'"]', traceroute.root());
-              group.trigger('mouseenter', [true]);
-            }
+          if (!cancel && traceroutes && traceroutes['default']) {
+            var trace = traceroutes['default'];
+            var set = trace.paper.set(feature.ecenterID);
+            $(trace.paper.canvas).trigger('elementmouseover', set.items[0], true);
           }
         } else {
           var selectStyle = {
@@ -357,7 +407,7 @@ $.fn.ecenter_network.plugins.map = function() {
       }
     });
 
-    $(id).live('featureOut', function(e, feature, layer, control) {
+    $(id).live('featureOut', function(e, feature, layer, control, cancel) {
       if (feature.ecenterID) {
         var selected = (OpenLayers.Util.indexOf(
           feature.layer.selectedFeatures, feature) > -1);
@@ -366,23 +416,12 @@ $.fn.ecenter_network.plugins.map = function() {
               "default");
         }
         if (layer.drupalID == 'ecenter_network_traceroute') {
-          var hub = Drupal.settings.ecenterNetwork.seriesLookupByNetblock[feature.netblockID];
-          var tc = $('#utilization-tables').data('tablechart');
-
-          if (tc) {
-            var lh = tc['default'].chart.plugins.linehighlighter;
-            for (key in hub.sidx) {
-              lh.unhighlightSeries(hub.sidx[key], tc['default'].chart);
-            }
-          }
-
+          var hub = Drupal.settings.ecenterNetwork.seriesLookupByHub[feature.ecenterID];
           var traceroutes = $('#traceroute').data('traceroute');
-          if (traceroutes) {
-            var traceroute = traceroutes['default'].svg;
-            for (id in hub.id) {
-              var group = $('g[hop_id="'+ hub.id[id] +'"]', traceroute.root());
-              group.trigger('mouseleave', [true]);
-            }
+          if (!cancel && traceroutes && traceroutes['default']) {
+            var trace = traceroutes['default'];
+            var set = trace.paper.set(feature.ecenterID);
+            $(trace.paper.canvas).trigger('elementmouseout', set.items[0]);
           }
         }
       }
@@ -468,100 +507,56 @@ $.fn.ecenter_network.plugins.traceroute = function() {
     $('<div id="traceroute"></div>')
       .appendTo($('#traceroute-wrapper'))
       .traceroute(Drupal.settings.ecenterNetwork.tracerouteData);
-    
+
     var traceroutes = $('#traceroute', this.el).data('traceroute');
-    
+
     if (!traceroutes) {
       return;
     }
 
-    var traceroute = traceroutes['default'].svg;
+    $(traceroutes['default'].paper.canvas).bind({
+      'elementmouseover' : function(e, element, cancel_map, cancel_highlight) {
+        var hub_id = element.groups[0];
 
-    $('.match, .diff', traceroute.root()).
-    bind({
-      'mouseenter' : function(e, stop_highlight) {
-        $('g.node', e.currentTarget).each(function(e) {
-          var group = this;
-          var hop_id = $(this).attr('hop_id');
-          var hop = Drupal.settings.ecenterNetwork.seriesLookupByID[hop_id];
-
+        $.ecenter_network.hoverOver.call(element);
+        
+        if (!cancel_highlight) {
+          var hop = Drupal.settings.ecenterNetwork.seriesLookupByHub[hub_id];
           var tc = $('#utilization-tables').data('tablechart');
-          if (tc) {
-            var lh = tc['default'].chart.plugins.linehighlighter;
-            if (lh.colors) {
-              var idx = hop.sidx % lh.colors.length;
-              var color = lh.colors[idx];
-            }
-            else {
-              var idx = hop.sidx % tc['default'].chart.seriesColors.length;
-              var color = tc['default'].chart.seriesColors[idx];
-            }
+          var lh = tc['default'].chart.plugins.linehighlighter;
+          for (key in hop.sidx) {
+            lh.highlightSeries(hop.sidx[key], tc['default'].chart);
           }
-          else {
-            var color = '#000000';
-          }
+        }
+        
+        if (!cancel_map) {
+          var ol = $('#openlayers-map-auto-id-0').data('openlayers');
+          var map = ol.openlayers;
+          var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
+          var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
+          var feature = layer.getFeatureBy('ecenterID', hub_id);
+          control.callbacks.over.call(control, feature, true);
+        }
 
-          if (!stop_highlight) {
-            if (tc) {
-              lh.highlightSeries(hop.sidx, tc['default'].chart);
-            }
-            var ol = $('#openlayers-map-auto-id-0').data('openlayers');
-            var map = ol.openlayers;
-            var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
-            var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
-            var feature = layer.getFeatureBy('netblockID', hop.netblockID);
-
-            control.callbacks.over.call(control, feature);
-          }
-
-          $('circle', group).each(function() {
-            this.setAttribute('stroke', '#333333');
-          });
-          $('.hub_label text', group).each(function() {
-            this.setAttribute('fill', '#000000');
-          });
-          $('.label text', group).each(function() {
-            this.setAttribute('fill', '#ffffff');
-          });
-          $('.background rect', group).each(function() {
-            this.setAttribute('fill', color);
-          });
-        });
       },
-      'mouseleave' : function(e, stop_highlight) {
-        $('g.node', e.currentTarget).each(function(e) {
-          var group = this;
-          var hop_id = $(this).attr('hop_id');
-          var hop = Drupal.settings.ecenterNetwork.seriesLookupByID[hop_id];
+      'elementmouseout' : function(e, element) {
+        var hub_id = element.groups[0];
+        var hop = Drupal.settings.ecenterNetwork.seriesLookupByHub[hub_id];
+        var tc = $('#utilization-tables').data('tablechart');
+        var lh = tc['default'].chart.plugins.linehighlighter;
+        
+        for (key in hop.sidx) {
+          lh.unhighlightSeries(hop.sidx[key], tc['default'].chart);
+        }
 
-          if (!stop_highlight) {
-            var tc = $('#utilization-tables').data('tablechart');
-            if (tc) {
-              var lh = tc['default'].chart.plugins.linehighlighter;
-              lh.unhighlightSeries(hop.sidx, tc['default'].chart);
-            }
-            var ol = $('#openlayers-map-auto-id-0').data('openlayers');
-            var map = ol.openlayers;
-            var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
-            var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
-            var feature = layer.getFeatureBy('netblockID', hop.netblockID);
+        var ol = $('#openlayers-map-auto-id-0').data('openlayers');
+        var map = ol.openlayers;
+        var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
+        var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
+        var feature = layer.getFeatureBy('ecenterID', hub_id);
+        control.callbacks.out.call(control, feature, true);
 
-            control.callbacks.out.call(control, feature);
-          }
-
-          $('circle', group).each(function() {
-            this.setAttribute('stroke', '#aaaaaa');
-          });
-          $('.hub_label text', group).each(function() {
-            this.setAttribute('fill', '#444444');
-          });
-          $('.label text', group).each(function() {
-            this.setAttribute('fill', '#000000');
-          });
-          $('.background rect', group).each(function() {
-            this.setAttribute('fill', '#ffffff');
-          });
-        });
+        $.ecenter_network.hoverOut.call(element);
       }
     });
   }
@@ -573,38 +568,52 @@ $.fn.ecenter_network.plugins.traceroute = function() {
 $.fn.ecenter_network.plugins.chart = function() {
   // Bind to series highlighting
   $('#results', this.el).live('jqplotHighlightSeries', function(e, sidx, plot) {
-    if (Drupal.settings.ecenterNetwork.seriesLookupByIndex) {
-      var hop = Drupal.settings.ecenterNetwork.seriesLookupByIndex[sidx];
-      var tc = $('#utilization-tables').data('tablechart');
-      var lh = tc['default'].chart.plugins.linehighlighter;
 
-      var length = tc['default'].chart.seriesColors.length;
-      sidx = sidx % length;
-      var background_color = tc['default'].chart.seriesColors[sidx];
+    var lookup = Drupal.settings.ecenterNetwork.seriesLookupByIndex[sidx],
+      tc = $('#utilization-tables').data('tablechart'),
+      lh = tc['default'].chart.plugins.linehighlighter;
 
-      var ol = $('#openlayers-map-auto-id-0').data('openlayers');
-      var map = ol.openlayers;
-      var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
-      var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
-      var feature = layer.getFeatureBy('netblockID', hop.netblockID);
+    var length = tc['default'].chart.seriesColors.length;
+    var ol = $('#openlayers-map-auto-id-0').data('openlayers');
+    var map = ol.openlayers;
+    var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
+    var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
+    var feature = layer.getFeatureBy('ecenterID', lookup.hubID);
 
-      if (feature) {
-        control.callbacks.over.call(control, feature);
-      }
+    if (feature) {
+      control.callbacks.over.call(control, feature, true);
+    }
+
+    var traceroutes = $('#traceroute').data('traceroute');
+    if (traceroutes && traceroutes['default']) {
+      var trace = traceroutes['default'];
+      var set = trace.paper.set(lookup.hubID);
+      $.ecenter_network.hoverOver.call(set.items[0]);
     }
   });
 
   // Bind to series unhighlighting
   $('#results', this.el).live('jqplotUnhighlightSeries', function(e, sidx, plot) {
-    var hop = Drupal.settings.ecenterNetwork.seriesLookupByIndex[sidx];
+    var lookup = Drupal.settings.ecenterNetwork.seriesLookupByIndex[sidx],
+      tc = $('#utilization-tables').data('tablechart'),
+      lh = tc['default'].chart.plugins.linehighlighter;
+
+    var length = tc['default'].chart.seriesColors.length;
     var ol = $('#openlayers-map-auto-id-0').data('openlayers');
     var map = ol.openlayers;
     var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
     var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
-    var feature = layer.getFeatureBy('netblockID', hop.netblockID);
+    var feature = layer.getFeatureBy('ecenterID', lookup.hubID);
 
     if (feature) {
-      control.callbacks.out.call(control, feature);
+      control.callbacks.out.call(control, feature, true);
+    }
+
+    var traceroutes = $('#traceroute').data('traceroute');
+    if (traceroutes && traceroutes['default']) {
+      var trace = traceroutes['default'];
+      var set = trace.paper.set(lookup.hubID);
+      $.ecenter_network.hoverOut.call(set.items[0]);
     }
   });
 }
@@ -668,8 +677,8 @@ $.fn.ecenter_network.plugins.traceroute_paste = function() {
   $('textarea', dialog).attr('readonly', false);
 
   $('body').append(dialog);
-  
-  var dialog = $('#traceroute-paste-copy').dialog({ 
+
+  var dialog = $('#traceroute-paste-copy').dialog({
     autoOpen : false,
     closeText : null,
     modal: true,

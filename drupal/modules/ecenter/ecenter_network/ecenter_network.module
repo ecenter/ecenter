@@ -207,7 +207,7 @@ function ecenter_network_init() {
     drupal_add_js(drupal_get_path('module', 'jqplot') .'/js/jqplot-behaviors.js');
 
     // Raphael
-    drupal_add_js(libraries_get_path('raphael') .'/raphael-min.js');
+    drupal_add_js(libraries_get_path('raphael') .'/raphael.js');
 
     // Traceroute
     drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.traceroute.js');
@@ -1777,8 +1777,7 @@ function ecenter_network_layers_traceroute() {
                 'fontColor' => '#222222',
               ),
               'extra' => array(
-                'ecenterID' => $hop['hub'],
-                'netblockID' => $ttl .'-'. $hop['netblock'], //$hop['hop_num'],
+                'ecenterID' => $ttl .'_'. $hop['hub_name'],
               ),
             );
           }

@@ -118,6 +118,7 @@ function ecenter_network_theme() {
       'arguments' => array(
         'table' => NULL,
         'hop' => NULL,
+        'direction' => NULL,
       ),
     ) + $options,
     'ecenter_network_format_default' => array(
@@ -171,67 +172,67 @@ function ecenter_network_theme() {
  */
 function ecenter_network_init() {
   if (arg(0) == 'network' && !arg(1)) {
-    _ecenter_network_add_behaviors();
+    // Compression type
+    $compression = variable_get('jquery_update_compression_type', 'none');
+    $min = ($compression != 'none') ? '.'. $compression : '';
+
+    // Openlayers
+    openlayers_include();
+    drupal_add_js(drupal_get_path('module', 'openlayers') .
+      '/includes/layer_types/js/raw.js');
+    drupal_add_js(drupal_get_path('module', 'ecenter_network')
+      .'/js/openlayers.js');
+    drupal_add_js(drupal_get_path('module', 'ecenter_network')
+      .'/openlayers/ecenter_network_behavior_dynamicload.js');
+    drupal_add_js(drupal_get_path('module', 'ecenter_network')
+      .'/openlayers/ecenter_network_behavior_select.js');
+
+    // jQuery UI: Force version 1.8, load libraries for datepicker and combobox
+    jquery_ui_add(array('ui.widget', 'ui.mouse', 'ui.button', 'ui.position', 'ui.autocomplete', 'ui.datepicker', 'ui.dialog'), '1.8');
+
+    // jqPlot
+    $jq_path = _jqplot_get_path();
+    $tablechart_path = _jqplot_get_tablechart_path();
+    drupal_add_css($jq_path .'/jquery.jqplot.css');
+    drupal_add_js($jq_path .'/excanvas.min.js');
+    drupal_add_js($jq_path .'/jquery.jqplot.js');
+    drupal_add_js($jq_path .'/plugins/jqplot.dateAxisRenderer'. $min .'.js');
+    drupal_add_js($jq_path .'/plugins/jqplot.highlighter'. $min .'.js');
+    drupal_add_js($jq_path .'/plugins/jqplot.cursor'. $min .'.js');
+    drupal_add_js($jq_path .'/plugins/jqplot.barRenderer'. $min .'.js');
+    drupal_add_js($jq_path .'/plugins/jqplot.canvasTextRenderer'. $min .'.js');
+    drupal_add_js($jq_path .'/plugins/jqplot.canvasAxisLabelRenderer'. $min .'.js');
+    drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jqplot/jqplot.linehighlighter.js');
+    drupal_add_js($tablechart_path .'/jquery.tablechart.js');
+    drupal_add_js(drupal_get_path('module', 'jqplot') .'/js/jqplot-behaviors.js');
+
+    // Raphael
+    drupal_add_js(libraries_get_path('raphael') .'/raphael.js');
+
+    // Traceroute
+    drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.traceroute.js');
+
+    // Timezone handling
+    drupal_add_js(drupal_get_path('module', 'date_timezone') .'/date_timezone.js');
+
+    // Page behaviors
+    drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/behaviors.js');
+
+    // Advanced help styling
+    drupal_add_css(drupal_get_path('module', 'advanced_help') .'/help-icon.css');
+
+    // @TODO overhaul
+    $inline_css = array(
+      '.ecenter-critical' => array('color' => variable_get('ecenter_network_threshold_critical_color', '#cc0000')),
+      '.ecenter-marginal' => array('color' => variable_get('ecenter_network_threshold_marginal_color', '#fe890c')),
+      '.ecenter-good' => array('color' => variable_get('ecenter_network_threshold_marginal_color', '#1c8a24')),
+    );
+    inline_css_add_css($inline_css);
   }
 }
 
 /**
- * Helper: Add behaviors
- */
-function _ecenter_network_add_behaviors() {
-  // Compression type
-  $compression = variable_get('jquery_update_compression_type', 'none');
-  $min = ($compression != 'none') ? '.'. $compression : '';
-
-  // Openlayers
-  openlayers_include();
-  drupal_add_js(drupal_get_path('module', 'openlayers') .
-    '/includes/layer_types/js/raw.js');
-  drupal_add_js(drupal_get_path('module', 'ecenter_network')
-    .'/js/openlayers.js');
-  drupal_add_js(drupal_get_path('module', 'ecenter_network')
-    .'/openlayers/ecenter_network_behavior_dynamicload.js');
-  drupal_add_js(drupal_get_path('module', 'ecenter_network')
-    .'/openlayers/ecenter_network_behavior_select.js');
-
-  // jQuery UI: Force version 1.8, load libraries for datepicker and combobox
-  jquery_ui_add(array('ui.widget', 'ui.mouse', 'ui.button', 'ui.position', 'ui.autocomplete', 'ui.datepicker', 'ui.dialog'), '1.8');
-
-  // jqPlot
-  $jq_path = _jqplot_get_path();
-  $tablechart_path = _jqplot_get_tablechart_path();
-  drupal_add_css($jq_path .'/jquery.jqplot.css');
-  drupal_add_js($jq_path .'/excanvas.min.js');
-  drupal_add_js($jq_path .'/jquery.jqplot.js');
-  drupal_add_js($jq_path .'/plugins/jqplot.dateAxisRenderer'. $min .'.js');
-  drupal_add_js($jq_path .'/plugins/jqplot.highlighter'. $min .'.js');
-  drupal_add_js($jq_path .'/plugins/jqplot.cursor'. $min .'.js');
-  drupal_add_js($jq_path .'/plugins/jqplot.barRenderer'. $min .'.js');
-  drupal_add_js($jq_path .'/plugins/jqplot.canvasTextRenderer'. $min .'.js');
-  drupal_add_js($jq_path .'/plugins/jqplot.canvasAxisLabelRenderer'. $min .'.js');
-  drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jqplot/jqplot.linehighlighter.js');
-  drupal_add_js($tablechart_path .'/jquery.tablechart.js');
-  drupal_add_js(drupal_get_path('module', 'jqplot') .'/js/jqplot-behaviors.js');
-
-  // SVG
-  drupal_add_css(libraries_get_path('jquery-svg') .'/jquery.svg.css');
-  drupal_add_js(libraries_get_path('jquery-svg') .'/jquery.svg.js');
-
-  // Traceroute
-  drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.traceroute.js');
-
-  // Timezone handling
-  drupal_add_js(drupal_get_path('module', 'date_timezone') .'/date_timezone.js');
-
-  // Page behaviors
-  drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/behaviors.js');
-
-  // Advanced help styling
-  drupal_add_css(drupal_get_path('module', 'advanced_help') .'/help-icon.css');
-}
-
-/**
- * Traceroute post form
+ * Traceroute past form
  *
  * @TODO Add advanced help
  */
@@ -343,22 +344,6 @@ function _ecenter_network_select_form() {
     '#prefix' => '<div id="network-wrapper" class="clear-block">',
     '#suffix' => '</div>',
   );
-
-  $form['network_wrapper']['traceroute_paste'] = array(
-    '#title' => t('Traceroute'),
-    '#type' => 'textarea',
-    '#resizable' => FALSE,
-    '#prefix' => '<div id="traceroute-paste-wrapper">',
-    '#suffix' => '</div>',
-    '#description' => t('<strong>Paste traceroute results (experimental):</strong>: Many factors may affect E-Center\'s ability to create a query from a pasted traceroute. Your pasted traceroute will use the selected day or time range when querying.'),
-    '#attributes' => array('id' => 'traceroute-paste', 'readonly' => TRUE),
-    '#ahah' => array(
-      'event' => 'change',
-      'path' => ahah_helper_path(array('results_wrapper', 'results')),
-      'wrapper' => 'results-wrapper',
-    ),
-  );
-
   $form['network_wrapper']['network'] = array(
     '#prefix' => '<div id="network-map">',
     '#value' => $map,
@@ -405,6 +390,19 @@ function _ecenter_network_select_form() {
     '#options' => array('' => t('Select a destination')),
     '#prefix' => '<div class="dst-wrapper">',
     '#suffix' => '</div>',
+    '#ahah' => array(
+      'event' => 'change',
+      'path' => ahah_helper_path(array('results_wrapper', 'results')),
+      'wrapper' => 'results-wrapper',
+    ),
+  );
+
+  $form['network_wrapper']['query']['traceroute_paste'] = array(
+    '#title' => t('Traceroute'),
+    '#type' => 'textarea',
+    '#prefix' => '<div id="traceroute-paste-wrapper">',
+    '#suffix' => '</div>',
+    '#attributes' => array('id' => 'traceroute-paste'),
     '#ahah' => array(
       'event' => 'change',
       'path' => ahah_helper_path(array('results_wrapper', 'results')),
@@ -1131,10 +1129,14 @@ function ecenter_network_parse_response($response) {
       // Sort by hop number
       ksort($traceroute);
 
-      // Filter out hops which don't have SNMP data
-      // @TODO may require differentiation between no SNMP data and no 
-      // *available* SNMP data. 
-      //$traceroute = array_filter($traceroute, '_ecenter_network_filter_traceroute');
+      // Strip doubled or empty hops from beginning and end of traceroute
+      for ($i = 0; $i < 2; $i++) {
+        $traceroute = array_reverse($traceroute);
+        while (empty($traceroute[0]['data']['snmp']) || $traceroute[0]['hub_name'] == $traceroute[1]['hub_name']) {
+          array_shift($traceroute);
+        }
+      }
+
       $parsed_data['traceroute'][$direction] = $traceroute;
     }
   }
@@ -1200,6 +1202,7 @@ function ecenter_network_parse_response($response) {
   // Calculate diff
   if (!empty($parsed_data['traceroute']['forward']) 
     && !empty($parsed_data['traceroute']['reverse'])) {
+
     $forward = $parsed_data['traceroute']['forward'];
     $reverse = array_reverse($parsed_data['traceroute']['reverse']);
 
@@ -1292,13 +1295,6 @@ function ecenter_network_parse_site_data($data, $site) {
     }
   }
   return $parsed_data;
-}
-
-/**
- * Filter traceroute results
- */
-function _ecenter_network_filter_traceroute($hop) {
-  return (!empty($hop['data']['snmp']));
 }
 
 /**
@@ -1751,41 +1747,42 @@ function ecenter_network_layers_traceroute() {
 
     $data = ecenter_network_get_data($src, $dst, $start, $end);
 
-    $traceroute = (!empty($data['traceroute']['forward'])) ?
-      $data['traceroute']['forward'] : $data['traceroute']['reverse'];
+    $direction = (!empty($data['traceroute']['forward'])) ? 'forward' : 'reverse';
 
-    if ($data && !empty($traceroute)) {
+    if ($data && !empty($data['traceroute'][$direction])) {
 
       // Initialize some counters, etc
       $old_hop = NULL;
       $count = count($traceroute);
-      $i = 0;
 
       $features = array();
-      foreach ($traceroute as $hop) {
-        if ($hop['longitude'] && $hop['latitude']) {
-          $features[] = array(
-            'wkt' => "POINT({$hop['longitude']} {$hop['latitude']})",
-            'projection' => "4326",
-            'style' => array(
-              'pointRadius' => 5,
-              'fillColor' => '#ffffff',
-              'strokeColor' => '#0000ff',
-              'strokeWidth' => 3,
-              'fillOpacity' => 1,
-              'label' => $hop['hub'],
-              'labelYOffset' => -16,
-              'fontWeight' => 'bold',
-              'fontSize' => '12px',
-              'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',
-              'fontColor' => '#222222',
-            ),
-            'extra' => array('ecenterID' => $hop['hub']),
-          );
+      foreach ($data['traceroute']['diff'] as $ttl => $diff_data) {
+        $hops = array_pop($diff_data);
+        foreach ($hops[$direction] as $hop) {
+          if ($hop['longitude'] && $hop['latitude']) {
+            $features[] = array(
+              'wkt' => "POINT({$hop['longitude']} {$hop['latitude']})",
+              'projection' => "4326",
+              'style' => array(
+                'pointRadius' => 5,
+                'fillColor' => '#ffffff',
+                'strokeColor' => '#0000ff',
+                'strokeWidth' => 3,
+                'fillOpacity' => 1,
+                'label' => $hop['hub'],
+                'labelYOffset' => -16,
+                'fontWeight' => 'bold',
+                'fontSize' => '12px',
+                'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',
+                'fontColor' => '#222222',
+              ),
+              'extra' => array(
+                'ecenterID' => $ttl .'_'. $hop['hub_name'],
+              ),
+            );
+          }
+          $old_hop = $hop;
         }
-        $old_hop = $hop;
-        $i += 1;
-
       }
     }
 
@@ -1793,7 +1790,6 @@ function ecenter_network_layers_traceroute() {
       _ecenter_network_layers_traceroute_rejigger($features);
     }
     $layer->data['features'] = $features;
-
   }
   return $layer;
 }
@@ -1972,14 +1968,11 @@ function _ecenter_network_utc_to_local($date, $format = 'Y-m-d H:i:s', $tz = '')
  * @return string
  *   Formatted, converted date
  */
-function _ecenter_network_timestamp_to_local($date, $format = 'Y-m-d H:i:s', $tz = '') {
+function _ecenter_network_timestamp_to_local($date, $format = 'Y-m-d H:i:s', $tz = FALSE) {
   if (empty($date)) {
     return NULL;
   }
 
-  if (empty($tz)) {
-    $tz = date_default_timezone_name(TRUE);
-  }
   $adjusted = date_make_date($date, timezone_open('UTC'), DATE_UNIX);
   if (empty($tz)) {
     $tz = date_default_timezone_name(TRUE);
@@ -2016,8 +2009,8 @@ function _ecenter_network_extract_query() {
       'elevation1' => $_REQUEST['elevation1'],
       'elevation2' => $_REQUEST['elevation2'],
       'swc' => $_REQUEST['swc'],
-      
-      'traceroute' => $_REQUEST['network_wrapper']['traceroute_paste'],
+
+      'traceroute' => $_REQUEST['network_wrapper']['query']['traceroute_paste'],
     );
   }
 

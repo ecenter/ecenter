@@ -1080,32 +1080,6 @@ form {
       padding: 1px 3px;
     }
   } // }}}
-  #utilization-tables { // {{{
-    float: left;
-    width: 550px;
-    margin-right: 30px;
-    margin-top: 25px;
-    margin-bottom: 27px;
-    .data-tables {
-      display: none;
-      margin-bottom: 55px;
-      .data-table {
-        float: left;
-        margin-right: 15px;
-        font-size: .825em;
-      }
-    }
-    .chart-title {
-      .box;
-      margin-top: -25px;
-      h3 {
-        .box;
-        width: 424px;
-        font-size: .875em;
-        margin: 0;
-      }
-    }
-  } // }}}
   #end-to-end-wrapper { // {{{
     margin: 27px 0;
     padding-top: 27px;
@@ -1192,6 +1166,83 @@ form {
           padding-bottom: 2px;
           width: 300px;
         }
+      }
+    }
+  } // }}}
+  #results { // {{{
+    .page_padding;
+    position: relative;
+    z-index: 10;
+    background-color: @color_white;
+    table {
+      td {
+        text-align: center;
+      }
+      td .value {
+        color: @color_black;
+        font-family: @font_mono;
+      }
+      td .unit {
+        font-weight: normal;
+        color: @color_grey_47;
+      }
+      &.end-to-end-table {
+        td .value {
+          font-size: 16px;
+        }
+        td .unit {
+          font-size: 12px;
+        }
+      }
+    }
+    .data-tables { // {{{
+      margin: 21px 0;
+      display: none;
+      h4 {
+        margin-bottom: 14px;
+      }
+      .data-table {
+        float: left;
+        width: 190px;
+        height: 350px;
+        overflow-y: auto;
+        margin-right: 20px;
+        margin-bottom: 20px;
+        h3 {
+          font-size: 18px;
+        }
+        th {
+          font-size: 11px;
+          padding: 0 6px;
+        }
+        td {
+          font-size: 11px;
+          padding: 0 6px;
+        }
+      }
+    } // }}}
+  } // }}}
+  #utilization-tables { // {{{
+    float: left;
+    width: 550px;
+    margin-right: 30px;
+    margin-top: 25px;
+    margin-bottom: 27px;
+    .data-tables {
+      display: none;
+      margin-bottom: 55px;
+      .data-table {
+        width: 255px;
+      }
+    }
+    .chart-title {
+      .box;
+      margin-top: -25px;
+      h3 {
+        .box;
+        width: 424px;
+        font-size: .875em;
+        margin: 0;
       }
     }
   } // }}}
@@ -2103,53 +2154,7 @@ table.network-health {
   left: 0;
 }
 // }}}
- #results { // {{{
-    .page_padding;
-    position: relative;
-    z-index: 10;
-    background-color: @color_white;
-    table {
-      td {
-        text-align: center;
-      }
-      td .value {
-        color: @color_black;
-        font-family: @font_mono;
-      }
-      td .unit {
-        font-weight: normal;
-        color: @color_grey_47;
-      }
-      &.end-to-end-table {
-        td .value {
-          font-size: 16px;
-        }
-        td .unit {
-          font-size: 12px;
-        }
-      }
-    }
-    .data-tables { // {{{
-      margin: 21px 0;
-      display: none;
-      h4 {
-        margin-bottom: 14px;
-      }
-      .data-table {
-        float: left;
-        margin-right: 10px;
-        th {
-          font-size: 12px;
-          padding: 0 6px;
-        }
-        td {
-          font-size: 14px;
-          padding: 0 6px;
-        }
-      }
-    } // }}}
-  } // }}}
-body.node-type-issue #results {
+body.node-type-issue #results { // {{{
   background-color: @color_grey_93;
-}
+} // }}}
 

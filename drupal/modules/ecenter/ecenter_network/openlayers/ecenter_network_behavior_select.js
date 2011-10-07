@@ -40,20 +40,20 @@ Drupal.behaviors.ecenter_network_behavior_select = function(context) {
 
 Drupal.ecenterSelect = {};
 
-Drupal.ecenterSelect.click = function(feature) {
+Drupal.ecenterSelect.click = function(feature, extra) {
   var layer = feature.layer;
   var control = this;
-  $(control.map.div).trigger('featureClick', [feature, layer, control]);
+  $(control.map.div).trigger('featureClick', [feature, layer, control, extra]);
 }
 
-Drupal.ecenterSelect.over = function(feature) {
+Drupal.ecenterSelect.over = function(feature, extra) {
   var layer = feature.layer;
   var control = this;
-  $(control.map.div).trigger('featureOver', [feature, layer, control]);
+  $(control.map.div).trigger('featureOver', [feature, layer, control, extra]);
 }
 
-Drupal.ecenterSelect.out = function(feature) {
+Drupal.ecenterSelect.out = function(feature, extra) {
   var layer = feature.layer;
   var control = this;
-  $(control.map.div).trigger('featureOut', [feature, layer, control]);
+  $(control.map.div).trigger('featureOut', [feature, layer, control, extra]);
 }

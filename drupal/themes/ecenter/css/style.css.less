@@ -843,7 +843,7 @@ form {
     }
   } // }}}
   #traceroute-wrapper { // {{{
-    margin-bottom: .75em;
+    margin-bottom: 12px;
     #traceroute {
       .trace-label {
         font-size: 11px;
@@ -1048,10 +1048,10 @@ form {
   #end-to-end-charts { // {{{
     margin-top: 25px;
     .box;
-    width: 420px;
+    width: 500px;
     .data-wrapper {
       .box;
-      width: 420px;
+      width: 500px;
       margin-bottom: 55px;
       .chart-title {
         .box;
@@ -1075,13 +1075,9 @@ form {
         }
       }
     }
-    .show-data {
-      font-size: 12px;
-      padding: 1px 3px;
-    }
   } // }}}
   #end-to-end-wrapper { // {{{
-    margin: 27px 0;
+    margin: 12px 0;
     padding-top: 27px;
     border-top: 1px solid @color_grey_73;
     h3 {
@@ -1089,7 +1085,7 @@ form {
     }
     #end-to-end-results { 
       .box; 
-      width: 439px;
+      width: 400px;
       margin-right: 35px;
       th { 
         white-space: nowrap; 
@@ -1117,13 +1113,17 @@ form {
     }
   } // }}}
   #result-links-wrapper { // {{{
-    float: left;
-    width: 314px;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid @color_grey_67;
     h2 {
+      float: left;
+      width: 400px;
+      line-height: 1;
+      margin: 0;
       .src-dst { 
-        font-size: .825em;
         display: block;
-        margin-bottom: .3em;
+        margin-bottom: .15em;
       }
       .date-range {
         font-size: .65em;
@@ -1135,27 +1135,28 @@ form {
       }
     }
     .issues {
-      font-size: 13px;
+      float: left;
+      width: 450px;
     }
     .issuelink a, .permalink a {
+      font-size: 14px;
       .button;
-      display: block;
+      padding: 3px 5px;
       text-align: center;
       :hover {
         text-decoration: none;
       }
     }
-    .issuelink, .issues, .permalink {
-      margin-bottom: 1em;
+    .issuelink, .permalink {
+      float: left;
     }
     .issuelink {
-      a { font-size: @font_size_17 };
+      width: 205px;
     }
     .permalink {
-      a { 
-        font-size: 13px; 
-      };
+      width: 325px;
       .form-item {
+        margin: 0;
         input {
           font-family: @font_mono;
           color: @color_black;
@@ -1164,7 +1165,7 @@ form {
           line-height: 13px;
           padding-top: 2px;
           padding-bottom: 2px;
-          width: 300px;
+          width: 310px;
         }
       }
     }
@@ -1175,6 +1176,7 @@ form {
     z-index: 10;
     background-color: @color_white;
     table {
+      font-size: 14px;
       td {
         text-align: center;
       }
@@ -1188,10 +1190,10 @@ form {
       }
       &.end-to-end-table {
         td .value {
-          font-size: 16px;
+          font-size: 14px;
         }
         td .unit {
-          font-size: 12px;
+          font-size: 11px;
         }
       }
     }
@@ -1223,16 +1225,13 @@ form {
     } // }}}
   } // }}}
   #utilization-tables { // {{{
-    float: left;
-    width: 550px;
-    margin-right: 30px;
-    margin-top: 25px;
-    margin-bottom: 27px;
+    margin-top: 24px;
+    margin-bottom: 12px;
     .data-tables {
       display: none;
       margin-bottom: 55px;
       .data-table {
-        width: 255px;
+        width: 210px;
       }
     }
     .chart-title {
@@ -1245,6 +1244,10 @@ form {
         margin: 0;
       }
     }
+  } // }}}
+  .show-data { // {{{
+    font-size: 12px;
+    padding: 2px 3px;
   } // }}}
 }
 // }}}
@@ -2157,8 +2160,7 @@ table.network-health {
 body.node-type-issue #results { // {{{
   background-color: @color_grey_93;
 } // }}}
-
-
+/* Date picker {{{ */
 #ui-datepicker-div {
   font-size: 14px;
   background: @color_white;
@@ -2236,3 +2238,4 @@ body.node-type-issue #results { // {{{
     }
   }
 }
+/* }}} */

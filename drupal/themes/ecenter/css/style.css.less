@@ -958,7 +958,7 @@ form {
       }
       input {
         .box;
-        width: 150px;
+        width: 120px;
         margin-top: 2px;
       }
       input.ui-widget {
@@ -2158,3 +2158,81 @@ body.node-type-issue #results { // {{{
   background-color: @color_grey_93;
 } // }}}
 
+
+#ui-datepicker-div {
+  font-size: 14px;
+  background: @color_white;
+  z-index: 9999;
+  .shadow(3px; 3px; 7px; @color_grey_43;);
+}
+.ui-datepicker {
+  width: 280px;
+  padding: 5px;
+  .ui-datepicker-header {
+    position:relative;
+    padding-bottom: 25px;
+  }
+  .ui-datepicker-prev, .ui-datepicker-next {
+    .button;
+    font-size: 14px;
+    position: absolute;
+    top: 0;
+    text-align: center;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+  }
+  .ui-datepicker-prev {
+    left: 2px;
+  }
+  .ui-datepicker-next {
+    right: 2px;
+  }
+
+  .ui-datepicker-title { 
+    margin: 0 30px; 
+    text-align: center;
+    select { 
+      float: left; 
+      &.ui-datepicker-month-year {
+        width: 210px;
+      }
+      &.ui-datepicker-month, &.ui-datepicker-year {
+        width: 105px;
+      }
+      &.ui-datepicker-year {
+        float: right;
+      }
+    }
+  }
+
+  table {
+    width: 100%;
+    margin: 0;
+    a:hover {
+      color: @color_dark_blue;
+    }
+    tr {
+      :hover { td { background-color: @color_grey_93; } }
+      th, td {
+        padding: 2px; 
+        text-align: center;
+      }
+      th {
+        background-color: @color_grey_80;
+      }
+      td {
+        background-color: @color_grey_93;
+        :hover {
+          background-color: @color_grey_87;
+          a {
+            color: @color_dark_blue;
+          }
+        }
+        &.ui-datepicker-unselectable, &.ui-datepicker-unselectable:hover {
+          background-color: transparent;
+        }
+      }
+    }
+  }
+}

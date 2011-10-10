@@ -79,10 +79,9 @@ sub process_data {
 
 =head1 parse_data
 
-  parse data in the request according to the data_type and sort it by timestamp
+parse data in the request according to the data_type and sort it by timestamp
 
 =cut
-
 
 sub parse_data {
     my ( $self,  $args ) = @_; 

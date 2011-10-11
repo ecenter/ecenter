@@ -76,7 +76,7 @@ Default: from /etc/my_ecenter
 =cut
  
 use FindBin qw($Bin);
-use lib ($Bin,  "$Bin/client_lib", "$Bin/ps_trunk/perfSONAR_PS-PingER/lib");
+use lib ($Bin, "$Bin/circuits_lib", "$Bin/client_lib", "$Bin/ps_trunk/perfSONAR_PS-PingER/lib");
 use forks;
 use forks::shared;
 
@@ -92,6 +92,8 @@ use DBI;
 use English;
 use perfSONAR_PS::Client::MA;
 use perfSONAR_PS::Client::Topology;
+use perfSONAR_PS::Client::Circuits;
+
 use perfSONAR_PS::Common qw(  extract find unescapeString escapeString );
 use perfSONAR_PS::Error_compat qw/:try/;
 use perfSONAR_PS::Error;
@@ -168,7 +170,7 @@ if($OPTIONS{anomaly}) {
 # 
 foreach my $service ( qw/ps2/ ) {
     my $ts_instance =  "http://$service.es.net:8012/perfSONAR_PS/services/topology";
-    try {  
+    try {
         $logger->debug("\t\t Service at:\t$ts_instance ");
 	unless($OPTIONS{no_topo}) {
             my $client = perfSONAR_PS::Client::Topology->new($ts_instance);
@@ -176,6 +178,11 @@ foreach my $service ( qw/ps2/ ) {
             my ($status, $res) = $client->xQuery("//*[matches(\@id, '$urn', 'xi')]", 'encoded');
             throw  perfSONAR_PS::Error if $status;
 	    parse_topo($dbh, $res);
+	}
+	if($OPTIONS{circuits}) {
+            my $client = perfSONAR_PS::Client::Circuits->new( { urls => [$ts_instance] });
+            my $circuits = $client->get_circuits();
+	    get_circuits($dbh, $circuits);
 	}
 	get_snmp($dbh, $pm) if $OPTIONS{snmp};
 	set_end_sites($dbh, $pm) unless @E2E;
@@ -200,7 +207,29 @@ pool_control($MAX_THREADS, 1);
 $logger->info("cleanup...done");
 $dbh->storage->disconnect if $dbh;
 exit(0);
- 
+
+=head2 get_circuits
+
+Get circuits and store them in the DB
+
+=cut
+
+sub get_circuits {
+    my ($dbh,  $circuits) = @_;
+    foreach my $circuit_id (keys %{$circuits}){
+	print "[Circuit] " . $circuits->{$circuit_id}->{name} . "\n";
+	print "\t[Description] " . $circuits->{$circuit_id}->{description} . "\n";
+	print "\t[Capacity] " . $circuits->{$circuit_id}->{capacity} . "Mbps\n";
+	print "\t[Start Time] " . $circuits->{$circuit_id}->{start} . "\n";
+	print "\t[End Time] " . $circuits->{$circuit_id}->{end} . "\n";
+	foreach my $link(@{$circuits->{$circuit_id}->{links}}){
+            print "\t[Link] " . $link->{id} . "\n";
+            foreach my $port(@{$link->{ports}}){
+        	print "\t\t[Port] $port\n";
+            }
+	}
+    }
+}
 
 =head2  parse_topo
 
@@ -220,7 +249,7 @@ sub parse_topo {
 	my $description = extract( find( $node, "./nmtb:description", 1), 1);
         my $longitude   = extract( find( $node, "./nmtb:longitude", 1), 1);
         my $latitude    = extract( find( $node, "./nmtb:latitude", 1), 1);
-	 
+
 	my ($hub_name) = $name =~ m/^([^-]+)-/;
 	my $hub = $dbh->resultset('Hub')->update_or_create({  hub => $name,
 	                                                      hub_name => "\U$hub_name",
@@ -244,7 +273,7 @@ sub parse_topo {
 							    });
 	    my $l2_links = find($port2, "./nmtl2:link", 0);  
 	    foreach my $link2 ($l2_links->get_nodelist) {
-	        my $relations = find($link2, "./nmtb:relation", 0);  
+	        my $relations = find($link2, "./nmtb:relation", 0);
 	        foreach my $rel2 ($relations->get_nodelist) {
 		    my $rel2_type = $rel2->getAttribute('type');
 		    if($rel2_type eq 'sibling') {
@@ -264,20 +293,20 @@ sub parse_topo {
             my $port2_name    =  extract( find( $port3, "./nmtl3:ifName", 1), 1);
 	    my $ip_notted = extract( find( $port3, "./nmtl3:ipAddress", 1), 1);
 	    my $netmask = extract( find( $port3, "./nmtl3:netmask", 1), 1);
-	    my ($ip_addr,$ip_name) = get_ip_name($ip_notted); 
+	    my ($ip_addr,$ip_name) = get_ip_name($ip_notted);
 	    unless($ip_addr) {
 	        $logger->error(" wrong address: $ip_notted, skipped");
 	        next;
 	    }
 	    my $net_ip = Net::Netmask->new("$ip_addr:$netmask");
-	    $ip_name ||= $ip_addr; 
+	    $ip_name ||= $ip_addr;
 	    $logger->info(" Address: $ip_addr  = $ip_name");
 	    update_create_fixed($dbh->resultset('Node'),
 		    					      {ip_addr =>  \"=inet6_pton('$ip_addr')"},
 		    					      {ip_addr => \"inet6_pton('$ip_addr')",
 		    					       nodename => $ip_name,
 							       netmask =>   $net_ip->bits,
-		    					       ip_noted => $ip_addr}); 
+		    					       ip_noted => $ip_addr});
 	    my ($ip_addr_obj) =  $dbh->resultset('Node')->search({ip_noted => $ip_addr});
 	    next unless $ip_addr_obj && $ip_addr_obj->ip_addr;
 	    $dbh->resultset('L2L3Map')->update_or_create({ ip_addr => $ip_addr_obj->ip_addr,
@@ -289,14 +318,14 @@ sub parse_topo {
     }
     foreach my $link_urn (keys %l2_linkage) {
              my ($link_src, $link_dst) = split(',',$link_urn);
-	     $dbh->resultset('L2Link')->update_or_create({ 
+	     $dbh->resultset('L2Link')->update_or_create({
 	                                                    l2_src_urn => $link_src,
 	                                                    l2_dst_urn => $link_dst
 							 });
 	    $dbh->resultset('L2Link')->update_or_create({ 
 	                                                    l2_dst_urn => $link_src,
 	                                                    l2_src_urn => $link_dst
-							 });					 
+							 });
     }
     
 }
@@ -753,7 +782,7 @@ with this software.  If not, see <http://fermitools.fnal.gov/about/terms.html>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2010, Fermitools
+Copyright (c) 2010-2011, Fermitools
 
 All rights reserved.
 

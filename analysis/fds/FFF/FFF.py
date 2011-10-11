@@ -43,6 +43,7 @@ def fff(times1, obs1, numfut=10):
 #---------translate-true-times-to-generic-times----
     times = map(lambda x: int(x), times1)
     obs=map(lambda x: float(x),  obs1)
+    print 'Times:', times, "\n Data:", obs
     n = len(times)                                   # number of observations
     mnn = times[0]                                   # time of 1st observation
     mxx = times[-1]                                  # time of last observation
@@ -55,8 +56,7 @@ def fff(times1, obs1, numfut=10):
         forecast = average(obs)*ones(numfut)         # regression forecasts
         sderr = std(obs)*sqrt(1.0+1.0/n+z*z/(n+1))
         futtim = mxx+spc*arange(1,numfut+1)          # true times for forecasts
-       
-        return{'sderr': sderr, 'forecast': dict(zip(futtim, forecast))}
+        return{'sderr': list(sderr), 'times':  map(lambda i: int(i), futtim), 'forecast' : list(forecast)}
 #
     else: #----------------FF-forecast-------------
         if n<1000:
@@ -147,7 +147,7 @@ def fff(times1, obs1, numfut=10):
         sderr = array(sig)
         sderr = append(sderr,sqrt(sig**2+DELT**2*delta.var()*(arange(1,len(omg)+1)-omg.cumsum())))
         futtim = mnn+spc*t                           # translate to true times
-        return{'sderr': sderr, 'times': futtim, 'forecast' : map(lambda x: float(x),  forecast ) }
+        return{'sderr': list(sderr), 'times':  map(lambda i: int(i), futtim), 'forecast' : list(forecast) }
 
 def main():
     """

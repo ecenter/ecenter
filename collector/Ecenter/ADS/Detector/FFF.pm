@@ -118,14 +118,17 @@ after 'process_data' => sub {
 					                	data  => \@data,
 								future_points => $self->future_points
 							      },
-					     on_fail     => sub {
-					                      $self->logger->error("FAILED: $key  ");
-					     },
-					     on_complete => sub {
+					     {
+					       on_fail     => sub {
+					                       $self->logger->error("FAILED: $key  ");
+					       },
+					       on_complete => sub {
 					                       my $returned = decode_json  ${$_[0]};
-							       $self->add_results($key, { $ANA_METRIC->{$self->data_type} => $returned });
+							       $self->add_result($key,  undef, { $ANA_METRIC->{$self->data_type} => $returned });
 							       $self->logger->debug("Results Data $key - ",
+						
 							                        	sub{Dumper( $returned)});
+					       }
 					     }
 	    );
 

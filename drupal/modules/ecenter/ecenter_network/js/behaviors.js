@@ -90,7 +90,7 @@ $.ecenter_network.hoverOver = function() {
       switch (element.type) {
         case 'circle':
         case 'path':
-          if (element['class'] == 'forward') {
+          if (element['tracerouteDirection'] == 'forward' || (element['tracerouteOnlyReverse']) || ( element['tracerouteDirection'] == 'reverse' && element['tracerouteType'] == 'diff'  ) ) {
             element.attr(forward_style);
           } else {
             element.attr(reverse_style);
@@ -503,7 +503,7 @@ $.fn.ecenter_network.plugins.traceroute = function() {
   var traceroutes = $('#traceroute', this.el).data('traceroute');
   if (!traceroutes && Drupal.settings.ecenterNetwork && Drupal.settings.ecenterNetwork.tracerouteData) {
     $('<div id="traceroute-wrapper">')
-      .prependTo($('#results'));
+      .insertBefore($('#utilization-tables'));
     $('<div id="traceroute"></div>')
       .appendTo($('#traceroute-wrapper'))
       .traceroute(Drupal.settings.ecenterNetwork.tracerouteData);
@@ -519,7 +519,7 @@ $.fn.ecenter_network.plugins.traceroute = function() {
         var hub_id = element.groups[0];
 
         $.ecenter_network.hoverOver.call(element);
-        
+
         if (!cancel_highlight) {
           var hop = Drupal.settings.ecenterNetwork.seriesLookupByHub[hub_id];
           var tc = $('#utilization-tables').data('tablechart');
@@ -529,7 +529,7 @@ $.fn.ecenter_network.plugins.traceroute = function() {
           }
         }
         
-        if (!cancel_map) {
+        if (element.tracerouteType == 'match' && !cancel_map) {
           var ol = $('#openlayers-map-auto-id-0').data('openlayers');
           var map = ol.openlayers;
           var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
@@ -549,12 +549,14 @@ $.fn.ecenter_network.plugins.traceroute = function() {
           lh.unhighlightSeries(hop.sidx[key], tc['default'].chart);
         }
 
-        var ol = $('#openlayers-map-auto-id-0').data('openlayers');
-        var map = ol.openlayers;
-        var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
-        var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
-        var feature = layer.getFeatureBy('ecenterID', hub_id);
-        control.callbacks.out.call(control, feature, true);
+        if (!(element.tracerouteType == 'diff' && element.tracerouteDirection == 'reverse')) {
+          var ol = $('#openlayers-map-auto-id-0').data('openlayers');
+          var map = ol.openlayers;
+          var layer = map.getLayersBy('drupalID', 'ecenter_network_traceroute').pop();
+          var control = map.getControlsBy('drupalID', 'ecenterSelect').pop();
+          var feature = layer.getFeatureBy('ecenterID', hub_id);
+          control.callbacks.out.call(control, feature, true);
+        }
 
         $.ecenter_network.hoverOut.call(element);
       }

@@ -178,7 +178,12 @@ $.traceroute.prototype.draw = function() {
   for (var i = 0; i < data.length; i++) {
     var row = data[i],
       row_type = (row.match != undefined) ? 'match' : 'diff',
-      step = row[row_type];
+      step = row[row_type],
+      onlyReverse = false;
+
+    if (typeof step.forward == 'undefined' || !step.forward.length) {
+      onlyReverse = true;
+    }
 
     if (row_type == 'diff') {
       var longestDirection = (step.forward.length > step.reverse.length) ?
@@ -200,20 +205,21 @@ $.traceroute.prototype.draw = function() {
         oppositeDirection = (direction == 'forward') ? 'reverse' : 'forward',
         markerWidth = (this.options.marker.radius * 2) + this.options.marker.style['stroke-width']; 
 
-      if (step[direction].length == 0) {
+      if (typeof step[direction] == 'undefined' || step[direction].length == 0) {
         continue;
       }
 
       for (var j = 0; j < step[direction].length; j++) {
         var hop = step[direction][j],
-          labelOffset = yOffset + this.label.yOffset;
+          labelOffset = yOffset + this.label.yOffset,
+          markerWidth = 0;
 
         var set_id = i + '_' + hop.hub_name;
         set = paper.set(set_id);
 
-        if (direction == 'forward' && step['reverse'].length) {
+        if (direction == 'forward' && typeof step.reverse != 'undefined' && step.reverse.length) {
           var markerYOffset = yOffset + this.marker.forwardYOffset;
-        } else if (direction == 'reverse' && row_type == 'match') {
+        } else if (direction == 'reverse' && typeof step.forward != 'undefined' && row_type == 'match') {
           var markerYOffset = yOffset + this.marker.reverseYOffset;
         }
         else {
@@ -238,8 +244,28 @@ $.traceroute.prototype.draw = function() {
         var label = paper.text(boxOffset + this.marker.xOffset, labelOffset, hop.hub_name)
           .attr(this.options.label.style);
 
+        // Draw marker
+        if (row_type == 'match' && typeof step[oppositeDirection] != 'undefined') {
+          var flip = (direction != 'forward') ? true : false;
+          var marker = paper.halfCircle(boxOffset + this.marker.xOffset, markerYOffset,
+            this.options.marker.radius, flip);
+          markerWidth = this.options.marker.radius * 2.2; 
+        } else {
+          // Note the fudge factor
+          var marker = paper.circle(boxOffset + this.marker.xOffset, markerYOffset,
+            this.options.marker.radius * 1.15);
+          markerWidth = this.options.marker.radius * 2.5; 
+        }
+        marker.attr(this.options.marker.style);
+        marker['tracerouteDirection'] = direction;
+        marker['tracerouteType'] = row_type;
+        marker['tracerouteOnlyReverse'] = onlyReverse;
+
+        set.push(marker);
+
         var bbox = label.getBBox();
         var labelWidth = (bbox.width > markerWidth) ? bbox.width : markerWidth;
+        
         var labelCenterOffset = (bbox.width > markerWidth) ? 0 : (markerWidth - bbox.width) / 2;
 
         labelBox = paper.rect(bbox.x - this.options.labelBox.paddingX - labelCenterOffset,
@@ -247,27 +273,17 @@ $.traceroute.prototype.draw = function() {
             bbox.height + (this.options.labelBox.paddingY * 2))
           .attr(this.options.labelBox.style);
 
+        label['tracerouteDirection'] = direction;
+        label['tracerouteType'] = row_type;
+        label['tracerouteOnlyReverse'] = onlyReverse;
+        labelBox['tracerouteDirection'] = direction;
+        labelBox['tracerouteType'] = row_type;
+        labelBox['tracerouteOnlyReverse'] = onlyReverse;
+
         set.push(label, labelBox);
-
-        // Draw marker
-        if (row_type == 'match') {
-          var flip = (direction != 'forward') ? true : false;
-          var marker = paper.halfCircle(boxOffset + this.marker.xOffset, markerYOffset,
-            this.options.marker.radius, flip)
-        } else {
-          // Note the fudge factor
-          var marker = paper.circle(boxOffset + this.marker.xOffset, markerYOffset,
-            this.options.marker.radius * 1.15)
-        }
-        marker.attr(this.options.marker.style);
-        marker['class'] = direction;
-
-        set.push(marker);
 
         labelBox.toFront();
         label.toFront();
-
-        //set.hover($.traceroute.hoverOver, $.traceroute.hoverOut);
 
         $.extend(hop, {'type' : row_type, 'direction' : direction, 'ttl' : i,
           'xOffset' : boxOffset + this.marker.xOffset, 'yOffset' : markerYOffset });

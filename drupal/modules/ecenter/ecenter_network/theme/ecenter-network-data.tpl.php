@@ -1,9 +1,6 @@
 <div id="results">
   <div id="hop-wrapper" class="clearfix">
-    <?php print $hops; ?>
-
-    <div id="result-links-wrapper">
-
+    <div id="result-links-wrapper" class="clearfix">
       <h2><?php print $title; ?></h2>
 
       <?php if ($issuelink): ?>
@@ -24,6 +21,7 @@
       <?php endif; ?>
     </div>
 
+    <?php print $hops; ?>
   </div>
 
   <div id="end-to-end-wrapper" class="clearfix">

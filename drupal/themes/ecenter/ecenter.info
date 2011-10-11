@@ -19,6 +19,7 @@ regions[footer] = Footer
 
 ; Unset custom modules
 stylesheets[all][] = "themes/datepicker.css"
+stylesheets[all][] = "themes/datepicker.1.7.css"
 stylesheets[all][] = "date.css"
 stylesheets[all][] = "jquery.ui.all.css"
 stylesheets[all][] = "homebox.css"

@@ -54,7 +54,7 @@ function template_preprocess_ecenter_network_data(&$vars) {
       }
       $issue_query = urlencode(implode('&', $issue_params));
 
-      $vars['issuelink'] = l('Create issue from these results', 'node/add/issue',
+      $vars['issuelink'] = l('Create issue from results', 'node/add/issue',
         array(
           'query' => array('query' => $issue_query),
         )
@@ -83,7 +83,7 @@ function template_preprocess_ecenter_network_data(&$vars) {
   unset($vars['params']['timezone']);
 
   // Generate permalink
-  $vars['permalink'] = l(t('Permanent link (bookmark and share results)'), 'network', array(
+  $vars['permalink'] = l(t('Permanent link (bookmark & share)'), 'network', array(
     'query' => $params,
     'absolute' => TRUE,
     'attributes' => array('title' => $vars['title']),
@@ -372,7 +372,7 @@ function theme_ecenter_network_hops($traceroute = array()) {
     $plot_options['seriesDefaults']['lineWidth'] = 0.85;
     $plot_options['seriesDefaults']['color'] = '#777777';
     $plot_options['axes']['xaxis']['pad'] = 0;
-    $plot_options['axes']['xaxis']['numberTicks'] = 10;
+    $plot_options['axes']['xaxis']['numberTicks'] = 20;
     $plot_options['axes']['yaxis']['min'] = 0;
     $plot_options['axes']['yaxis']['max'] = 100;
     $plot_options['axes']['yaxis']['numberTicks'] = 5;
@@ -383,8 +383,8 @@ function theme_ecenter_network_hops($traceroute = array()) {
     );
     drupal_alter('ecenter_network_plot_options', $plot_options, 'utilization', 'snmp');
     $options = array(
-      'height' => 175,
-      'width' => 550,
+      'height' => 125,
+      'width' => 900,
       'hideTables' => FALSE,
       'parseX' => '$.tablechart.parseText',
       'dependencies' => array('canvasTextRenderer'),
@@ -445,8 +445,8 @@ function theme_ecenter_network_end_to_end_tables($tables, $timezone = NULL) {
       drupal_alter('ecenter_network_plot_options', $plot_options, $measurement,
         $type, $measurement_data);
       $options = array(
-        'height' => 125,
-        'width' => 400,
+        'height' => 150,
+        'width' => 490,
         'hideTables' => FALSE,
         'parseX' => '$.tablechart.parseText',
         'dependencies' => array('canvasTextRenderer'),
@@ -560,7 +560,7 @@ function theme_ecenter_network_utilization_table($table, $hop, $direction) {
   $output .= '<h3>'. ucfirst($direction) .': '. $hop['nodename'] .' ('. $hop['hub'] .')</h3>';
 
   if (!empty($table)) {
-    $headers = array(t('Time'), t('Percent utilization'));
+    $headers = array(t('Time'), t('% utilization'));
     $output .= theme('jqplot_table', $headers, $table, $attributes);
   } 
   else {

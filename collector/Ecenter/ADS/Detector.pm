@@ -132,7 +132,7 @@ sub add_result {
     if($status && !$status->{critical}){
         $response->{status} = 'OK';
     } else {
-        $response->{status} = $status;
+        $response->{status} = $status?$status:'ok';
     }
     return $self->results( { %{$self->results},  $src => { $dst => $response} } );
 }

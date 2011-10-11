@@ -18,12 +18,13 @@ $data = decode_json $data;
 my %params = (
                   data      => $data,
 		  data_type => 'bwctl',
+		  future_points => 15, 
 	     );
 #2
  
 my $obj1 =  Ecenter::ADS::Detector::FFF->new(\%params);
 $obj1->process_data;
-print Dumper $obj1->results;
+print "Results:" . Dumper($obj1->results);
 #11
 
 

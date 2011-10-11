@@ -51,64 +51,68 @@ my $DEFAULT_ERROR = 501;
 
 =cut
 ##  status URL
-any ['get'] =>  "/status.:format" => 
+any ['get'] =>  "/status.:format" =>
        sub {
                my $status = {};
-	       foreach my $host ( %{config->{gearman}{servers}}) {
-    	           map { $status->{$host}{$_} = gearman_status($host, $_) } @{config->{gearman}{servers}{$host}};
-               }
- 	       return  { status => 'ok', gearman => $status }
+	       foreach my $drs (keys %{config->{monitor}{gearman}} ) {
+	           foreach my $host (keys  %{config->{monitor}{gearman}{$drs}} ) {
+    	               map { $status->{$drs}{$host}{$_} = gearman_status($host, $_) }
+		           @{config->{monitor}{gearman}{$drs}{$host}};
+                   }
+ 	       }
+	       return  { status => 'ok', gearman => $status }
        };
 # health service
-any ['get'] =>  "/health.:format" => 
+any ['get'] =>  "/health.:format" =>
        sub {
  	      return get_health(params('query'));
        };
 
 ## get all hubs for src_ip/dst_ip
-any ['get'] =>  "/source.:format" => 
-       sub {
- 	       return process_source();
+any ['get'] =>  "/source.:format" =>
+       sub {   
+ 	       return (config->{status_instance}?{ error => 'not supported' }:process_source());
        };
 ### get destination IPs for the source IP ( based on avail traceroutes)
 any ['get'] =>  "/destination/:ip.:format" => 
        sub {
- 	       return process_source(src_ip => params->{ip});
+ 	       return (config->{status_instance}?{ error => 'not supported' }:process_source(src_ip => params->{ip}));
        };
        
 ## get all hubs for src_hub
-any ['get'] =>  "/hubs/:src_hub.:format" => 
+any ['get'] =>  "/hubs/:src_hub.:format" =>
        sub {
- 	       return   process_source(src_hub => params->{src_hub});
+ 	       return   (config->{status_instance}?{ error => 'not supported' }:process_source(src_hub => params->{src_hub}));
        };
 ## get all hubs  
-any ['get'] =>  "/hub.:format" => 
+any ['get'] =>  "/hub.:format" =>
        sub {
- 	       return   database('ecenter')->selectall_hashref( qq|select distinct hub_name, longitude, latitude from  hub|, 'hub_name');
+ 	       return   (config->{status_instance}?{ error => 'not supported' }:
+	                        database('ecenter')->selectall_hashref( qq|select distinct hub_name, longitude, latitude from  hub|, 'hub_name'));
        };
  ## get all hubs for src_ip/dst_ip
-any ['get'] =>  "/node/:ip.:format" => 
+any ['get'] =>  "/node/:ip.:format" =>
        sub {
- 	      return process_source(node_ip => params->{ip});
+ 	      return (config->{status_instance}?{ error => 'not supported' }:process_source(node_ip => params->{ip}));
        };  
 #########   get services(all of them -------------------------------------
  
-any ['get', 'post'] =>  "/service.:format" => 
+any ['get', 'post'] =>  "/service.:format" =>
        sub {
- 	       return process_service();
+ 	       return return (config->{status_instance}?{ error => 'not supported' }:process_service());
        };
 
 #########   get service --------------------------------------------------
 {
-    my %map2sql = ( id => 'service', 
+    my %map2sql = ( id => 'service',
                     ip => 'node.ip_noted',
-                    url => 'service', 
+                    url => 'service',
 		    name => 'name',
 	          );
-    foreach my $route (keys %map2sql) {    
+    foreach my $route (keys %map2sql) {
         any ['get', 'post'] =>  "/service/$route/:$route.:format" => 
             sub {
-                return process_service( value => params->{$route}, mapping =>  $map2sql{$route});
+                return (config->{status_instance}?{ error => 'not supported' }:process_service( value => params->{$route}, mapping =>  $map2sql{$route}));
 
         };
     }
@@ -116,6 +120,8 @@ any ['get', 'post'] =>  "/service.:format" =>
 #########   get data - only one type POST with trace parameter---------------------------------
 any [ 'post' ] =>  '/data/:data.:format' => 
     sub {
+        return { error => 'not supported' } 
+	    if config->{status_instance};
         my $data = {};
         eval { 
 	    my $request = params;
@@ -138,7 +144,9 @@ any [ 'post' ] =>  '/data/:data.:format' =>
     };
 #########   get data - all POST with trace parameter -------------------------------------------
 any [ 'post'] =>  '/data.:format' => 
-    sub {
+    sub { 
+        return { error => 'not supported' } 
+	    if config->{status_instance};
         my $data = {};
         eval {
 	    my $request = params;
@@ -158,6 +166,8 @@ any [ 'post'] =>  '/data.:format' =>
 #########   get data - only one type ----------------------------------------------------------
 any ['get'] =>  '/data/:data.:format' => 
     sub {
+        return { error => 'not supported' } 
+	    if config->{status_instance};
         my $data = {};
         eval {
 	   $data = process_data( data_type => params->{data}, params('query'));
@@ -170,6 +180,8 @@ any ['get'] =>  '/data/:data.:format' =>
 #########   get data - all ----------------------------------------------------------
 any ['get'] =>  '/data.:format' => 
     sub {
+        return { error => 'not supported' } 
+	    if config->{status_instance};
         my $data = {};
         eval {
 	   $data = process_data( params('query'));
@@ -182,6 +194,8 @@ any ['get'] =>  '/data.:format' =>
 #########   get data - Site Centric View (SCV)  ----------------------------------------------------------
 any ['get', 'post'] =>  '/site.:format' => 
     sub {
+        return { error => 'not supported' } 
+	    if config->{status_instance};
         my $data = {};
         eval {
 	   $data = process_site( params('query'));

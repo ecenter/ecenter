@@ -100,7 +100,9 @@ use DBI;
 my $DATA = { bwctl	=> {table => 'BwctlData',   class => 'Bwctl',      data => [qw/throughput/]},
      	     owamp	=> {table => 'OwampData',   class => 'Owamp',      data => [qw/sent loss min_delay max_delay duplicates/]},
      	     pinger	=> {table => 'PingerData',  class => 'PingER',     data => [qw/meanRtt maxRtt medianRtt minRtt maxIpd meanIpd minIpd iqrIpd lossPercent/]},
-     	     traceroute => {table => 'HopData',     callback  => \&process_trace, class => 'Traceroute', data => [[qw/ip_addr ip_noted nodename/], 'hop_num', 'hop_delay']},
+     	     traceroute => {table => 'HopData',     callback  => \&process_trace,
+	                                            db_callback => \&process_db_trace,
+	                                            class => 'Traceroute',  data => [qw/hop_ip hop_num hop_delay/]},
      	   };
 my %OPTIONS;
 my @string_option_keys = qw/port host g_host pass user db period timeout/;
@@ -474,6 +476,19 @@ sub  process_trace {
     delete $sql_datum->{ip_noted};
     #delete $sql_datum->{ip_noted};
 }
+#  traceroute db_callback
+#
+sub  process_db_trace {
+    my ($datum ) = @_;
+    my $row={};
+    $row->{hop_ip} = $datum->hop_ip->ip_addr;
+    $row->{hop_num} = $datum->hop_num;
+    $row->{hop_delay} = $datum->hop_delay;
+    $row->{nodename} = $datum->hop_ip->nodename;
+    $row->{ip_noted} = $datum->hop_ip->ip_noted;
+    return $row;
+    #delete $sql_datum->{ip_noted};
+}
 #
 #  call to get local data and if not there then call remote service
 #
@@ -488,8 +503,12 @@ sub dispatch_data {
 							                    '<=' => $request->{end}
 								          }
 						          });
+ 
     my ($start_time, $end_time) = get_datums(\@datas,  $result->{data},
-                                             $DATA->{$request->{type}}{data}, $request->{type}, $request->{resolution});
+                                             $DATA->{$request->{type}}{data}, 
+					     $request->{type}, 
+					     $request->{resolution}, 
+					     $DATA->{$request->{type}}{db_callback});
     $logger->debug("$request->{type} ---  Times: start_dif=" .
                      abs($start_time - $request->{start}) .  
 		   "... end_dif=" . abs( $request->{end} -  $end_time ));
@@ -499,7 +518,6 @@ sub dispatch_data {
      	  $logger->info("$request->{type} --- params to ma: ip=$request->{md_row}{service} start= $request->{start} end= $request->{end} ");
      	  return _get_remote_data($request, $dbh);
     }
-    
     return encode_json $result;
 }
 

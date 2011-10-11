@@ -90,7 +90,7 @@ $.ecenter_network.hoverOver = function() {
       switch (element.type) {
         case 'circle':
         case 'path':
-          if (element['tracerouteDirection'] == 'forward' || ( element['tracerouteDirection'] == 'reverse' && element['tracerouteType'] == 'diff'  ) ) {
+          if (element['tracerouteDirection'] == 'forward' || (element['tracerouteOnlyReverse']) || ( element['tracerouteDirection'] == 'reverse' && element['tracerouteType'] == 'diff'  ) ) {
             element.attr(forward_style);
           } else {
             element.attr(reverse_style);

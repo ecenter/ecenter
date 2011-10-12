@@ -48,7 +48,7 @@
 @font_tool: "Ubuntu", Arial, sans-serif;
 @font_heading: "Lato", Arial, sans-serif;
 @font_body: "Arimo", "Helvetica Neue", Verdana, sans-serif;
-@font_mono: "Anonymous Pro", monospace;
+@font_mono: "Courier New", "Courier", monospace;
 /* }}} */
 
 /* --- Less CSS Mixins --- */
@@ -943,9 +943,15 @@ form {
       .box;
       margin-top: .75em;
     }
-    #src-wrapper, #dst-wrapper, #date-select, #ads-settings { // {{{
+    #date-description-wrapper, .instructions { // {{{
+      width: 285px;
+      float: left;
+      margin-top: .75em;
+    } // }}}
+  } // }}} 
+
+    #src-wrapper, #dst-wrapper, #date-select, #ads-settings, #timezone-wrapper { // {{{
       .box;
-      width: 300px;
       .form-item {
         float: left;
         &.form-item-labeled { margin-bottom: 1em; }
@@ -1000,12 +1006,11 @@ form {
         }
       }
     } // }}}
-    #date-description-wrapper, .instructions { // {{{
-      width: 285px;
-      float: left;
-      margin-top: .75em;
-    } // }}}
-  } // }}} 
+
+    #src-wrapper, #dst-wrapper, #date-select {
+      width: 300px;
+    }
+  
   #recent-queries { // {{{
     font-size: @font_size_18;
     fieldset {
@@ -1116,56 +1121,73 @@ form {
     padding-bottom: 10px;
     margin-bottom: 10px;
     border-bottom: 1px solid @color_grey_67;
-    h2 {
+    .form-item {
+      margin: 0 !important;
+    }
+    .title-col {
       float: left;
-      width: 400px;
-      line-height: 1;
-      margin: 0;
-      .src-dst { 
-        display: block;
-        margin-bottom: .15em;
-      }
-      .date-range {
-        font-size: .65em;
-        font-weight: normal;
-        display: block;
-      }
-      .separator {
-        display: none;
-      }
-    }
-    .issues {
-      float: left;
-      width: 450px;
-    }
-    .issuelink a, .permalink a {
-      font-size: 14px;
-      .button;
-      padding: 3px 5px;
-      text-align: center;
-      :hover {
-        text-decoration: none;
-      }
-    }
-    .issuelink, .permalink {
-      float: left;
-    }
-    .issuelink {
-      width: 205px;
-    }
-    .permalink {
-      width: 325px;
-      .form-item {
+      width: 360px;
+      h2 {
+        line-height: 1;
         margin: 0;
+        .src-dst { 
+          display: block;
+          margin-bottom: 13px;
+        }
+        .date-range {
+          font-size: .65em;
+          font-weight: normal;
+          display: block;
+        }
+        .separator {
+          display: none;
+        }
+      }
+    }
+    .meta-col {
+      float: left;
+      width: 575px;
+      .issuelink, .permalink {
+        float: left;
+        a {
+          font-size: 13px;
+          .button;
+          padding: 3px 5px;
+          text-align: center;
+          :hover {
+            text-decoration: none;
+          }
+        }
+      }
+      .issuelink {
+        width: 175px;
+        margin-right: 10px;
+      }
+      .permalink {
+        width: 390px;
+        .form-item {
+          display: inline;
+          input {
+            font-family: @font_mono;
+            color: @color_black;
+            background-color: @color_grey_93;
+            font-size: 10px;
+            line-height: 10px;
+            padding-top: 5px;
+            padding-bottom: 5px;
+            width: 320px;
+          }
+        }
+      }
+      #timezone-wrapper {
+        margin-top: 10px;
+        label {
+          font-size: 13px;
+          font-weight: normal;
+          width: 115px;
+        }
         input {
-          font-family: @font_mono;
-          color: @color_black;
-          background-color: @color_grey_93;
           font-size: 11px;
-          line-height: 13px;
-          padding-top: 2px;
-          padding-bottom: 2px;
-          width: 310px;
         }
       }
     }
@@ -2055,7 +2077,7 @@ table.network-health {
   width: 950px;
   fieldset {
     .box;
-    width: 320px;
+    width: 245px;
     margin: 0 15px 15px 0;
     .form-item {
       margin: 0 0 14px 0;

@@ -673,6 +673,16 @@ $.fn.ecenter_network.plugins.ads = function() {
   });
 }
 
+$.fn.ecenter_network.plugins.timezone_select = function() {
+  $('#timezone-select').change(function() {
+    var dst = $('#dst-wrapper input', this.el);
+    if (dst.val()) {
+      dst.data('autocomplete')._trigger('change');
+      return;
+    }
+  });
+}
+
 $.fn.ecenter_network.plugins.traceroute_paste = function() {
   var target = $('#traceroute-paste-wrapper');
   var dialog = target.hide().clone().attr('id', 'traceroute-paste-copy');
@@ -731,7 +741,8 @@ $.fn.ecenter_network.defaults = {
     $.fn.ecenter_network.plugins.change,
     $.fn.ecenter_network.plugins.traceroute,
     $.fn.ecenter_network.plugins.draw_map,
-    $.fn.ecenter_network.plugins.show_data_button
+    $.fn.ecenter_network.plugins.show_data_button,
+    $.fn.ecenter_network.plugins.timezone_select
   ]
 };
 

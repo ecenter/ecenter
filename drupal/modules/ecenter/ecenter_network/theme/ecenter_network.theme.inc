@@ -10,8 +10,14 @@
  * Theme main data display
  */
 function template_preprocess_ecenter_network_data(&$vars) {
+  global $user;
   $data = $vars['data'];
+
+  // DRS parameters
   $params = $data['drs']['parameters'];
+  
+  // All parameters
+  $query_params = $data['parameters'];
 
   drupal_add_js(array('ecenterNetwork' => array('tracerouteData' => 
     $data['drs']['traceroute']['diff'])), 'setting');
@@ -27,7 +33,7 @@ function template_preprocess_ecenter_network_data(&$vars) {
   $dates = array();
   foreach (array('start', 'end') as $val) {
     $dates[$val] = _ecenter_network_utc_to_local($params[$val], 
-      'M j, Y H:i', $params['timezone']);
+      'M j, Y H:i', $query_params['timezone']);
   }
   
   $vars['title'] = t('<span class="src-dst">@src_hub to
@@ -70,20 +76,29 @@ function template_preprocess_ecenter_network_data(&$vars) {
         $vars['issues'] = '<label>'. t('Issues from this query: ') .'</label>'. implode(', ', $issue_links);
       }
     }
+
+    $timezones = array_map('_ecenter_network_process_tz_name', date_timezone_names());
+    $timezone_select = array(
+      '#type' => 'combobox',
+      '#title' => t('Display timezone'),
+      '#value' => $query_params['timezone'],
+      '#options' => $timezones,
+      '#id' => 'timezone-select',
+      '#name' => 'timezone',
+    );
+    $vars['timezone_select'] = drupal_render($timezone_select);
+  
   }
 
   // End to end measurements
   $vars['end_to_end'] = theme('ecenter_network_end_to_end',
-    $data['drs']['end_to_end'], $vars['params']['timezone'], !$vars['standalone'], $data['ads']);
+    $data['drs']['end_to_end'], $query_params['timezone'], !$vars['standalone'], $data['ads']);
 
   // Per-hop measurements
-  $vars['hops'] = theme('ecenter_network_hops', $data['drs']['traceroute']['diff']);
-
-  // Links and issue queries shouldn't take timezone argument
-  unset($vars['params']['timezone']);
+  $vars['hops'] = theme('ecenter_network_hops', $data['drs']['traceroute']['diff'], $query_params['timezone']);
 
   // Generate permalink
-  $vars['permalink'] = l(t('Permanent link (bookmark & share)'), 'network', array(
+  $vars['permalink'] = l(t('Link'), 'network', array(
     'query' => $params,
     'absolute' => TRUE,
     'attributes' => array('title' => $vars['title']),
@@ -108,11 +123,6 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
 
   $statistics_table = array();
   $data_tables = array();
-
-  // Set timezone to null if not provided
-  if ($vars['timezone'] == 1 || $vars['timezone'] === TRUE) {
-    $vars['timezone'] = NULL;
-  }
 
   if (!$data) {
     return;
@@ -176,7 +186,7 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
           $start = ($start == 0 || $min < $start) ? $min : $start;
 
           foreach ($timeseries as $timestamp => $value) {
-            $time = _ecenter_network_timestamp_to_local($timestamp);
+            $time = _ecenter_network_timestamp_to_local($timestamp, 'Y-m-d H:i:s', $vars['timezone']);
             $data_table[] = array(
               array('data' => $time, 'header' => TRUE),
               theme($value_suggestions, $value, $test, $measurement, FALSE)
@@ -308,7 +318,7 @@ function theme_ecenter_network_recent_query($query, $time) {
  * @TODO We might want to make this more flexible. However, this data isn't
  * likely to change soon.
  */
-function theme_ecenter_network_hops($traceroute = array()) {
+function theme_ecenter_network_hops($traceroute = array(), $timezone = FALSE) {
   $tables = array();
 
   if (empty($traceroute)) {
@@ -331,7 +341,7 @@ function theme_ecenter_network_hops($traceroute = array()) {
         $table = array();
 
         if (!empty($hop['data']['snmp'])) {
-          $hub_id = $ttl .'_'. $hop['hub_name']; //$hop['netblock']; // .'-'. $hop['hop_num'];
+          $hub_id = $ttl .'_'. $hop['hub_name']; 
           $settings['ecenterNetwork']['seriesLookupByIndex'][] = array(
             'id' => $hop['id'], 
             'hubID' => $hub_id,
@@ -345,7 +355,7 @@ function theme_ecenter_network_hops($traceroute = array()) {
           $sidx++;
 
           foreach ($hop['data']['snmp'] as $timeseries) {
-            $time = _ecenter_network_timestamp_to_local($timeseries[0]);
+            $time = _ecenter_network_timestamp_to_local($timeseries[0], 'Y-m-d H:i:s', $timezone);
             $table[] = array(
               'label' => array(
                 'data' => $time,

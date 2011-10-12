@@ -97,6 +97,7 @@ function ecenter_network_theme() {
     'ecenter_network_hops' => array(
       'arguments' => array(
         'hops' => array(),
+        'timezone' => NULL,
       ),
     ) + $options,
     'ecenter_network_end_to_end' => array(
@@ -211,9 +212,6 @@ function ecenter_network_init() {
 
     // Traceroute
     drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jquery.traceroute.js');
-
-    // Timezone handling
-    drupal_add_js(drupal_get_path('module', 'date_timezone') .'/date_timezone.js');
 
     // Page behaviors
     drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/behaviors.js');
@@ -597,13 +595,6 @@ function ecenter_network_select_form(&$form_state) {
     $user_timezone = $timezone;
   }
   
-  $form['network_wrapper']['query']['timezone_name']['#default_value'] = $user_timezone;
-
-  // Clear time selection if there's a query
-  if (!empty($start) || !empty($end)) {
-    $form['network_wrapper']['query']['recent_select']['#default_value'] = NULL;
-  }
-
   $sources = ecenter_network_get_hops();
 
   $src_options[0] = '';
@@ -656,6 +647,8 @@ function ecenter_network_select_form(&$form_state) {
         $data['ads'] = ecenter_network_get_ads_data($src, $dst, $start, $end, $algorithm, $detector_type, $sensitivity, $elevation1, $elevation2, $swc);
       }
     }
+
+    $data['parameters'] = $params;
 
     // If we've got the data (at bare minimum, a traceroute), delegate to rendering function
     if ($data['drs']) {
@@ -2000,7 +1993,6 @@ function _ecenter_network_extract_query() {
       'dst' => $_REQUEST['network_wrapper']['query']['dst_wrapper']['dst'],
       'start' => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['start']['date']),
       'end' => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['end']['date']),
-      'timezone' => $_REQUEST['network_wrapper']['query']['timezone_name'],
 
       'ads' => $_REQUEST['ads'],
       'algorithm' => $_REQUEST['algorithm'],
@@ -2011,6 +2003,8 @@ function _ecenter_network_extract_query() {
       'swc' => $_REQUEST['swc'],
 
       'traceroute' => $_REQUEST['network_wrapper']['query']['traceroute_paste'],
+
+      'timezone' => $_REQUEST['timezone'],
     );
   }
 
@@ -2035,4 +2029,11 @@ function ecenter_network_preprocess_page(&$vars) {
   if (arg(0) == 'network' && !arg(1)) {
     $vars['body_classes'] .= ' page-network-weathermap';
   }
+}
+
+/**
+ * Callback for remove underscores from timezone names for use with combobox
+ */
+function _ecenter_network_process_tz_name($val) {
+  return str_replace('_', ' ', $val);
 }

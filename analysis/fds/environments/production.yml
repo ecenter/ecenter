@@ -1,17 +1,12 @@
-# configuration file for production environment
-
-# only log warning and error messsages
-log: "warning"
-
-# log message to a file in logs/
-logger: "file"
-
-# don't consider warnings critical
+logger: "console"
+log: "debug"
 warnings: 0
-
-# hide errors 
-show_errors: 0
-
-# cache route resolution for maximum performance
+debug: 1
+show_errors: 1
 route_cache: 1
-
+auto_reload: 0
+port: 9055
+drs_url: http://ecenter.fnal.gov:8055
+gearman:
+   servers: 
+       xenmon.fnal.gov: ['10121']

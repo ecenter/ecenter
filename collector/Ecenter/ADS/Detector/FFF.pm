@@ -12,7 +12,6 @@ use Ecenter::Types;
 use POSIX qw(strftime :sys_wait_h);
 
 use JSON::XS qw(encode_json decode_json);
-use Gearman::Client;
 use Log::Log4perl qw(get_logger);
 extends 'Ecenter::ADS::Detector';
 
@@ -71,6 +70,8 @@ logging  agent via C<Log::Log4perl>
 has stderr    =>  (is => 'rw', isa => 'Num', required => 0  );
 has future_points =>  (is => 'rw', isa => 'Int', default => 10);
 has timeout =>  (is => 'rw', isa => 'Ecenter::Types::PositiveInt', default => '120');
+has g_client => (is => 'rw', isa => 'Gearman::Client', required => 1 );
+
 
 my $ANA_METRIC = {snmp =>  'utilization', bwctl => 'throughput', 'owamp' => 'max_delay'};
 
@@ -104,19 +105,21 @@ after 'process_data' => sub {
     my $g_client;
     my $task_set;
     eval {
-	$g_client =   get_gearman({'xenmon.fnal.gov' => ['10121']});
+	$g_client =   $self->g_client;
 	$task_set = $g_client->new_task_set;
 	foreach my $key (keys %$data_ip) {
 	    my @data = map {$_->[1]} @{$data_ip->{$key}};
 	    my @times = map {$_->[0]} @{$data_ip->{$key}};
 	    my %metadata =   map {$_ => $self->parsed_data->{metadata}{$key}{$_}} qw/src_hub dst_hub metaid/;
 	    $self->logger->debug(" Trying to forecast -- $key  ", sub{Dumper(\@times,\@data)});   
-	    next unless scalar @data;
-	 
+	    my $data_size = scalar @data;
+	    next unless $data_size;
+	    my $min_size = int($data_size/10);
+	    $self->future_points($min_size) if $min_size < $self->future_points;
 	    my $ret =  $task_set->add_task( 'forecast' =>
 	                                	  encode_json { times => \@times,
 					                	data  => \@data,
-								future_points => $self->future_points
+								future_points =>  $self->future_points
 							      },
 					     {
 					       on_fail     => sub {

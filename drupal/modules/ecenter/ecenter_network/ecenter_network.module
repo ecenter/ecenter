@@ -459,104 +459,6 @@ function _ecenter_network_select_form() {
 }
 
 /**
- * Form snippet for ADS
- */
-function ecenter_network_ads_form() {
-  extract(_ecenter_network_extract_query());
-
-  $form['ads_wrapper'] = array(
-    '#prefix' => '<div id="ads-settings-wrapper">',
-    '#suffix' => '</div>',
-  );
-
-  $form['ads_wrapper']['ads'] = array(
-    '#id' => 'ads',
-    '#name' => 'ads',
-    '#type' => 'checkbox',
-    '#title' => 'Use anomaly detection (experimental)',
-    '#value' => FALSE,
-    '#weight' => 0,
-  );
-
-  $form['ads_wrapper']['ads_settings'] = array(
-    '#id' => 'ads-settings-fieldset',
-    '#prefix' => '<div id="ads-settings">',
-    '#suffix' => '</div>',
-    '#type' => 'fieldset',
-    '#title' => t('Anomaly detection settings'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-  );
-
-  $form['ads_wrapper']['ads_settings']['algorithm'] = array(
-    '#id' => 'algorithm',
-    '#name' => 'algorithm',
-    '#title' => theme('advanced_help_topic', 'ecenter_network', 'ads_algorithm') . t('Algorithm'),
-    '#type' => 'select',
-    '#options' => array(
-      'spd' => t('spd'),
-      'apd' => t('apd'),
-    ),
-    '#attributes' => array('class' => 'ads-algorithm'),
-    '#value' => (!empty($algorithm)) ? $algorithm : 'spd',
-    '#weight' => 1,
-  );
-
-  $form['ads_wrapper']['ads_settings']['sensitivity'] = array(
-    '#id' => 'sensitivity',
-    '#name' => 'sensitivity',
-    '#title' => theme('advanced_help_topic', 'ecenter_network', 'ads_sensitivity') . t('Sensitivity'),
-    '#type' => 'textfield',
-    '#size' => 5,
-    '#id' => 'sensitivity',
-    '#name' => 'sensitivity',
-    '#value' => (!empty($sensitivity)) ? $sensitivity : 2,
-    '#weight' => 2,
-  );
-
-  $form['ads_wrapper']['ads_settings']['elevation1'] = array(
-    '#id' => 'elevation1',
-    '#name' => 'elevation1',
-    '#title' => theme('advanced_help_topic', 'ecenter_network', 'ads_elevation1') . t('Elevation 1'),
-    '#type' => 'textfield',
-    '#size' => 5,
-    '#value' => (!empty($elevation1)) ? $elevation1 : 0.2,
-    '#weight' => 3,
-  );
-
-  $form['ads_wrapper']['ads_settings']['elevation2'] = array(
-    '#id' => 'elevation2',
-    '#name' => 'elevation2',
-    '#title' => theme('advanced_help_topic', 'ecenter_network', 'ads_elevation2') . t('Elevation 2'),
-    '#type' => 'textfield',
-    '#size' => 5,
-    '#value' => (!empty($elevation2)) ? $elevation2 : 0.4,
-    '#weight' => 4,
-  );
-
-  $form['ads_wrapper']['ads_settings']['swc'] = array(
-    '#id' => 'swc',
-    '#name' => 'swc',
-    '#title' => theme('advanced_help_topic', 'ecenter_network', 'ads_swc') . t('Window count'),
-    '#type' => 'textfield',
-    '#size' => 5,
-    '#value' => (!empty($swc)) ? $swc : 15,
-    '#weight' => 5,
-  );
-  
-  $form['ads_wrapper']['ads_submit'] = array(
-    '#type' => 'submit',
-    '#id' => 'ads-submit',
-    '#name' => 'ads-submit',
-    '#value' => t('Detect anomalies'),
-    '#weight' => 5,
-    '#attributes' => array('class' => 'ads-submit'),
-  );
-
-  return $form;
-}
-
-/**
  * Primary selection form.
  *
  * The basic form is defined in _ecenter_network_select_form. This function
@@ -706,6 +608,105 @@ function ecenter_network_select_form_submit($form, &$form_state) {
   $form_state['storage'] = $form_state['values'];
   $form_state['rebuild'] = TRUE;
 }
+
+/**
+ * Form snippet for ADS
+ */
+function ecenter_network_ads_form() {
+  extract(_ecenter_network_extract_query());
+
+  $form['ads_wrapper'] = array(
+    '#prefix' => '<div id="ads-settings-wrapper">',
+    '#suffix' => '</div>',
+  );
+
+  $form['ads_wrapper']['ads'] = array(
+    '#id' => 'ads',
+    '#name' => 'ads',
+    '#type' => 'checkbox',
+    '#title' => 'Use anomaly detection (experimental)',
+    '#value' => FALSE,
+    '#weight' => 0,
+  );
+
+  $form['ads_wrapper']['ads_settings'] = array(
+    '#id' => 'ads-settings-fieldset',
+    '#prefix' => '<div id="ads-settings">',
+    '#suffix' => '</div>',
+    '#type' => 'fieldset',
+    '#title' => t('Anomaly detection settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+
+  $form['ads_wrapper']['ads_settings']['algorithm'] = array(
+    '#id' => 'algorithm',
+    '#name' => 'algorithm',
+    '#title' => theme('advanced_help_topic', 'ecenter_network', 'ads_algorithm') . t('Algorithm'),
+    '#type' => 'select',
+    '#options' => array(
+      'spd' => t('spd'),
+      'apd' => t('apd'),
+    ),
+    '#attributes' => array('class' => 'ads-algorithm'),
+    '#value' => (!empty($algorithm)) ? $algorithm : 'spd',
+    '#weight' => 1,
+  );
+
+  $form['ads_wrapper']['ads_settings']['sensitivity'] = array(
+    '#id' => 'sensitivity',
+    '#name' => 'sensitivity',
+    '#title' => theme('advanced_help_topic', 'ecenter_network', 'ads_sensitivity') . t('Sensitivity'),
+    '#type' => 'textfield',
+    '#size' => 5,
+    '#id' => 'sensitivity',
+    '#name' => 'sensitivity',
+    '#value' => (!empty($sensitivity)) ? $sensitivity : 2,
+    '#weight' => 2,
+  );
+
+  $form['ads_wrapper']['ads_settings']['elevation1'] = array(
+    '#id' => 'elevation1',
+    '#name' => 'elevation1',
+    '#title' => theme('advanced_help_topic', 'ecenter_network', 'ads_elevation1') . t('Elevation 1'),
+    '#type' => 'textfield',
+    '#size' => 5,
+    '#value' => (!empty($elevation1)) ? $elevation1 : 0.2,
+    '#weight' => 3,
+  );
+
+  $form['ads_wrapper']['ads_settings']['elevation2'] = array(
+    '#id' => 'elevation2',
+    '#name' => 'elevation2',
+    '#title' => theme('advanced_help_topic', 'ecenter_network', 'ads_elevation2') . t('Elevation 2'),
+    '#type' => 'textfield',
+    '#size' => 5,
+    '#value' => (!empty($elevation2)) ? $elevation2 : 0.4,
+    '#weight' => 4,
+  );
+
+  $form['ads_wrapper']['ads_settings']['swc'] = array(
+    '#id' => 'swc',
+    '#name' => 'swc',
+    '#title' => theme('advanced_help_topic', 'ecenter_network', 'ads_swc') . t('Window count'),
+    '#type' => 'textfield',
+    '#size' => 5,
+    '#value' => (!empty($swc)) ? $swc : 15,
+    '#weight' => 5,
+  );
+  
+  $form['ads_wrapper']['ads_submit'] = array(
+    '#type' => 'submit',
+    '#id' => 'ads-submit',
+    '#name' => 'ads-submit',
+    '#value' => t('Detect anomalies'),
+    '#weight' => 5,
+    '#attributes' => array('class' => 'ads-submit'),
+  );
+
+  return $form;
+}
+
 
 /**
  * Get the E-Center Data Retrieval Service client

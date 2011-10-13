@@ -176,6 +176,7 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
             'data' => array($header) + $row,
             'class' => $test .'-'. $measurement .' '. $test .'-'. $measurement
               .'-'. $direction,
+            'id' => $test .'-'. $measurement .'-'. $direction,
           );
         }
 

@@ -642,10 +642,12 @@ $.fn.ecenter_network.plugins.show_data_button = function() {
 }
 
 $.fn.ecenter_network.plugins.end_to_end = function() {
-  $('#end-to-end-results tbody tr', this.el).hover(function(e) {
-    var class_list = $(this).attr('class').split(/\s+/);
-  }, function(e) {
-    console.log('out', this);
+  $('#end-to-end-results .end-to-end-table tbody tr', this.el).hover(function() {
+    var parts = this.id.split('-');
+    $('#' + parts[0] + '-' + parts[1] + '-data-tables').addClass('active-row');
+  }, function() {
+    var parts = this.id.split('-');
+    $('#' + parts[0] + '-' + parts[1] + '-data-tables').removeClass('active-row');
   });
 }
 
@@ -742,7 +744,8 @@ $.fn.ecenter_network.defaults = {
     $.fn.ecenter_network.plugins.traceroute,
     $.fn.ecenter_network.plugins.draw_map,
     $.fn.ecenter_network.plugins.show_data_button,
-    $.fn.ecenter_network.plugins.timezone_select
+    $.fn.ecenter_network.plugins.timezone_select,
+    $.fn.ecenter_network.plugins.end_to_end
   ]
 };
 

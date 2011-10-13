@@ -110,7 +110,7 @@ after 'process_data' => sub {
 	foreach my $key (keys %$data_ip) {
 	    my @data = map {$_->[1]} @{$data_ip->{$key}};
 	    my @times = map {$_->[0]} @{$data_ip->{$key}};
-	    my %metadata =   map {$_ => $self->parsed_data->{metadata}{$key}{$_}} qw/src_hub dst_hub metaid/;
+	    my %metadata =   map {$_ => $self->parsed_data->{metadata}{$key}{$_} } grep ($self->parsed_data->{metadata}{$key}{$_}, qw/src_hub dst_hub metaid/);
 	    $self->logger->debug(" Trying to forecast -- $key  ", sub{Dumper(\@times,\@data)});   
 	    my $data_size = scalar @data;
 	    next unless $data_size;
@@ -127,7 +127,8 @@ after 'process_data' => sub {
 					       },
 					       on_complete => sub {
 					                       my $returned = decode_json  ${$_[0]};
-							       $self->add_result($key,  undef, { $ANA_METRIC->{$self->data_type} => $returned });
+							        %{$returned} = (%{$returned}, %metadata) if %metadata;
+							       $self->add_result($key,  undef, { $ANA_METRIC->{$self->data_type} =>  $returned });
 							       $self->logger->debug("Results Data $key - ",
 						
 							                        	sub{Dumper( $returned)});

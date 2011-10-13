@@ -80,12 +80,18 @@ function template_preprocess_ecenter_network_data(&$vars) {
     $timezones = array_map('_ecenter_network_process_tz_name', date_timezone_names());
     $timezone_select = array(
       '#type' => 'combobox',
-      '#title' => t('Display timezone'),
+      '#title' => t('Timezone'),
       '#value' => $query_params['timezone'],
       '#options' => $timezones,
       '#id' => 'timezone-select',
       '#name' => 'timezone',
     );
+    if ($user->uid) {
+      $timezone_select['#description'] = t('Timezone for results. <a href="@url">Set default timezone</a>.', array('@url' => url('user')));
+    }
+    else {
+      $timezone_select['#description'] = t('Timezone for results. <a href="@login_url">Login</a> or <a href="@register_url">register</a> to set default.', array('@login_url' => url('user'), '@register_url' => url('user/register')));
+    }
     $vars['timezone_select'] = drupal_render($timezone_select);
   
   }

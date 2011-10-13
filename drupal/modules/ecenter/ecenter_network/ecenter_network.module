@@ -438,7 +438,22 @@ function _ecenter_network_select_form() {
     '#granularity' => array('year', 'month', 'day'),
     '#default_value' => NULL,
   );
-  
+
+  $form['network_wrapper']['query']['start'] = array(
+    '#type' => 'hidden',
+    '#value' => NULL,
+  );
+  $form['network_wrapper']['query']['end'] = array(
+    '#type' => 'hidden',
+    '#value' => NULL,
+  );
+
+  if (!empty($start) && !empty($end)) {
+    $form['network_wrapper']['query']['start']['#value'] = $start;
+    $form['network_wrapper']['query']['end']['#value'] = $end;
+    unset($form['network_wrapper']['query']['recent_select']['#default_value']);
+  }
+ 
   // Submit button
   $form['network_wrapper']['submit'] = array(
     '#type' => 'submit',
@@ -524,6 +539,7 @@ function ecenter_network_select_form(&$form_state) {
   }
 
   if (!empty($start) && !empty($end)) {
+    
     $params = array(
       'start' => $start,
       'end' => $end,
@@ -570,10 +586,20 @@ function ecenter_network_select_form(&$form_state) {
  * Default submit handler for network form
  */
 function ecenter_network_select_form_submit($form, &$form_state) {
+  global $user;
+
   // Do what AHAH helper does on an AJAX call, to make form constructor a
   // little less crazy
-  $inc = variable_get('ecenter_network_time_increment', 10);
-  $tz = timezone_open('UTC');
+  $inc = variable_get('ecenter_network_time_increment', 30);
+
+  if (empty($form_state['post']['timezone'])) {
+    $tz = $user->timezone_name ? $user->timezone_name 
+      : variable_get('date_default_timezone_name', NULL);
+  }
+  else {
+    $tz = $form_state['post']['timezone'];
+  }
+  $tz = timezone_open($tz);
 
   if ($form_state['values']['network_wrapper']['query']['recent_select']
     && !$form_state['values']['network_wrapper']['query']['date_select']) {
@@ -598,12 +624,15 @@ function ecenter_network_select_form_submit($form, &$form_state) {
     $end = date_format($day, 'Y-m-d H:i:00');
   }
 
-  $form_state['values']['network_wrapper']['query']['start'] = $start;
-  $form_state['values']['network_wrapper']['query']['end'] = $end;
+  // Overwrite post variables
+  if (isset($start) && isset($end)) {
+    $form_state['values']['network_wrapper']['query']['start'] = $start;
+    $form_state['values']['network_wrapper']['query']['end'] = $end;
 
-  // @TODO Set request variables -- seems hackish at this point
-  $_REQUEST['network_wrapper']['query']['start']['date'] = $start;
-  $_REQUEST['network_wrapper']['query']['end']['date'] = $end;
+    // @TODO Set request variables -- seems hackish at this point
+    $_REQUEST['network_wrapper']['query']['start'] = $start;
+    $_REQUEST['network_wrapper']['query']['end'] = $end;
+  }
 
   $form_state['storage'] = $form_state['values'];
   $form_state['rebuild'] = TRUE;
@@ -1992,8 +2021,8 @@ function _ecenter_network_extract_query() {
     $vars = array(
       'src' => $_REQUEST['network_wrapper']['query']['src_wrapper']['src'],
       'dst' => $_REQUEST['network_wrapper']['query']['dst_wrapper']['dst'],
-      'start' => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['start']['date']),
-      'end' => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['end']['date']),
+      'start' => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['start']),
+      'end' => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['end']),
 
       'ads' => $_REQUEST['ads'],
       'algorithm' => $_REQUEST['algorithm'],

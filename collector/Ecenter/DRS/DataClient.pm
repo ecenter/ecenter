@@ -120,7 +120,7 @@ sub get_data {
             $self->$type({});
        }
     } 
-    $self->logger->debug(" DRS response::", sub{Dumper($self->data)});
+    #$self->logger->debug(" DRS response::", sub{Dumper($self->data)});
     return $self->data;
 }
 

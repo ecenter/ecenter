@@ -32,7 +32,7 @@ Log::Log4perl->easy_init(\%logger_opts);
 our  $logger = Log::Log4perl->get_logger(__PACKAGE__);
 my $REG_IP = qr/^[\d\.]+|[a-f\d\:]+$/i;
 my $REG_DATE = qr/^\d{4}\-\d{2}\-\d{2}\s+\d{2}\:\d{2}\:\d{2}$/;
-my @DATA_ARGS = ('src_hub', 'dst_hub','src_ip','dst_ip','start','end','data_type', 'timeout', 'resolution');
+my @DATA_ARGS = ('src_hub', 'dst_hub','src_ip','dst_ip','start','end','data_type', 'future_points', 'resolution', 'timeout');
 
 ##  status URL
 any ['get'] =>  "/fds/status.:format" =>
@@ -67,9 +67,11 @@ sub  forecast {
                               dst_ip	 => {type => SCALAR, regex => $REG_IP,   optional => 1}, 
 		              start	 => {type => SCALAR, regex => $REG_DATE, optional => 1},
 		              end	 => {type => SCALAR, regex => $REG_DATE, optional => 1},
+			      future_points => {type => SCALAR, regex => qr/^\d+$/, optional => 1},
 			      resolution => {type => SCALAR, regex => qr/^\d+$/, optional => 1},
 			      timeout	 => {type => SCALAR, regex => qr/^\d+$/, optional => 1},
-			      data_type  => {type => SCALAR, regex => qr/^snmp|bwctl$/i},
+			      data_type  => {type => SCALAR, regex => qr/^snmp|bwctl|owamp$/i},
+			      
 				});
     my $data = {};
     my $drs;
@@ -92,7 +94,8 @@ sub  forecast {
             return { status => 'error', error => "Data is not supplied or supplied but empty or  malformed"};
     }
     map {delete $req_params{$_} if $req_params{$_} } qw/start end/;
-    my $fds = Ecenter::ADS::Detector::FFF->new({ data => $data, %req_params });
+   
+    my $fds = Ecenter::ADS::Detector::FFF->new({ data => $data, %req_params, g_client => get_gearman(config->{gearman}{servers}) });
     my $results = {};
     eval {
          $fds->process_data();

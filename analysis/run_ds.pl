@@ -96,12 +96,13 @@ $OPTIONS{service} ||= 'ads';
 $OPTIONS{g_host}  ||= 'xenmon.fnal.gov';
 $OPTIONS{logdir}  ||= '/tmp'; 
 
-##`/bin/ps auxwww | grep plackup  | grep -v grep | grep -v  nedit  | awk '{print \$2}' | xargs kill -9` if $OPTIONS{clean};
+`/bin/ps auxwww | grep plackup_$OPTIONS{service}  | grep -v grep | grep -v  nedit  | awk '{print \$2}' | xargs kill -9` if $OPTIONS{clean};
 `/bin/ps auxwww | grep '$OPTIONS{service}\_app.pl' | grep -v grep | grep -v  nedit  | awk '{print \$2}' | xargs kill -9` if $OPTIONS{clean};
 
 foreach my $port (@ports) {
-    my $cmd = "plackup  -E production -s Twiggy -a  bin/$OPTIONS{service}\_app.pl -p $port > $OPTIONS{logdir}/$OPTIONS{service}\_$port.log 2>&1 &";
+    my $cmd = "plackup_$OPTIONS{service} -E production -s Twiggy -a  bin/$OPTIONS{service}\_app.pl -p $port > $OPTIONS{logdir}/$OPTIONS{service}\_$port.log 2>&1 &";
     $logger->debug("CMD:$cmd");
-    system($cmd)==0 or $logger->error("....failed");;
+    system($cmd)==0 or $logger->error("....failed");
+    
 }
 exit 0;

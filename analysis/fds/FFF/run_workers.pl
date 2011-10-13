@@ -113,7 +113,7 @@ $OPTIONS{wname}   ||= 'data_worker.pl';
 
 `/bin/ps auxwww | grep '$OPTIONS{wname}' | grep $OPTIONS{port} | grep -v run | grep -v grep | grep -v  nedit  | awk '{print \$2}' | xargs kill -9` if $OPTIONS{clean};
 for(my $i=0;$i<$OPTIONS{workers};$i++) {
-    my $cmd = "$Bin/$OPTIONS{wname} --db=$OPTIONS{db} " . ($OPTIONS{debug}?'--debug':'') . " --host=$OPTIONS{host}  --g_host=$OPTIONS{g_host} --port=$OPTIONS{port}  > $OPTIONS{logdir}/log_worker_$OPTIONS{port}\_$i.log  2>&1 &";
+    my $cmd = "$Bin/$OPTIONS{wname} --db=$OPTIONS{db} " . ($OPTIONS{debug}?'--debug':'') . " --host=$OPTIONS{host}  --g_host=$OPTIONS{g_host} --port=$OPTIONS{port}  > $OPTIONS{logdir}/log_worker_$OPTIONS{wname}\_$OPTIONS{port}\_$i.log  2>&1 &";
     $logger->debug("CMD:$cmd");
     system($cmd)==0 or $logger->error("....failed");;
 }

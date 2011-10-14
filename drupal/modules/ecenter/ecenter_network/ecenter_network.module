@@ -771,6 +771,11 @@ function ecenter_network_get_client($status_check = FALSE, $type = 'drs', $name 
       $klass = 'AnomalyDetectionService';
       $name = ($name) ? $name : 'ads_default';
       break;
+    case 'fds':
+      require_once(dirname(__FILE__) . '/includes/forecasting_data_service.inc');
+      $klass = 'ForecastingDataService';
+      $name = ($name) ? $name : 'fds_default';
+      break;
     default:
       drupal_set_message(t('Incorrect $type passed to client constructor'), 
         'error');

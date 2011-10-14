@@ -11,6 +11,7 @@ function ecenter_network_admin_form() {
     'drs' => t('Data Retrieval Service'),
     'drs_sitecentric' => t('Data Retrieval Service (Site-centric)'),
     'ads' => t('Anomaly Detection Service'),
+    'fds' => t('Forecasting Detection Service'),
   );
   $form = array(); 
 
@@ -59,7 +60,7 @@ function ecenter_network_admin_form() {
       '#default_value' => variable_get('ecenter_network_'. $type .'_resolution', 50),
     );
 
-    if ($type == 'ads') {
+    if ($type == 'ads' || $type == 'fds') {
       $form[$type]['ecenter_network_'. $type .'_resolution']['#default_value'] = 
         variable_get('ecenter_network_'. $type .'_resolution', 1000);
     }

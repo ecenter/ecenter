@@ -150,6 +150,7 @@ function theme_ecenter_test_ecenter_network() {
 function theme_ecenter_test_data_clients() {
   $drs_client = ecenter_network_get_client();
   $ads_client = ecenter_network_get_client(FALSE, 'ads');
+  $fds_client = ecenter_network_get_client(FALSE, 'fds');
 
   $src = 'hub:SLAC';
   $dst = 'hub:ORNL';

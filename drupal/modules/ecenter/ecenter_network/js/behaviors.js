@@ -384,7 +384,6 @@ $.fn.ecenter_network.plugins.map = function() {
             pointRadius: 7,
             strokeWidth: 4,
             fontColor: color,
-            zIndex: 1000
           };
 
           var traceroutes = $('#traceroute').data('traceroute');
@@ -399,7 +398,6 @@ $.fn.ecenter_network.plugins.map = function() {
             pointRadius: 7,
             strokeWidth: 4,
             fontColor: '#0000aa',
-            zIndex: 1000
           };
         }
         var style = $.extend({}, feature.style, selectStyle);

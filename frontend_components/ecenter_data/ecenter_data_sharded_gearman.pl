@@ -2,7 +2,7 @@
 
 use Dancer;
 use Dancer::Plugin::REST;
-our $VERSION = '3.4';  
+our $VERSION = '3.7';  
 use English qw( -no_match_vars );
 use Data::Dumper;
 use lib "/home/netadmin/ecenter_git/ecenter/frontend_components/ecenter_data/lib";
@@ -368,7 +368,7 @@ sub process_site {
 	}
         my $date_params  =  params_to_date({start => $params{start},end => $params{end}});
         map { $params{$_} = $date_params->{$_} } keys %{$date_params};
-        my $g_client = _get_gearman(); 
+        my $g_client = get_gearman(config->{gearman}{servers}); 
 	$params{table_map} = $TABLEMAP;
 	my $traceroute = {};
 	my $trace_cond = { direct_traceroute  => { src => qq| AND  ( hb2.hub is not NULL  AND hb2.hub  not like   '%$params{src_hub}%'  AND n_src.nodename like   '%$params{src_hub}%') |},
@@ -508,7 +508,7 @@ sub process_data {
     ################ starting the client
     #
     #
-    my $g_client =  _get_gearman();
+    my $g_client =   get_gearman(config->{gearman}{servers});
     ### parse traceroute and get hops, reverse trqaceoute between identified HUBs and e2e metrics
     ###
     if($params{trace}) {
@@ -723,21 +723,6 @@ sub _fix_sites {
         } 
     }
 }
-#
-#   initialize GEarman
-#
-sub _get_gearman {
-    my $g_client = new Gearman::Client;
-    my @servers = ();
-    foreach my $host ( %{config->{gearman}{servers}}) {
-    	push @servers, (map { $host . ":$_"} @{config->{gearman}{servers}{$host}});
-    }
-    unless($g_client->job_servers( @servers ) ) {
-    	error "Failed to add Gearman  servera ";
-    	GearmanServerException->throw(" Failed to add Gearman  servers  ");
-    }
-    return $g_client;
-} 
 
 #
 #  get bwctl/owamp/pinger data for end2end, first for the src_ip, then for the dst_ip
@@ -905,13 +890,14 @@ sub get_traceroute {
 			    	       if($returned->{status} eq 'ok' && $returned->{data} && @{$returned->{data}}) {
 			    		  foreach my $datum ( @{$returned->{data}} ) {
 				             $datum->{hop_ip} =  $datum->{ip_noted};
+					     $datum->{hop_ip} = $datum->{nodename} if !$datum->{hop_ip} && $datum->{nodename} && $datum->{nodename} =~ /^[abcdfe0-9:\.]+]$/i;
 					     $hop_ips->{$datum->{ip_noted}}++;
 					     $hops->{$datum->{ip_noted}}{$datum->{timestamp}}  = $datum;
 			    		  }
 			    	       } else {
 					   $logger->error("request is not OK = $returned->{status}:::", sub{Dumper($md_row)});
 				       }
-				       #$logger->debug("HOP-IPS:::", sub{Dumper($hop_ips)});
+				        $logger->debug("HOP-IPS:::", sub{Dumper($hop_ips)});
 			    	    }
 				 }
 				);

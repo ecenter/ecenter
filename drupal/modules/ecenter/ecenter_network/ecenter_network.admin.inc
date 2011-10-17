@@ -9,6 +9,7 @@
 function ecenter_network_admin_form() {
   $services = array(
     'drs' => t('Data Retrieval Service'),
+    'drs_sitecentric' => t('Data Retrieval Service (Site-centric)'),
     'ads' => t('Anomaly Detection Service'),
   );
   $form = array(); 

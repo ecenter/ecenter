@@ -200,7 +200,8 @@ after 'process_data' => sub {
 	    
 	}
 	$self->logger->debug("Results Data $key - ", sub{Dumper( \%status )});
-	$self->add_result(  $key,   \%status, { plateau_size => $tri_duration,
+	$self->add_result(  $key,   \%status, { %metadata, 
+	                                        plateau_size => $tri_duration,
                                                 swc          => $self->swc,
                                                 sensitivity  => $self->sensitivity,
                                                 elevation1   => $ele[0],

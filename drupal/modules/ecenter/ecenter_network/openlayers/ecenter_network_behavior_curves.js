@@ -51,6 +51,7 @@ Drupal.behaviors.ecenter_network_behavior_curves = function(context) {
             arrow_style.strokeColor = '#ffffff';
             arrow_style.strokeOpacity = 1;
             arrow_style.rotation = (angle * 180) / Math.PI;
+            arrow_style.graphicZIndex = 0;
 
             var arrow = new OpenLayers.Feature.Vector(p1, null, arrow_style);
             features.push(arrow);

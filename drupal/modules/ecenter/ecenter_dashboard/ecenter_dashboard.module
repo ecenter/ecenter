@@ -40,24 +40,33 @@ function template_preprocess_ecenter_dashboard(&$vars) {
 
   if ($user->uid) {
     module_load_include('inc', 'date_api', 'date_api_elements');
-    $now = time() - 1800;
-    $offset = 3600 * 6;
+    $now = time() - 3600;
+    $offset = 3600 * 3;
     $inc = 60;
     $tz = timezone_open('UTC');
     $end = date_make_date($now, $tz, DATE_UNIX);
     $start = date_make_date($now - $offset, $tz, DATE_UNIX);
     date_increment_round($start, $inc);
     date_increment_round($end, $inc);
-    $start = date_format($start, 'Y-m-d H:i:s');
-    $end = date_format($end, 'Y-m-d H:i:s');
+    $start = date_format($start, 'Y-m-d H:i:00');
+    $end = date_format($end, 'Y-m-d H:i:00');
 
-    $hub = (!empty($user->ecenter_default_hub)) ? $user->ecenter_default_hub : variable_get('ecenter_site_default_hub', 'FNAL');
-    $data = ecenter_network_get_site_centric_data($hub, $start, $end);
-    drupal_add_js(array('ecenterNetwork' => array('siteData' => $data)), 'setting');
+    $source_hub = (!empty($user->ecenter_default_hub)) ? $user->ecenter_default_hub : variable_get('ecenter_site_default_hub', 'FNAL');
+    $raw_data = ecenter_network_get_site_centric_data($source_hub, $start, $end);
+
+    $site_data = array('source' => $raw_data['source'], 'destinations' => array());
+    foreach ($raw_data['destinations'] as $hub => $data) {
+      $site_data['destinations'][] = array(
+        'hub' => $hub,
+        'data' => $data,
+        'markup' => theme('ecenter_network_site_centric_data', $data),
+      );
+    }
+    drupal_add_js(array('ecenterNetwork' => array('siteData' => $site_data)), 'setting');
 
     $vars['main_content'] = array(
       'site_view' => array(
-        'content' => '<div id="site-view-description"><h2>'. t('@site status', array('@site' => $hub)) .'</h2>' . 
+        'content' => '<div id="site-view-description"><h2>'. t('@site status', array('@site' => $source_hub)) .'</h2>' . 
           '<p>'. t('<span class="start">@start</span> <span class="separator">to</span> <span class="end">@end</span>', array('@start' => $start, '@end' => $end)) .'</p></div><div id="site-view-svg"></div>',
       ),
       'activity' => array(
@@ -115,18 +124,20 @@ function template_preprocess_ecenter_dashboard(&$vars) {
 function ecenter_dashboard_cron() {
   module_load_include('inc', 'date_api', 'date_api_elements');
   $now = time();
-  $offset = 3600 * 6;
+  $offset = 3600 * 3;
   $inc = 60;
   $tz = timezone_open('UTC');
   $end = date_make_date($now, $tz, DATE_UNIX);
   $start = date_make_date($now - $offset, $tz, DATE_UNIX);
   date_increment_round($start, $inc);
   date_increment_round($end, $inc);
-  $start = date_format($start, 'Y-m-d H:i:s');
-  $end = date_format($end, 'Y-m-d H:i:s');
+  $start = date_format($start, 'Y-m-d H:i:00');
+  $end = date_format($end, 'Y-m-d H:i:00');
 
   $hubs = ecenter_network_get_hops();
   foreach ($hubs['hubs'] as $key => $hop) {
-    $data = ecenter_network_get_site_centric_data($key, $start, $end);
+    if ($key != 'PPPL' && $key != 'SNLL' && $key != 'LLNL') {
+      $data = ecenter_network_get_site_centric_data($key, $start, $end);
+    }
   }
 }

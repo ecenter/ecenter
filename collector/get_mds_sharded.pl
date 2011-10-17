@@ -165,7 +165,7 @@ if($OPTIONS{hls_file} && -e $OPTIONS{hls_file}) {
 $OPTIONS{db} ||= 'ecenter_data';
 $OPTIONS{user} ||= 'ecenter';
 unless($OPTIONS{password}) {
-    $OPTIONS{password} = `cat /etc/my_ecenter`;
+    $OPTIONS{password} =  `cat /etc/my_ecenter_$OPTIONS{host}`;
     chomp $OPTIONS{password};
 } 
 my $parser    = XML::LibXML->new();

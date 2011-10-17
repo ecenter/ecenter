@@ -57,7 +57,7 @@ has logger      =>  (is => 'rw', isa => 'Log::Log4perl::Logger');
 has parsed_data =>  (is => 'rw', isa => 'HashRef');
 has data_type   =>  (is => 'rw', isa => 'Str', required => 1);
 
-my $METRIC = {owamp => [qw/max_delay min_delay/], bwctl => [qw/throughput/], snmp => [qw/utilization/]};
+my $METRIC = {owamp => [qw/max_delay/], bwctl => [qw/throughput/], snmp => [qw/utilization/]};
 
 sub BUILD {
     my ($self, $args) = @_;
@@ -79,10 +79,9 @@ sub process_data {
 
 =head1 parse_data
 
-  parse data in the request according to the data_type and sort it by timestamp
+parse data in the request according to the data_type and sort it by timestamp
 
 =cut
-
 
 sub parse_data {
     my ( $self,  $args ) = @_; 
@@ -90,16 +89,27 @@ sub parse_data {
     my $data =  $self->data->{$self->data_type};
     my $parsed_data = {};
     my %src_ips = ();
-    ##
-    foreach my $src_ip (keys %$data){
-    	foreach my $dst_ip (keys %{$data->{$src_ip}}){
-	    map { $parsed_data->{metadata}{"$src_ip\__$dst_ip"}{$_} = $data->{$src_ip}{$dst_ip}{$_} } qw/src_hub dst_hub metaid/;
-    	    foreach my $timestamp (keys %{$data->{$src_ip}{$dst_ip}{data}}) {
-		foreach my $name (@{$METRIC->{$self->data_type}}) {
-		    $parsed_data->{$name}{"$src_ip\__$dst_ip"}{$timestamp} = $data->{$src_ip}{$dst_ip}{data}{$timestamp}{$name};
-    	        }
+    ## 
+    if($self->data_type eq 'snmp') {
+         foreach my $src_ip (keys %$data){
+	    foreach my $datum (@{$data->{$src_ip}}) {
+	        my $timestamp = $datum->[0];
+	    	foreach my $name (@{$METRIC->{$self->data_type}}) {
+	    	    $parsed_data->{$name}{"$src_ip\__"}{$timestamp} = $datum->[1]{$name};
+    	    	}
     	    }
-        }
+	}
+    } else {
+	foreach my $src_ip (keys %$data){
+	    foreach my $dst_ip (keys %{$data->{$src_ip}}){
+		map { $parsed_data->{metadata}{"$src_ip\__$dst_ip"}{$_} = $data->{$src_ip}{$dst_ip}{$_} } qw/src_hub dst_hub metaid/;
+    		foreach my $timestamp (keys %{$data->{$src_ip}{$dst_ip}{data}}) {
+		    foreach my $name (@{$METRIC->{$self->data_type}}) {
+			$parsed_data->{$name}{"$src_ip\__$dst_ip"}{$timestamp} = $data->{$src_ip}{$dst_ip}{data}{$timestamp}{$name};
+    		    }
+    		}
+	    }
+	}
     }
     foreach my $name (@{$METRIC->{$self->data_type}}) {
 	foreach my $key (keys   %{$parsed_data->{$name}}) {
@@ -133,9 +143,10 @@ sub add_result {
     if($status && !$status->{critical}){
         $response->{status} = 'OK';
     } else {
-        $response->{status} = $status;
+        $response->{status} = $status?$status:'ok';
     }
-    return $self->results( { %{$self->results},  $src => { $dst => $response} } );
+    my %response =  $dst?($src => { $dst => $response}):($src => $response);
+    return $self->results( { %{$self->results},  %response } );
 }
 
 no Moose;

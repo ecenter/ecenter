@@ -1,7 +1,7 @@
 logger: "console"
 log: "error"
 warnings: 0
-debug: 0
+debug: 1
 time_slice_secs: 186400
 show_errors: 1
 route_cache: 1
@@ -15,8 +15,8 @@ plugins:
      dbix:
        schema_class: Ecenter::DB
        dsn: dbi:mysql:ecenterprod1.fnal.gov:dbname=ecenter_data
-       user: xxxxxxxxxxxx
-       pass: xxxxxxxxxxx
+       user: ecenter
+       pass: ecenter2010
        debug: 0
        options:
           ShowErrorStatement: 1
@@ -29,8 +29,8 @@ plugins:
           driver: mysql
           database: ecenter_data
           host: ecenterprod1.fnal.gov
-          username: xxxxxxxxxxx
-          password: xxxxxxxxxxx
+          username: ecenter
+          password: ecenter2010
           connection_check_threshold: 10
           debug: 0
           dbi_params:

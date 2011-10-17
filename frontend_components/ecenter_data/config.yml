@@ -1,4 +1,5 @@
 layout: "main"
 logger: "console"
+debug: 1
 max_threads: 10
 slow_service_limit: 11

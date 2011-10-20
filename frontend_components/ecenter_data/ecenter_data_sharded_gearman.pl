@@ -187,7 +187,7 @@ any ['get'] =>  '/data.:format' =>
     	    foreach my $port ( @{config->{monitor}{gearman}{'drs'}{$host}} ) {
 	         my $stats =  gearman_status($host, $port);
 	   	 foreach my $worker (keys %{$stats} ) {
-		   $servers->{$worker} =  $stats->{$worker}{queued};
+		   $servers->{$worker} +=  $stats->{$worker}{queued};
 		     return { error => 'too many requests, try later' }  
 	                if $servers->{$worker} > 100;
 		 }

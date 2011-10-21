@@ -6,13 +6,14 @@ time_slice_secs: 186400
 show_errors: 1
 route_cache: 1
 auto_reload: 0
-port: 8055
+port: 8066
 monitor:
-   gearman:
-        drs:
-            xenmon.fnal.gov: ['10121']
-        scv:
-            xenmon.fnal.gov: ['10161']
+  gearman:
+       scv:
+          xenmon.fnal.gov: ['10161']
+       production:
+          xenmon.fnal.gov: ['10121']
+status_instance: 1
 gearman:
    servers: 
        xenmon.fnal.gov: ['10161']
@@ -22,7 +23,7 @@ plugins:
        schema_class: Ecenter::DB
        dsn: dbi:mysql:ecenterprod1.fnal.gov:dbname=ecenter_data
        user: ecenter
-       pass: ecenter2010
+       pass:  xxxxxxx
        debug: 0
        options:
           ShowErrorStatement: 1
@@ -36,7 +37,7 @@ plugins:
           database: ecenter_data
           host: ecenterprod1.fnal.gov
           username: ecenter
-          password: ecenter2010
+          password: xxxxxxxxxxxx
           connection_check_threshold: 10
           debug: 0
           dbi_params:

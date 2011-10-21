@@ -516,7 +516,7 @@ sub dispatch_data {
      	abs($start_time -  $request->{start}) > $OPTIONS{period} ) {
      	  @{$result->{data}} = () if    $result->{data};
      	  $logger->info("$request->{type} --- params to ma: ip=$request->{md_row}{service} start= $request->{start} end= $request->{end} ");
-     	  return _get_remote_data($request, $dbh);
+     	  return  get_remote_data($job);
     }
     return encode_json $result;
 }

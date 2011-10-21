@@ -1,7 +1,7 @@
 logger: "console"
-log: "debug"
+log: "error"
 warnings: 0
-debug: 1
+debug: 0
 show_errors: 1
 route_cache: 1
 auto_reload: 0

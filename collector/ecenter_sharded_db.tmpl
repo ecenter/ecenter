@@ -31,13 +31,43 @@ PRIMARY KEY  (l2_urn ),
 FOREIGN KEY ( hub ) REFERENCES hub ( hub ) on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps topology layer2 info';
 --
+--
+--  topology circuits - per month  historical tracking
+--
+--
+CREATE TABLE  [% preserve %]  circuit_[% datestamp %] ( 
+circuit  varchar(64) NOT  NULL,
+description varchar(512)   NULL,
+start_time  bigint(12) unsigned NOT NULL,
+end_time  bigint(12) unsigned NOT NULL,
+PRIMARY KEY  (circuit),
+KEY (start_time, end_time)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='circuits';
+--
+--
+--  topology circuits links - per month  historical tracking
+--
+--
+CREATE TABLE  [% preserve %]  circuit_link_[% datestamp %] (
+circuit_link   varchar(512)   NOT NULL, 
+l2_urn varchar(512)   NOT NULL,
+circuit  varchar(64) NOT  NULL,
+link_num smallint unsigned NOT NULL default '1',
+direction  enum('forward', 'reverse') NOT NULL default 'forward',
+PRIMARY KEY  (circuit_link),
+KEY (direction),
+FOREIGN KEY ( circuit ) REFERENCES  circuit_[% datestamp %] (circuit)  on DELETE CASCADE ON UPDATE CASCADE,
+FOREIGN KEY ( l2_urn ) REFERENCES l2_port ( l2_urn)  on DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='circuits topology  ports linkage';
+--
+--
 --  topology layer2 linkage
 --
--- 
+--
 CREATE TABLE  [% preserve %]  l2_link (
-l2_link  bigint  unsigned AUTO_INCREMENT  NOT NULL,   
-l2_src_urn varchar(512)   NOT NULL,   
-l2_dst_urn varchar(512)   NOT NULL,   
+l2_link  bigint  unsigned AUTO_INCREMENT  NOT NULL,
+l2_src_urn varchar(512)   NOT NULL,
+l2_dst_urn varchar(512)   NOT NULL,
 PRIMARY KEY  (l2_link),
 FOREIGN KEY ( l2_src_urn ) REFERENCES l2_port ( l2_urn)  on DELETE CASCADE ON UPDATE CASCADE,
 FOREIGN KEY ( l2_dst_urn ) REFERENCES l2_port ( l2_urn )  on DELETE CASCADE ON UPDATE CASCADE
@@ -45,14 +75,14 @@ FOREIGN KEY ( l2_dst_urn ) REFERENCES l2_port ( l2_urn )  on DELETE CASCADE ON U
 --
 --   nodes - all of them
 --   ip_addr supports   ipv4 and ipv6 addresses in binary form
---    
+--
 --    it holds topology info as well via layer2 id ( as http://ogf.org/schema/network/topology/base/20070828/ schema describes)
 --
 --    it set as INET6_PTON('131.225.1.1') and essentially a 16 byte representation of the IP
 --    it allows indexing and netblock search, to get original IP address - INET6_NTOP(ip_addr)
 --    to see dotted form of ipv4 or ipv6 - select ip_noted
---    
--- 
+--
+--
 CREATE TABLE  [% preserve %]  node (
  ip_addr  varbinary(16)  NOT NULL,
  nodename  varchar(255)  NULL,
@@ -67,7 +97,7 @@ CREATE TABLE  [% preserve %]  node (
 --  topology layer3 mapping to layer2, 
 --  use netmask from the node table to get all addresses from the block
 -- created and updated are here to provide versioning - the same ip_addr maps to l2_urn in some period of time
--- 
+--
 CREATE TABLE  [% preserve %]  l2_l3_map (
 l2_l3_map  bigint  unsigned AUTO_INCREMENT  NOT NULL,
 ip_addr   varbinary(16)  NOT NULL,
@@ -80,17 +110,19 @@ FOREIGN KEY (l2_urn) REFERENCES l2_port ( l2_urn )  on DELETE CASCADE ON UPDATE 
 FOREIGN KEY ( ip_addr ) REFERENCES node ( ip_addr )  on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='ps-ps topology layer2-layer3 mapping';
 --
+--
 --    list of keywords, stores most recent regexp used to obtain that keyword as well
--- 
+--
 CREATE TABLE  [% preserve %]   keyword (
  keyword  varchar(255) NOT NULL,
  pattern  varchar(255)  NULL,
  PRIMARY KEY  (keyword)
  )  ENGINE=InnoDB CHARSET=latin1  COMMENT='project keywords';
 --
+--
 --  operational table for the most recent status of the service
 --  all services are here
--- 
+--
 CREATE TABLE   [% preserve %]   service (
  service varchar(255)NOT NULL,
  name varchar(255) NOT NULL,
@@ -105,7 +137,7 @@ CREATE TABLE   [% preserve %]   service (
  ) ENGINE=InnoDB CHARSET=latin1 COMMENT='ps-ps services operational table';
 --
 --    list of eventtypes, metadata will refere to the ref_id here, not the SERVICE !
--- 
+--
 CREATE TABLE  [% preserve %]   eventtype  (
  ref_id   bigint  unsigned AUTO_INCREMENT NOT NULL, 
  eventtype  varchar(255)  NULL, 
@@ -117,8 +149,8 @@ CREATE TABLE  [% preserve %]   eventtype  (
  )  ENGINE=InnoDB CHARSET=latin1 COMMENT='eventtypes - many per service - many services for the md';
 --
 --  keywords_service for  many - many rel
---  
--- 
+--
+--
 CREATE TABLE  [% preserve %]  keywords_service (
 ref_id bigint  unsigned AUTO_INCREMENT NOT NULL, 
 keyword varchar(255) NOT NULL,
@@ -140,9 +172,10 @@ FOREIGN KEY (service) REFERENCES  service (service)  on DELETE CASCADE ON UPDATE
 -- 
 CREATE TABLE   [% preserve %]  metadata (
 metaid  bigint  unsigned AUTO_INCREMENT NOT NULL,
-src_ip  varbinary(16)  NOT NULL,
+src_ip  varbinary(16)  NOT NULL DEFAULT '0',
 dst_ip  varbinary(16)  NOT  NULL DEFAULT '0',
-direction   enum('in','out') NOT NULL default 'in', 
+l2_urn  varchar(512)   NOT NULL DEFAULT '',
+direction   enum('in','out') NOT NULL default 'in',
 eventtype_id  bigint  unsigned  NOT NULL,
 subject varchar(1023) NOT NULL  DEFAULT '',
 parameters varchar(1023) NULL,
@@ -150,7 +183,7 @@ created  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 updated  TIMESTAMP NOT NULL DEFAULT 0,
 PRIMARY KEY  (metaid),
 KEY  (metaid),
-UNIQUE KEY md_ips_type (src_ip, dst_ip, eventtype_id),
+UNIQUE KEY md_ips_type (src_ip, dst_ip,l2_urn, eventtype_id),
 FOREIGN KEY (eventtype_id) REFERENCES  eventtype(ref_id)  on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB CHARSET=latin1 COMMENT='ps-ps metaid provided by each service-eventtype';
 --

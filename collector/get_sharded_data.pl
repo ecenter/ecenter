@@ -28,7 +28,7 @@ debugging info logged
 
 =item --help
 
-print usage info
+$logger->debug(usage info
 
 =item --[pinger|owamp|bwctl|hop|anomaly]
 
@@ -43,7 +43,11 @@ Default:7 days
  
 =item --snmp
 
- get SNMP data as well
+get SNMP data as well
+
+=item --circuits
+
+get ESnet OSCAR circuits data
 
 =item --db=[database name]
 
@@ -92,6 +96,7 @@ use DBI;
 use English;
 use perfSONAR_PS::Client::MA;
 use perfSONAR_PS::Client::Topology;
+use perfSONAR_PS::Client::TopologyOld;
 use perfSONAR_PS::Client::Circuits;
 
 use perfSONAR_PS::Common qw(  extract find unescapeString escapeString );
@@ -114,7 +119,7 @@ my @E2E = qw/pinger owamp bwctl hop/;
 my @string_option_keys = qw/password user db host procs past/;
 GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
-            qw/debug help v snmp no_topo anomaly/, @E2E
+            qw/debug help v snmp no_topo anomaly circuits/, @E2E
 ) or pod2usage(1);
 my $output_level =  $OPTIONS{debug} || $OPTIONS{d}?$DEBUG:$INFO;
 
@@ -168,24 +173,24 @@ if($OPTIONS{anomaly}) {
 #
 # now collect topology and SNMP data from ESnet
 # 
-foreach my $service ( qw/ps2/ ) {
+foreach my $service ( qw/ps2 ps1/ ) {
     my $ts_instance =  "http://$service.es.net:8012/perfSONAR_PS/services/topology";
     try {
         $logger->debug("\t\t Service at:\t$ts_instance ");
 	unless($OPTIONS{no_topo}) {
-            my $client = perfSONAR_PS::Client::Topology->new($ts_instance);
+            my $client = perfSONAR_PS::Client::TopologyOld->new( $ts_instance );
             my $urn = "domain=$IP_TOPOLOGY";
             my ($status, $res) = $client->xQuery("//*[matches(\@id, '$urn', 'xi')]", 'encoded');
             throw  perfSONAR_PS::Error if $status;
 	    parse_topo($dbh, $res);
 	}
 	if($OPTIONS{circuits}) {
-            my $client = perfSONAR_PS::Client::Circuits->new( { urls => [$ts_instance] });
+            my $client = new perfSONAR_PS::Client::Circuits( { urls => [$ts_instance] });
             my $circuits = $client->get_circuits();
 	    get_circuits($dbh, $circuits);
 	}
 	get_snmp($dbh, $pm) if $OPTIONS{snmp};
-	set_end_sites($dbh, $pm) unless @E2E;
+	set_end_sites($dbh, $pm) if ($OPTIONS{snmp} || $OPTIONS{hop}) && !@E2E;
     }
     catch perfSONAR_PS::Error   with {
         $logger->error( shift);
@@ -216,17 +221,44 @@ Get circuits and store them in the DB
 
 sub get_circuits {
     my ($dbh,  $circuits) = @_;
+    my $now_str = strftime('%Y-%m-%d %H:%M:%S', localtime()); 
+    my $date_table = strftime('%Y%m', localtime());
     foreach my $circuit_id (keys %{$circuits}){
-	print "[Circuit] " . $circuits->{$circuit_id}->{name} . "\n";
-	print "\t[Description] " . $circuits->{$circuit_id}->{description} . "\n";
-	print "\t[Capacity] " . $circuits->{$circuit_id}->{capacity} . "Mbps\n";
-	print "\t[Start Time] " . $circuits->{$circuit_id}->{start} . "\n";
-	print "\t[End Time] " . $circuits->{$circuit_id}->{end} . "\n";
+	$logger->debug("\t[Capacity] " . $circuits->{$circuit_id}->{capacity} . 'Mbps');
+	my $circuit = $dbh->resultset('Circuit' . $date_table)->update_or_create({ 
+	                                                      circuit =>  $circuits->{$circuit_id}->{name},
+							      description =>  $circuits->{$circuit_id}->{description},
+							      start_time =>  $circuits->{$circuit_id}->{start},
+							      end_time=>  $circuits->{$circuit_id}->{end},
+							    });
 	foreach my $link(@{$circuits->{$circuit_id}->{links}}){
-            print "\t[Link] " . $link->{id} . "\n";
+            $logger->debug("\t[Link] " . $link->{id});
+	    my $port_num = 1;
+	    my $direction = $link->{id} =~ /atoz/?'forward':'reverse';
             foreach my $port(@{$link->{ports}}){
-        	print "\t\t[Port] $port\n";
-            }
+        	$logger->debug("\t\t[Port] $port");
+		my ($hub) = $port =~ m/:node=([^:])+:/;
+		my $hub_name = "\U$hub";
+		my ($l2_port) =   $dbh->resultset('L2Port')->search({'hub.hub_name' => $hub_name}, {join => 'hub', limit => 1});
+                unless($l2_port && $l2_port->l2_urn) {
+                   $logger->error("NO ports available - check topology info or hub_name:$hub_name");
+                   next;
+                }
+		$dbh->resultset('L2Port')->update_or_create({ 
+	                                                      l2_urn => $port,
+							      capacity =>  $circuits->{$circuit_id}->{capacity},
+							      hub =>  $l2_port->hub->hub,
+							      description => '',
+							    });
+	       $dbh->resultset('CircuitLink' . $date_table)->update_or_create({ 
+	                                                      circuit_link => $link->{id},
+							      circuit =>  $circuits->{$circuit_id}->{name},
+							      l2_urn => $port,
+							      link_num =>  $port_num,
+							      direction => $direction,
+						        });
+              $port_num++;
+	    }
 	}
     }
 }

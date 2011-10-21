@@ -26,8 +26,13 @@ Default:read from /root/ecenter/etc/my_db
 =head2 --trunk=<string>
 
 absolute path to the trunk dir ( root for the ecenter data API)
-Default: /home/netadmin/ecenter/trunk
- 
+Default: /home/netadmin/ecenter_git/ecenter
+
+=head2 --host=<string>
+
+name of the db host
+Default: localhost 
+
 =head2 --db=<string>
 
 database name of the ecenter data db
@@ -38,15 +43,26 @@ Default: ecenter_data
 password to connect to the ecenter data db  as ecenter user
 Default: read from /etc/my_ecenter
 
+=head2 --make_orm
+
+create perl API ORM
+Default: not set
+
 =head2 --fresh
 
 drop old db and create a new one with API - usualy done only once
 Default: not set
 
-=head2 --db_template
+=head2 --db_template=<full filename>
 
-filename of the template file to create db - without partitions - but for the API bindings
+filename of the db template file
 Default: $OPTIONS{trunk}/collector/ecenter_sharded_db.tmpl
+
+=head2 --sql_dir=<full dirname>
+
+directory name to store created SQL file ( from the template) 
+Default: $OPTIONS{trunk}/collector/sql
+
 
 =head2 --from=2010-02-11
 
@@ -76,7 +92,7 @@ use Log::Log4perl qw(:easy);
 
 
 my %OPTIONS; 
-my @string_option_keys = qw/user root_pass from to db trunk pass db_template/;
+my @string_option_keys = qw/user host root_pass sql_dir from to db trunk pass db_template/;
 
 GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
@@ -120,20 +136,23 @@ unless($OPTIONS{root_pass}) {
 }
 
 
-$logger->logdie(" no root password provided !!!" ) unless $OPTIONS{root_pass};
-$OPTIONS{db} ||= 'ecenter_data';
+$logger->logdie(" no root password provided !!!" ) 
+    unless $OPTIONS{root_pass};
+$OPTIONS{db}   ||= 'ecenter_data';
 $OPTIONS{user} ||= 'ecenter';
-
-
-$OPTIONS{trunk} ||= '/home/netadmin/ecenter_git/ecenter';
+$OPTIONS{host} ||= 'localhost';
+$OPTIONS{trunk}       ||= '/home/netadmin/ecenter_git/ecenter';
 $OPTIONS{db_template} ||= "$OPTIONS{trunk}/collector/ecenter_sharded_db.tmpl";
+$OPTIONS{sql_dir}     ||= "$OPTIONS{trunk}/collector/sql";
   
 $OPTIONS{preserve} = $OPTIONS{fresh}?'':' if not exists ';
+ 
+
 
 my $template = Template->new({ABSOLUTE => 1});
 $logger->logdie(" Template   $OPTIONS{db_template} is missing !!!" ) unless -e  $OPTIONS{db_template};
 
-my $ecenter_db_sql = "$OPTIONS{trunk}/collector/sql/ecenter_sharded_db";
+my $ecenter_db_sql = "$OPTIONS{sql_dir}/ecenter_sharded_db";
 #
 #   create SQL file for the DB
 #
@@ -157,7 +176,9 @@ foreach my $date (keys %datestamps) {
     #
     #    create DB
     #
-    if(system("/usr/local/mysql/bin/mysql -u root -p'$OPTIONS{root_pass}' <  $ecenter_db_sql.sql")) {
+    my $db_cmd = "/usr/local/mysql_5.5/bin/mysql -h $OPTIONS{host}  -u root -p'$OPTIONS{root_pass}' <  $ecenter_db_sql.sql";
+    $logger->debug("CMD... $db_cmd ");
+    if(system($db_cmd)) {
 	 $logger->logdie("Failed to load  $ecenter_db_sql.sql into the $OPTIONS{db} db: $OS_ERROR $ERRNO");
     }
     #    create API

@@ -108,7 +108,7 @@ $OPTIONS{workers} ||= 4;
 $OPTIONS{logdir}  ||= '/tmp';
 $OPTIONS{host}    ||= 'ecenterprod1.fnal.gov';
 $OPTIONS{g_host}  ||= 'xenmon.fnal.gov';
-$OPTIONS{db}      ||= 'ecenterprod1.fnal.gov';
+$OPTIONS{db}      ||= 'ecenter_data';
 $OPTIONS{wname}   ||= 'data_worker.pl';
 
 `/bin/ps auxwww | grep '$OPTIONS{wname}' | grep $OPTIONS{port} | grep -v run | grep -v grep | grep -v  nedit  | awk '{print \$2}' | xargs kill -9` if $OPTIONS{clean};

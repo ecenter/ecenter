@@ -71,7 +71,7 @@
   // account for highlight canvas or other canvases?
   $.jqplot.LineHighlighter.postPlotDraw = function() {
     this.plugins.linehighlighter.highlightCanvas = new $.jqplot.GenericCanvas();
-    this.eventCanvas._elem.before(this.plugins.linehighlighter.highlightCanvas.createElement(this._gridPadding, 'jqplot-linehighlight-canvas', this._plotDimensions));
+    this.eventCanvas._elem.before(this.plugins.linehighlighter.highlightCanvas.createElement(this._gridPadding, 'jqplot-linehighlight-canvas', this._plotDimensions, this));
   };
 
   // Register plugins

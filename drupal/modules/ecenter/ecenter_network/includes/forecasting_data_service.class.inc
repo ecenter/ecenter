@@ -9,7 +9,7 @@ class ForecastingDataService extends EcenterService {
 
   public $query_types = array('hub', 'ip');
 
-  public function getData($src, $dst, $start, $end, $data_type, $future_points = 30, $resolution = 50) {
+  public function getData($src, $dst, $start, $end, $data_type, $future_points = 30, $resolution = 1000) {
     $params = get_defined_vars();
 
     // Parse out query type

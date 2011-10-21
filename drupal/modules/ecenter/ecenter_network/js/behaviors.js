@@ -650,14 +650,18 @@ $.fn.ecenter_network.plugins.end_to_end = function() {
 }
 
 
-$.fn.ecenter_network.plugins.ads = function() {
-  $('.ads-submit').live({
+$.fn.ecenter_network.plugins.analysis = function() {
+  $('.analysis-submit').live({
     'click' : function(e) {
       e.stopPropagation();
-      $('#ads').attr('checked', true);
+      var wrapper = $(this).parents('.analysis-wrapper');
+      var enable = $(this).parents('.analysis-wrapper').find('.analysis-enable').attr('checked', true);
+      
       var input = $('#dst-wrapper input');
+      
       input.data('autocomplete')._trigger('change');
       $('#loading-overlay button').focus();
+
       return false;
     }
   });
@@ -734,7 +738,7 @@ $.fn.ecenter_network.defaults = {
     $.fn.ecenter_network.plugins.map,
     $.fn.ecenter_network.plugins.date,
     $.fn.ecenter_network.plugins.chart,
-    $.fn.ecenter_network.plugins.ads
+    $.fn.ecenter_network.plugins.analysis
   ],
   // Drawing plugins
   draw_plugins : [

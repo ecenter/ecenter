@@ -10,6 +10,9 @@ include_once('ecenter_network.features.inc');
 // Load traceroute diff (to keep licensing issues clear)
 require_once('ecenter_network_traceroute_diff.inc');
 
+// Load services framework
+require_once(dirname(__FILE__) . '/includes/ecenter_service.inc');
+
 /**
  * Implementation of hook_menu().
  */
@@ -36,14 +39,6 @@ function ecenter_network_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  $items['network/traceroute'] = array(
-    'title' => 'Traceroute', 
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('ecenter_network_traceroute_form'),
-    'access arguments' => array('administer ecenter network'),
-    'type' => MENU_CALLBACK,
-  );
-
   $items['admin/settings/ecenter'] = array(
     'title' => 'E-Center Network',
     'page callback' => 'drupal_get_form',
@@ -54,6 +49,7 @@ function ecenter_network_menu() {
     'file' => 'ecenter_network.admin.inc',
     'type' => MENU_NORMAL_ITEM,
   );
+
   return $items;
 }
 
@@ -94,10 +90,11 @@ function ecenter_network_theme() {
         'query' => NULL,
       ),
     ) + $options,
-    'ecenter_network_hops' => array(
+    'ecenter_network_traceroute' => array(
       'arguments' => array(
         'hops' => array(),
         'timezone' => NULL,
+        'fds_data' => NULL,
       ),
     ) + $options,
     'ecenter_network_end_to_end' => array(
@@ -105,8 +102,9 @@ function ecenter_network_theme() {
       'arguments' => array(
         'data' => NULL,
         'timezone' => NULL,
-        'ads' => FALSE,
         'ads_data' => NULL,
+        'fds_data' => NULL,
+        'standalone' => FALSE,
       ),
     ) + $options,
     'ecenter_network_end_to_end_tables' => array(
@@ -227,89 +225,6 @@ function ecenter_network_init() {
     );
     inline_css_add_css($inline_css);
   }
-}
-
-/**
- * Traceroute past form
- *
- * @TODO Add advanced help
- */
-function ecenter_network_traceroute_form(&$form_state) {
-  $form = array();
-  $values = $form_state['values'];
-
-  $form['traceroute'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Traceroute'),
-    '#default_value' => (!empty($values['traceroute'])) ? $values['traceroute'] : NULL,
-    '#description' => t('Paste a full traceroute.'),
-  );
-  $form['date'] = array(
-    '#type' => 'date_popup',
-    '#title' => t('Specify day'),
-    '#prefix' => '<div id="date-select">',
-    '#suffix' => '</div>',
-    '#date_format' => 'Y-m-d',
-    '#granularity' => array('year', 'month', 'day'),
-    '#default_value' => (!empty($values['date'])) ? $values['date'] : NULL,
-  );
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Submit traceroute'),
-  );
-  return $form;
-}
-
-/**
- * Submit traceroute to DRS
- */
-function ecenter_network_traceroute_form_submit($form, &$form_state) {
-  $date = $form_state['values']['date'];
-  $day = date_create($date, timezone_open('UTC'));
-
-  $start = date_format($day, 'Y-m-d H:i:s');
-  $end_date = date_modify($day, '+24 hours');
-  $end = date_format($end_date, 'Y-m-d H:i:s');
-
-  $data = ecenter_network_get_traceroute_data($form_state['values']['traceroute'], $start, $end, TRUE);
-
-  dpm($data);
-
-  $form_state['rebuild'] = TRUE;
-}
-
-/**
- * E-center network health
- */
-function ecenter_network_health() {
-  $client = ecenter_network_get_client('503');
-
-  extract(_ecenter_network_extract_query());
-
-  if (!$start || !$end) {
-    $inc = 30;
-    module_load_include('inc', 'date_api', 'date_api_elements');
-    $now = time();
-    $start = date_make_date($now);
-    $end = date_make_date($now);
-    date_modify($start, '-24 hours');
-
-    $utc = timezone_open('UTC');
-    date_timezone_set($start, $utc);
-    date_timezone_set($end, $utc);
-
-    date_increment_round($start, $inc);
-    date_increment_round($end, $inc);
-
-    $start = date_format($start, 'Y-m-d H:i:s');
-    $end = date_format($end, 'Y-m-d H:i:s');
-  }
-
-  $response = $client->getHealth($start, $end);
-  if ($response['code'] == 200) {
-    return theme('ecenter_network_health', $response['response'], $start, $end);
-  }
-  return 'this should be an error message';
 }
 
 /**
@@ -559,10 +474,18 @@ function ecenter_network_select_form(&$form_state) {
       $params += array(
         'src' => $src,
         'dst' => $dst,
+        'fds' => 0,
+        'ads' => 0,
       );
 
       if ($ads) {
         $data['ads'] = ecenter_network_get_ads_data($src, $dst, $start, $end, $algorithm, $detector_type, $sensitivity, $elevation1, $elevation2, $swc);
+        $params['ads'] = 1;
+      }
+
+      if ($fds) {
+        $data['fds'] = ecenter_network_get_fds_data($src, $dst, $start, $end, $fds_type);
+        $params['fds'] = 1;
       }
     }
 
@@ -636,184 +559,6 @@ function ecenter_network_select_form_submit($form, &$form_state) {
 
   $form_state['storage'] = $form_state['values'];
   $form_state['rebuild'] = TRUE;
-}
-
-/**
- * Form snippet for ADS
- */
-function ecenter_network_ads_form() {
-  extract(_ecenter_network_extract_query());
-
-  $form['ads_wrapper'] = array(
-    '#prefix' => '<div id="ads-settings-wrapper">',
-    '#suffix' => '</div>',
-  );
-
-  $form['ads_wrapper']['ads'] = array(
-    '#id' => 'ads',
-    '#name' => 'ads',
-    '#type' => 'checkbox',
-    '#title' => 'Use anomaly detection (experimental)',
-    '#value' => FALSE,
-    '#weight' => 0,
-  );
-
-  $form['ads_wrapper']['ads_settings'] = array(
-    '#id' => 'ads-settings-fieldset',
-    '#prefix' => '<div id="ads-settings">',
-    '#suffix' => '</div>',
-    '#type' => 'fieldset',
-    '#title' => t('Anomaly detection settings'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-  );
-
-  $form['ads_wrapper']['ads_settings']['algorithm'] = array(
-    '#id' => 'algorithm',
-    '#name' => 'algorithm',
-    '#title' => theme('advanced_help_topic', 'ecenter_network', 'ads_algorithm') . t('Algorithm'),
-    '#type' => 'select',
-    '#options' => array(
-      'spd' => t('spd'),
-      'apd' => t('apd'),
-    ),
-    '#attributes' => array('class' => 'ads-algorithm'),
-    '#value' => (!empty($algorithm)) ? $algorithm : 'spd',
-    '#weight' => 1,
-  );
-
-  $form['ads_wrapper']['ads_settings']['sensitivity'] = array(
-    '#id' => 'sensitivity',
-    '#name' => 'sensitivity',
-    '#title' => theme('advanced_help_topic', 'ecenter_network', 'ads_sensitivity') . t('Sensitivity'),
-    '#type' => 'textfield',
-    '#size' => 5,
-    '#id' => 'sensitivity',
-    '#name' => 'sensitivity',
-    '#value' => (!empty($sensitivity)) ? $sensitivity : 2,
-    '#weight' => 2,
-  );
-
-  $form['ads_wrapper']['ads_settings']['elevation1'] = array(
-    '#id' => 'elevation1',
-    '#name' => 'elevation1',
-    '#title' => theme('advanced_help_topic', 'ecenter_network', 'ads_elevation1') . t('Elevation 1'),
-    '#type' => 'textfield',
-    '#size' => 5,
-    '#value' => (!empty($elevation1)) ? $elevation1 : 0.2,
-    '#weight' => 3,
-  );
-
-  $form['ads_wrapper']['ads_settings']['elevation2'] = array(
-    '#id' => 'elevation2',
-    '#name' => 'elevation2',
-    '#title' => theme('advanced_help_topic', 'ecenter_network', 'ads_elevation2') . t('Elevation 2'),
-    '#type' => 'textfield',
-    '#size' => 5,
-    '#value' => (!empty($elevation2)) ? $elevation2 : 0.4,
-    '#weight' => 4,
-  );
-
-  $form['ads_wrapper']['ads_settings']['swc'] = array(
-    '#id' => 'swc',
-    '#name' => 'swc',
-    '#title' => theme('advanced_help_topic', 'ecenter_network', 'ads_swc') . t('Window count'),
-    '#type' => 'textfield',
-    '#size' => 5,
-    '#value' => (!empty($swc)) ? $swc : 15,
-    '#weight' => 5,
-  );
-  
-  $form['ads_wrapper']['ads_submit'] = array(
-    '#type' => 'submit',
-    '#id' => 'ads-submit',
-    '#name' => 'ads-submit',
-    '#value' => t('Detect anomalies'),
-    '#weight' => 5,
-    '#attributes' => array('class' => 'ads-submit'),
-  );
-
-  return $form;
-}
-
-
-/**
- * Get the E-Center Data Retrieval Service client
- *
- * All parameters optional
- *
- * @param $status_check
- *   If '503', return HTTP 503 page or redirect. If 'message', set message and
- *   continue. If FALSE, just return the client (default).
- * @param $type
- *   'drs' for Data Retrieval Service (default), 'ads' for Anomaly Detection
- *   Service
- * @param $name
- *   A unique name for this client (optional)
- */
-function ecenter_network_get_client($status_check = FALSE, $type = 'drs', $name = NULL) {
-  static $clients = array();
-
-  require_once(dirname(__FILE__) . '/includes/ecenter_service.class.inc');
-  switch ($type) {
-    case 'drs':
-      require_once(dirname(__FILE__) . '/includes/data_retrieval_service.class.inc');
-      require_once(dirname(__FILE__) . '/includes/data_retrieval_service.inc');
-      $klass = 'DataRetrievalService';
-      $name = ($name) ? $name : 'drs_default';
-      break;
-    case 'drs_sitecentric':
-      require_once(dirname(__FILE__) . '/includes/data_retrieval_service.class.inc');
-      require_once(dirname(__FILE__) . '/includes/data_retrieval_service_sitecentric.inc');
-      $klass = 'DataRetrievalService';
-      $name = ($name) ? $name : 'drs_sitecentric';
-      break;
-    case 'ads':
-      require_once(dirname(__FILE__) . '/includes/anomaly_detection_service.class.inc');
-      require_once(dirname(__FILE__) . '/includes/anomaly_detection_service.inc');
-      $klass = 'AnomalyDetectionService';
-      $name = ($name) ? $name : 'ads_default';
-      break;
-    case 'fds':
-      require_once(dirname(__FILE__) . '/includes/forecasting_data_service.class.inc');
-      require_once(dirname(__FILE__) . '/includes/forecasting_data_service.inc');
-      $klass = 'ForecastingDataService';
-      $name = ($name) ? $name : 'fds_default';
-      break;
-    default:
-      drupal_set_message(t('Incorrect $type passed to client constructor'), 
-        'error');
-  }
-
-  if (empty($clients[$name])) {
-    $host = variable_get('ecenter_network_'. $type .'_host', 'localhost');
-    $port = variable_get('ecenter_network_'. $type .'_port', 8000);
-    $dir = variable_get('ecenter_network_'. $type .'_basedir', '');
-    $timeout = variable_get('ecenter_network_'. $type .'_timeout', 30);
-    $status_timeout = variable_get('ecenter_network_'. $type .'_status_timeout', 2);
-    $clients[$name] = new $klass($host, $port, $dir, $timeout, 
-      $status_timeout);
-  }
-
-  // Check client availability
-  if ($status_check && !$clients[$name]->checkStatus()) {
-    $message = t('!class client is not available.', array('!class' => $klass));
-    watchdog('ecenter', $message, array(), WATCHDOG_ERROR);
-
-    switch ($status_check) {
-      case '503':
-        drupal_set_header('HTTP/1.1 503 Service unavailable');
-        // Keep old path for reference, and to allow forms to redirect to it.
-        if (!isset($_REQUEST['destination'])) {
-          $_REQUEST['destination'] = $_GET['q'];
-        }
-        print theme('page', '<div class="ecenter-fatal">'. $message .'</div>');
-        exit();
-      default:
-        drupal_set_message($message, 'error');
-    }
-  }
-  return $clients[$name];
 }
 
 /**
@@ -1396,6 +1141,16 @@ function ecenter_network_refresh_map($preset, $id = NULL) {
 }
 
 /**
+ * Implementation of template_preprocess_page().
+ */
+function ecenter_network_preprocess_page(&$vars) {
+  // Add body class to weathermap
+  if (arg(0) == 'network' && !arg(1)) {
+    $vars['body_classes'] .= ' page-network-weathermap';
+  }
+}
+
+/**
  * Convert formatted local date string to formatted UTC date string
  *
  * @param $date
@@ -1465,6 +1220,13 @@ function _ecenter_network_timestamp_to_local($date, $format = 'Y-m-d H:i:s', $tz
 }
 
 /**
+ * Callback for remove underscores from timezone names for use with combobox
+ */
+function _ecenter_network_process_tz_name($val) {
+  return str_replace('_', ' ', $val);
+}
+
+/**
  * Package query variables as an array
  *
  * E-Center queries can come from form input, or query string variables.  Let's
@@ -1483,6 +1245,7 @@ function _ecenter_network_extract_query() {
       'dst' => $_REQUEST['network_wrapper']['query']['dst_wrapper']['dst'],
       'start' => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['start']),
       'end' => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['end']),
+      'timezone' => $_REQUEST['timezone'],
 
       'ads' => $_REQUEST['ads'],
       'algorithm' => $_REQUEST['algorithm'],
@@ -1494,11 +1257,12 @@ function _ecenter_network_extract_query() {
 
       'traceroute' => $_REQUEST['network_wrapper']['query']['traceroute_paste'],
 
-      'timezone' => $_REQUEST['timezone'],
+      'fds' => $_REQUEST['fds'],
+      'fds_type' => $_REQUEST['fds_type'],
     );
   }
 
-  foreach (array('src', 'dst', 'start', 'end', 'timezone', 'ads', 'algorithm', 'detector_type', 'sensitivity', 'elevation1', 'elevation2', 'swc') as $key) {
+  foreach (array('src', 'dst', 'start', 'end', 'timezone', 'ads', 'algorithm', 'detector_type', 'sensitivity', 'elevation1', 'elevation2', 'swc', 'fds', 'fds_type') as $key) {
     if (empty($vars[$key]) && !empty($_REQUEST[$key])) {
       $vars[$key] = $_REQUEST[$key];
     }
@@ -1507,23 +1271,10 @@ function _ecenter_network_extract_query() {
   if (!empty($vars['ads']) && empty($vars['algorithm'])) {
     $vars['algorithm'] = 'spd';
   }
+  
+  if (!empty($vars['fds']) && empty($vars['fds_type'])) {
+    $vars['fds_type'] = 'snmp';
+  }
 
   return $vars;
-}
-
-/**
- * Implementation of template_preprocess_page().
- */
-function ecenter_network_preprocess_page(&$vars) {
-  // Add body class to weathermap
-  if (arg(0) == 'network' && !arg(1)) {
-    $vars['body_classes'] .= ' page-network-weathermap';
-  }
-}
-
-/**
- * Callback for remove underscores from timezone names for use with combobox
- */
-function _ecenter_network_process_tz_name($val) {
-  return str_replace('_', ' ', $val);
 }

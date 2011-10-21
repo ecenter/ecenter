@@ -1,6 +1,40 @@
 <?php
 
 /**
+ * E-center network health
+ */
+function ecenter_network_health() {
+  $client = ecenter_network_get_client('503');
+
+  extract(_ecenter_network_extract_query());
+
+  if (!$start || !$end) {
+    $inc = 30;
+    module_load_include('inc', 'date_api', 'date_api_elements');
+    $now = time();
+    $start = date_make_date($now);
+    $end = date_make_date($now);
+    date_modify($start, '-24 hours');
+
+    $utc = timezone_open('UTC');
+    date_timezone_set($start, $utc);
+    date_timezone_set($end, $utc);
+
+    date_increment_round($start, $inc);
+    date_increment_round($end, $inc);
+
+    $start = date_format($start, 'Y-m-d H:i:s');
+    $end = date_format($end, 'Y-m-d H:i:s');
+  }
+
+  $response = $client->getHealth($start, $end);
+  if ($response['code'] == 200) {
+    return theme('ecenter_network_health', $response['response'], $start, $end);
+  }
+  return 'this should be an error message';
+}
+
+/**
  * Get/cache data
  *
  * @param $src

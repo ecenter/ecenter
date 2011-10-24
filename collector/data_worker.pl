@@ -393,7 +393,7 @@ sub _get_snmp_from_db{
 		  	     metadata m
                        join  node n on(m.src_ip = n.ip_addr) 
 		       join  l2_l3_map llm on(m.src_ip = llm.ip_addr) 
-		       join  l2_port l2 using(l2_urn) 
+		       join  l2_port l2 on(llm.l2_urn = l2.l2_urn) 
 		       join  eventtype e on (m.eventtype_id = e.ref_id)
 		       join  service s on (e.service = s.service)
 		  where 

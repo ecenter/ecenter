@@ -409,6 +409,9 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
           }
         }
 
+        krsort($table);
+        $tables[] = theme('ecenter_network_utilization_table', $table, $hop, $direction);
+
         if (!empty($fds_data['snmp']['utilization'][$hop['hop_ip']])) {
           $forecast_table = array();
           $forecast_data = $fds_data['snmp']['utilization'][$hop['hop_ip']];
@@ -431,12 +434,9 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
             );
           }
 
-          $table = array_merge($table, $forecast_table);
+          $tables[] = theme('ecenter_network_utilization_table', $forecast_table, $hop, $direction);
+          //$table = array_merge($table, $forecast_table);
         }
-
-        krsort($table);
-
-        $tables[] = theme('ecenter_network_utilization_table', $table, $hop, $direction);
       }
     }
   }

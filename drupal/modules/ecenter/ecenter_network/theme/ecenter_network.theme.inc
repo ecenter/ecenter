@@ -517,12 +517,20 @@ function theme_ecenter_network_end_to_end_tables($tables, $timezone = NULL) {
       $output .= '</div>';
 
       $plot_options = _ecenter_network_plot_options_template();
-      $plot_options['legend']['show'] = TRUE;
+      $plot_options['legend'] = array(
+        'show' => TRUE,
+        'renderer' => '$.jqplot.EnhancedLegendRenderer',
+        'placement' => 'outsideGrid',
+        'location' => 's',
+        'rendererOptions' => array(
+          'numberRows' => 1,
+        ),
+      );
 
       drupal_alter('ecenter_network_plot_options', $plot_options, $measurement,
         $type, $measurement_data);
       $options = array(
-        'height' => 150,
+        'height' => 175,
         'width' => 490,
         'hideTables' => FALSE,
         'parseX' => '$.tablechart.parseText',
@@ -807,9 +815,7 @@ function _ecenter_network_plot_options_template() {
       ),
     ),
     'legend' => array(
-      'location' => 'se',
-      'xoffset' => 1,
-      'yoffset' => 1,
+      'show' => FALSE,
     ),
     'seriesColors' => array('#035dc5', '#a71932', '#133f52', '#e34605', '#672b18', '#049e33',  '#650fc2',),
     'axes' => array(

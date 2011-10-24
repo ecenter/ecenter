@@ -79,7 +79,7 @@ Deafult: current time
 use POSIX qw(strftime);
 use Template;
 use Carp;
-use Date::Manip::Date;
+#use Date::Manip::Date;
 use English qw( -no_match_vars );
 use Getopt::Long;
 use Pod::Usage;
@@ -96,7 +96,7 @@ my @string_option_keys = qw/user host root_pass sql_dir from to db trunk pass db
 
 GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
-            qw/debug d help fresh make_orm/,
+            qw/debug d help fresh make_db make_orm/,
 ) or pod2usage(1);
 
 pod2usage(1) if $OPTIONS{help};
@@ -163,6 +163,7 @@ for(my $time=$OPTIONS{from}->epoch;$time<=$OPTIONS{to}->epoch;$time+=3600) {
     my $datestamp = strftime( "%Y%m", localtime($time));
     $datestamps{$datestamp}++;
 }
+if($OPTIONS{make_db}) {
 foreach my $date (keys %datestamps) {
     $logger->debug("Building... $date ");
     `mv $ecenter_db_sql.sql  $ecenter_db_sql.$date`  if -e "$ecenter_db_sql.sql";
@@ -183,14 +184,16 @@ foreach my $date (keys %datestamps) {
     }
     #    create API
     #
-    make_schema_at(
-	  'Ecenter::DB',
-	  {  really_erase_my_files =>  ($OPTIONS{fresh}?1:0),
-	     preserve_case => 1,
-             dump_directory => "$OPTIONS{trunk}/frontend_components/ecenter_data/lib" },
-	   [ "dbi:mysql:database=$OPTIONS{db}", $OPTIONS{user} ,  $OPTIONS{pass} ],
-    ) if $OPTIONS{make_orm};
 }
+}
+ make_schema_at(
+          'Ecenter::DB',
+          {  really_erase_my_files =>  ($OPTIONS{fresh}?1:0),
+             preserve_case => 1,
+             dump_directory => "$OPTIONS{trunk}/frontend_components/ecenter_data/lib" },
+           [ "dbi:mysql:database=$OPTIONS{db}", $OPTIONS{user} ,  $OPTIONS{pass} ],
+    ) if $OPTIONS{make_orm};
+
 #   drop FKs and create/re-org partitions
 #
 exit 0;

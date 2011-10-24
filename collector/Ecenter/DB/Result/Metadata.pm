@@ -39,6 +39,13 @@ __PACKAGE__->table("metadata");
   is_nullable: 0
   size: 16
 
+=head2 l2_urn
+
+  data_type: 'varchar'
+  default_value: (empty string)
+  is_nullable: 0
+  size: 512
+
 =head2 direction
 
   data_type: 'enum'
@@ -92,6 +99,8 @@ __PACKAGE__->add_columns(
   { data_type => "varbinary", is_nullable => 0, size => 16 },
   "dst_ip",
   { data_type => "varbinary", default_value => 0, is_nullable => 0, size => 16 },
+  "l2_urn",
+  { data_type => "varchar", default_value => "", is_nullable => 0, size => 512 },   
   "direction",
   {
     data_type => "enum",
@@ -139,7 +148,7 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
-__PACKAGE__->add_unique_constraint("md_ips_type", ["src_ip", "dst_ip", "eventtype_id"]);
+__PACKAGE__->add_unique_constraint("md_ips_type", ["src_ip", "dst_ip", "l2_urn", "eventtype_id"]);
 
 =head1 RELATIONS
 

@@ -5,28 +5,35 @@
  */
 function ecenter_network_get_fds_data($src, $dst, $start, $end, $fds_type) {
   $params = get_defined_vars();
-  global $user;
   static $results = array();
 
+  $params['fds'] = TRUE;
   $query = http_build_query($params);
 
   if (!array_key_exists($query, $results)) {
-    $start_time = microtime(true);
-    $resolution = variable_get('ecenter_network_fds_resolution', 1000);
-    $client = ecenter_network_get_client(FALSE, 'fds');
-
-    $result = $client->getData($src, $dst, $start, $end, $fds_type);
-    
-    if ($result['code'] == 200) {
-      $data = ecenter_network_parse_fds_response($result);
-      $results[$query] = $data;
+    $caching = variable_get('ecenter_network_fds_cache_enabled', 0);
+    if ($caching && $result = cache_get($query, 'cache_ecenter_data')) {
+      $results[$query] = $result->data;
     }
-    else { // Note that the static variable is NOT set in this case
-      watchdog('ecenter_network',
-        'Request (@url) failed with code @code (@response).',
-        array('@url' => $result['url'], '@code' => $result['code'],
-        '@response' => $result['response']), WATCHDOG_WARNING);
-      return NULL;
+    else {
+      $resolution = variable_get('ecenter_network_fds_resolution', 1000);
+      $client = ecenter_network_get_client('message', 'fds');
+      $result = $client->getData($src, $dst, $start, $end, $fds_type);
+      if ($result['code'] == 200) {
+        $data = ecenter_network_parse_fds_response($result);
+        if ($caching) {
+          $expires = time() + variable_get('ecenter_network_data_cache_ttl', 3600);
+          cache_set($query, $data, 'cache_ecenter_data', $expires);
+        }
+        $results[$query] = $data;
+      }
+      else { // Note that the static variable is NOT set in this case
+        watchdog('ecenter_network',
+          'Request (@url) failed with code @code (@response).',
+          array('@url' => $result['url'], '@code' => $result['code'],
+          '@response' => $result['response']), WATCHDOG_WARNING);
+        return NULL;
+      }
     }
   }
   return $results[$query];
@@ -37,8 +44,6 @@ function ecenter_network_parse_fds_response($response) {
   $data = $response['response'];
   $params = $response['parameters'];
   $type = $response['parameters']['data_type'];
-
-  //dpm($response);
 
   switch ($type) {
     case 'snmp':

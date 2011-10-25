@@ -19,26 +19,36 @@ function ecenter_network_get_ads_data($src, $dst, $start, $end, $algorithm = 'sp
   $elevation2 = NULL, $swc = NULL) {
   
   $params = get_defined_vars();
-  global $user;
   static $results = array();
 
+  $params['ads'] = TRUE;
   $query = http_build_query($params);
 
   if (!array_key_exists($query, $results)) {
-    $resolution = variable_get('ecenter_network_ads_resolution', 1000);
-    $client = ecenter_network_get_client('message', 'ads');
-    foreach (array('owamp', 'bwctl') as $data_type) {
-      $result = $client->getData($src, $dst, $start, $end, $data_type, $resolution, $algorithm, $detector_type, $sensitivity, $elevation1, $elevation2, $swc);
-      if ($result['code'] == 200) {
-        $data = ecenter_network_parse_ads_response($result);
-        $results[$query][$data_type] = $data;
-      }
-      else { // Note that the static variable is NOT set in this case
-        watchdog('ecenter_network',
-          'Request (@url) failed with code @code (@response).',
-          array('@url' => $result['url'], '@code' => $result['code'],
-          '@response' => $result['response']), WATCHDOG_WARNING);
-        return NULL;
+    $caching = variable_get('ecenter_network_ads_cache_enabled', 0);
+    if ($caching && $result = cache_get($query, 'cache_ecenter_data')) {
+      $results[$query] = $result->data;
+    }
+    else {
+      $resolution = variable_get('ecenter_network_ads_resolution', 1000);
+      $client = ecenter_network_get_client('message', 'ads');
+      foreach (array('owamp', 'bwctl') as $data_type) {
+        $result = $client->getData($src, $dst, $start, $end, $data_type, $resolution, $algorithm, $detector_type, $sensitivity, $elevation1, $elevation2, $swc);
+        if ($result['code'] == 200) {
+          $data = ecenter_network_parse_ads_response($result);
+          if ($caching) {
+            $expires = time() + variable_get('ecenter_network_data_cache_ttl', 3600);
+            cache_set($query, $data, 'cache_ecenter_data', $expires);
+          }
+          $results[$query][$data_type] = $data;
+        }
+        else { // Note that the static variable is NOT set in this case
+          watchdog('ecenter_network',
+            'Request (@url) failed with code @code (@response).',
+            array('@url' => $result['url'], '@code' => $result['code'],
+            '@response' => $result['response']), WATCHDOG_WARNING);
+          return NULL;
+        }
       }
     }
   }

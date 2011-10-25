@@ -59,7 +59,6 @@ function ecenter_network_admin_form() {
       '#description' => t('The default query resolution.'),
       '#default_value' => variable_get('ecenter_network_'. $type .'_resolution', 50),
     );
-
     if ($type == 'ads' || $type == 'fds') {
       $form[$type]['ecenter_network_'. $type .'_resolution']['#default_value'] = 
         variable_get('ecenter_network_'. $type .'_resolution', 1000);
@@ -67,67 +66,66 @@ function ecenter_network_admin_form() {
   }
 
   // DRS specific settings
-  $form['drs']['ecenter_network_time_increment'] = array(
-    '#title' => t('Time increment'),
-    '#type' => 'textfield',
-    '#description' => t('Specify time granularity (in minutes), to use in weather map date selector and when setting default date.'),
-    '#default_value' => variable_get('ecenter_network_time_increment', 5),
-  );
-  $form['drs']['ecenter_network_time_window'] = array(
-    '#title' => t('Time window'),
-    '#type' => 'textfield',
-    '#description' => t('Specify default window of time to query over, in seconds (i.e. 1 hour is 3600 seconds).'),
-    '#default_value' => variable_get('ecenter_network_time_window', 7200),
-  );
-  $form['drs']['performance'] = array(
+  $form['performance'] = array(
     '#title' => t('Performance'),
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
   );
-  $form['drs']['performance']['ecenter_network_data_cache_enabled'] = array(
+  $form['performance']['ecenter_network_data_cache_enabled'] = array(
     '#title' => t('Enable data result caching'),
     '#type' => 'checkbox',
     '#description' => t('Should E-center Network cache data results?'),
     '#default_value' => variable_get('ecenter_network_data_cache_enabled', 0),
   );
-  $form['drs']['performance']['ecenter_network_data_cache_ttl'] = array(
-    '#title' => t('Data cache time to live'),
-    '#type' => 'textfield',
-    '#description' => t('How long should results be cached, in seconds?'),
-    '#default_value' => variable_get('ecenter_network_data_cache_ttl', 3600),
+  $form['performance']['ecenter_network_ads_cache_enabled'] = array(
+    '#title' => t('Enable anomaly data result caching'),
+    '#type' => 'checkbox',
+    '#description' => t('Should E-center Network cache data results?'),
+    '#default_value' => variable_get('ecenter_network_ads_cache_enabled', 0),
   );
-  $form['drs']['performance']['ecenter_network_hop_cache_enabled'] = array(
+  $form['performance']['ecenter_network_fds_cache_enabled'] = array(
+    '#title' => t('Enable forecasting data result caching'),
+    '#type' => 'checkbox',
+    '#description' => t('Should E-center Network cache data results?'),
+    '#default_value' => variable_get('ecenter_network_fds_cache_enabled', 0),
+  );
+  $form['performance']['ecenter_network_hop_cache_enabled'] = array(
     '#title' => t('Enable hop result caching'),
     '#type' => 'checkbox',
     '#description' => t('Should E-center Network cache source / destination hop combinations?'),
     '#default_value' => variable_get('ecenter_network_hop_cache_enabled', 0),
   );
-  $form['drs']['performance']['ecenter_network_hop_cache_ttl'] = array(
+  $form['performance']['ecenter_network_data_cache_ttl'] = array(
+    '#title' => t('Data cache time to live'),
+    '#type' => 'textfield',
+    '#description' => t('How long should results be cached, in seconds?'),
+    '#default_value' => variable_get('ecenter_network_data_cache_ttl', 3600),
+  );
+  $form['performance']['ecenter_network_hop_cache_ttl'] = array(
     '#title' => t('Hop cache time to live'),
     '#type' => 'textfield',
     '#description' => t('How long should hop results be cached, in seconds?'),
     '#default_value' => variable_get('ecenter_network_hop_cache_ttl', 300),
   );
-  $form['drs']['performance']['ecenter_network_node_cache_enabled'] = array(
+  $form['performance']['ecenter_network_node_cache_enabled'] = array(
     '#title' => t('Enable node result caching'),
     '#type' => 'checkbox',
     '#description' => t('Should E-center Network cache node results?'),
     '#default_value' => variable_get('ecenter_network_node_cache_enabled', 0),
   );
-  $form['drs']['performance']['ecenter_network_node_cache_ttl'] = array(
+  $form['performance']['ecenter_network_node_cache_ttl'] = array(
     '#title' => t('Hop cache time to live'),
     '#type' => 'textfield',
     '#description' => t('How long should node results be cached, in seconds?'),
     '#default_value' => variable_get('ecenter_network_node_cache_ttl', 300),
   );
-  $form['drs']['performance']['ecenter_network_site_data_cache_enabled'] = array(
+  $form['performance']['ecenter_network_site_data_cache_enabled'] = array(
     '#title' => t('Enable site data result caching'),
     '#type' => 'checkbox',
     '#description' => t('Should E-center Network cache site-centric data results?'),
     '#default_value' => variable_get('ecenter_network_site_data_cache_enabled', 0),
   );
-  $form['drs']['performance']['ecenter_network_site_data_cache_ttl'] = array(
+  $form['performance']['ecenter_network_site_data_cache_ttl'] = array(
     '#title' => t('Site data cache time to live'),
     '#type' => 'textfield',
     '#description' => t('How long should results be cached, in seconds?'),

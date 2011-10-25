@@ -98,7 +98,6 @@
     if (lh.colors) {
       var idx = sidx % lh.colors.length;
       var series_color = lh.colors[idx];
-      console.log('user set color', series_color);
     }
     else {
       var idx = sidx % s.seriesColors.length;

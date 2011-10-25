@@ -1,11 +1,6 @@
-/* $Id$ */
-
 /**
  * E-Center theme CSS style
  */
-
-// Debugging
-.krumo-root { width: 600px; }
 
 /* --- Less CSS Variables --- */
 /* Variables: Measurements {{{ */
@@ -1150,6 +1145,7 @@ form {
       #timezone-wrapper {
         .box;
         width: 575px;
+        margin-top: 13px;
         label, input, button, .description {
           float: left;
         }
@@ -1174,61 +1170,74 @@ form {
         .box;
         width: 575px;
         margin-top: 10px;
-      }
-      #fds-settings-wrapper, #ads-settings-wrapper {
-        .box;
-        width: 280px;
-      }
-      /* }}} */
-      /* FDS {{{ */
-      #fds-settings-wrapper {
-        margin-right: 15px;
-      }
-      /* }}} */
-      /* ADS {{{ */
-      #ads-settings-wrapper {
-        position: relative;
-        #ads-settings {
-          width: 300px;
-          position: relative;
-          fieldset {
-            margin: 0 15px 15px 0;
-            .form-item {
-              margin: 0 0 14px 0;
-            }
-            legend {
-              font-size: 13px;
-              padding-top: 3px;
-              padding-bottom: 3px;
-              background-color: transparent;
-            }
-            .fieldset-title {
-              position: absolute;
-              right: 0;
-            }
-            label {
-              .box;
-              font-size: 13px;
-              width: 115px;
-              margin-right: 15px;
-            }
-            input {
-              padding: 2px;
-              font-size: 13px;
-            }
-            .fieldset-content {
-              padding-top: 25px;
-              background-color: transparent;
-            }
+        .form-submit {
+          font-size: 13px;
+        }
+        label {
+          display: inline;
+          font-size: 13px;
+        }
+        .form-item {
+          display: inline;
+        }
+        #fds-settings-wrapper, #ads-settings-wrapper {
+          .box;
+          width: 280px;
+        }
+        #fds-settings-wrapper {
+          margin-right: 15px;
+          #fds-enable-wrapper {
+            display: none;
+          }
+          #fds-submit {
+            margin-right: 5px;
+          }
+          select {
+            width: 135px;
           }
         }
-        input.form-submit {
-          left: 0;
-          position: absolute;
-          font-size: 14px;
-        }
-        #ads-enable-wrapper {
-          display: none;
+        #ads-settings-wrapper {
+          position: relative;
+          #ads-settings {
+            width: 300px;
+            position: relative;
+            fieldset {
+              margin: 0 15px 15px 0;
+              .form-item {
+                margin: 0 0 14px 0;
+              }
+              legend {
+                font-size: 13px;
+                padding-top: 3px;
+                padding-bottom: 3px;
+                background-color: transparent;
+              }
+              .fieldset-title {
+                position: absolute;
+                right: 0;
+              }
+              input {
+                padding: 2px;
+                font-size: 13px;
+              }
+              .fieldset-content {
+                padding-top: 25px;
+                background-color: transparent;
+              }
+              label {
+                .box;
+                width: 115px;
+                margin-right: 15px;
+              }
+            }
+          }
+          input.form-submit {
+            left: 0;
+            position: absolute;
+          }
+          #ads-enable-wrapper {
+            display: none;
+          }
         }
       }
       /* }}} */
@@ -2303,9 +2312,4 @@ tr.forecast {
   th, td {
     background-color: @color_yellow !important;
   }
-}
-
-
-#fds-enable-wrapper {
-  display: none;
 }

@@ -118,6 +118,7 @@ function ecenter_network_theme() {
         'table' => NULL,
         'hop' => NULL,
         'direction' => NULL,
+        'attributes' => array(),
       ),
     ) + $options,
     'ecenter_network_format_default' => array(
@@ -201,6 +202,7 @@ function ecenter_network_init() {
     drupal_add_js($jq_path .'/plugins/jqplot.barRenderer'. $min .'.js');
     drupal_add_js($jq_path .'/plugins/jqplot.canvasTextRenderer'. $min .'.js');
     drupal_add_js($jq_path .'/plugins/jqplot.canvasAxisLabelRenderer'. $min .'.js');
+    drupal_add_js($jq_path .'/plugins/jqplot.enhancedLegendRenderer'. $min .'.js');
     drupal_add_js(drupal_get_path('module', 'ecenter_network') .'/js/jqplot/jqplot.linehighlighter.js');
     drupal_add_js($tablechart_path .'/jquery.tablechart.js');
     drupal_add_js(drupal_get_path('module', 'jqplot') .'/js/jqplot-behaviors.js');

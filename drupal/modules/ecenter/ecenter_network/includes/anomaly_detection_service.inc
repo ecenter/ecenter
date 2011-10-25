@@ -31,7 +31,7 @@ function ecenter_network_get_ads_data($src, $dst, $start, $end, $algorithm = 'sp
     }
     else {
       $resolution = variable_get('ecenter_network_ads_resolution', 1000);
-      $client = ecenter_network_get_client('message', 'ads');
+      $client = ecenter_network_get_client(FALSE, 'ads');
       foreach (array('owamp', 'bwctl') as $data_type) {
         $result = $client->getData($src, $dst, $start, $end, $data_type, $resolution, $algorithm, $detector_type, $sensitivity, $elevation1, $elevation2, $swc);
         if ($result['code'] == 200) {

@@ -17,7 +17,7 @@ function ecenter_network_get_fds_data($src, $dst, $start, $end, $fds_type) {
     }
     else {
       $resolution = variable_get('ecenter_network_fds_resolution', 1000);
-      $client = ecenter_network_get_client('message', 'fds');
+      $client = ecenter_network_get_client(FALSE, 'fds');
       $result = $client->getData($src, $dst, $start, $end, $fds_type);
       if ($result['code'] == 200) {
         $data = ecenter_network_parse_fds_response($result);
@@ -115,12 +115,12 @@ function ecenter_network_parse_fds_response($response) {
  */
 function ecenter_network_fds_form($value = FALSE) {
   extract(_ecenter_network_extract_query());
+  dpm(get_defined_vars());
 
   $form['fds_wrapper'] = array(
     '#prefix' => '<div id="fds-settings-wrapper" class="analysis-wrapper">',
     '#suffix' => '</div>',
   );
-  
   $form['fds_wrapper']['fds_submit'] = array(
     '#type' => 'submit',
     '#id' => 'fds-submit',
@@ -129,13 +129,12 @@ function ecenter_network_fds_form($value = FALSE) {
     '#attributes' => array('class' => 'analysis-submit fds-submit'),
     '#weight' => 0,
   );
-
   $form['fds_wrapper']['fds_type'] = array(
     '#id' => 'fds-type',
     '#name' => 'fds_type',
     '#type' => 'select',
-    '#title' => 'Forecast type',
-    '#default_value' => 'snmp',
+    '#title' => t('Type'),
+    '#value' => (!empty($fds) && !empty($fds_type)) ? $fds_type : 'snmp',
     '#options' => array(
       'snmp' => t('SNMP utilization'),
       'bwctl' => t('bwctl (bandwidth control)'),
@@ -143,7 +142,6 @@ function ecenter_network_fds_form($value = FALSE) {
     ),
     '#weight' => 10,
   );
-
   $form['fds_wrapper']['fds'] = array(
     '#id' => 'fds-enable',
     '#name' => 'fds',

@@ -49,15 +49,11 @@ function ecenter_network_health() {
  *   An array of parsed data
  */
 function ecenter_network_get_data($src, $dst, $start, $end) {
+  $params = get_defined_vars();
   global $user;
   static $results = array();
 
-  $query = http_build_query(array(
-    'src' => $src,
-    'dst' => $dst,
-    'start' => $start,
-    'end' => $end,
-  ));
+  $query = http_build_query($params);
 
   if (!array_key_exists($query, $results)) {
     $caching = variable_get('ecenter_network_data_cache_enabled', 0);

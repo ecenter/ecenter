@@ -49,6 +49,26 @@
  * <thead> row will be used to generate series labels unless specified in
  * plotOptions.
  *
+ * Series options may be overridden using a custom data attribute. If scraping
+ * a single table with columns as series, set the data-jqplotSeriesOptions
+ * attribute on the column's table header (thead th tag). If scraping multiple 
+ * tablea as series, set the attribute on the table element. The attribute should 
+ * contain a JSON representation of any allowed jqPlot series options. Examples
+ * of single table, multiple table custom series options:
+ *
+ * <table>
+ *   <thead>
+ *     <tr>
+ *      <th>x-axis label</th>
+ *      <th data-jqplotSeriesOptions="{'linePattern':'dashed'}">Series 1 label</th>
+ *      <th data-jqplotSeriesOptions="{'color':'#ff0000'}">Series 2 label</th>
+ *     </tr>
+ *   </thead>
+ *   <tbody>...</tbody>
+ * </table>
+ *
+ * <table data-jqplotSeriesOptions="{'lineWidth':'3.0'}"> ... </table>
+ *
  * A note about parsing X and Y values: The tablechart plugin provides two 
  * trivial parsing callbacks for your parsing pleasure: $.tablechart.parseFloat
  * and $.tablechart.parseText.
@@ -190,6 +210,12 @@ $.tablechart.scrapeSingle = function(table) {
         {label: $(this).text()}, 
         options.plotOptions.series[i]
       );
+
+      // Extend options with custom data attribute     
+      var seriesOptions = $(this).data('jqplotSeriesOptions');
+      if (typeof seriesOptions != 'undefined') {
+        options.plotOptions.series[i] = $.extend(options.plotOptions.series[i], seriesOptions);
+      }
     });
   }
 
@@ -227,7 +253,7 @@ $.tablechart.scrapeMultiple = function(tables) {
   var series_idx = 0;
   $(tables)
   .not('.jqplot-target table') // Filter out jqplot-added tables
-  .each(function() {
+  .each(function(i) {
     // Generate series labels (requires "global" counter)
     if (tablechart.options.multitablesHeaderSeriesLabels) {
       $(this).find('thead th:gt(0)').each(function() {
@@ -238,7 +264,14 @@ $.tablechart.scrapeMultiple = function(tables) {
         series_idx += 1;
       });
     }
-    // Now simply scrape each matched table
+
+    // Extend options with custom data attribute     
+    var seriesOptions = $(this).data('jqplotSeriesOptions');
+    if (typeof seriesOptions != 'undefined') {
+      options.plotOptions.series[i] = $.extend(options.plotOptions.series[i], seriesOptions);
+    }
+
+    // Scrape each matched table
     series = series.concat($.tablechart.scrapeSingle.call(tablechart, this));
   });
 

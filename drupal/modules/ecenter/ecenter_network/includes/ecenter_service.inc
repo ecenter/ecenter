@@ -1,212 +1,81 @@
 <?php
+// Load helpers
+require_once('data_retrieval_service.inc');
+require_once('data_retrieval_service_sitecentric.inc');
+require_once('anomaly_detection_service.inc');
+require_once('forecasting_data_service.inc');
 
 /**
- * @file
- * Provides an abstract class for interacting with E-Center's data retrieval, 
- * anomaly detection, and other services to developed.
+ * Get an E-Center Data Retrieval Service client
+ *
+ * Factory-style helper function. All parameters optional
+ *
+ * @param $status_check
+ *   If '503', return HTTP 503 page or redirect. If 'message', set message and
+ *   continue. If FALSE, just return the client (default).
+ * @param $type
+ *   'drs' for Data Retrieval Service (default), 'ads' for Anomaly Detection
+ *   Service
+ * @param $name
+ *   A unique name for this client (optional)
  */
+function ecenter_network_get_client($status_check = FALSE, $type = 'drs', $name = NULL) {
+  static $clients = array();
 
-abstract class EcenterService {
-
-  /**
-   * Connection options
-   */
-  protected $_host, $_port, $_path, $_timeout, $_url, $_status_timeout;
-
-  /**
-   * Allow return value to be set on object
-   */
-  public $data_type = 'json';
-
-  /**
-   * Client constructor
-   *
-   * @param $host
-   *   The hostname of the network data web service.
-   * @param $port
-   *   The port used by the network data web service.
-   * @param $path
-   *   The base path of the query service.
-   * @param $timeout
-   *   Request timeout.
-   * @param $status_timeout
-   *   Timeout for a status request. This can/should be much shorter than the
-   *   regular data timeout.
-   */
-  public function __construct($host = 'localhost', $port = 8099, $path = '', $timeout = 30, $status_timeout = 2) {
-    $this->_host = $host;
-    $this->_port = $port;
-    $this->_path = $path;
-    $this->_url = 'http://'. $host .':'. $port;
-    $this->_url .= ($path) ? '/'. $path : '';
-    $this->_timeout = $timeout;
-    $this->_status_timeout = $status_timeout;
+  require_once('ecenter_service.class.inc');
+  switch ($type) {
+    case 'drs':
+      require_once('data_retrieval_service.class.inc');
+      $klass = 'DataRetrievalService';
+      $name = ($name) ? $name : 'drs_default';
+      break;
+    case 'drs_sitecentric':
+      require_once('data_retrieval_service.class.inc');
+      $klass = 'DataRetrievalService';
+      $name = ($name) ? $name : 'drs_sitecentric';
+      break;
+    case 'ads':
+      require_once('anomaly_detection_service.class.inc');
+      $klass = 'AnomalyDetectionService';
+      $name = ($name) ? $name : 'ads_default';
+      break;
+    case 'fds':
+      require_once('forecasting_data_service.class.inc');
+      $klass = 'ForecastingDataService';
+      $name = ($name) ? $name : 'fds_default';
+      break;
+    default:
+      drupal_set_message(t('Incorrect $type passed to client constructor'), 
+        'error');
   }
 
-  /**
-   * Query a data service
-   *
-   * @param $path
-   *   The path to the web service resource.
-   * @param $parameters
-   *   An array of search/filter parameters, if required. May contain key/value
-   *   to pass in the query string, or an array with an array of key/value pairs
-   *   belonging to an element named 'query'. The array invocation allows 
-   *   additional metadata to be maintained with the query parameters.
-   * @param $timeout
-   *   (optional) Request timeout to use (overrides timeout set in constructor).
-   * @return
-   *   An associative array consisting of querystring, query parameters as an
-   *   associative array, response
-   */
-  protected function query($path, $parameters = NULL, $timeout = NULL) {
+  if (empty($clients[$name])) {
+    $host = variable_get('ecenter_network_'. $type .'_host', 'localhost');
+    $port = variable_get('ecenter_network_'. $type .'_port', 8000);
+    $dir = variable_get('ecenter_network_'. $type .'_basedir', '');
+    $timeout = variable_get('ecenter_network_'. $type .'_timeout', 30);
+    $status_timeout = variable_get('ecenter_network_'. $type .'_status_timeout', 2);
+    $clients[$name] = new $klass($host, $port, $dir, $timeout, 
+      $status_timeout);
+  }
 
-    $timeout = ($timeout) ? $timeout : $this->_timeout;
-    $url = $this->_url .'/'. $path .'.'. $this->data_type;
-    $querystring = '';
+  // Check client availability
+  if ($status_check && !$clients[$name]->checkStatus()) {
+    $message = t('!class client is not available.', array('!class' => $klass));
+    watchdog('ecenter', $message, array(), WATCHDOG_ERROR);
 
-    if (!empty($parameters)) {
-      $query = array();
-      foreach ($parameters as $key => $value) {
-        if (is_array($value)) {
-          foreach ($value['query'] as $query_key => $query_value) {
-            if (!empty($query_value)) {
-              $query[$query_key] = $query_value;
-            }
-          }
+    switch ($status_check) {
+      case '503':
+        drupal_set_header('HTTP/1.1 503 Service unavailable');
+        // Keep old path for reference, and to allow forms to redirect to it.
+        if (!isset($_REQUEST['destination'])) {
+          $_REQUEST['destination'] = $_GET['q'];
         }
-        else {
-          if (!empty($value)) {
-            $query[$key] = $value;
-          }
-        }
-      }
-      $querystring = http_build_query($query);
-
-      if (!empty($querystring)) {
-        $url .= '?'. $querystring;
-      }
-      // @TODO Fix... somewhere: Dancer does not support encoded ampersands in the querystring
-      $url = str_replace('&amp;', '&', $url);
+        print theme('page', '<div class="ecenter-fatal">'. $message .'</div>');
+        exit();
+      default:
+        drupal_set_message($message, 'error');
     }
-
-
-    $handle = curl_init();
-
-    $options = array(
-      CURLOPT_URL => $url,
-      CURLOPT_TIMEOUT => $timeout,
-      CURLOPT_RETURNTRANSFER => 1,
-      CURLOPT_FRESH_CONNECT => 1,
-      CURLOPT_FORBID_REUSE => 1,
-      CURLOPT_VERBOSE => 1,
-    );
-
-    curl_setopt_array($handle, $options);
-
-    $raw = curl_exec($handle);
-    $error = curl_error($handle);
-    $code = curl_getinfo($handle, CURLINFO_HTTP_CODE);
-
-    if (!$error) {
-      $response = json_decode($raw, TRUE);
-    }
-    else {
-      $response = $error;
-    }
-
-    curl_close($handle);
-
-    $result = array(
-      'parameters' => $parameters,
-      'query' => $querystring,
-      'url' => $url,
-      'code' => $code,
-      'response' => $response,
-      'raw' => $raw,
-    );
-
-    return $result;
   }
-
-  /**
-   * Query a data service
-   *
-   * @param $path
-   *   The path to the web service resource.
-   * @param $data
-   *   Array of data to POST
-   * @param $timeout
-   *   (optional) Request timeout to use (overrides timeout set in constructor).
-   * @return
-   *   An associative array consisting of querystring, query parameters as an
-   *   associative array, response
-   */
-  protected function post($path, $data = NULL, $query = array(), $timeout = NULL) {
-    $timeout = ($timeout) ? $timeout : $this->_timeout;
-    $url = $this->_url .'/'. $path .'.'. $this->data_type;
-
-    $querystring = http_build_query($query);
-
-    if (!empty($querystring)) {
-      $url .= '?'. $querystring;
-    }
-    // @TODO Fix... somewhere: Dancer does not support encoded ampersands in the querystring
-    $url = str_replace('&amp;', '&', $url);
-
-    $handle = curl_init();
-
-    $options = array(
-      CURLOPT_URL => $url,
-      CURLOPT_TIMEOUT => $timeout,
-      CURLOPT_RETURNTRANSFER => 1,
-      CURLOPT_FRESH_CONNECT => 1,
-      CURLOPT_FORBID_REUSE => 1,
-      CURLOPT_VERBOSE => 1,
-      CURLOPT_POST => 1,
-      CURLOPT_POSTFIELDS => $data,
-    );
-
-    curl_setopt_array($handle, $options);
-
-    $raw = curl_exec($handle);
-    $error = curl_error($handle);
-    $code = curl_getinfo($handle, CURLINFO_HTTP_CODE);
-
-    if (!$error) {
-      $response = json_decode($raw, TRUE);
-    }
-    else {
-      $response = $error;
-    }
-
-    curl_close($handle);
-
-    $result = array(
-      'post' => $data,
-      'parameters' => $query,
-      'query' => $querystring,
-      'url' => $url,
-      'code' => $code,
-      'response' => $response,
-      'raw' => $raw,
-    );
-
-    return $result;
-  }
-
-  /**
-   * Check server status
-   *
-   * @return
-   *   True if server is operational.
-   */
-  public function checkStatus() {
-    $q = 'status';
-    $status = $this->query($q, NULL, $this->_status_timeout);
-    if ($status['response']['status']) {
-      return TRUE;
-    }
-    return FALSE;
-  }
+  return $clients[$name];
 }

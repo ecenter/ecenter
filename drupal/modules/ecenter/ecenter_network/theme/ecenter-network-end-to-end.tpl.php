@@ -1,7 +1,5 @@
 <h3><?php print t('End to end results'); ?></h3>
 
-<?php print $ads; ?>
-
 <div id="end-to-end-results">
   <?php print $table; ?>
 </div>

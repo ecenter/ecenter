@@ -30,6 +30,18 @@
           <?php print $timezone_select; ?>
         </div>
 
+        <?php if ($fds && $ads): ?>
+        <div id="analysis-wrapper" class="clearfix">
+          <?php if ($fds): ?>
+          <?php print $fds; ?>
+          <?php endif; ?>
+
+          <?php if ($ads): ?>
+          <?php print $ads; ?>
+          <?php endif; ?>
+        </div>
+        <?php endif; ?>
+
       </div>
     </div>
 

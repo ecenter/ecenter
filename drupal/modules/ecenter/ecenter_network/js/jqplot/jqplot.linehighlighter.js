@@ -71,7 +71,7 @@
   // account for highlight canvas or other canvases?
   $.jqplot.LineHighlighter.postPlotDraw = function() {
     this.plugins.linehighlighter.highlightCanvas = new $.jqplot.GenericCanvas();
-    this.eventCanvas._elem.before(this.plugins.linehighlighter.highlightCanvas.createElement(this._gridPadding, 'jqplot-linehighlight-canvas', this._plotDimensions));
+    this.eventCanvas._elem.before(this.plugins.linehighlighter.highlightCanvas.createElement(this._gridPadding, 'jqplot-linehighlight-canvas', this._plotDimensions, this));
   };
 
   // Register plugins
@@ -98,7 +98,6 @@
     if (lh.colors) {
       var idx = sidx % lh.colors.length;
       var series_color = lh.colors[idx];
-      console.log('user set color', series_color);
     }
     else {
       var idx = sidx % s.seriesColors.length;

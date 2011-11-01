@@ -15,7 +15,7 @@ function template_preprocess_ecenter_network_data(&$vars) {
 
   // DRS parameters
   $params = $data['drs']['parameters'];
-  
+
   // All parameters
   $query_params = $data['parameters'];
 
@@ -75,6 +75,12 @@ function template_preprocess_ecenter_network_data(&$vars) {
         }
         $vars['issues'] = '<label>'. t('Issues from this query: ') .'</label>'. implode(', ', $issue_links);
       }
+
+      $ads = ecenter_network_ads_form($query_params['ads']);
+      $vars['ads'] = drupal_render($ads);
+
+      $fds = ecenter_network_fds_form($query_params['fds']);
+      $vars['fds'] = drupal_render($fds);
     }
 
     $timezones = array_map('_ecenter_network_process_tz_name', date_timezone_names());
@@ -93,15 +99,17 @@ function template_preprocess_ecenter_network_data(&$vars) {
       $timezone_select['#description'] = t('Timezone for results. <a href="@login_url">Login</a> or <a href="@register_url">register</a> to set default.', array('@login_url' => url('user'), '@register_url' => url('user/register')));
     }
     $vars['timezone_select'] = drupal_render($timezone_select);
-  
+ 
   }
 
   // End to end measurements
   $vars['end_to_end'] = theme('ecenter_network_end_to_end',
-    $data['drs']['end_to_end'], $query_params['timezone'], !$vars['standalone'], $data['ads']);
+    $data['drs']['end_to_end'], $query_params['timezone'], $data['ads'], 
+    $data['fds'], !$vars['standalone']);
 
   // Per-hop measurements
-  $vars['hops'] = theme('ecenter_network_hops', $data['drs']['traceroute']['diff'], $query_params['timezone']);
+  $vars['hops'] = theme('ecenter_network_traceroute', 
+    $data['drs']['traceroute']['diff'], $query_params['timezone'], $data['fds']);
 
   // Generate permalink
   $vars['permalink'] = l(t('Link'), 'network', array(
@@ -132,11 +140,6 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
 
   if (!$data) {
     return;
-  }
-
-  if ($vars['ads']) {
-    $ads = ecenter_network_ads_form();
-    $vars['ads'] = drupal_render($ads);
   }
 
   foreach ($data as $test => $directions) {
@@ -180,6 +183,7 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
           );
         }
 
+        // Process timeseries into tables
         if (($timeseries = $values['timeseries']) && is_array($timeseries)
           && $values['statistics']['max'] > 0) {
           $data_table = array();
@@ -202,7 +206,31 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
           $data_tables[$test][$measurement][$direction] = $data_table;
           $data_tables[$test][$measurement]['start'] = $start;
           $data_tables[$test][$measurement]['end'] = $end;
-          
+
+          // Add forecasts
+          if (!empty($vars['fds_data'][$test][$measurement][$direction])) {
+            $forecast_table = array();
+            $forecast_data = $vars['fds_data'][$test][$measurement][$direction];
+            foreach ($forecast_data as $timestamp => $values) {
+              $time = _ecenter_network_timestamp_to_local($timestamp);
+              $forecast_table[] = array(
+                'class' => 'forecast',
+                'data' => array(
+                  array('data' => $time, 'header' => TRUE),
+                  theme($value_suggestions, $values['value'], $test, $measurement, FALSE),
+                ),
+              );
+
+            }
+            
+            $data_tables[$test][$measurement][$direction .'_forecast'] = $forecast_table;
+            //  array_merge($data_tables[$test][$measurement][$direction], $forecast_table);
+
+            //$data_tables[$test][$measurement][$direction] = 
+            //  array_merge($data_tables[$test][$measurement][$direction], $forecast_table);
+          }
+         
+          // Add anomaly tables
           if ((($test == 'owamp' && $measurement == 'max_delay') || $test == 'bwctl') 
             && !empty($vars['ads_data'][$test][$direction])) {
             $data_table = array();
@@ -217,6 +245,9 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
             }
             $data_tables[$test][$measurement][$direction .'_'. $warning_type] = $data_table;
           }
+
+          // Reverse table order
+          krsort($data_tables[$test][$measurement][$direction]);
         }
       }
     }
@@ -325,7 +356,7 @@ function theme_ecenter_network_recent_query($query, $time) {
  * @TODO We might want to make this more flexible. However, this data isn't
  * likely to change soon.
  */
-function theme_ecenter_network_hops($traceroute = array(), $timezone = FALSE) {
+function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FALSE, $fds_data = array()) {
   $tables = array();
 
   if (empty($traceroute)) {
@@ -333,7 +364,7 @@ function theme_ecenter_network_hops($traceroute = array(), $timezone = FALSE) {
   }
 
   $settings = array();
-
+  $directions = array();
   $sidx = 0;
 
   foreach ($traceroute as $ttl => $diff_data) {
@@ -344,6 +375,7 @@ function theme_ecenter_network_hops($traceroute = array(), $timezone = FALSE) {
       if (empty($data[$direction])) {
         continue;
       }
+      $directions[$direction] = 1;
       foreach ($data[$direction] as $hop_index => $hop) {
         $table = array();
 
@@ -376,7 +408,54 @@ function theme_ecenter_network_hops($traceroute = array(), $timezone = FALSE) {
             );
           }
         }
-        $tables[] = theme('ecenter_network_utilization_table', $table, $hop, $direction);
+
+        $attributes = array(
+          'class' => $direction,
+          'data-jqplotHighlightColor' => '#ff0000',
+        );
+
+        $tables[] = theme('ecenter_network_utilization_table', $table, $hop, $direction, $attributes);
+
+        if (!empty($fds_data['snmp']['utilization'][$hop['hop_ip']])) {
+          $forecast_table = array();
+          $forecast_data = $fds_data['snmp']['utilization'][$hop['hop_ip']];
+
+          $last_value = array_pop($hop['data']['snmp']);
+          $forecast_data[$last_value[0]] = array('value' => $last_value[1]['utilization']);
+         
+          foreach ($forecast_data as $timestamp => $forecast) {
+            $time = _ecenter_network_timestamp_to_local($timestamp, 'Y-m-d H:i:s', $timezone);
+            $forecast_table[] = array(
+              'class' => 'forecast', 
+              'data' => array(
+                'label' => array(
+                  'data' => $time,
+                  'header' => TRUE,
+                ),
+                'utilization' => array(
+                  'data' => sprintf('%01.4f',
+                    100 * ($forecast['value'] / $last_value[1]['capacity'])),
+                  'class' => $class,
+                ),
+              ),
+            );
+          }
+          $hub_id = $ttl .'_'. $hop['hub_name']; 
+          $settings['ecenterNetwork']['seriesLookupByIndex'][] = array(
+            'id' => $hop['id'], 
+            'hubID' => $hub_id,
+          );
+          $settings['ecenterNetwork']['seriesLookupByID'][$hop['id']] = array(
+            'sidx' => $sidx,
+            'hubID' => $hub_id,
+          );
+          $settings['ecenterNetwork']['seriesLookupByHub'][$hub_id]['id'][] = $hop['id'];
+          $settings['ecenterNetwork']['seriesLookupByHub'][$hub_id]['sidx'][] = $sidx;
+          $sidx++;
+
+          $tables[] = theme('ecenter_network_utilization_table', $forecast_table,
+            $hop, $direction, array('data-jqplotSeriesOptions' => '{"linePattern":"dashed"}'));
+        }
       }
     }
   }
@@ -386,8 +465,8 @@ function theme_ecenter_network_hops($traceroute = array(), $timezone = FALSE) {
   if (!empty($tables)) {
     $plot_options = _ecenter_network_plot_options_template();
     $plot_options['seriesDefaults']['markerOptions']['show'] = FALSE;
-    $plot_options['seriesDefaults']['lineWidth'] = 0.85;
-    $plot_options['seriesDefaults']['color'] = '#777777';
+    $plot_options['seriesDefaults']['lineWidth'] = 0.5;
+    $plot_options['seriesDefaults']['color'] = '#111111';
     $plot_options['axes']['xaxis']['pad'] = 0;
     $plot_options['axes']['xaxis']['numberTicks'] = 20;
     $plot_options['axes']['yaxis']['min'] = 0;
@@ -398,9 +477,23 @@ function theme_ecenter_network_hops($traceroute = array(), $timezone = FALSE) {
       'sizeAdjust' => 2.5,
       'threshold' => 4,
     );
+
+    if (count($directions) == 1 && !empty($directions['forward'])) {
+      $plot_options['seriesColors'] = array($plot_options['seriesColors'][0]); 
+    }
+    else if (count($directions) == 1 && !empty($directions['reverse'])) {
+      $plot_options['seriesColors'] = array($plot_options['seriesColors'][1]); 
+    }
+
+    if (count($directions) > 1 && !empty($fds_data)) {
+      $in_color = $plot_options['seriesColors'][0];
+      $out_color = $plot_options['seriesColors'][1];
+      $plot_options['linehighlighter']['colors'] = array($in_color, $in_color, $out_color, $out_color);
+    }
+
     drupal_alter('ecenter_network_plot_options', $plot_options, 'utilization', 'snmp');
     $options = array(
-      'height' => 125,
+      'height' => 155,
       'width' => 900,
       'hideTables' => FALSE,
       'parseX' => '$.tablechart.parseText',
@@ -423,6 +516,7 @@ function theme_ecenter_network_hops($traceroute = array(), $timezone = FALSE) {
  */
 function theme_ecenter_network_end_to_end_tables($tables, $timezone = NULL) {
   $output = '';
+  
   foreach ($tables as $type => $measurements) {
     foreach ($measurements as $measurement => $measurement_data) {
       $start = _ecenter_network_timestamp_to_local($measurement_data['start'], 'M j, Y H:i', $timezone);
@@ -457,12 +551,37 @@ function theme_ecenter_network_end_to_end_tables($tables, $timezone = NULL) {
       $output .= '</div>';
 
       $plot_options = _ecenter_network_plot_options_template();
-      $plot_options['legend']['show'] = TRUE;
+      $plot_options['legend'] = array(
+        'show' => TRUE,
+        'renderer' => '$.jqplot.EnhancedLegendRenderer',
+        'placement' => 'outsideGrid',
+        'location' => 's',
+        'rendererOptions' => array(
+          'numberRows' => 1,
+        ),
+      );
+
+      $forecast_colors = array('#48b4db', '#be4c2e');
+      if (empty($measurement_data['reverse'])) {
+        $plot_options['seriesColors'] = array($plot_options['seriesColors'][0], $forecast_colors[0]);  
+      }
+      else if (empty($measurement_data['forward'])) {
+        $plot_options['seriesColors'] = array($plot_options['seriesColors'][1], $forecast_colors[1]);  
+      }
+      else if (!empty($measurement_data['forward_forecast'])) {
+        $plot_options['seriesColors'] = array($plot_options['seriesColors'][0], $forecast_colors[0], $plot_options['seriesColors'][1], $forecast_colors[1]);  
+      }
+      else if (!empty($measurement_data['reverse_forecast'])) {
+        $plot_options['seriesColors'] = array_merge($plot_options['seriesColors'], $plot_options['seriesColors'][1], $forecast_colors[1]);
+      }
+      else {
+        $plot_options['seriesColors'] = array_merge($plot_options['seriesColors'], $forecast_colors);
+      }
 
       drupal_alter('ecenter_network_plot_options', $plot_options, $measurement,
         $type, $measurement_data);
       $options = array(
-        'height' => 150,
+        'height' => 175,
         'width' => 490,
         'hideTables' => FALSE,
         'parseX' => '$.tablechart.parseText',
@@ -569,10 +688,7 @@ function theme_ecenter_network_format_value($value, $units = NULL) {
 /**
  * Theme utilization table
  */
-function theme_ecenter_network_utilization_table($table, $hop, $direction) {
-  $attributes = array();
-  $attributes['class'] = $direction;
-
+function theme_ecenter_network_utilization_table($table, $hop, $direction, $attributes = array()) {
   $output = '<div class="data-table">';
   $output .= '<h3>'. ucfirst($direction) .': '. $hop['nodename'] .' ('. $hop['hub'] .')</h3>';
 
@@ -747,11 +863,9 @@ function _ecenter_network_plot_options_template() {
       ),
     ),
     'legend' => array(
-      'location' => 'se',
-      'xoffset' => 1,
-      'yoffset' => 1,
+      'show' => FALSE,
     ),
-    'seriesColors' => array('#035dc5', '#a71932', '#133f52', '#e34605', '#672b18', '#049e33',  '#650fc2',),
+    'seriesColors' => array('#035dc5', '#a71932',), // '#133f52', '#e34605', '#672b18', '#049e33',  '#650fc2',),
     'axes' => array(
       'xaxis' => array(
         'autoscale' => TRUE,
@@ -767,6 +881,8 @@ function _ecenter_network_plot_options_template() {
         'numberTicks' => 4,
         'tickOptions' => array(
           'formatString' => '%d',
+          'showGridline' => TRUE,
+          'showMark' => FALSE,
         ),
         'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
         'labelOptions' => array(
@@ -777,8 +893,8 @@ function _ecenter_network_plot_options_template() {
     'grid' => array(
       'shadow' => FALSE,
       'borderWidth' => 0,
-      'background' => '#ffffff',
-      'gridLineColor' => '#cccccc',
+      'background' => '#e5e5e5',
+      'gridLineColor' => '#ffffff',
     ),
   );
 }

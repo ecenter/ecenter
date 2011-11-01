@@ -150,6 +150,7 @@ function theme_ecenter_test_ecenter_network() {
 function theme_ecenter_test_data_clients() {
   $drs_client = ecenter_network_get_client();
   $ads_client = ecenter_network_get_client(FALSE, 'ads');
+  $fds_client = ecenter_network_get_client(FALSE, 'fds');
 
   $src = 'hub:SLAC';
   $dst = 'hub:ORNL';
@@ -163,7 +164,20 @@ function theme_ecenter_test_data_clients() {
   list($src_type, $src_value) = explode(':', $src, 2);
   list($dst_type, $dst_value) = explode(':', $dst, 2);
 
-  $output = '<h2>Data request (resolution '. $drs_resolution .')</h2>';
+  $output = '';
+
+  $output .= '<h2>Forecasting request</h2>';
+
+  $fn_start = microtime(true);
+  $fds_result = $fds_client->getData($src, $dst, $start, $end, 'snmp');
+  $fn_end = microtime(true);
+
+  $output .= '<h3>Raw results</h3>';
+  $output .= kpr($fds_result, TRUE);
+  $output .= 'Performance: '. round($fn_end - $fn_start, 4) .' sec';
+
+
+  $output .= '<h2>Data request (resolution '. $drs_resolution .')</h2>';
 
   $fn_start = microtime(true);
   $drs_result = $drs_client->getData($src, $dst, $start, $end, $drs_resolution);
@@ -244,7 +258,7 @@ $traceroute = "traceroute to ornl.gov (128.219.168.100), 30 hops max, 60 byte pa
   $output .= '<h3>Traceroute results</h3>';
   $output .= kpr($traceroute_result, TRUE);
   $output .= '<h4>Parsed traceroute results</h4>';
-  $output .= kpr(ecenter_network_parse_response($traceroute_result));
+  //$output .= kpr(ecenter_network_parse_response($traceroute_result));
   $output .= 'Performance: '. round($fn_end - $fn_start, 4) .' sec';
 
   $output .= '<h2>Dynamic anomaly detection request (resolution '. $ads_resolution .')</h2>';

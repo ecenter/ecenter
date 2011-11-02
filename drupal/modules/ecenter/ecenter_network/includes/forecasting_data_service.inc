@@ -2,6 +2,19 @@
 
 /**
  * Get/cache forecasting data
+ *
+ * @param $src
+ *   Source IP address
+ * @param $dst
+ *   Destination IP address
+ * @param $start
+ *   Start time, expressed in UTC, formatted as Y-m-d H:i:s
+ * @param $end
+ *   End time, expressed in UTC, formatted as Y-m-d H:i:s
+ * @param fds_type
+ *   One of 'snmp', 'bwctl', or 'owamp'
+ * @return
+ *   An array of parsed data
  */
 function ecenter_network_get_fds_data($src, $dst, $start, $end, $fds_type) {
   $params = get_defined_vars();
@@ -39,6 +52,14 @@ function ecenter_network_get_fds_data($src, $dst, $start, $end, $fds_type) {
   return $results[$query];
 }
 
+/**
+ * Parse Forecasting Data Service data
+ * 
+ * @param $response
+ *   A response object from the ADS
+ * @return
+ *   An array of parsed data
+ */
 function ecenter_network_parse_fds_response($response) {
   $parsed_data = array();
   $data = $response['response'];
@@ -125,9 +146,13 @@ function ecenter_network_fds_form($value = FALSE) {
     '#id' => 'fds-submit',
     '#name' => 'fds-submit',
     '#value' => t('Get forecast'),
-    '#attributes' => array('class' => 'analysis-submit fds-submit'),
+    '#attributes' => array(
+      'class' => 'analysis-submit fds-submit disabled',
+      'disabled' => TRUE,
+    ),
     '#weight' => 0,
   );
+
   $form['fds_wrapper']['fds_type'] = array(
     '#id' => 'fds-type',
     '#name' => 'fds_type',
@@ -137,19 +162,28 @@ function ecenter_network_fds_form($value = FALSE) {
     '#options' => array(
       'snmp' => t('SNMP utilization'),
       'bwctl' => t('bwctl (bandwidth control)'),
-      'owamp' => t('owamp (one-way ping)'),
+      //'owamp' => t('owamp (one-way ping)'),
+    ),
+    '#attributes' => array(
+      'disabled' => TRUE,
     ),
     '#weight' => 10,
   );
-  $form['fds_wrapper']['fds'] = array(
-    '#id' => 'fds-enable',
-    '#name' => 'fds',
-    '#type' => 'checkbox',
-    '#title' => 'Use forecasting',
-    '#value' => $value,
-    '#attributes' => array('class' => 'analysis-enable fds-enable'),
-    '#weight' => 10,
-  );
+
+
+  if (user_access('access ecenter forecasting data')) {
+    $form['fds_wrapper']['fds'] = array(
+      '#id' => 'fds-enable',
+      '#name' => 'fds',
+      '#type' => 'checkbox',
+      '#title' => 'Use forecasting',
+      '#value' => $value,
+      '#attributes' => array('class' => 'analysis-enable fds-enable'),
+      '#weight' => 10,
+    );
+    unset($form['fds_wrapper']['fds_submit']['#attributes']['disabled']);
+    unset($form['fds_wrapper']['fds_type']['#attributes']['disabled']);
+  }
 
   return $form;
 }

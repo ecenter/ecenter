@@ -57,7 +57,13 @@ function ecenter_network_menu() {
  * Implementation of hook_perm().
  */
 function ecenter_network_perm() {
-  return array('access ecenter network', 'administer ecenter network', 'debug ecenter network');
+  return array(
+    'access ecenter network',
+    'access ecenter anomaly data',
+    'access ecenter forecasting data',
+    'administer ecenter network',
+    'debug ecenter network'
+  );
 }
 
 /**
@@ -1249,24 +1255,48 @@ function _ecenter_network_extract_query() {
       'end' => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['end']),
       'timezone' => $_REQUEST['timezone'],
 
-      'ads' => $_REQUEST['ads'],
-      'algorithm' => $_REQUEST['algorithm'],
-      'detector_type' => $_REQUEST['detector_type'],
-      'sensitivity' => $_REQUEST['sensitivity'],
-      'elevation1' => $_REQUEST['elevation1'],
-      'elevation2' => $_REQUEST['elevation2'],
-      'swc' => $_REQUEST['swc'],
 
       'traceroute' => $_REQUEST['network_wrapper']['query']['traceroute_paste'],
-
-      'fds' => $_REQUEST['fds'],
-      'fds_type' => $_REQUEST['fds_type'],
     );
-  }
 
-  foreach (array('src', 'dst', 'start', 'end', 'timezone', 'ads', 'algorithm', 'detector_type', 'sensitivity', 'elevation1', 'elevation2', 'swc', 'fds', 'fds_type') as $key) {
-    if (empty($vars[$key]) && !empty($_REQUEST[$key])) {
-      $vars[$key] = $_REQUEST[$key];
+    if (user_access('access ecenter forecasting data')) {
+      $vars += array(
+        'fds' => $_REQUEST['fds'],
+        'fds_type' => $_REQUEST['fds_type'],
+      );
+    }
+
+    if (user_access('access ecenter anomaly data')) {
+      $vars += array(
+        'ads' => $_REQUEST['ads'],
+        'algorithm' => $_REQUEST['algorithm'],
+        'detector_type' => $_REQUEST['detector_type'],
+        'sensitivity' => $_REQUEST['sensitivity'],
+        'elevation1' => $_REQUEST['elevation1'],
+        'elevation2' => $_REQUEST['elevation2'],
+        'swc' => $_REQUEST['swc'],
+      );
+    }
+  }
+  else {
+    foreach (array('src', 'dst', 'start', 'end', 'timezone',  'fds', 'fds_type') as $key) {
+      if (empty($vars[$key]) && !empty($_REQUEST[$key])) {
+        $vars[$key] = $_REQUEST[$key];
+      }
+    }
+    if (user_access('access ecenter anomaly data')) {
+      foreach (array('ads', 'algorithm', 'detector_type', 'sensitivity', 'elevation1', 'elevation2', 'swc') as $key) {
+        if (empty($vars[$key]) && !empty($_REQUEST[$key])) {
+          $vars[$key] = $_REQUEST[$key];
+        }
+      }
+    }
+    if (user_access('access ecenter forecasting data')) {
+      foreach (array('fds', 'fds_type') as $key) {
+        if (empty($vars[$key]) && !empty($_REQUEST[$key])) {
+          $vars[$key] = $_REQUEST[$key];
+        }
+      }
     }
   }
 

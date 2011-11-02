@@ -65,23 +65,23 @@ function template_preprocess_ecenter_network_data(&$vars) {
           'query' => array('query' => $issue_query),
         )
       );
-
-      $query = ecenter_issues_get_query_node($params);
-      if ($query->nid) {
-        $issue_links = array();
-        $issues = ecenter_issues_get_query_issues($query);
-        foreach ($issues as $issue) {
-          $issue_links[] = l($issue->title, 'node/'. $issue->nid) . t(' by ') . $issue->name;
-        }
-        $vars['issues'] = '<label>'. t('Issues from this query: ') .'</label>'. implode(', ', $issue_links);
-      }
-
-      $ads = ecenter_network_ads_form($query_params['ads']);
-      $vars['ads'] = drupal_render($ads);
-
-      $fds = ecenter_network_fds_form($query_params['fds']);
-      $vars['fds'] = drupal_render($fds);
     }
+
+    $query = ecenter_issues_get_query_node($params);
+    if ($query->nid) {
+      $issue_links = array();
+      $issues = ecenter_issues_get_query_issues($query);
+      foreach ($issues as $issue) {
+        $issue_links[] = l($issue->title, 'node/'. $issue->nid) . t(' by ') . $issue->name;
+      }
+      $vars['issues'] = '<label>'. t('Issues from this query: ') .'</label>'. implode(', ', $issue_links);
+    }
+
+    $ads = ecenter_network_ads_form($query_params['ads']);
+    $vars['ads'] = drupal_render($ads);
+
+    $fds = ecenter_network_fds_form($query_params['fds']);
+    $vars['fds'] = drupal_render($fds);
 
     $timezones = array_map('_ecenter_network_process_tz_name', date_timezone_names());
     $timezone_select = array(

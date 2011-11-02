@@ -116,7 +116,9 @@ function ecenter_network_ads_form($value = FALSE) {
   );
 
   if (user_access('access ecenter anomaly data')) {
+    $form['ads_wrapper']['ads_submit']['#attributes']['class'] = 'analysis-submit fds-submit';
     unset($form['ads_wrapper']['ads_submit']['#attributes']['disabled']);
+    
     $form['ads_wrapper']['ads'] = array(
       '#id' => 'ads-enable',
       '#name' => 'ads',

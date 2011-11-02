@@ -181,6 +181,8 @@ function ecenter_network_fds_form($value = FALSE) {
       '#attributes' => array('class' => 'analysis-enable fds-enable'),
       '#weight' => 10,
     );
+
+    $form['fds_wrapper']['fds_submit']['#attributes']['class'] = 'analysis-submit fds-submit';
     unset($form['fds_wrapper']['fds_submit']['#attributes']['disabled']);
     unset($form['fds_wrapper']['fds_type']['#attributes']['disabled']);
   }

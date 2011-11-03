@@ -127,7 +127,7 @@ projects[linkedin][subdir] = "contrib"
 projects[linkedin][version] = "1.x-dev"
 
 projects[linkit][subdir] = "contrib"
-projects[linkit][version] = "1.9"
+projects[linkit][version] = "1.10"
 
 projects[mapbox][subdir] = "contrib"
 projects[mapbox][version] = "1.0-alpha3"
@@ -158,7 +158,7 @@ projects[openlayers][subdir] = "contrib"
 projects[openlayers][version] = "2.0-beta1"
 
 projects[pathauto][subdir] = "contrib"
-projects[pathauto][version] = "1.5"
+projects[pathauto][version] = "1.6"
 
 projects[pathologic][subdir] = "contrib"
 projects[pathologic][version] = "3.4"
@@ -185,7 +185,7 @@ projects[tableofcontents][subdir] = "contrib"
 projects[tableofcontents][version] = "3.6"
 
 projects[token][subdir] = "contrib"
-projects[token][version] = "1.16"
+projects[token][version] = "1.17"
 
 projects[vertical_tabs][subdir] = "contrib"
 projects[vertical_tabs][version] = "1.0-rc2"
@@ -194,7 +194,7 @@ projects[views][subdir] = "contrib"
 projects[views][version] = "3.0-alpha3"
 
 projects[views_slideshow][subdir] = "contrib"
-projects[views_slideshow][version] = "3.x-dev"
+projects[views_slideshow][version] = "3.0"
 
 projects[wysiwyg][subdir] = "contrib"
 projects[wysiwyg][version] = "2.4"

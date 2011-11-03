@@ -58,8 +58,6 @@ function ecenter_network_get_ads_data($src, $dst, $start, $end, $algorithm = 'sp
 /**
  * Parse Anomaly Detection Service data
  *
- * Compatible with 3.4.x version of ADS.
- *
  * @param $response
  *   A response object from the ADS
  * @return
@@ -91,6 +89,11 @@ function ecenter_network_parse_ads_response($response) {
 
 /**
  * Form snippet for ADS
+ *
+ * @param $value
+ *   Default value to pass if needed.
+ * @return
+ *   A Drupal form array.
  */
 function ecenter_network_ads_form($value = FALSE) {
   extract(_ecenter_network_extract_query());
@@ -105,86 +108,104 @@ function ecenter_network_ads_form($value = FALSE) {
     '#id' => 'ads-submit',
     '#name' => 'ads-submit',
     '#value' => t('Detect anomalies'),
-    '#attributes' => array('class' => 'analysis-submit ads-submit'),
+    '#attributes' => array(
+      'class' => 'analysis-submit ads-submit disabled',
+      'disabled' => TRUE,
+    ),
     '#weight' => 0,
   );
 
-  $form['ads_wrapper']['ads'] = array(
-    '#id' => 'ads-enable',
-    '#name' => 'ads',
-    '#type' => 'checkbox',
-    '#title' => 'Use anomaly detection (experimental)',
-    '#value' => $value,
-    '#attributes' => array('class' => 'analysis-enable ads-enable'),
-    '#weight' => 10,
-  );
+  if (user_access('access ecenter anomaly data')) {
+    $form['ads_wrapper']['ads_submit']['#attributes']['class'] = 'analysis-submit fds-submit';
+    unset($form['ads_wrapper']['ads_submit']['#attributes']['disabled']);
+    
+    $form['ads_wrapper']['ads'] = array(
+      '#id' => 'ads-enable',
+      '#name' => 'ads',
+      '#type' => 'checkbox',
+      '#title' => 'Use anomaly detection (experimental)',
+      '#value' => $value,
+      '#attributes' => array('class' => 'analysis-enable ads-enable'),
+      '#weight' => 10,
+    );
 
-  $form['ads_wrapper']['ads_settings'] = array(
-    '#id' => 'ads-settings-fieldset',
-    '#prefix' => '<div id="ads-settings">',
-    '#suffix' => '</div>',
-    '#type' => 'fieldset',
-    '#title' => t('Anomaly settings'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-    '#weight' => 5,
-  );
+    $form['ads_wrapper']['ads_settings'] = array(
+      '#id' => 'ads-settings-fieldset',
+      '#prefix' => '<div id="ads-settings">',
+      '#suffix' => '</div>',
+      '#type' => 'fieldset',
+      '#title' => t('Anomaly settings'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#weight' => 5,
+    );
 
-  $form['ads_wrapper']['ads_settings']['algorithm'] = array(
-    '#id' => 'algorithm',
-    '#name' => 'algorithm',
-    '#title' => theme('advanced_help_topic', 'ecenter_network', 'ads_algorithm') . t('Algorithm'),
-    '#type' => 'select',
-    '#options' => array(
-      'spd' => t('spd'),
-      'apd' => t('apd'),
-    ),
-    '#attributes' => array('class' => 'ads-algorithm'),
-    '#value' => (!empty($algorithm)) ? $algorithm : 'spd',
-    '#weight' => 1,
-  );
+    $form['ads_wrapper']['ads_settings']['algorithm'] = array(
+      '#id' => 'algorithm',
+      '#name' => 'algorithm',
+      '#title' => theme('advanced_help_topic', 'ecenter_network', 'ads_algorithm') . t('Algorithm'),
+      '#type' => 'select',
+      '#options' => array(
+        'spd' => t('spd'),
+        'apd' => t('apd'),
+      ),
+      '#attributes' => array('class' => 'ads-algorithm'),
+      '#value' => (!empty($algorithm)) ? $algorithm : 'spd',
+      '#weight' => 1,
+    );
 
-  $form['ads_wrapper']['ads_settings']['sensitivity'] = array(
-    '#id' => 'sensitivity',
-    '#name' => 'sensitivity',
-    '#title' => theme('advanced_help_topic', 'ecenter_network', 'ads_sensitivity') . t('Sensitivity'),
-    '#type' => 'textfield',
-    '#size' => 5,
-    '#id' => 'sensitivity',
-    '#name' => 'sensitivity',
-    '#value' => (!empty($sensitivity)) ? $sensitivity : 2,
-    '#weight' => 2,
-  );
+    $form['ads_wrapper']['ads_settings']['sensitivity'] = array(
+      '#id' => 'sensitivity',
+      '#name' => 'sensitivity',
+      '#title' => theme('advanced_help_topic', 'ecenter_network', 'ads_sensitivity') . t('Sensitivity'),
+      '#type' => 'textfield',
+      '#size' => 5,
+      '#id' => 'sensitivity',
+      '#name' => 'sensitivity',
+      '#value' => (!empty($sensitivity)) ? $sensitivity : 2,
+      '#weight' => 2,
+    );
 
-  $form['ads_wrapper']['ads_settings']['elevation1'] = array(
-    '#id' => 'elevation1',
-    '#name' => 'elevation1',
-    '#title' => theme('advanced_help_topic', 'ecenter_network', 'ads_elevation1') . t('Elevation 1'),
-    '#type' => 'textfield',
-    '#size' => 5,
-    '#value' => (!empty($elevation1)) ? $elevation1 : 0.2,
-    '#weight' => 3,
-  );
+    $form['ads_wrapper']['ads_settings']['elevation1'] = array(
+      '#id' => 'elevation1',
+      '#name' => 'elevation1',
+      '#title' => theme('advanced_help_topic', 'ecenter_network', 'ads_elevation1') . t('Elevation 1'),
+      '#type' => 'textfield',
+      '#size' => 5,
+      '#value' => (!empty($elevation1)) ? $elevation1 : 0.2,
+      '#weight' => 3,
+    );
 
-  $form['ads_wrapper']['ads_settings']['elevation2'] = array(
-    '#id' => 'elevation2',
-    '#name' => 'elevation2',
-    '#title' => theme('advanced_help_topic', 'ecenter_network', 'ads_elevation2') . t('Elevation 2'),
-    '#type' => 'textfield',
-    '#size' => 5,
-    '#value' => (!empty($elevation2)) ? $elevation2 : 0.4,
-    '#weight' => 4,
-  );
+    $form['ads_wrapper']['ads_settings']['elevation2'] = array(
+      '#id' => 'elevation2',
+      '#name' => 'elevation2',
+      '#title' => theme('advanced_help_topic', 'ecenter_network', 'ads_elevation2') . t('Elevation 2'),
+      '#type' => 'textfield',
+      '#size' => 5,
+      '#value' => (!empty($elevation2)) ? $elevation2 : 0.4,
+      '#weight' => 4,
+    );
 
-  $form['ads_wrapper']['ads_settings']['swc'] = array(
-    '#id' => 'swc',
-    '#name' => 'swc',
-    '#title' => theme('advanced_help_topic', 'ecenter_network', 'ads_swc') . t('Window count'),
-    '#type' => 'textfield',
-    '#size' => 5,
-    '#value' => (!empty($swc)) ? $swc : 15,
-    '#weight' => 5,
-  );
+    $form['ads_wrapper']['ads_settings']['swc'] = array(
+      '#id' => 'swc',
+      '#name' => 'swc',
+      '#title' => theme('advanced_help_topic', 'ecenter_network', 'ads_swc') . t('Window count'),
+      '#type' => 'textfield',
+      '#size' => 5,
+      '#value' => (!empty($swc)) ? $swc : 15,
+      '#weight' => 5,
+    );
+  }
+  else {
+    $form['ads_wrapper']['ads_help'] = array(
+      '#prefix' => '<div class="description">',
+      '#suffix' => '</div>',
+      '#id' => 'ads-login',
+      '#type' => 'markup',
+      '#value' => t('<a href="@login_url">Login</a> to use data analysis tools.', array('@login_url' => url('user'), '@register_url' => url('user/register'))),
+      '#weight' => 5,
+    );
+  }
 
   return $form;
 }

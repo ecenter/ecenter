@@ -35,8 +35,8 @@ use MooseX::Types -declare => [qw( PositiveInt  IPAddr  HubName MyDateTime )];
 	 # type definition.
          subtype HubName,
              as Str,
-             where { $_ =~ /^bnl|anl|ornl|nasa|lbl|fnal|slac|jgi|pppl|pnnl|pnl|pnwg|nersc|snll|llnl|nash$/i},
-             message { 'Name from the list - bnl|anl|ornl|nasa|lbl|fnal|slac|jgi|pnnl|ppppl|pnl|pnwg|nersc|snll|llnl|nash  ' };
+             where { $_ =~ /^bnl|anl|ornl|nasa|lbl|fnal|slac|jgi|pppl|pnnl|pnl|pnwg|sc11|nersc|snll|llnl|nash$/i},
+             message { 'Name from the list - bnl|anl|ornl|nasa|lbl|fnal|slac|jgi|pnnl|ppppl|pnl|pnwg|sc11|nersc|snll|llnl|nash  ' };
          # type coercion
          coerce HubName,
              from Str,

@@ -43,7 +43,7 @@ def fff(times1, obs1, numfut=10):
 #---------translate-true-times-to-generic-times----
     times = map(lambda x: int(x), times1)
     obs=map(lambda x: float(x),  obs1)
-    print 'Times:', times, "\n Data:", obs
+#    print 'Times:', times, "\n Data:", obs
     n = len(times)                                   # number of observations
     mnn = times[0]                                   # time of 1st observation
     mxx = times[-1]                                  # time of last observation

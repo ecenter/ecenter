@@ -102,6 +102,7 @@ sub  forecast {
     };
     if(!$fds->results || $EVAL_ERROR) {
        $logger->error("Forecasting failed with: $EVAL_ERROR");
+       return { status => 'failed', error => $EVAL_ERROR};
     }
     return $fds->results;
 }

@@ -7,7 +7,7 @@ import simplejson as json
 def forecast(gearman_worker, gearman_job):
   data_json = json.loads(gearman_job.data)
   results = fff(data_json['times'], data_json['data'], int(data_json['future_points']))
-  print  "Results: ", results
+# print  "Results: ", results
   return json.dumps(results)
 
 parser = optparse.OptionParser()

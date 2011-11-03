@@ -108,7 +108,7 @@ my $MAX_THREADS = 10;
 #
 #    pattern to match on hLS names
  
-our $HOST_MATCH = qr/((es|deemz)\.net|\w+\.gov|slac\.stanford\.edu)/i;
+our $HOST_MATCH = qr/((es|deemz)\.net|\w+\.gov|slac\.stanford\.edu|sc11\.org)/i;
 #our $HOST_MATCH = qr/nersc\.gov/i;
 #our $HOST_MATCH = qr/((es|deemz)\.net|ornl.gov)/i;
 
@@ -228,6 +228,7 @@ unless(@hlses) {
     @hlses = keys %hls_cache;
 }
 my %e2e_threads= (); 
+push @hlses, 'http://monitor.sc11.org:9995/perfSONAR_PS/services/hLS';
 foreach my $hls (@hlses) {
     $logger->debug("LSS INDEX BEFORE:	$hls"); 
     $logger->info("CHECKING HLS: $hls");  
@@ -541,8 +542,8 @@ sub get_fromHLS {
 		foreach my $ip_key (qw/src dst/) {
 		    next unless $ip_addr_h{$ip_key};
 		    my ($ip_cidr, $ip_name) = get_ip_name($ip_addr_h{$ip_key});
-		    next  unless( $ip_name && $ip_name  =~ $HOST_MATCH);
-    	            
+		    #next  unless( $ip_name && $ip_name  =~ $HOST_MATCH);
+    	            next  unless( $ip_name );
 		    if($ip_addr_h{$ip_key} && $ip_cidr) {
 	                update_create_fixed(  $dbh->resultset('Node'),
 			                      { ip_addr  =>  \"=inet6_pton('$ip_cidr')"},
@@ -567,6 +568,7 @@ sub get_fromHLS {
 	            $dbh->resultset('Metadata')->update_or_create ({ 
 							      eventtype_id  => $eventtype_obj->ref_id,
 							      src_ip	    =>   $ip_addr_rs{src}->ip_addr,
+							      l2_urn        => '',
 							      dst_ip	    =>   ($ip_addr_rs{dst} && ref $ip_addr_rs{dst}?$ip_addr_rs{dst}->ip_addr:0),
 							      subject	 => ($subj_md?$subj_md->toString:''),
 							      parameters => ($param_md?$param_md->toString:''),

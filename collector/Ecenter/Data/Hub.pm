@@ -53,7 +53,10 @@ my %HUBS = ( FNAL  => {nets => {'131.225.0.0' => 16, '198.49.208.0' => 24}, hand
 	                         '130.202.0.0' => 16, '140.221.15.0' => 24,
 				 '140.221.15.0' => 24,
 				 '140.221.83.0' => 24, }, handle => 'ANLB'},
-	     SC2011   => {nets => {  '140.221.251.0' => 24, }, handle => 'SC2011'},		 
+	     SC2011   => {names => [qw/SC11 PNWG/],
+	                                   nets => { '198.129.100.21' => 30,'198.129.100.37' => 30,
+					             '198.129.100.13' => 30, '134.55.220.0' => 24,
+	                                 '140.221.251.0' => 24, '140.221.146.0' => 24,'140.221.222.0' => 24 }, handle => 'SC2011'},		 
 	     NERSC => {nets => {'128.55.00.0'  => 16},                      handle => 'NET-128-55-0-0-1'},
 	     PNWG   => {names => [qw/PNNL PNL/], nets => {'192.101.100.0'=> 22,'192.101.104.0' => 22}, handle => 'PNNL-Z'},
 	     NASA  => {nets => {'198.9.0.0' => 16},                         handle => 'NASA'},
@@ -135,7 +138,7 @@ sub get_hub_blocks {
 	    map { $HUBS{$handle}{nets}{$_->[0]} = $_->[1]} @nets;
         }   else {
             $self->logger->debug( " Skipping this handle: $handle due " .$response->status_line);
-            next;
+	    next;
         }
     }
     return keys %HUBS;

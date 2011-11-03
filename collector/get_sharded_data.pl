@@ -119,7 +119,7 @@ my @E2E = qw/pinger owamp bwctl hop/;
 my @string_option_keys = qw/password user db host procs past/;
 GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
-            qw/debug help v snmp no_topo anomaly circuits/, @E2E
+            qw/debug help v snmp no_topo anomaly circuits sites_fix/, @E2E
 ) or pod2usage(1);
 my $output_level =  $OPTIONS{debug} || $OPTIONS{d}?$DEBUG:$INFO;
 
@@ -190,7 +190,7 @@ foreach my $service ( qw/ps2 ps1/ ) {
 	    get_circuits($dbh, $circuits);
 	}
 	get_snmp($dbh, $pm) if $OPTIONS{snmp};
-	set_end_sites($dbh, $pm) if ($OPTIONS{snmp} || $OPTIONS{hop}) && !@E2E;
+	set_end_sites($dbh, $pm) if ($OPTIONS{sites_fix});
     }
     catch perfSONAR_PS::Error   with {
         $logger->error( shift);
@@ -215,7 +215,7 @@ exit(0);
 
 =head2 get_circuits
 
-Get circuits and store them in the DB
+Get circuits, utilization and store them in the DB
 
 =cut
 
@@ -237,9 +237,10 @@ sub get_circuits {
 	    my $direction = $link->{id} =~ /atoz/?'forward':'reverse';
             foreach my $port(@{$link->{ports}}){
         	$logger->debug("\t\t[Port] $port");
-		my ($hub) = $port =~ m/:node=([^:])+:/;
-		my $hub_name = "\U$hub";
-		my ($l2_port) =   $dbh->resultset('L2Port')->search({'hub.hub_name' => $hub_name}, {join => 'hub', limit => 1});
+		my ($hub) = $port =~ m/:node=([^:]+):/;
+		my $hub_name = "\L$hub";
+		
+		my ($l2_port) = $dbh->resultset('L2Port')->search({'hub.hub' => $hub_name}, {join => 'hub', limit => 1});
                 unless($l2_port && $l2_port->l2_urn) {
                    $logger->error("NO ports available - check topology info or hub_name:$hub_name");
                    next;
@@ -740,6 +741,7 @@ sub get_snmp {
     	    						 eventtype_id => $eventtype_id ,
     	    						 src_ip	  => $src_ip,
     	    						 dst_ip => '0',
+							 l2_urn => $port->l2_urn,
     	    					      },
 	    					      {key => 'md_ips_type'}
     	    					      );

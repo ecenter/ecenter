@@ -378,6 +378,7 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
       $directions[$direction] = 1;
       foreach ($data[$direction] as $hop_index => $hop) {
         $table = array();
+        $capacity = 0;
 
         if (!empty($hop['data']['snmp'])) {
           $hub_id = $ttl .'_'. $hop['hub_name']; 
@@ -414,7 +415,9 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
           'data-jqplotHighlightColor' => '#ff0000',
         );
 
-        $tables[] = theme('ecenter_network_utilization_table', $table, $hop, $direction, $attributes);
+
+        $capacity = $hop['data']['snmp'][0][1]['capacity'];
+        $tables[] = theme('ecenter_network_utilization_table', $table, $hop, $direction, $attributes, $capacity);
 
         if (!empty($fds_data['snmp']['utilization'][$hop['hop_ip']])) {
           $forecast_table = array();
@@ -422,11 +425,11 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
 
           $last_value = array_pop($hop['data']['snmp']);
           $forecast_data[$last_value[0]] = array('value' => $last_value[1]['utilization']);
-         
+
           foreach ($forecast_data as $timestamp => $forecast) {
             $time = _ecenter_network_timestamp_to_local($timestamp, 'Y-m-d H:i:s', $timezone);
             $forecast_table[] = array(
-              'class' => 'forecast', 
+              'class' => 'forecast',
               'data' => array(
                 'label' => array(
                   'data' => $time,
@@ -440,9 +443,9 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
               ),
             );
           }
-          $hub_id = $ttl .'_'. $hop['hub_name']; 
+          $hub_id = $ttl .'_'. $hop['hub_name'];
           $settings['ecenterNetwork']['seriesLookupByIndex'][] = array(
-            'id' => $hop['id'], 
+            'id' => $hop['id'],
             'hubID' => $hub_id,
           );
           $settings['ecenterNetwork']['seriesLookupByID'][$hop['id']] = array(
@@ -459,7 +462,7 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
       }
     }
   }
-  
+
   drupal_add_js($settings, 'setting');
 
   if (!empty($tables)) {
@@ -688,9 +691,11 @@ function theme_ecenter_network_format_value($value, $units = NULL) {
 /**
  * Theme utilization table
  */
-function theme_ecenter_network_utilization_table($table, $hop, $direction, $attributes = array()) {
+function theme_ecenter_network_utilization_table($table, $hop, $direction, $attributes = array(), $capacity = 0) {
+  $capacity_string = ($capacity) ? t(' - @capacity gbps', array('@capacity' => $capacity / pow(10, 9))) : '';
+  
   $output = '<div class="data-table">';
-  $output .= '<h3>'. ucfirst($direction) .': '. $hop['nodename'] .' ('. $hop['hub'] .')</h3>';
+  $output .= '<h3>'. ucfirst($direction) .': '. $hop['nodename'] .' ('. $hop['hub'] . $capacity_string .')</h3>';
 
   if (!empty($table)) {
     $headers = array(t('Time'), t('% utilization'));

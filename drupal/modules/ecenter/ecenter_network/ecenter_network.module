@@ -125,6 +125,7 @@ function ecenter_network_theme() {
         'hop' => NULL,
         'direction' => NULL,
         'attributes' => array(),
+        'capacity' => 0,
       ),
     ) + $options,
     'ecenter_network_format_default' => array(

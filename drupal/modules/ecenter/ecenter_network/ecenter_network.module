@@ -955,7 +955,6 @@ function _ecenter_network_layers_sites_rejigger(&$features) {
         $features[$k]['wkt'] = "POINT({$lon} {$lat})";
         break;
       case 'PNWG':
-        dpm($features[$k]);
         $features[$k]['wkt'] = "POINT(-119.16 46.20)";
         break;
       default:

@@ -19,6 +19,9 @@ function template_preprocess_ecenter_network_data(&$vars) {
   // All parameters
   $query_params = $data['parameters'];
 
+  $params['src'] = $query_params['src'];
+  $params['dst'] = $query_params['dst'];
+
   drupal_add_js(array('ecenterNetwork' => array('tracerouteData' => 
     $data['drs']['traceroute']['diff'])), 'setting');
   drupal_add_js(array('ecenterNetwork' => array('tracerouteMaxLength' => 

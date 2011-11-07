@@ -1007,13 +1007,14 @@ function ecenter_network_layers_traceroute() {
                 'label' => $hop['hub'],
                 'labelYOffset' => -16,
                 'fontWeight' => 'bold',
-                'fontSize' => '12px',
+                'fontSize' => '10px',
                 'fontFamily' => '"Droid Sans", "Helvetica Neue", Helvetica, Verdana, sans-serif',
                 'fontColor' => '#222222',
                 'graphicZIndex' => 10,
               ),
               'extra' => array(
                 'ecenterID' => $ttl .'_'. $hop['hub_name'],
+                'ecenterHub' => $hop['hub'],
               ),
             );
           }
@@ -1035,7 +1036,7 @@ function ecenter_network_layers_traceroute() {
  */
 function _ecenter_network_layers_traceroute_rejigger(&$features) {
   foreach ($features as $k => $feature) {
-    switch ($feature['extra']['ecenterID']) {
+    switch ($feature['extra']['ecenterHub']) {
       case 'bnl-mr2':
         $features[$k]['style']['labelXOffset'] = 35;
         $features[$k]['style']['labelYOffset'] = 0;
@@ -1068,13 +1069,27 @@ function _ecenter_network_layers_traceroute_rejigger(&$features) {
         $features[$k]['style']['labelXOffset'] = -40;
         $features[$k]['style']['labelYOffset'] = 0;
         break;
-      case 'sunn-cr1':
-      case 'llnl-mr2':
       case 'wash-cr1':
         $features[$k]['style']['labelXOffset'] = 40;
         $features[$k]['style']['labelYOffset'] = 0;
         break;
+      case 'llnl-mr2':
+        $features[$k]['style']['labelXOffset'] = 30;
+        $features[$k]['style']['labelYOffset'] = 5;
+        break;
+      case 'snll-mr2':
+        $features[$k]['style']['labelXOffset'] = 30;
+        $features[$k]['style']['labelYOffset'] = -10;
+        break;
       case 'pppl-rt2':
+        $features[$k]['style']['labelYOffset'] = 15;
+        break;
+      case 'pnwg-cr1':
+        $features[$k]['style']['labelXOffset'] = 40;
+        $features[$k]['style']['labelYOffset'] = 0;
+        break;
+      case 'nersc-mr2':
+        $features[$k]['style']['labelXOffset'] = -20;
         $features[$k]['style']['labelYOffset'] = 15;
         break;
       default:

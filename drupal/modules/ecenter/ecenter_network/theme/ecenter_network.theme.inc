@@ -36,12 +36,15 @@ function template_preprocess_ecenter_network_data(&$vars) {
       'M j, Y H:i', $query_params['timezone']);
   }
   
+  $src_param = explode(':', $query_params['src']);
+  $dst_param = explode(':', $query_params['dst']);
+
   $vars['title'] = t('<span class="src-dst">@src_hub to
 @dst_hub</span><span class="separator">, </span>
 <span class="date-range">@start - @end</span>',
     array(
-      '@src_hub' => $src_hop['hub_name'],
-      '@dst_hub' => $dst_hop['hub_name'],
+      '@src_hub' => $src_param[1],
+      '@dst_hub' => $dst_param[1],
       '@start' => $dates['start'],
       '@end' => $dates['end'],
     )

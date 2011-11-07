@@ -1,7 +1,7 @@
 (function( $ ) {
   $.widget( "ui.combobox", {
     options: {
-      show_clear_button: false
+      show_clear_button: true
     },
     _create: function() {
       var self = this,
@@ -62,18 +62,16 @@
           .appendTo( ul );
       };
 
-      if (self.options.show_clear_button) {
-        $("<button>X</button>")
-          .attr( "tabIndex", -1 )
-          .attr( "title", "Clear input" )
-          .insertAfter( input )
-          .addClass('clear-value')
-          .click(function() {
-            input.val('');
-            input.data('autocomplete')._trigger('change');
-            return false;
-          });
-      }
+      $("<button>X</button>")
+        .attr( "tabIndex", -1 )
+        .attr( "title", "Clear input" )
+        .insertAfter( input )
+        .addClass('clear-value')
+        .click(function() {
+          input.val('');
+          input.data('autocomplete')._trigger('change');
+          return false;
+        });
 
       $( "<button>&nbsp;</button>" )
         .attr( "tabIndex", -1 )

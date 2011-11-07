@@ -292,30 +292,10 @@ $.fn.ecenter_network.plugins.change = function() {
       .removeClass('disabled');
   }
 
-  var processed = $('#src-wrapper select').data('ecenterProcessed');
-  if (!processed) {
-    $('#src-wrapper button.clear-value').bind('click', function(e) {
-      var input = $('#dst-wrapper input');
-      input.val('');
-      input.data('autocomplete')._trigger('change');
-    });
-    $('#src-wrapper select', this.el).bind('change', function(e) {
-      $('#traceroute-paste-wrapper').fadeOut();
-      $('#traceroute-paste-wrapper textarea').val('');
-    });
-    $('#src-wrapper select').data('ecenterProcessed', true);
-  }
-
-  var processed = $('#dst-wrapper select').data('ecenterProcessed');
-
-  // Clear out some values when destination changes
-  if (!processed) {
-    $('#dst-wrapper select', this.el).bind('change', function(e) {
-      $('#traceroute-paste-wrapper').fadeOut();
-      $('#traceroute-paste-wrapper textarea').val('');
-    });
-    $('#dst-wrapper select').data('ecenterProcessed', true);
-  }
+  $('#src-wrapper select, #dst-wrapper select', this.el).bind('change', function(e) {
+    $('#traceroute-paste-wrapper').fadeOut();
+    $('#traceroute-paste-wrapper textarea').val('');
+  });
 }
 
 /**

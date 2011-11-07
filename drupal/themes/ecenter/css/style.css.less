@@ -1151,6 +1151,9 @@ form {
         .box;
         width: 575px;
         margin-top: 13px;
+        .clear-value {
+          display: none !important;
+        }
         label, input, button, .description {
           float: left;
         }
@@ -2302,7 +2305,6 @@ button.clear-value {
   float: right;
   background: none;
   background-color: @color_grey_67;
-  border: none;
   .round_corner(12px; 12px; 12px; 12px;);
   text-shadow: none;
   color: @color_white;
@@ -2313,6 +2315,7 @@ button.clear-value {
   margin: 5px 0 0 5px;
   :hover {
     background-color: #900;
+    color: @color_white;
   }
 }
 

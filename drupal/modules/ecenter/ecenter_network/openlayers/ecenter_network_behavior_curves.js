@@ -39,8 +39,24 @@ Drupal.behaviors.ecenter_network_behavior_curves = function(context) {
             // Rotate "backwards"
             var rot = 2 * Math.PI - Math.tan((p2.y - p1.y) / (p2.x - p1.x));
             
-            // Account for horizontal direction by rotating 90 degs one way or other
-            var angle = (p1.x > p2.x) ? rot - Math.PI / 2 : rot + Math.PI / 2;
+            var len = Math.abs(p2.x - p1.x);
+            var height = Math.abs(p2.y - p1.y);
+
+            var angle;
+
+            // Weird fudging required which makes me think my trig is off above.
+            if (p1.x > p2.x && len > height)  {
+              angle = rot - Math.PI / 2
+            }
+            else if (p2.x > p1.x && len > height)  {
+              angle = rot + Math.PI / 2;
+            }
+            else if (p1.y > p2.y && height > len) {
+              angle = Math.PI;
+            }
+            else {
+              angle = 0;
+            }
 
             var arrow_style = OpenLayers.Util.extend({}, OpenLayers.Feature.Vector.style['default']);
             arrow_style.graphicName = 'triangle';

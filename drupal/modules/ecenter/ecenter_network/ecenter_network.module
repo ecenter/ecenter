@@ -225,14 +225,6 @@ function ecenter_network_init() {
 
     // Advanced help styling
     drupal_add_css(drupal_get_path('module', 'advanced_help') .'/help-icon.css');
-
-    // @TODO overhaul
-    $inline_css = array(
-      '.ecenter-critical' => array('color' => variable_get('ecenter_network_threshold_critical_color', '#cc0000')),
-      '.ecenter-marginal' => array('color' => variable_get('ecenter_network_threshold_marginal_color', '#fe890c')),
-      '.ecenter-good' => array('color' => variable_get('ecenter_network_threshold_marginal_color', '#1c8a24')),
-    );
-    inline_css_add_css($inline_css);
   }
 }
 

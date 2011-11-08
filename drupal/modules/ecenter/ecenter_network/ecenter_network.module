@@ -451,7 +451,9 @@ function ecenter_network_select_form(&$form_state) {
       $destinations = ecenter_network_get_hops($src_value, $src_type);
       $dst_options[0] = '';
       foreach ($destinations['hubs'] as $key => $hop) {
-        $dst_options['hub:'. $key] = theme('ecenter_network_hop_option', $hop);
+        if ($src_value != $key) {
+          $dst_options['hub:'. $key] = theme('ecenter_network_hop_option', $hop);
+        }
       }
       $form['network_wrapper']['query']['dst_wrapper']['dst']['#options'] += $dst_options;
       $form['network_wrapper']['query']['dst_wrapper']['dst']['#disabled'] = FALSE;

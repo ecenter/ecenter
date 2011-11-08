@@ -2288,34 +2288,35 @@ body.node-type-issue #results { // {{{
 }
 /* }}} */
 
-
-input.ui-widget {
-  .round_corner(5px; 0; 0; 5px;);
-  border-right: none !important;
-  padding: 4px 4px;
-  height: 12px;
-}
-button.ui-button {
-  .round_corner(0; 5px; 5px; 0;);
-  padding: 4px 6px;
-  margin-top: 2px;
-  height: 12px;
-}
-button.clear-value {
-  float: right;
-  background: none;
-  background-color: @color_grey_67;
-  .round_corner(12px; 12px; 12px; 12px;);
-  text-shadow: none;
-  color: @color_white;
-  font-weight: bold;
-  padding: 2px 3px;
-  font-size: 9px;
-  line-height: 9px;
-  margin: 5px 0 0 5px;
-  :hover {
-    background-color: #900;
+.form-combobox {
+  input.ui-widget {
+    .round_corner(5px; 0; 0; 5px;);
+    border-right: none !important;
+    padding: 4px 4px;
+    height: 12px;
+  }
+  button.ui-button {
+    .round_corner(0; 5px; 5px; 0;);
+    padding: 4px 6px;
+    margin-top: 2px;
+    height: 12px;
+  }
+  button.clear-value {
+    float: right;
+    background: none;
+    background-color: @color_grey_67;
+    .round_corner(12px; 12px; 12px; 12px;);
+    text-shadow: none;
     color: @color_white;
+    font-weight: bold;
+    padding: 2px 3px;
+    font-size: 9px;
+    line-height: 9px;
+    margin: 5px 0 0 5px;
+    :hover {
+      background-color: #900;
+      color: @color_white;
+    }
   }
 }
 

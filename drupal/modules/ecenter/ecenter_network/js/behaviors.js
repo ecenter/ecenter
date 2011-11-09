@@ -669,9 +669,12 @@ $.fn.ecenter_network.plugins.timezone_select = function() {
 
 $.fn.ecenter_network.plugins.traceroute_paste = function() {
   var target = $('#traceroute-paste-wrapper');
-  var dialog = target.hide().clone().attr('id', 'traceroute-paste-copy');
-  $('textarea', dialog).attr('readonly', false);
+  var dialog = target.hide()
+    .css({'z-index' : 5})
+    .clone()
+    .attr('id', 'traceroute-paste-copy');
 
+  $('textarea', target).attr('readonly', true);
   $('body').append(dialog);
 
   var dialog = $('#traceroute-paste-copy').dialog({
@@ -714,10 +717,10 @@ $.fn.ecenter_network.defaults = {
   // Initialization plugins
   init_plugins : [
     $.fn.ecenter_network.plugins.ajax,
-    $.fn.ecenter_network.plugins.traceroute_paste,
     $.fn.ecenter_network.plugins.map,
     $.fn.ecenter_network.plugins.date,
     $.fn.ecenter_network.plugins.chart,
+    $.fn.ecenter_network.plugins.traceroute_paste,
     $.fn.ecenter_network.plugins.analysis
   ],
   // Drawing plugins

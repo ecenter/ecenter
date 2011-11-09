@@ -825,8 +825,10 @@ form {
     height: 360px;
     padding: 20px;
     background-color: rgba(220, 220, 220, 0.75);
-    z-index: 2;
+    z-index: -5;
     position: absolute;
+    left: 0;
+    top: 0;
     textarea {
       color: @color_grey_33;
       font-size: 12px;
@@ -837,7 +839,7 @@ form {
     label {
       text-align: center;
     }
-    .description, .ahah-progress-throbber {
+    .description, .ahah-progress-throbber, .grippie {
       display: none;
     }
   } // }}}
@@ -876,17 +878,7 @@ form {
     }
     #traceroute-paste-wrapper {
       button {
-        font-size: 13px;
-      }
-      textarea {
-        margin-top: 8px;
-        color: @color_black;
-        font-size: 10px;
-        width: 280px;
-        height: 60px;
-      }
-      label, .description {
-        display: none;
+        font-size: 12px;
       }
     }
     .container-inline-date { // {{{

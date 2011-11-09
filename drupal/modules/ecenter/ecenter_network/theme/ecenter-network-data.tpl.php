@@ -26,10 +26,6 @@
           <?php endif; ?>
         </div>
 
-        <div id="timezone-wrapper">
-          <?php print $timezone_select; ?>
-        </div>
-
         <?php if ($fds && $ads): ?>
         <div id="analysis-wrapper" class="clearfix">
           <?php if ($fds): ?>
@@ -41,6 +37,10 @@
           <?php endif; ?>
         </div>
         <?php endif; ?>
+
+        <div id="timezone-wrapper">
+          <?php print $timezone_select; ?>
+        </div>
 
       </div>
     </div>

@@ -46,7 +46,8 @@ function template_preprocess_ecenter_network_data(&$vars) {
 
   $vars['title'] = t('<span class="src-dst">@src_hub to
 @dst_hub</span><span class="separator">, </span>
-<span class="date-range">@start - @end</span>',
+<span class="date-range"><span class="start">@start to</span> 
+<span class="end">@end</span></span>',
     array(
       '@src_hub' => $src_value,
       '@dst_hub' => $dst_value,

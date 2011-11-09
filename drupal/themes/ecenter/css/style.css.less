@@ -1086,7 +1086,7 @@ form {
     }
     .title-col {
       float: left;
-      width: 360px;
+      width: 240px;
       h2 {
         line-height: 1;
         margin: 0;
@@ -1097,7 +1097,11 @@ form {
         .date-range {
           font-size: .65em;
           font-weight: normal;
+          line-height: 1.5em;
           display: block;
+          .start, .end {
+            display: block;
+          }
         }
         .separator {
           display: none;
@@ -1106,7 +1110,7 @@ form {
     }
     .meta-col {
       float: left;
-      width: 575px;
+      width: 695px;
       .issuelink, .permalink {
         float: left;
         a {
@@ -1124,7 +1128,7 @@ form {
         margin-right: 10px;
       }
       .permalink {
-        width: 390px;
+        width: 500px;
         .form-item {
           display: inline;
           input {
@@ -1135,14 +1139,14 @@ form {
             line-height: 10px;
             padding-top: 5px;
             padding-bottom: 5px;
-            width: 320px;
+            width: 420px;
           }
         }
       }
       #timezone-wrapper {
         .box;
-        width: 575px;
-        margin-top: 13px;
+        width: 695px;
+        margin-top: 2px;
         .clear-value {
           display: none !important;
         }
@@ -1168,10 +1172,14 @@ form {
       /* Analysis {{{ */
       #analysis-wrapper {
         .box;
-        width: 575px;
+        width: 695px;
         margin-top: 10px;
+        margin-bottom: 8px;
+        .form-submit, select {
+          font-size: 11px;
+        }
         .form-submit {
-          font-size: 13px;
+          padding: 2px 5px;
         }
         label {
           display: inline;
@@ -1186,10 +1194,11 @@ form {
         }
         #fds-settings-wrapper, #ads-settings-wrapper {
           .box;
-          width: 280px;
+          position: relative;
         }
         #fds-settings-wrapper {
-          margin-right: 15px;
+          margin-right: 35px;
+          width: 400px;
           #fds-enable-wrapper {
             display: none;
           }
@@ -1197,50 +1206,71 @@ form {
             margin-right: 5px;
           }
           select {
-            width: 135px;
+            width: 115px;
           }
         }
         #ads-settings-wrapper {
-          position: relative;
-          #ads-settings {
-            width: 300px;
-            position: relative;
-            fieldset {
-              margin: 0 15px 15px 0;
-              .form-item {
-                margin: 0 0 14px 0;
-              }
-              legend {
-                font-size: 13px;
-                padding-top: 3px;
-                padding-bottom: 3px;
-                background-color: transparent;
-              }
-              .fieldset-title {
-                position: absolute;
-                right: 0;
-              }
-              input {
-                padding: 2px;
-                font-size: 13px;
-              }
-              .fieldset-content {
-                padding-top: 25px;
-                background-color: transparent;
-              }
-              label {
-                .box;
-                width: 115px;
-                margin-right: 15px;
-              }
-            }
-          }
-          input.form-submit {
-            left: 0;
-            position: absolute;
-          }
+          width: 260px;
           #ads-enable-wrapper {
             display: none;
+          }
+        }
+
+        #ads-settings {
+          width: 260px;
+        }
+        #fds-settings {
+          width: 400px;
+        }
+
+        #ads-settings, #fds-settings {
+          position: absolute;
+          right: 0;
+          top: 4px;
+          .form-item {
+            display: block;
+          }
+
+          fieldset {
+            margin: 0;
+            .form-item {
+              margin: 0 0 14px 0;
+            }
+            legend {
+              font-size: 13px;
+              line-height: 19px;
+              text-align: right;
+              background-color: transparent;
+            }
+            .fieldset-title {
+              padding: 0;
+              a {
+                padding-top: 3px;
+                padding-bottom: 3px;
+                padding-right: 3px;
+                background-color: @color_grey_87;
+                display: inline;
+              }
+            }
+            &.collapsed {
+              .fieldset-title {
+                a {
+                  background-color: transparent;
+                }
+              }
+            }
+            input {
+              padding: 2px;
+              font-size: 13px;
+            }
+            .fieldset-content {
+              background-color: @color_grey_87;
+            }
+            label {
+              .box;
+              width: 115px;
+              margin-right: 15px;
+            }
           }
         }
       }

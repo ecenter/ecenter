@@ -25,7 +25,7 @@ function ecenter_network_get_fds_data($src, $dst, $start, $end, $fds_type, &$dat
   if ($fds_type == 'bwctl' && !empty($data)) {
     $start_times = array('forward' => 0, 'reverse' => 0);
     foreach (array('forward', 'reverse') as $direction) {
-      if (!empty($data['end_to_end']['bwctl'][$direction])) {
+      if (!empty($data['end_to_end']['bwctl'][$direction]) && count($data['end_to_end']['bwctl'][$direction]['throughput']) < variable_get('ecenter_network_fds_min_points', 350)) {
         $i = 0;
         $timestamps = array_keys($data['end_to_end']['bwctl'][$direction]['throughput']['timeseries']);
         $len = count($timestamps);
@@ -37,7 +37,7 @@ function ecenter_network_get_fds_data($src, $dst, $start, $end, $fds_type, &$dat
           }
         }
         $avg_interval = array_sum($intervals) / count($intervals);
-        $more_points = variable_get('ecenter_network_fds_min_points', 200) - count($intervals);
+        $more_points = variable_get('ecenter_network_fds_min_points', 350) - count($intervals);
         $seconds = $more_points * $avg_interval;
         $start_times[$direction] = $timestamps[0] - $seconds;
       }
@@ -186,14 +186,14 @@ function ecenter_network_fds_form($value = FALSE) {
     '#title' => t('Type'),
     '#value' => (!empty($fds) && !empty($fds_type)) ? $fds_type : 'snmp',
     '#options' => array(
-      'snmp' => t('SNMP utilization'),
-      'bwctl' => t('bwctl (bandwidth control)'),
+      'snmp' => t('SNMP'),
+      'bwctl' => t('bwctl'),
       //'owamp' => t('owamp (one-way ping)'),
     ),
     '#attributes' => array(
       'disabled' => TRUE,
     ),
-    '#weight' => 10,
+    '#weight' => 5,
   );
 
 
@@ -206,6 +206,35 @@ function ecenter_network_fds_form($value = FALSE) {
       '#value' => $value,
       '#attributes' => array('class' => 'analysis-enable fds-enable'),
       '#weight' => 10,
+    );
+
+    $form['fds_wrapper']['fds_settings'] = array(
+      '#id' => 'fds-settings-fieldset',
+      '#prefix' => '<div id="fds-settings">',
+      '#suffix' => '</div>',
+      '#type' => 'fieldset',
+      '#title' => t('Forecast settings'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#weight' => 10,
+    );
+
+    $form['fds_wrapper']['fds_settings']['start'] = array(
+      '#id' => 'fds_start',
+      '#name' => 'fds_start',
+      '#title' => t('Start'),
+      '#type' => 'textfield',
+      '#weight' => 1,
+      '#size' => 12,
+    );
+
+    $form['fds_wrapper']['fds_settings']['end'] = array(
+      '#id' => 'fds_end',
+      '#name' => 'fds_end',
+      '#title' => t('End'),
+      '#type' => 'textfield',
+      '#size' => 12,
+      '#weight' => 2,
     );
 
     $form['fds_wrapper']['fds_submit']['#attributes']['class'] = 'analysis-submit fds-submit';

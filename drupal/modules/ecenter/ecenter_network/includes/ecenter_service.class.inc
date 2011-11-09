@@ -125,7 +125,7 @@ abstract class EcenterService {
       'response' => $response,
       'raw' => $raw,
     );
-
+    dpm($url);
     return $result;
   }
 

@@ -495,7 +495,7 @@ function ecenter_network_select_form(&$form_state) {
       }
 
       if ($fds) {
-        $data['fds'] = ecenter_network_get_fds_data($src, $dst, $start, $end, $fds_type);
+        $data['fds'] = ecenter_network_get_fds_data($src, $dst, $start, $end, $fds_type, $data['drs']);
         $params['fds'] = 1;
       }
     }

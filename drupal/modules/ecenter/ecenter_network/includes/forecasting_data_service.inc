@@ -16,9 +16,35 @@
  * @return
  *   An array of parsed data
  */
-function ecenter_network_get_fds_data($src, $dst, $start, $end, $fds_type) {
+function ecenter_network_get_fds_data($src, $dst, $start, $end, $fds_type, &$data = array()) {
   $params = get_defined_vars();
   static $results = array();
+
+  // @TODO This could be generalized with a slightly different data
+  // structure.
+  if ($fds_type == 'bwctl' && !empty($data)) {
+    $start_times = array('forward' => 0, 'reverse' => 0);
+    foreach (array('forward', 'reverse') as $direction) {
+      if (!empty($data['end_to_end']['bwctl'][$direction])) {
+        $i = 0;
+        $timestamps = array_keys($data['end_to_end']['bwctl'][$direction]['throughput']['timeseries']);
+        $len = count($timestamps);
+        sort($timestamps);
+        $intervals = array();
+        for ($i = 0; $i < $len; $i++) {
+          if ($i > 0) {
+            $intervals[] = $timestamps[$i] - $timestamps[$i-1];
+          }
+        }
+        $avg_interval = array_sum($intervals) / count($intervals);
+        $more_points = variable_get('ecenter_network_fds_min_points', 200) - count($intervals);
+        $seconds = $more_points * $avg_interval;
+        $start_times[$direction] = $timestamps[0] - $seconds;
+      }
+    }
+    $start_timestamp = ($start_times['forward'] > $start_times['reverse']) ? $start_times['forward'] : $start_times['reverse'];
+    $start = date('Y-m-d H:i:s', $start_timestamp);
+  }
 
   $params['fds'] = TRUE;
   $query = http_build_query($params);

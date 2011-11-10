@@ -164,7 +164,7 @@ $.fn.ecenter_network.plugins.ajax = function() {
           'left' : 0,
           'width' : $('#network-wrapper').outerWidth(),
           'height' : $('#network-wrapper').height(),
-          'z-index' : 5,
+          'z-index' : 99,
         });
         overlay.fadeIn('slow');
 

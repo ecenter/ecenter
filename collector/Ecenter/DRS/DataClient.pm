@@ -75,7 +75,7 @@ has ['start','end','data_type']    => (is => 'rw', isa => 'Str');
 has ['src_ip','dst_ip'] =>  (is => 'rw', isa => 'Ecenter::Types::IPAddr');
 
 has resolution => ( is => 'rw', isa => 'Ecenter::Types::PositiveInt', default => '20');
-has timeout    => ( is => 'rw', isa => 'Ecenter::Types::PositiveInt', default => '120');
+has timeout    => ( is => 'rw', isa => 'Ecenter::Types::PositiveInt', default => '300');
 #
 has bwctl      => ( is => 'rw', isa => 'HashRef', weak_ref => 1 );
 has pinger     => ( is => 'rw', isa => 'HashRef', weak_ref => 1 );
@@ -98,13 +98,13 @@ sub get_data {
     
     $self->logger->logdie('Missing DRS url')
         unless   $self->url; 
-    my $url_params = $self->url . '/data.json?'; 
+    my $url_params = $self->url . '/data.json?only_data=1&'; 
     foreach my $key (qw/data_type start end timeout resolution src_hub src_ip dst_hub dst_ip/) {
         $url_params .=   ($url_params  =~ /\?$/?$key . '=' . $self->$key:'&' . $key . '='. $self->$key)
             if $self->$key;
     }
-    $self->send_request($url_params);
-     if($self->data && !($self->data->{status} &&  $self->data->{status} eq 'error')) {
+    $self->send_request($url_params, $self->timeout+5);
+    if($self->data && !($self->data->{status} &&  $self->data->{status} eq 'error')) {
         if($self->data_type) {
 	    my $type = $self->data_type;
             $self->$type($self->data->{$type}); 

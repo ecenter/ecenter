@@ -621,13 +621,13 @@ sub process_data {
     #
     if(@data_keys) {
 	foreach my $dir (qw/direct reverse/) {
-	    my $md_href = get_e2e_mds($trace_cond->{"$dir\_traceroute"}{src}, $trace_cond->{"$dir\_traceroute"}{dst});
-	    unless($md_href && %{$md_href}) {
-	       $logger->error("No metadata for e2e on $dir ....");
-	       next;
-	    }
 	    foreach my $e_type (@data_keys)  {
 		$logger->debug(" ...  Running  ------------  $e_type");
+		 my $md_href = get_e2e_mds($e_type, $trace_cond->{"$dir\_traceroute"}{src}, $trace_cond->{"$dir\_traceroute"}{dst});
+	         unless($md_href && %{$md_href}) {
+	            $logger->error("!!!! No metadata for $e_type on $dir ....");
+	             next;
+	         }
 		get_e2e($task_set, $data->{$e_type}, \%params, $md_href, $e_type );
 		$logger->debug(" +++++ Done  $dir ------------  $e_type");
 	    }
@@ -660,10 +660,12 @@ sub process_data {
 #
 # get list of metadata ids for the e2e data and some src/dts conditions
 sub get_e2e_mds {
-    my ($src_cond, $dst_cond) = @_;
+    my ($e2e_type, $src_cond, $dst_cond) = @_;
     my $e2e_conditions = $src_cond;
     $e2e_conditions .= " $dst_cond" if $dst_cond;
-    my $slow_services  =  database('ecenter')->selectall_hashref(q|select distinct s.service   from service_performance sp 
+    my  $exclude_services_sql ;
+    if($e2e_type eq 'pinger') {
+       my $slow_services  =  database('ecenter')->selectall_hashref(q|select distinct s.service   from service_performance sp 
                                                             join metadata md using(metaid)
 							    join  node n_src on(md.src_ip = n_src.ip_addr)
 							    join  node n_dst on(md.dst_ip = n_dst.ip_addr)
@@ -678,7 +680,9 @@ sub get_e2e_mds {
 							    where e.service_type in ('pinger') 
 							    and sp.response > | . config->{slow_service_limit} . 
 							    qq|  $e2e_conditions |, 'service');  
-    my $exclude_services_sql =  join (' AND ', map {  "  s.service !='$_' " } keys %{$slow_services});
+        $exclude_services_sql =  join (' AND ', map {  "  s.service !='$_' " } keys %{$slow_services});
+    }
+    
     $exclude_services_sql =  $exclude_services_sql?"($exclude_services_sql)":'1';
     my $e2e_sql = qq|select   md.metaid, n_src.ip_noted as src_ip, md.subject, e.service_type as type, hb1.hub_name as src_hub, hb2.hub_name as dst_hub,
                               n_dst.ip_noted  as dst_ip, 
@@ -696,7 +700,7 @@ sub get_e2e_mds {
 							    join eventtype e on(md.eventtype_id = e.ref_id)
 							    join service s  on (e.service = s.service)
 						      where  
-							    $exclude_services_sql and e.service_type in ( 'bwctl','owamp', 'pinger') 
+							    $exclude_services_sql and e.service_type  = '$e2e_type'
 							    $e2e_conditions
 				        	 group by src_ip, dst_ip, service, type|;
     $logger->debug(" E2E SQL:: $e2e_sql");
@@ -773,10 +777,13 @@ sub get_e2e{
 	    my $data_table = strftime "%Y%m", localtime($st_time);
 	    my $st_end_i = $st_time +  $time_slice;   
 	    my $end_time = ($params->{$type}{end} && $params->{$type}{end}<$st_end_i)?$params->{$type}{end}:$st_end_i;
-	    $logger->info(" ------ MD=$metaid  start= $st_time -  $end_time slice = $time_slice  table=$params->{table_map}{$type}{table}$data_table");
-	    my $ret =  $task_set->add_task("dispatch_data" =>
+	    my $table = $type eq 'traceroute'?'hop':$type;
+	    my $shards =  get_shards({data =>  $type, start => $st_time, end =>  $end_time}, database('ecenter'));
+    	    foreach my $shard (sort  { $a <=> $b } keys %$shards) {
+	        $logger->info(" ------ MD=$metaid  start= $st_time -  $end_time slice = $time_slice  $shards->{$shard}{table}{dbic} ");
+	        my $ret =  $task_set->add_task("dispatch_data" =>
 	                                      encode_json {metaid => $metaid, 
-					        	   table =>  "$params->{table_map}{$type}{table}$data_table",
+					        	   table =>   $shards->{$shard}{table}{dbic},
 							   md_row => $md_row,
                                                 	   start  => $st_time,
 							   type => $type,
@@ -785,7 +792,7 @@ sub get_e2e{
 					     	 	  },
 					  {
 					   on_fail     => sub {$FAILED++;
-					                      $logger->error("FAILED: $metaid $params->{table_map}{$type}{table}$data_table ".
+					                      $logger->error("FAILED: $metaid  $shards->{$shard}{table}{dbic}  ".
 					                                                " start= $st_time -  $st_end_i");},
 					   on_complete => sub { 
 					                     my $returned = decode_json  ${$_[0]};  
@@ -818,8 +825,9 @@ sub get_e2e{
 							      
 						          },
 					   }
-	     );
-	 }
+	        );
+	    }
+	}
     }
     return;
 }

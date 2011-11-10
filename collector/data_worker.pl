@@ -54,6 +54,11 @@ Default: 120 seconds
 
 print help, usage
 
+=item --metrics
+
+log remote call performance response
+Default: not set
+
 =item -db=[database name]
 
 local backend DB name
@@ -108,7 +113,7 @@ my %OPTIONS;
 my @string_option_keys = qw/port host g_host pass user db period timeout/;
 GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
-            qw/debug help/,
+            qw/debug help metrics/,
 ) or pod2usage(1);
 my $output_level = $OPTIONS{debug} || $OPTIONS{d}?$DEBUG:$INFO;
 
@@ -273,11 +278,15 @@ sub _get_remote_data  {
 	$logger->info("$request->{md_row}{service} $request->{md_row}{src_hub}-$request->{md_row}{dst_hub} - $request->{type} - Entries=" . @{$ma->data});
         $logger->debug("$request->{md_row}{service} MA - $request->{type} - Entries=", sub {Dumper($ma->data)});
 	if($ma->data && @{$ma->data}) {
-	    $dbh->resultset('ServicePerformance')->create( { metaid =>  $request->{metaid},
+	    eval {
+	        $dbh->resultset('ServicePerformance')->find_or_create( { metaid =>  $request->{metaid},
 	                                                     requested_start => $request->{start},
 	                                                     requested_time => ($request->{end}- $request->{start}),
 	                                                     response => $t_delta,
-							     is_data => 1} );
+							     is_data => 1} ) if $OPTIONS{metrics} && 
+							                        $t_delta > 20 &&  $request->{type} =~ /owamp|pinger/i;
+	    };
+	    
 	    $logger->debug('..process data...traceroutes found =' . @{$ma->data});
 	    foreach my $ma_data (@{$ma->data}) {
                 my $sql_datum = {  metaid => $request->{metaid},  timestamp => $ma_data->[0]};
@@ -304,13 +313,16 @@ sub _get_remote_data  {
          $logger->error(" remote call failed - $EVAL_ERROR  ");
 	 $result->{status} = 'error';
 	 $result->{data} =  " remote call failed - $EVAL_ERROR ";
-    }
-    $dbh->resultset('ServicePerformance')->create( { metaid =>  $request->{metaid},
+    } 
+    eval {
+       $dbh->resultset('ServicePerformance')->find_or_create( { metaid =>  $request->{metaid},
 	                                             requested_start => $request->{start},
 	                                             requested_time => ($request->{end}- $request->{start}),
 	                                             response => $t_delta,
 						     is_data => 0} )
-        if $EVAL_ERROR || !@{$result->{data}};
+        if  $OPTIONS{metrics} &&  
+	   ($EVAL_ERROR || !@{$result->{data}}) && $t_delta > 20 &&  $request->{type} =~ /owamp|pinger/i;
+    };
     $logger->info("..Done processing data...");
     return encode_json $result;
 }
@@ -333,11 +345,13 @@ sub _get_remote_snmp {
 			  });
     };
     if($EVAL_ERROR) {
-        $dbh->resultset('ServicePerformance')->create( { metaid =>  $request->{metaid},
+         eval {
+	     $dbh->resultset('ServicePerformance')->find_or_create( { metaid =>  $request->{metaid},
 	                                                 requested_start => $request->{start},
 	                                                 requested_time => ($request->{end}- $request->{start}),
 	                                                 response =>  time() - $t1,
-							 is_data => 0} );
+							 is_data => 0} ) if  $OPTIONS{metrics} &&  (time() - $t1) > 20 &&  $request->{type} =~ /owamp|pinger/i;
+	};
 	$logger->error(" Remote MA --  $request->{service} failed $EVAL_ERROR");
         $result->{status} = 'error';
         $result->{data} = " Remote MA -- $request->{service} failed $EVAL_ERROR";
@@ -348,11 +362,13 @@ sub _get_remote_snmp {
     $logger->info("$request->{service} :: SNMP DataN=" . scalar @{$snmp_ma->data});
     
     if($snmp_ma->data && @{$snmp_ma->data}) {
-        $dbh->resultset('ServicePerformance')->create( { metaid =>  $request->{metaid},
+        eval {
+	   $dbh->resultset('ServicePerformance')->find_or_create( { metaid =>  $request->{metaid},
 	                                                 requested_start => $request->{start},
 	                                                 requested_time => ($request->{end}- $request->{start}),
 	                                                 response => $t_delta,
-							 is_data => 1} );
+							 is_data => 1} ) if  $OPTIONS{metrics} && $t_delta > 20 &&  $request->{type} =~ /owamp|pinger/i;
+	 };
 	 foreach my $data (@{$snmp_ma->data}) {
 	     eval {
 	          my $datum = {  metaid => $request->{metaid},
@@ -372,11 +388,13 @@ sub _get_remote_snmp {
 	     }
         }
     } else {
-        $dbh->resultset('ServicePerformance')->create( { metaid =>  $request->{metaid},
+        eval {
+	  $dbh->resultset('ServicePerformance')->find_or_create( { metaid =>  $request->{metaid},
 	                                                 requested_start => $request->{start},
 	                                                 requested_time => ($request->{end}- $request->{start}),
 	                                                 response =>  $t_delta,
-							 is_data => 0} );
+							 is_data => 0} ) if  $OPTIONS{metrics} && $t_delta > 20 &&  $request->{type} =~ /owamp|pinger/i;
+	};
     }
     return encode_json $result;
 }

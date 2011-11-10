@@ -164,7 +164,7 @@ $.fn.ecenter_network.plugins.ajax = function() {
           'left' : 0,
           'width' : $('#network-wrapper').outerWidth(),
           'height' : $('#network-wrapper').height(),
-          'z-index' : 5,
+          'z-index' : 99,
         });
         overlay.fadeIn('slow');
 
@@ -282,40 +282,34 @@ $.fn.ecenter_network.plugins.date = function() {
 $.fn.ecenter_network.plugins.change = function() {
   var self = this;
 
-  if (!$('#src-wrapper input').val()) {
-    $('#dst-wrapper input, #dst-wrapper button')
+  var src_input = $('#src-wrapper input');
+  var dst_input = $('#dst-wrapper input');
+
+  if (!dst_input.val()) {
+    $('#src-wrapper input, #src-wrapper button')
+      .removeAttr('disabled')
+      .removeClass('disabled');
+    $('#dst-wrapper button')
+      .attr('disabled', true)
+      .addClass('disabled');
+    if (!src_input.val()) {
+      dst_input
+        .attr('disabled', 'disabled')
+        .addClass('disabled');
+    }
+  } else {
+    $('#src-wrapper input, #src-wrapper button')
       .attr('disabled', 'disabled')
       .addClass('disabled');
-  } else {
     $('#dst-wrapper input, #dst-wrapper button')
       .removeAttr('disabled')
       .removeClass('disabled');
   }
 
-  var processed = $('#src-wrapper select').data('ecenterProcessed');
-  if (!processed) {
-    $('#src-wrapper button.clear-value').bind('click', function(e) {
-      var input = $('#dst-wrapper input');
-      input.val('');
-      input.data('autocomplete')._trigger('change');
-    });
-    $('#src-wrapper select', this.el).bind('change', function(e) {
-      $('#traceroute-paste-wrapper').fadeOut();
-      $('#traceroute-paste-wrapper textarea').val('');
-    });
-    $('#src-wrapper select').data('ecenterProcessed', true);
-  }
-
-  var processed = $('#dst-wrapper select').data('ecenterProcessed');
-
-  // Clear out some values when destination changes
-  if (!processed) {
-    $('#dst-wrapper select', this.el).bind('change', function(e) {
-      $('#traceroute-paste-wrapper').fadeOut();
-      $('#traceroute-paste-wrapper textarea').val('');
-    });
-    $('#dst-wrapper select').data('ecenterProcessed', true);
-  }
+  $('#src-wrapper select, #dst-wrapper select', this.el).bind('change', function(e) {
+    $('#traceroute-paste-wrapper').fadeOut();
+    $('#traceroute-paste-wrapper textarea').val('');
+  });
 }
 
 /**
@@ -689,9 +683,12 @@ $.fn.ecenter_network.plugins.timezone_select = function() {
 
 $.fn.ecenter_network.plugins.traceroute_paste = function() {
   var target = $('#traceroute-paste-wrapper');
-  var dialog = target.hide().clone().attr('id', 'traceroute-paste-copy');
-  $('textarea', dialog).attr('readonly', false);
+  var dialog = target.hide()
+    .css({'z-index' : 5})
+    .clone()
+    .attr('id', 'traceroute-paste-copy');
 
+  $('textarea', target).attr('readonly', true);
   $('body').append(dialog);
 
   var dialog = $('#traceroute-paste-copy').dialog({
@@ -734,10 +731,10 @@ $.fn.ecenter_network.defaults = {
   // Initialization plugins
   init_plugins : [
     $.fn.ecenter_network.plugins.ajax,
-    $.fn.ecenter_network.plugins.traceroute_paste,
     $.fn.ecenter_network.plugins.map,
     $.fn.ecenter_network.plugins.date,
     $.fn.ecenter_network.plugins.chart,
+    $.fn.ecenter_network.plugins.traceroute_paste,
     $.fn.ecenter_network.plugins.analysis
   ],
   // Drawing plugins

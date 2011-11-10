@@ -24,24 +24,33 @@ function template_preprocess_ecenter_network_data(&$vars) {
   drupal_add_js(array('ecenterNetwork' => array('tracerouteMaxLength' => 
     $data['drs']['traceroute']['traceroute_max'])), 'setting');
 
-  // Source / dst table
-  $hops = ecenter_network_get_hops();
-  $src_hop = $hops['combined'][$params['src']];
-  $dst_hop = $hops['combined'][$params['dst']];
-
   // Generate date range -- internal date is stored as UTC
   $dates = array();
   foreach (array('start', 'end') as $val) {
     $dates[$val] = _ecenter_network_utc_to_local($params[$val], 
       'M j, Y H:i', $query_params['timezone']);
   }
-  
+
+  if (empty($query_params['src'])) {
+    list($src_type, $src_value) = explode(':', $params['src']);
+  }
+  else {
+    list($src_type, $src_value) = explode(':', $query_params['src']);
+  }
+  if (empty($query_params['dst'])) {
+    list($dst_type, $dst_value) = explode(':', $params['dst']);
+  }
+  else {
+    list($dst_type, $dst_value) = explode(':', $query_params['dst']);
+  }
+
   $vars['title'] = t('<span class="src-dst">@src_hub to
 @dst_hub</span><span class="separator">, </span>
-<span class="date-range">@start - @end</span>',
+<span class="date-range"><span class="start">@start to</span> 
+<span class="end">@end</span></span>',
     array(
-      '@src_hub' => $src_hop['hub_name'],
-      '@dst_hub' => $dst_hop['hub_name'],
+      '@src_hub' => $src_value,
+      '@dst_hub' => $dst_value,
       '@start' => $dates['start'],
       '@end' => $dates['end'],
     )

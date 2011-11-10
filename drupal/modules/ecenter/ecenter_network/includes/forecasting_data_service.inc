@@ -16,34 +16,17 @@
  * @return
  *   An array of parsed data
  */
-function ecenter_network_get_fds_data($src, $dst, $start, $end, $fds_type, &$data = array()) {
+function ecenter_network_get_fds_data($src, $dst, $start, $end, $fds_type) {
   $params = get_defined_vars();
   static $results = array();
 
-  // @TODO This could be generalized with a slightly different data
-  // structure.
-  if ($fds_type == 'bwctl' && !empty($data)) {
-    $start_times = array('forward' => 0, 'reverse' => 0);
-    foreach (array('forward', 'reverse') as $direction) {
-      if (!empty($data['end_to_end']['bwctl'][$direction]) && count($data['end_to_end']['bwctl'][$direction]['throughput']) < variable_get('ecenter_network_fds_min_points', 350)) {
-        $i = 0;
-        $timestamps = array_keys($data['end_to_end']['bwctl'][$direction]['throughput']['timeseries']);
-        $len = count($timestamps);
-        sort($timestamps);
-        $intervals = array();
-        for ($i = 0; $i < $len; $i++) {
-          if ($i > 0) {
-            $intervals[] = $timestamps[$i] - $timestamps[$i-1];
-          }
-        }
-        $avg_interval = array_sum($intervals) / count($intervals);
-        $more_points = variable_get('ecenter_network_fds_min_points', 350) - count($intervals);
-        $seconds = $more_points * $avg_interval;
-        $start_times[$direction] = $timestamps[0] - $seconds;
-      }
-    }
-    $start_timestamp = ($start_times['forward'] > $start_times['reverse']) ? $start_times['forward'] : $start_times['reverse'];
-    $start = date('Y-m-d H:i:s', $start_timestamp);
+  $start_date = date_create($start, timezone_open('UTC'));
+  $end_date = date_create($start, timezone_open('UTC'));
+  $diff = date_diff($end_date, $start_date);
+  if ($diff->days < 60) {
+    date_modify($end_date, '-2 months');
+    $start = date_format($end_date, 'Y-m-d H:i:s');
+    $params['start'] = $start;
   }
 
   $params['fds'] = TRUE;
@@ -208,7 +191,7 @@ function ecenter_network_fds_form($value = FALSE) {
       '#weight' => 10,
     );
 
-    $form['fds_wrapper']['fds_settings'] = array(
+    /*$form['fds_wrapper']['fds_settings'] = array(
       '#id' => 'fds-settings-fieldset',
       '#prefix' => '<div id="fds-settings">',
       '#suffix' => '</div>',
@@ -235,7 +218,7 @@ function ecenter_network_fds_form($value = FALSE) {
       '#type' => 'textfield',
       '#size' => 12,
       '#weight' => 2,
-    );
+    );*/
 
     $form['fds_wrapper']['fds_submit']['#attributes']['class'] = 'analysis-submit fds-submit';
     unset($form['fds_wrapper']['fds_submit']['#attributes']['disabled']);

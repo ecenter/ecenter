@@ -282,11 +282,25 @@ $.fn.ecenter_network.plugins.date = function() {
 $.fn.ecenter_network.plugins.change = function() {
   var self = this;
 
-  if (!$('#src-wrapper input').val()) {
-    $('#dst-wrapper input, #dst-wrapper button')
+  var src_input = $('#src-wrapper input');
+  var dst_input = $('#dst-wrapper input');
+
+  if (!dst_input.val()) {
+    $('#src-wrapper input, #src-wrapper button')
+      .removeAttr('disabled')
+      .removeClass('disabled');
+    $('#dst-wrapper button')
+      .attr('disabled', true)
+      .addClass('disabled');
+    if (!src_input.val()) {
+      dst_input
+        .attr('disabled', 'disabled')
+        .addClass('disabled');
+    }
+  } else {
+    $('#src-wrapper input, #src-wrapper button')
       .attr('disabled', 'disabled')
       .addClass('disabled');
-  } else {
     $('#dst-wrapper input, #dst-wrapper button')
       .removeAttr('disabled')
       .removeClass('disabled');

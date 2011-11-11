@@ -289,12 +289,12 @@ $.fn.ecenter_network.plugins.change = function() {
     $('#src-wrapper input, #src-wrapper button')
       .removeAttr('disabled')
       .removeClass('disabled');
-    $('#dst-wrapper button')
-      .attr('disabled', true)
-      .addClass('disabled');
     if (!src_input.val()) {
       dst_input
         .attr('disabled', 'disabled')
+        .addClass('disabled');
+      $('#dst-wrapper button')
+        .attr('disabled', true)
         .addClass('disabled');
     }
   } else {

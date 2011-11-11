@@ -189,6 +189,9 @@ function ecenter_network_init() {
   }
 }
 
+/**
+ * Add all JS behaviors
+ */
 function _ecenter_network_add_behaviors() {
   // Compression type
   $compression = variable_get('jquery_update_compression_type', 'none');
@@ -532,15 +535,7 @@ function ecenter_network_select_form_submit($form, &$form_state) {
   // Do what AHAH helper does on an AJAX call, to make form constructor a
   // little less crazy
   $inc = variable_get('ecenter_network_time_increment', 30);
-
-  if (empty($form_state['post']['timezone'])) {
-    $tz = $user->timezone_name ? $user->timezone_name 
-      : variable_get('date_default_timezone_name', NULL);
-  }
-  else {
-    $tz = $form_state['post']['timezone'];
-  }
-  $tz = timezone_open($tz);
+  $tz = timezone_open('UTC');
 
   if ($form_state['values']['network_wrapper']['query']['recent_select']
     && !$form_state['values']['network_wrapper']['query']['date_select']) {
@@ -1274,15 +1269,15 @@ function _ecenter_network_process_tz_name($val) {
 function _ecenter_network_extract_query() {
   $vars = array();
 
+  //dpm($_REQUEST);
+
   if (!empty($_REQUEST['form_id']) && $_REQUEST['form_id'] == 'ecenter_network_select_form') {
     $vars = array(
       'src' => $_REQUEST['network_wrapper']['query']['src_wrapper']['src'],
       'dst' => $_REQUEST['network_wrapper']['query']['dst_wrapper']['dst'],
-      'start' => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['start']),
-      'end' => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['end']),
+      'start' => $_REQUEST['network_wrapper']['query']['start'],
+      'end' => $_REQUEST['network_wrapper']['query']['end'],
       'timezone' => $_REQUEST['timezone'],
-
-
       'traceroute' => $_REQUEST['network_wrapper']['query']['traceroute_paste'],
     );
 

@@ -170,6 +170,12 @@ function ecenter_network_theme() {
         'data' => NULL,
       ),
     ) + $options,
+    'ecenter_network_messages' => array(
+      'arguments' => array(
+        'data' => NULL,
+        'params' => NULL,
+      ),
+    ) + $options,
   );
   return $registry;
 }
@@ -497,6 +503,7 @@ function ecenter_network_select_form(&$form_state) {
       if ($fds) {
         $data['fds'] = ecenter_network_get_fds_data($src, $dst, $start, $end, $fds_type);
         $params['fds'] = 1;
+        $params['fds_type'] = $fds_type;
       }
     }
 
@@ -1216,7 +1223,6 @@ function _ecenter_network_utc_to_local($date, $format = 'Y-m-d H:i:s', $tz = '')
   if (empty($date)) {
     return NULL;
   }
-
   if (empty($tz)) {
     $tz = date_default_timezone_name(TRUE);
   }

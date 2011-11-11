@@ -19,6 +19,9 @@ function template_preprocess_ecenter_network_data(&$vars) {
   // All parameters
   $query_params = $data['parameters'];
 
+  // Call helper function to create messages
+  $vars['ecenter_messages'] = theme('ecenter_network_messages', $data, $query_params);
+
   drupal_add_js(array('ecenterNetwork' => array('tracerouteData' => 
     $data['drs']['traceroute']['diff'])), 'setting');
   drupal_add_js(array('ecenterNetwork' => array('tracerouteMaxLength' => 
@@ -990,3 +993,39 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
   }
 }
 
+/**
+ * Theme ecenter messages
+ * @TODO Ugly string construction
+ */
+function theme_ecenter_network_messages($data, $params) {
+  $items = array();
+  if ($params['fds']) {
+    $message = '<button class="clear-fds">'. t('Clear forecast') .'</button>'. 
+      t('Showing forecast for <strong>@type</strong>', array('@type' => $params['fds_type']));
+    if (empty($data['fds'])) {
+      $message .= ' '. t('<span class="status-alert">(No forecast data available, try again later)</span>');
+    }
+    $items[] = $message;
+  }
+  if ($params['ads']) {
+    $message = '<button class="clear-ads">'. t('Clear anomalies') .'</button>'. 
+      t('Showing anomalies:');
+
+    $anomalies = array();
+    foreach ($data['ads'] as $type => $values) {
+      if (!empty($values)) {
+        $anomalies = $type;
+      }
+    }
+    if (empty($anomalies)) {
+      $message .= ' '. t('<span class="status-ok">No anomalies detected</span>');
+    }
+    else {
+      $message .= ' '. t('<span class="status-alert">@types anomalies detected</span>', array('@types' => implode(', ', $anomalies)));
+    }
+
+    $items[] = $message;
+  }
+
+  return theme('item_list', $items, NULL, 'ul', array('class' => 'ecenter-messages'));
+}

@@ -648,11 +648,10 @@ $.fn.ecenter_network.plugins.analysis = function() {
   $('.analysis-submit').live({
     'click' : function(e) {
       e.stopPropagation();
-      var wrapper = $(this).parents('.analysis-wrapper');
+      $('.analysis-wrapper .analysis-enable').attr('checked', false); // Clear other values
       var enable = $(this).parents('.analysis-wrapper').find('.analysis-enable').attr('checked', true);
-      
+
       var input = $('#dst-wrapper input');
-      
       input.data('autocomplete')._trigger('change');
       $('#loading-overlay button').focus();
 
@@ -667,6 +666,28 @@ $.fn.ecenter_network.plugins.analysis = function() {
       else {
         $('#ads-settings input').not('.ads-algorithm').attr('disabled', false);
       }
+    }
+  });
+
+  $('.clear-ads').live({
+    'click' : function(e) {
+      e.stopPropagation();
+      $('.analysis-wrapper .analysis-enable').attr('checked', false);
+      var input = $('#dst-wrapper input');
+      input.data('autocomplete')._trigger('change');
+      $('#loading-overlay button').focus();
+      return false;
+    }
+  });
+
+  $('.clear-fds, .clear-ads').live({
+    'click' : function(e) {
+      e.stopPropagation();
+      $('.analysis-wrapper .analysis-enable').attr('checked', false);
+      var input = $('#dst-wrapper input');
+      input.data('autocomplete')._trigger('change');
+      $('#loading-overlay button').focus();
+      return false;
     }
   });
 }

@@ -1278,11 +1278,9 @@ function _ecenter_network_extract_query() {
     $vars = array(
       'src' => $_REQUEST['network_wrapper']['query']['src_wrapper']['src'],
       'dst' => $_REQUEST['network_wrapper']['query']['dst_wrapper']['dst'],
-      'start' => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['start']),
-      'end' => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['end']),
+      'start' => $_REQUEST['network_wrapper']['query']['start'],
+      'end' => $_REQUEST['network_wrapper']['query']['end'],
       'timezone' => $_REQUEST['timezone'],
-
-
       'traceroute' => $_REQUEST['network_wrapper']['query']['traceroute_paste'],
     );
 

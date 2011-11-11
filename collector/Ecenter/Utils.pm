@@ -279,7 +279,8 @@ sub get_ip_name {
     my ( $unt_test ) =  $ip_addr  =~ /^([^:]+):?/;
     $logger->debug(" IP_HOST: $unt_test  ");
     if($unt_test =~ /^([\d\.]+|[\dabcdef\:]+)$/i) {
-        if(!Net::CIDR::cidrlookup( $unt_test, ( "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16" ) ) &&
+       eval {
+         if(!Net::CIDR::cidrlookup( $unt_test, ( "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16" ) ) &&
            (is_ipv4($unt_test)  ||  &Net::IPv6Addr::is_ipv6( $unt_test ))) {
 	    my $ip_resolved =  gethostbyaddr(Socket::inet_aton($unt_test), Socket::AF_INET);
 	    $logger->info(" Its IP: $unt_test , name= $ip_resolved");    
@@ -287,6 +288,11 @@ sub get_ip_name {
 	 } else {
 	    return;
 	 }
+       };
+       if($EVAL_ERROR) {
+          $logger->error("DNS lookup failed for $unt_test extracted from  $ip_addr with $EVAL_ERROR ");
+	  return;
+       }
     }
     if(is_hostname( $unt_test ) &&  $unt_test !~ m/^changeme|localhost/i) {
         my $query = $resolver->search(  $unt_test );

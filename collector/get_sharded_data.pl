@@ -371,6 +371,7 @@ sub set_end_sites {
     my $now_time = strftime('%Y-%m-%d %H:%M:%S', localtime());
     my $hub = Ecenter::Data::Hub->new;
     foreach my $hub_name ( $hub->get_hub_blocks ) {
+      next unless $hub_name =~ /SC|PNNL/i;
       $hub->hub_name($hub_name);
       my $aliases =   $hub->get_aliases();
       my $alias_sql = " n.nodename like '%$hub_name%'"; 
@@ -611,11 +612,15 @@ sub get_e2e {
 		     delete $data->[1]->{ip_noted};
 		     my $nodename = '';
 		     unless(exists $hosts->{$ip_noted}) {
-		        ($ip_noted, $nodename) =   get_ip_name( $ip_noted );
+		        ($ip_noted, $nodename) = get_ip_name( $ip_noted );
 			$hosts->{$ip_noted}{nodename} = $nodename if $nodename && $nodename =~ /^[a-z]+/;
 		     }
 		     ##$logger->info("Data[1]:: ", sub{Dumper( $data->[1] )});
 		     $nodename = $hosts->{$ip_noted} && $hosts->{$ip_noted}{nodename}?$hosts->{$ip_noted}{nodename}:$ip_noted;
+		     unless($ip_noted &&  $nodename) {
+		         $logger->error("BAD: DNS is not there for:     md=$md   ip=$ip_noted node=$nodename");
+			 next;
+		     }
 		     $dbh->resultset('Node')->find_or_create(
     		         		   {ip_addr =>   $data->[1]->{hop_ip},
     		      	 		    nodename =>  $nodename,

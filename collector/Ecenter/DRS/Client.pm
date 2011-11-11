@@ -76,13 +76,14 @@ sends request to the DRS, accepts single parameter - complete URL for the reques
 =cut 
 
 sub send_request {
-    my ($self, $request_url) = @_;
+    my ($self, $request_url, $timeout) = @_;
     unless($request_url) {
         $self->logger->error("Failed, URL must be provided as argumnet");
 	return;
     }   
     $self->request(LWP::UserAgent->new(agent => 'DRS useragent 1.001')) 
         unless $self->request;
+    $timeout?$self->request->timeout($timeout):$self->request->timeout(300);
     $self->request->default_header( 'Content-Type' => 'application/json' );
  
     my $response_http = $self->request->get( $request_url );

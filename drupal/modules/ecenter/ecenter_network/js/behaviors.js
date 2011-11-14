@@ -551,6 +551,87 @@ $.fn.ecenter_network.plugins.traceroute = function() {
         }
 
         $.ecenter_network.hoverOut.call(element);
+      },
+      'elementclick' : function(e, element) {
+        var dialog = $('#modal-chart');
+        
+        var tables = $('#utilization-tables .' + element.groups[0].toLowerCase() +'-data-table').clone(false);
+
+        var title_parts = element.groups[0].split('_');
+        $('h2', dialog).text(title_parts[1] +' utilization');
+
+        $('table', dialog).remove();
+
+        dialog.append(tables);
+        dialog.dialog('open');
+        
+        dialog.tablechart({
+          'hideTables' : true,
+          'parseX' : $.tablechart.parseText,
+          'plotOptions' : {
+            'seriesDefaults' : {
+              'lineWidth' : 2,
+              'shadow' : false,
+              'fill' : false,
+              'markerOptions' : {
+                'size' : 5,
+                'shadow' : false
+              }
+            },
+            'highlighter' : {
+              'show' : true,
+              'sizeAdjust' : 0,
+              'lineWidthAdjust' : 0,
+              'tooltipLocation' : 'n',
+              'tooltipOffset' : 10,
+              'tooltipSeparator' : ': '
+            },
+            'legend' : {
+              'show' : true,
+              'renderer' : $.jqplot.EnhancedLegendRenderer,
+              'placement' : 'outsideGrid',
+              'location' : 's',
+              'rendererOptions' : {
+                'numberRows' : 1
+              }
+            },
+            'seriesColors' : ['#035dc5', '#a71932'],
+            'axes' : {
+              'xaxis' : {
+                'pad' : 1,
+                'renderer' : $.jqplot.DateAxisRenderer,
+                'autoscale' : true,
+                'numberTicks' : 15,
+                'tickOptions' : {
+                  'formatString' : '%H:%M <br /> %#m/%#d',
+                }
+              },
+              'yaxis' : {
+                'autoscale' : true,
+                'min' : 0,
+                'max' : 100,
+                'labelRenderer' : $.jqplot.CanvasAxisLabelRenderer,
+                'tickOptions' : {
+                  'formatString' : '%d',
+                  'showGridLine' : true,
+                  'showMark' : false
+                }
+              }
+            },
+            'grid' : {
+              'shadow' : false,
+              'borderWidth' : 0,
+              'background' : '#e5e5e5',
+              'gridLineColor' : '#ffffff'
+            },
+            'cursor' : {
+              'show' : true,
+              'showTooltip' : false,
+              'zoom' : true,
+              'clickReset' : true
+            }
+          }
+        }); 
       }
     });
   }
@@ -744,6 +825,16 @@ $.fn.ecenter_network.plugins.traceroute_paste = function() {
   $('#dst-wrapper').after(button);
 }
 
+$.fn.ecenter_network.plugins.popup_chart = function() {
+  var chart_dialog = $('<div id="modal-chart"><h2 class="chart-title">Chart title test</h2></div>').appendTo('body');
+  chart_dialog.dialog({
+    autoOpen: false,
+    modal: true,
+    width: '850px',
+    position: 'center'
+  });
+}
+
 
 /**
  * Default options: Define default plugins to call
@@ -756,7 +847,8 @@ $.fn.ecenter_network.defaults = {
     $.fn.ecenter_network.plugins.date,
     $.fn.ecenter_network.plugins.chart,
     $.fn.ecenter_network.plugins.traceroute_paste,
-    $.fn.ecenter_network.plugins.analysis
+    $.fn.ecenter_network.plugins.analysis,
+    $.fn.ecenter_network.plugins.popup_chart
   ],
   // Drawing plugins
   draw_plugins : [

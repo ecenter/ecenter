@@ -423,10 +423,9 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
         }
 
         $attributes = array(
-          'class' => $direction,
+          'class' => $direction .' '. strtolower($hub_id) .'-data-table',
           'data-jqplotHighlightColor' => '#ff0000',
         );
-
 
         $capacity = $hop['data']['snmp'][0][1]['capacity'];
         $tables[] = theme('ecenter_network_utilization_table', $table, $hop, $direction, $attributes, $capacity);
@@ -468,8 +467,13 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
           $settings['ecenterNetwork']['seriesLookupByHub'][$hub_id]['sidx'][] = $sidx;
           $sidx++;
 
+          $attributes = array(
+            'class' => $direction .' '. strtolower($hub_id) .'-data-table',
+            'data-jqplotSeriesOptions' => '{"linePattern":"dashed"}'
+          );
+
           $tables[] = theme('ecenter_network_utilization_table', $forecast_table,
-            $hop, $direction, array('data-jqplotSeriesOptions' => '{"linePattern":"dashed"}'));
+            $hop, $direction, $attributes);
         }
       }
     }
@@ -888,10 +892,12 @@ function _ecenter_network_plot_options_template() {
         'autoscale' => TRUE,
         'numberTicks' => 9,
         'renderer' => '$.jqplot.DateAxisRenderer',
-        'tickOptions' => array(
-          'formatString' => "%H:%M",
-        ),
         'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
+        'tickOptions' => array(
+          'formatString' => "%H:%M <br /> %#m/%#d",
+          'angle' => 30,
+          'fontSize' => '11px',
+        ),
       ),
       'yaxis' => array(
         'autoscale' => TRUE,

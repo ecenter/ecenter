@@ -22,11 +22,14 @@ function ecenter_network_get_fds_data($src, $dst, $start, $end, $fds_type) {
 
   $start_date = date_create($start, timezone_open('UTC'));
   $end_date = date_create($start, timezone_open('UTC'));
-  $diff = date_diff($end_date, $start_date);
-  if ($diff->days < 60) {
-    date_modify($end_date, '-2 months');
-    $start = date_format($end_date, 'Y-m-d H:i:s');
-    $params['start'] = $start;
+
+  if ($fds_type == 'bwctl') {
+    $diff = date_diff($end_date, $start_date);
+    if ($diff->days < 45) {
+      date_modify($end_date, '-45 days');
+      $start = date_format($end_date, 'Y-m-d H:i:s');
+      $params['start'] = $start;
+    }
   }
 
   $params['fds'] = TRUE;
@@ -143,13 +146,22 @@ function ecenter_network_parse_fds_response($response) {
 /**
  * Form snippet for FDS
  */
-function ecenter_network_fds_form($value = FALSE) {
+function ecenter_network_fds_form($value = FALSE, $has_snmp = FALSE, $has_bwctl = FALSE) {
   extract(_ecenter_network_extract_query());
+
+  $options = array();
+  if ($has_snmp) {
+    $options['snmp'] = t('SNMP');
+  }
+  if ($has_bwctl) {
+    $options['bwctl'] = t('bwctl');
+  }
 
   $form['fds_wrapper'] = array(
     '#prefix' => '<div id="fds-settings-wrapper" class="analysis-wrapper">',
     '#suffix' => '</div>',
   );
+
   $form['fds_wrapper']['fds_submit'] = array(
     '#type' => 'submit',
     '#id' => 'fds-submit',

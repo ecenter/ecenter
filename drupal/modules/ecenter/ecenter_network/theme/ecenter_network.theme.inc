@@ -89,8 +89,6 @@ function template_preprocess_ecenter_network_data(&$vars) {
       $vars['issues'] = '<label>'. t('Issues from this query: ') .'</label>'. implode(', ', $issue_links);
     }
 
-    dpm($vars['data']);
-
     $ads = ecenter_network_ads_form($query_params['ads']);
     $vars['ads'] = drupal_render($ads);
 

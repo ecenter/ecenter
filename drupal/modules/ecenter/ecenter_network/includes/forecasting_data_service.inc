@@ -25,8 +25,8 @@ function ecenter_network_get_fds_data($src, $dst, $start, $end, $fds_type) {
 
   if ($fds_type == 'bwctl') {
     $diff = date_diff($end_date, $start_date);
-    if ($diff->days < 45) {
-      date_modify($end_date, '-45 days');
+    if ($diff->days < 60) {
+      date_modify($end_date, '-60 days');
       $start = date_format($end_date, 'Y-m-d H:i:s');
       $params['start'] = $start;
     }

@@ -261,11 +261,17 @@ $.tablechart.scrapeMultiple = function(tables) {
       });
     }
 
+    // Extend options with custom data attribute     
+    var inlineOptions = $(this).data('jqplotSeriesOptions');
+    if (typeof inlineOptions != 'undefined') {
+      seriesOptions[i] = inlineOptions;
+    }
+
     // Scrape each matched table
     data = $.tablechart.scrapeSingle.call(tablechart, this);
 
     series = series.concat(data.series);
-    $.extend(true, seriesOptions, data.options);
+    seriesOptions = seriesOptions.concat(data.options);
   });
 
   return { 'series' : series, 'options' : seriesOptions };

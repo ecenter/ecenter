@@ -239,10 +239,6 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
             }
             
             $data_tables[$test][$measurement][$direction .'_forecast'] = $forecast_table;
-            //  array_merge($data_tables[$test][$measurement][$direction], $forecast_table);
-
-            //$data_tables[$test][$measurement][$direction] = 
-            //  array_merge($data_tables[$test][$measurement][$direction], $forecast_table);
           }
          
           // Add anomaly tables
@@ -438,10 +434,21 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
           $forecast_data = $fds_data['snmp']['utilization'][$hop['hop_ip']];
 
           $last_value = array_pop($hop['data']['snmp']);
-          $forecast_data[$last_value[0]] = array('value' => $last_value[1]['utilization']);
+          $forecast_data[$last_value[0]] = array(
+            'value' => $last_value[1]['utilization'], 
+            'stderr' => 0, 
+            'errpct' => 0,
+          );
 
           foreach ($forecast_data as $timestamp => $forecast) {
             $time = _ecenter_network_timestamp_to_local($timestamp, 'Y-m-d H:i:s', $timezone);
+            $value = 100 * ($forecast['value'] / $last_value[1]['capacity']);
+            $err = $forecast['errpct'] / 2;
+            
+            // @TODO account for zero
+            $max_err = $value + $err;
+            $min_err = $value - $err;
+
             $forecast_table[] = array(
               'class' => 'forecast',
               'data' => array(
@@ -450,9 +457,13 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
                   'header' => TRUE,
                 ),
                 'utilization' => array(
-                  'data' => sprintf('%01.4f',
-                    100 * ($forecast['value'] / $last_value[1]['capacity'])),
-                  'class' => $class,
+                  'data' => sprintf('%01.4f', $value),
+                ),
+                'min_err' => array(
+                  'data' => sprintf('%01.4f', $min_err),
+                ),
+                'max_err' => array(
+                  'data' => sprintf('%01.4f', $max_err),
                 ),
               ),
             );

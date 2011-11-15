@@ -26,6 +26,69 @@ $.fn.tablechart.defaults.attachMethod = function(container) {
 }
 
 /**
+ * Utility function: Scrape single table for values
+ */
+$.tablechart.scrapeSingle = function(table) {
+  var series = [],
+      options = this.options,
+      tablechart = this,
+      seriesOptions = [];
+
+  if (options.headerSeriesLabels) {
+    $(table).find('thead th:gt(0)').each(function(i) {
+      options.plotOptions.series[i] = $.extend(
+        {label: $(this).text()}, 
+        options.plotOptions.series[i]
+      );
+
+      // Extend options with custom data attribute     
+      var seriesData = $(this).data('jqplotSeriesOptions');
+      if (typeof seriesData != 'undefined') {
+        seriesOptions[i] = seriesData;
+      }
+    });
+  }
+
+  //var bdat = [];
+  $(table).find('tbody tr').each(function() {
+    var x = 0, y = 0, max, min;
+    $(this).find('th').each(function() {
+      x = options.parseX.call(tablechart, this);
+    });
+    $(this).find('td').each(function(i) {
+      if (i == 0) {
+        if (!series[0]) {
+          series[0] = [];
+        }
+        y = options.parseY.call(tablechart, this);
+        series[0].push([x, y]);
+      }
+      /*if (i > 0) {
+        if (i == 1) {
+          min = options.parseY.call(tablechart, this);
+        }
+        if (i == 2) {
+          max = options.parseY.call(tablechart, this);
+        }        
+      }*/
+    });
+    /*if (min && max) {
+      console.log('OH HI');
+      bdat.push([min, max]);
+    }*/
+  });
+  //console.log(series);
+  //console.log(bdat);
+  //console.log('--');
+  //if (bdat.length) {
+  //  seriesOptions[0] = { 'rendererOptions' : { 'bandData' : bdat } };
+  //}
+
+  return { 'series' : series, 'options' : seriesOptions };
+}
+
+
+/**
  * Drupal behavior to attach network weathermap behaviors
  */
 Drupal.behaviors.EcenterNetwork = function(context) {
@@ -551,8 +614,8 @@ $.fn.ecenter_network.plugins.traceroute = function() {
         }
 
         $.ecenter_network.hoverOut.call(element);
-      }
-      /*'elementclick' : function(e, element) {
+      },
+      'elementclick' : function(e, element) {
         var dialog = $('#modal-chart');
         
         var tables = $('#utilization-tables .' + element.groups[0].toLowerCase() +'-data-table').clone(false);
@@ -568,6 +631,7 @@ $.fn.ecenter_network.plugins.traceroute = function() {
         dialog.tablechart({
           'hideTables' : true,
           'parseX' : $.tablechart.parseText,
+          'height' : 300,
           'plotOptions' : {
             'seriesDefaults' : {
               'lineWidth' : 2,
@@ -632,7 +696,7 @@ $.fn.ecenter_network.plugins.traceroute = function() {
             }
           }
         }); 
-      }*/
+      }
     });
   }
 }
@@ -831,6 +895,7 @@ $.fn.ecenter_network.plugins.popup_chart = function() {
     autoOpen: false,
     modal: true,
     width: '850px',
+    height: '420px',
     position: 'center'
   });
 }
@@ -847,7 +912,7 @@ $.fn.ecenter_network.defaults = {
     $.fn.ecenter_network.plugins.date,
     $.fn.ecenter_network.plugins.chart,
     $.fn.ecenter_network.plugins.traceroute_paste,
-    //$.fn.ecenter_network.plugins.popup_chart,
+    $.fn.ecenter_network.plugins.popup_chart,
     $.fn.ecenter_network.plugins.analysis
   ],
   // Drawing plugins

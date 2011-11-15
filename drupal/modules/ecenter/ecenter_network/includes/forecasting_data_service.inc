@@ -172,27 +172,22 @@ function ecenter_network_fds_form($value = FALSE, $has_snmp = FALSE, $has_bwctl 
       'disabled' => TRUE,
     ),
     '#weight' => 0,
-  );
+  ); 
 
-  $form['fds_wrapper']['fds_type'] = array(
-    '#id' => 'fds-type',
-    '#name' => 'fds_type',
-    '#type' => 'select',
-    '#title' => t('Type'),
-    '#value' => (!empty($fds) && !empty($fds_type)) ? $fds_type : 'snmp',
-    '#options' => array(
-      'snmp' => t('SNMP'),
-      'bwctl' => t('bwctl'),
-      //'owamp' => t('owamp (one-way ping)'),
-    ),
-    '#attributes' => array(
-      'disabled' => TRUE,
-    ),
-    '#weight' => 5,
-  );
+  if (!empty($options) && user_access('access ecenter forecasting data')) {
+    $form['fds_wrapper']['fds_type'] = array(
+      '#id' => 'fds-type',
+      '#name' => 'fds_type',
+      '#type' => 'select',
+      '#title' => t('Type'),
+      '#value' => (!empty($fds) && !empty($fds_type)) ? $fds_type : 'snmp',
+      '#options' => $options,
+      '#attributes' => array(
+        'disabled' => TRUE,
+      ),
+      '#weight' => 5,
+    );
 
-
-  if (user_access('access ecenter forecasting data')) {
     $form['fds_wrapper']['fds'] = array(
       '#id' => 'fds-enable',
       '#name' => 'fds',

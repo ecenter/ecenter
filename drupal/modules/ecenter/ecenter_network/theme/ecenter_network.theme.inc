@@ -89,10 +89,15 @@ function template_preprocess_ecenter_network_data(&$vars) {
       $vars['issues'] = '<label>'. t('Issues from this query: ') .'</label>'. implode(', ', $issue_links);
     }
 
+    dpm($vars['data']);
+
     $ads = ecenter_network_ads_form($query_params['ads']);
     $vars['ads'] = drupal_render($ads);
 
-    $fds = ecenter_network_fds_form($query_params['fds']);
+    $has_bwctl = (!empty($data['drs']['end_to_end']['bwctl']['forward']) || !empty($data['drs']['end_to_end']['bwctl']['reverse']));
+    $has_snmp = (!empty($data['drs']['traceroute']['forward']) || !empty($data['drs']['traceroute']['reverse']));
+
+    $fds = ecenter_network_fds_form($query_params['fds'], $has_snmp, $has_bwctl);
     $vars['fds'] = drupal_render($fds);
 
     $timezones = array_map('_ecenter_network_process_tz_name', date_timezone_names());

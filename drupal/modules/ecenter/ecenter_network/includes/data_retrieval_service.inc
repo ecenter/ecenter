@@ -311,6 +311,8 @@ function ecenter_network_parse_response($response) {
     $parsed_data['parameters']['dst'] = 'hub:'. $dst['hub_name'];
   }
   else { // Fall back to query
+    $query_src = $response['parameters']['src']['value'];
+    $query_dst = $response['parameters']['dst']['value'];
     $parsed_data['parameters']['src'] = $response['parameters']['src']['type'] .':'. $response['parameters']['src']['value'];
     $parsed_data['parameters']['dst'] = $response['parameters']['dst']['type'] .':'. $response['parameters']['dst']['value'];
   }

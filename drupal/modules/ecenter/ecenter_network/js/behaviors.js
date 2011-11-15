@@ -551,8 +551,8 @@ $.fn.ecenter_network.plugins.traceroute = function() {
         }
 
         $.ecenter_network.hoverOut.call(element);
-      },
-      'elementclick' : function(e, element) {
+      }
+      /*'elementclick' : function(e, element) {
         var dialog = $('#modal-chart');
         
         var tables = $('#utilization-tables .' + element.groups[0].toLowerCase() +'-data-table').clone(false);
@@ -632,7 +632,7 @@ $.fn.ecenter_network.plugins.traceroute = function() {
             }
           }
         }); 
-      }
+      }*/
     });
   }
 }
@@ -847,8 +847,8 @@ $.fn.ecenter_network.defaults = {
     $.fn.ecenter_network.plugins.date,
     $.fn.ecenter_network.plugins.chart,
     $.fn.ecenter_network.plugins.traceroute_paste,
-    $.fn.ecenter_network.plugins.analysis,
-    $.fn.ecenter_network.plugins.popup_chart
+    //$.fn.ecenter_network.plugins.popup_chart,
+    $.fn.ecenter_network.plugins.analysis
   ],
   // Drawing plugins
   draw_plugins : [

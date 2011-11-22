@@ -155,8 +155,7 @@ $.tablechart = function(el, options) {
  * Tablechart draw method
  */
 $.tablechart.prototype.draw = function() {
-  var tables,
-      data;
+  var tables, data;
 
   // Is matched element a table?
   if (!$.nodeName(this.el, 'table')) {
@@ -250,28 +249,21 @@ $.tablechart.scrapeMultiple = function(tables) {
   $(tables)
   .not('.jqplot-target table') // Filter out jqplot-added tables
   .each(function(i) {
-    // Generate series labels (requires "global" counter)
-    if (tablechart.options.multitablesHeaderSeriesLabels) {
-      $(this).find('thead th:gt(0)').each(function() {
-        options.plotOptions.series[series_idx] = $.extend(
-          {label: $(this).text()}, 
-          options.plotOptions.series[series_idx]
-        );
-        series_idx += 1;
-      });
-    }
+    var table = this;
+    seriesOptions[i] = {};
 
     // Extend options with custom data attribute     
     var inlineOptions = $(this).data('jqplotSeriesOptions');
     if (typeof inlineOptions != 'undefined') {
-      seriesOptions[i] = inlineOptions;
+      seriesOptions[i] = $.extend(seriesOptions[i], inlineOptions);
     }
 
     // Scrape each matched table
     data = $.tablechart.scrapeSingle.call(tablechart, this);
-
     series = series.concat(data.series);
-    seriesOptions = seriesOptions.concat(data.options);
+
+    // Options passed in constructor override others
+    seriesOptions[i] =  $.extend(seriesOptions[i], data.options, options.plotOptions.series[i]); 
   });
 
   return { 'series' : series, 'options' : seriesOptions };

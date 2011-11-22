@@ -94,8 +94,9 @@ function template_preprocess_ecenter_network_data(&$vars) {
 
     $has_bwctl = (!empty($data['drs']['end_to_end']['bwctl']['forward']) || !empty($data['drs']['end_to_end']['bwctl']['reverse']));
     $has_snmp = (!empty($data['drs']['traceroute']['forward']) || !empty($data['drs']['traceroute']['reverse']));
+    $has_owamp = (!empty($data['drs']['end_to_end']['owamp']['forward']) || !empty($data['drs']['end_to_end']['owamp']['reverse']));
 
-    $fds = ecenter_network_fds_form($query_params['fds'], $has_snmp, $has_bwctl);
+    $fds = ecenter_network_fds_form($query_params['fds'], $has_snmp, $has_bwctl, $has_owamp);
     $vars['fds'] = drupal_render($fds);
 
     $timezones = array_map('_ecenter_network_process_tz_name', date_timezone_names());
@@ -424,6 +425,7 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
         $attributes = array(
           'class' => $direction .' '. strtolower($hub_id) .'-data-table',
           'data-jqplotHighlightColor' => '#ff0000',
+          'data-jqplotSeriesOptions' => '{"label":"'. ucfirst($direction) .' utilization' .'"}',
         );
 
         $capacity = $hop['data']['snmp'][0][1]['capacity'];
@@ -439,15 +441,21 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
             'stderr' => 0, 
             'errpct' => 0,
           );
+          ksort($forecast_data);
 
           foreach ($forecast_data as $timestamp => $forecast) {
             $time = _ecenter_network_timestamp_to_local($timestamp, 'Y-m-d H:i:s', $timezone);
             $value = 100 * ($forecast['value'] / $last_value[1]['capacity']);
-            $err = $forecast['errpct'] / 2;
-            
-            // @TODO account for zero
-            $max_err = $value + $err;
-            $min_err = $value - $err;
+            $err = $forecast['stderr'] / 2;
+
+            if ( ($forecast['value'] - $err) > 0 ) {
+              $min_err = 100 * (($forecast['value'] - $err) / $last_value[1]['capacity']);
+            }
+            else {
+              $err = (2 * $err) - $forecast['value'];
+              $min_err = 0.0;
+            }
+            $max_err = 100 * (($forecast['value'] + $err) / $last_value[1]['capacity']);
 
             $forecast_table[] = array(
               'class' => 'forecast',
@@ -483,7 +491,7 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
 
           $attributes = array(
             'class' => $direction .' '. strtolower($hub_id) .'-data-table',
-            'data-jqplotSeriesOptions' => '{"linePattern":"dashed"}'
+            'data-jqplotSeriesOptions' => '{"label":"'. ucfirst($direction) .' forecast' .'","linePattern":"dashed"}'
           );
 
           $tables[] = theme('ecenter_network_utilization_table', $forecast_table,

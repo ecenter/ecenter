@@ -32,25 +32,17 @@ $.tablechart.scrapeSingle = function(table) {
   var series = [],
       options = this.options,
       tablechart = this,
-      seriesOptions = [];
+      seriesOptions = {},
+      bandHigh = [],
+      bandLow = [];
 
   if (options.headerSeriesLabels) {
     $(table).find('thead th:gt(0)').each(function(i) {
-      options.plotOptions.series[i] = $.extend(
-        {label: $(this).text()}, 
-        options.plotOptions.series[i]
-      );
-
-      // Extend options with custom data attribute     
-      var seriesData = $(this).data('jqplotSeriesOptions');
-      if (typeof seriesData != 'undefined') {
-        seriesOptions[i] = seriesData;
-      }
+      seriesOptions.label = $(this).text();
     });
   }
 
-  //var bdat = [];
-  $(table).find('tbody tr').each(function() {
+  $(table).find('tbody tr').each(function(j) {
     var x = 0, y = 0, max, min;
     $(this).find('th').each(function() {
       x = options.parseX.call(tablechart, this);
@@ -63,26 +55,22 @@ $.tablechart.scrapeSingle = function(table) {
         y = options.parseY.call(tablechart, this);
         series[0].push([x, y]);
       }
-      /*if (i > 0) {
-        if (i == 1) {
-          min = options.parseY.call(tablechart, this);
-        }
-        if (i == 2) {
-          max = options.parseY.call(tablechart, this);
-        }        
-      }*/
+      else if (i == 1) {
+        min = options.parseY.call(tablechart, this);
+      }
+      else if (i == 2) {
+        max = options.parseY.call(tablechart, this);
+      }
     });
-    /*if (min && max) {
-      console.log('OH HI');
-      bdat.push([min, max]);
-    }*/
+    if (min && max) {
+      bandLow.push( [x, min] );
+      bandHigh.push( [x, max] );
+    }
   });
-  //console.log(series);
-  //console.log(bdat);
-  //console.log('--');
-  //if (bdat.length) {
-  //  seriesOptions[0] = { 'rendererOptions' : { 'bandData' : bdat } };
-  //}
+
+  if (bandHigh.length && bandLow.length) {
+    seriesOptions = { 'rendererOptions' : { 'bandData' : [bandLow, bandHigh] } };
+  }
 
   return { 'series' : series, 'options' : seriesOptions };
 }
@@ -616,15 +604,21 @@ $.fn.ecenter_network.plugins.traceroute = function() {
         $.ecenter_network.hoverOut.call(element);
       },
       'elementclick' : function(e, element) {
-        var dialog = $('#modal-chart');
+        var dialog = $('#modal-chart'),
+            tables = $('#utilization-tables .' + element.groups[0].toLowerCase() +'-data-table').clone(false),
+            title_parts = element.groups[0].split('_');
         
-        var tables = $('#utilization-tables .' + element.groups[0].toLowerCase() +'-data-table').clone(false);
-
-        var title_parts = element.groups[0].split('_');
         $('h2', dialog).text(title_parts[1] +' utilization');
 
-        $('table', dialog).remove();
+        console.log('Tablechart:');
+        console.log(dialog.data('tablechart'));
 
+        dialog.removeData('tablechart');
+        
+        console.log('Tablechart after:');
+        console.log(dialog.data('tablechart'));
+
+        $('table, .jqplot-target', dialog).remove();
         dialog.append(tables);
         dialog.dialog('open');
         
@@ -634,11 +628,11 @@ $.fn.ecenter_network.plugins.traceroute = function() {
           'height' : 300,
           'plotOptions' : {
             'seriesDefaults' : {
-              'lineWidth' : 2,
+              'lineWidth' : 1.5,
               'shadow' : false,
               'fill' : false,
               'markerOptions' : {
-                'size' : 5,
+                'size' : 3.5,
                 'shadow' : false
               }
             },
@@ -693,7 +687,13 @@ $.fn.ecenter_network.plugins.traceroute = function() {
               'showTooltip' : false,
               'zoom' : true,
               'clickReset' : true
-            }
+            },
+            'series' : [
+              { 'linePattern' : 'solid' },
+              { 'linePattern' : 'solid' },
+              { 'linePattern' : 'solid' },
+              { 'linePattern' : 'solid' }
+            ]
           }
         }); 
       }

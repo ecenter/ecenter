@@ -43,7 +43,8 @@ augment  'process_datum' => sub {
    my $response = {min_delay => 0, max_delay => 0, sent => 0, loss => 0, duplicates => 0, };
    
    foreach my $key (keys %{$response}) {
-        $response->{$key} = eval( $dt->getAttribute( $key ) ) if $dt->getAttribute( $key ) ;
+        $response->{$key} = eval( $dt->getAttribute( $key ) ) if $dt->getAttribute( $key );
+	 $response->{$key} = 0 if   $response->{$key} < 0;
    }
    return  ($e_secs and   $response->{max_delay})?[$e_secs, $response]:[];
 };

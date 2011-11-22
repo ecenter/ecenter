@@ -339,7 +339,7 @@ sub parse_topo {
 		    					      {ip_addr => \"inet6_pton('$ip_addr')",
 		    					       nodename => $ip_name,
 							       netmask =>   $net_ip->bits,
-		    					       ip_noted => $ip_addr});
+		    					       ip_noted => $ip_addr}, 1);
 	    my ($ip_addr_obj) =  $dbh->resultset('Node')->search({ip_noted => $ip_addr});
 	    next unless $ip_addr_obj && $ip_addr_obj->ip_addr;
 	    $dbh->resultset('L2L3Map')->update_or_create({ ip_addr => $ip_addr_obj->ip_addr,
@@ -547,7 +547,7 @@ sub get_e2e {
      $dbi1->disconnect if $dbi1;
      foreach my $md (keys %{$metadata_hr}) {
          #my $pid = $pm->start and next;
-	 ###next unless  $md->eventtype->service->service =~ /bnl|anl/;
+	 next unless $metadata_hr->{$md}{subject} =~ /sc11|140\.221\.251/i;
 	 unless($metadata_hr->{$md}{service}) {
              $logger->error("NO Service for MD::", sub{Dumper($metadata_hr->{$md})});
 	     next;
@@ -581,19 +581,19 @@ sub get_e2e {
 						     }
 	    		      })->get_data;
 		 $t_delta = time() - $t1;
-		 $dbh->resultset('ServicePerformance')->create( { metaid =>   $md,
-	                                                     requested_start =>  $secs_past,
-	                                                     requested_time => ($t1 - $secs_past), 
-	                                                     response => $t_delta, 
-							     is_data => (($e2e_data  && @{  $e2e_data })?1:0) 
-							     } ); 
+		# $dbh->resultset('ServicePerformance')->create( { metaid =>   $md,
+	      #                                               requested_start =>  $secs_past,
+	      #                                               requested_time => ($t1 - $secs_past), 
+	     #                                                response => $t_delta, 
+		#					     is_data => (($e2e_data  && @{  $e2e_data })?1:0) 
+		#					     } ); 
 	     };
 	     if($EVAL_ERROR) {
-	       $dbh->resultset('ServicePerformance')->create( { metaid =>  $md,
-	                                                     requested_start =>  $secs_past,
-	                                                     requested_time => ($t1 - $secs_past), 
-	                                                     response => $t_delta, 
-							     is_data => 0} ); 
+	       #$dbh->resultset('ServicePerformance')->create( { metaid =>  $md,
+	       #                                              requested_start =>  $secs_past,
+	       #                                              requested_time => ($t1 - $secs_past), 
+	       #                                              response => $t_delta, 
+		#					     is_data => 0} ); 
 	        $dbh->storage->disconnect if $dbh;
 		$logger->error("Data ::Failed - $EVAL_ERROR");
 		##$pm->finish;
@@ -620,12 +620,12 @@ sub get_e2e {
 		     unless($ip_noted &&  $nodename) {
 		         $logger->error("BAD: DNS is not there for:     md=$md   ip=$ip_noted node=$nodename");
 			 next;
-		     }
-		     $dbh->resultset('Node')->find_or_create(
-    		         		   {ip_addr =>   $data->[1]->{hop_ip},
-    		      	 		    nodename =>  $nodename,
-    		      	 		    ip_noted =>  $ip_noted});
-					    
+		     }  
+		     update_create_fixed($dbh->resultset('Node'),
+    						  {ip_addr =>  \"=inet6_pton('$ip_noted')"},
+    						  {ip_addr => \"inet6_pton('$ip_noted')",
+    						   nodename =>  $nodename,
+    						   ip_noted => $ip_noted}, 0); 
 		 }
 		 eval {
     		     $dbh->resultset("${table_name}Data$now_table")->update_or_create({ metaid =>  $md,

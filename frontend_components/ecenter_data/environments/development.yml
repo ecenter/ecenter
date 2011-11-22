@@ -8,7 +8,7 @@ time_slice_secs: 200000
 port: 8098
 gearman:
    servers: 
-       xenmon.fnal.gov: ['10121']
+       xenmon.fnal.gov: ['10131']
 plugins:
    DBIC:
      dbix:

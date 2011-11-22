@@ -104,7 +104,7 @@ sub get_data {
             if $self->$key;
     }
     $self->send_request($url_params, $self->timeout+5);
-    if($self->data && !($self->data->{status} &&  $self->data->{status} eq 'error')) {
+    if($self->data && $self->data->{$self->data_type} && !($self->data->{status} &&  $self->data->{status} eq 'error')) {
         if($self->data_type) {
 	    my $type = $self->data_type;
             $self->$type($self->data->{$type}); 

@@ -109,6 +109,7 @@ my $MAX_THREADS = 10;
 #    pattern to match on hLS names
  
 our $HOST_MATCH = qr/((es|deemz)\.net|\w+\.gov|slac\.stanford\.edu|sc11\.org)/i;
+#our $HOST_MATCH = qr/sc11\.org/i;
 #our $HOST_MATCH = qr/nersc\.gov/i;
 #our $HOST_MATCH = qr/((es|deemz)\.net|ornl.gov)/i;
 
@@ -289,7 +290,7 @@ sub remote_ls {
     						  {ip_addr =>  \"=inet6_pton('$ip_addr')"},
     						  {ip_addr => \"inet6_pton('$ip_addr')",
     						   nodename => $ip_name,
-    						   ip_noted => $ip_addr}); 
+    						   ip_noted => $ip_addr}, 1); 
     	    #$logger->info(" ip_addr " , sub {Dumper($ip_addr$ip_addr_obj )});
     	    my $ip_addr_obj =  $dbh->resultset('Node')->find({ip_noted => $ip_addr});
     	    my $hls = $dbh->resultset('Service')->update_or_create({ name => $serviceName,
@@ -436,7 +437,7 @@ sub get_fromHLS {
 			                              {ip_addr => \"inet6_pton('$ip_noted')",
 			                               nodename =>  $nodename,
 						       ip_noted => $ip_noted,
-						      }); 
+						      }, 1); 
 						      
 	my   ($ip_addr) = $dbh->resultset('Node')->search({ip_noted => $ip_noted  });
 	$param_exist{ip_addr} = $ip_addr->ip_addr;  
@@ -528,8 +529,10 @@ sub get_fromHLS {
 		    }
 		    
 		}
-	        my ($dst) =  $subj_md->findnodes( "./*[local-name()='endPointPair']/*[local-name()='dst']");
-	        $ip_addr_h{dst} =  extract(  $dst, 0) if $dst;
+	        #my ($dst) =  $subj_md->findnodes( "./*[local-name()='endPointPair']/*[local-name()='dst']");
+	        #$ip_addr_h{dst} =  extract(  $dst, 0) if $dst;
+	        my  $dst =    extract( find( $subj_md,  "./*[local-name()='endPointPair']/*[local-name()='dst']", 1), 0 );
+	        $ip_addr_h{dst} =   $dst if $dst;
 	       
 		my $capacity    =  extract( find( $subj_md, "./*[local-name()='interface']/*[local-name()='capacity']", 1), 0 );
 		next if $capacity || $snmp;  ## skip snmp ma      
@@ -550,9 +553,9 @@ sub get_fromHLS {
 			                      { ip_addr  => \"inet6_pton('$ip_cidr')",
 			                        nodename => $ip_name,
 					        ip_noted => $ip_cidr 
-					      }
+					      }, 1
 					   );
-			  $ip_addr_rs{$ip_key} =  $dbh->resultset('Node')->find({ip_noted => $ip_cidr }, {rows => 1});				    
+			  $ip_addr_rs{$ip_key} =  $dbh->resultset('Node')->find({ip_noted => $ip_cidr }, {rows => 1});
 		    } else {
 		        $logger->error("!!! FAILED To get IP/hostname for $ip_key=$ip_addr_h{$ip_key} !!!");
 		    }

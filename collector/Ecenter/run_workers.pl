@@ -87,7 +87,7 @@ my %OPTIONS;
 my @string_option_keys = qw/workers port db logdir timeout host wname  g_host/;
 GetOptions( \%OPTIONS,
             map("$_=s", @string_option_keys),
-            qw/debug help clean/
+            qw/debug help clean metrics/
 ) or pod2usage(1);
 
 my $output_level =  $OPTIONS{debug} || $OPTIONS{d}?$DEBUG:$INFO;
@@ -113,7 +113,7 @@ $OPTIONS{wname}   ||= 'data_worker.pl';
 
 `/bin/ps auxwww | grep '$OPTIONS{wname}' | grep $OPTIONS{port} | grep -v run | grep -v grep | grep -v  nedit  | awk '{print \$2}' | xargs kill -9` if $OPTIONS{clean};
 for(my $i=0;$i<$OPTIONS{workers};$i++) {
-    my $cmd = "$Bin/$OPTIONS{wname} --db=$OPTIONS{db} " . ($OPTIONS{debug}?'--debug':'') . " --host=$OPTIONS{host}  --g_host=$OPTIONS{g_host} --port=$OPTIONS{port}  > $OPTIONS{logdir}/log_worker_$OPTIONS{port}\_$i.log  2>&1 &";
+    my $cmd = "$Bin/$OPTIONS{wname} --db=$OPTIONS{db} ". ($OPTIONS{metrics}?'--metrics':'')  . ($OPTIONS{debug}?'--debug':'') . " --host=$OPTIONS{host}  --g_host=$OPTIONS{g_host} --port=$OPTIONS{port}  > $OPTIONS{logdir}/log_worker_$OPTIONS{port}\_$i.log  2>&1 &";
     $logger->debug("CMD:$cmd");
     system($cmd)==0 or $logger->error("....failed");;
 }

@@ -146,7 +146,7 @@ function ecenter_network_parse_fds_response($response) {
 /**
  * Form snippet for FDS
  */
-function ecenter_network_fds_form($value = FALSE, $has_snmp = FALSE, $has_bwctl = FALSE) {
+function ecenter_network_fds_form($value = FALSE, $has_snmp = FALSE, $has_bwctl = FALSE, $has_owamp = FALSE) {
   extract(_ecenter_network_extract_query());
 
   $options = array();
@@ -155,6 +155,9 @@ function ecenter_network_fds_form($value = FALSE, $has_snmp = FALSE, $has_bwctl 
   }
   if ($has_bwctl) {
     $options['bwctl'] = t('bwctl');
+  }
+  if ($has_owamp) {
+    $options['owamp'] = t('owamp');
   }
 
   $form['fds_wrapper'] = array(

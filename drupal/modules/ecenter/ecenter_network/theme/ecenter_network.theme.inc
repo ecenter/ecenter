@@ -448,13 +448,14 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
             $value = 100 * ($forecast['value'] / $last_value[1]['capacity']);
             $err = $forecast['stderr'] / 2;
 
-            if ( ($forecast['value'] - $err) > 0 ) {
+            /*if ( ($forecast['value'] - $err) > 0 ) {
               $min_err = 100 * (($forecast['value'] - $err) / $last_value[1]['capacity']);
             }
             else {
               $err = (2 * $err) - $forecast['value'];
               $min_err = 0.0;
-            }
+            }*/
+            $min_err = 100 * (($forecast['value'] - $err) / $last_value[1]['capacity']);
             $max_err = 100 * (($forecast['value'] + $err) / $last_value[1]['capacity']);
 
             $forecast_table[] = array(

@@ -125,6 +125,7 @@ abstract class EcenterService {
       'response' => $response,
       'raw' => $raw,
     );
+
     return $result;
   }
 

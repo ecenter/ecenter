@@ -45,6 +45,8 @@
       </div>
     </div>
 
+    <?php print $ecenter_messages; ?>
+
     <?php print $hops; ?>
   </div>
 

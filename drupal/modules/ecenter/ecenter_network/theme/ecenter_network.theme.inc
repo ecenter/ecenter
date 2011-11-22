@@ -19,6 +19,9 @@ function template_preprocess_ecenter_network_data(&$vars) {
   // All parameters
   $query_params = $data['parameters'];
 
+  // Call helper function to create messages
+  $vars['ecenter_messages'] = theme('ecenter_network_messages', $data, $query_params);
+
   drupal_add_js(array('ecenterNetwork' => array('tracerouteData' => 
     $data['drs']['traceroute']['diff'])), 'setting');
   drupal_add_js(array('ecenterNetwork' => array('tracerouteMaxLength' => 
@@ -89,7 +92,11 @@ function template_preprocess_ecenter_network_data(&$vars) {
     $ads = ecenter_network_ads_form($query_params['ads']);
     $vars['ads'] = drupal_render($ads);
 
-    $fds = ecenter_network_fds_form($query_params['fds']);
+    $has_bwctl = (!empty($data['drs']['end_to_end']['bwctl']['forward']) || !empty($data['drs']['end_to_end']['bwctl']['reverse']));
+    $has_snmp = (!empty($data['drs']['traceroute']['forward']) || !empty($data['drs']['traceroute']['reverse']));
+    $has_owamp = (!empty($data['drs']['end_to_end']['owamp']['forward']) || !empty($data['drs']['end_to_end']['owamp']['reverse']));
+
+    $fds = ecenter_network_fds_form($query_params['fds'], $has_snmp, $has_bwctl, $has_owamp);
     $vars['fds'] = drupal_render($fds);
 
     $timezones = array_map('_ecenter_network_process_tz_name', date_timezone_names());
@@ -233,10 +240,6 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
             }
             
             $data_tables[$test][$measurement][$direction .'_forecast'] = $forecast_table;
-            //  array_merge($data_tables[$test][$measurement][$direction], $forecast_table);
-
-            //$data_tables[$test][$measurement][$direction] = 
-            //  array_merge($data_tables[$test][$measurement][$direction], $forecast_table);
           }
          
           // Add anomaly tables
@@ -420,10 +423,10 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
         }
 
         $attributes = array(
-          'class' => $direction,
+          'class' => $direction .' '. strtolower($hub_id) .'-data-table',
           'data-jqplotHighlightColor' => '#ff0000',
+          'data-jqplotSeriesOptions' => '{"label":"'. ucfirst($direction) .' utilization' .'"}',
         );
-
 
         $capacity = $hop['data']['snmp'][0][1]['capacity'];
         $tables[] = theme('ecenter_network_utilization_table', $table, $hop, $direction, $attributes, $capacity);
@@ -433,10 +436,28 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
           $forecast_data = $fds_data['snmp']['utilization'][$hop['hop_ip']];
 
           $last_value = array_pop($hop['data']['snmp']);
-          $forecast_data[$last_value[0]] = array('value' => $last_value[1]['utilization']);
+          $forecast_data[$last_value[0]] = array(
+            'value' => $last_value[1]['utilization'], 
+            'stderr' => 0, 
+            'errpct' => 0,
+          );
+          ksort($forecast_data);
 
           foreach ($forecast_data as $timestamp => $forecast) {
             $time = _ecenter_network_timestamp_to_local($timestamp, 'Y-m-d H:i:s', $timezone);
+            $value = 100 * ($forecast['value'] / $last_value[1]['capacity']);
+            $err = $forecast['stderr'] / 2;
+
+            /*if ( ($forecast['value'] - $err) > 0 ) {
+              $min_err = 100 * (($forecast['value'] - $err) / $last_value[1]['capacity']);
+            }
+            else {
+              $err = (2 * $err) - $forecast['value'];
+              $min_err = 0.0;
+            }*/
+            $min_err = 100 * (($forecast['value'] - $err) / $last_value[1]['capacity']);
+            $max_err = 100 * (($forecast['value'] + $err) / $last_value[1]['capacity']);
+
             $forecast_table[] = array(
               'class' => 'forecast',
               'data' => array(
@@ -445,9 +466,13 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
                   'header' => TRUE,
                 ),
                 'utilization' => array(
-                  'data' => sprintf('%01.4f',
-                    100 * ($forecast['value'] / $last_value[1]['capacity'])),
-                  'class' => $class,
+                  'data' => sprintf('%01.4f', $value),
+                ),
+                'min_err' => array(
+                  'data' => sprintf('%01.4f', $min_err),
+                ),
+                'max_err' => array(
+                  'data' => sprintf('%01.4f', $max_err),
                 ),
               ),
             );
@@ -465,8 +490,13 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
           $settings['ecenterNetwork']['seriesLookupByHub'][$hub_id]['sidx'][] = $sidx;
           $sidx++;
 
+          $attributes = array(
+            'class' => $direction .' '. strtolower($hub_id) .'-data-table',
+            'data-jqplotSeriesOptions' => '{"label":"'. ucfirst($direction) .' forecast' .'","linePattern":"dashed"}'
+          );
+
           $tables[] = theme('ecenter_network_utilization_table', $forecast_table,
-            $hop, $direction, array('data-jqplotSeriesOptions' => '{"linePattern":"dashed"}'));
+            $hop, $direction, $attributes);
         }
       }
     }
@@ -885,10 +915,12 @@ function _ecenter_network_plot_options_template() {
         'autoscale' => TRUE,
         'numberTicks' => 9,
         'renderer' => '$.jqplot.DateAxisRenderer',
-        'tickOptions' => array(
-          'formatString' => "%H:%M",
-        ),
         'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
+        'tickOptions' => array(
+          'formatString' => "%H:%M <br /> %#m/%#d",
+          'angle' => 30,
+          'fontSize' => '11px',
+        ),
       ),
       'yaxis' => array(
         'autoscale' => TRUE,
@@ -990,3 +1022,39 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
   }
 }
 
+/**
+ * Theme ecenter messages
+ * @TODO Ugly string construction
+ */
+function theme_ecenter_network_messages($data, $params) {
+  $items = array();
+  if ($params['fds']) {
+    $message = '<button class="clear-fds">'. t('Clear forecast') .'</button>'. 
+      t('Showing forecast for <strong>@type</strong>', array('@type' => $params['fds_type']));
+    if (empty($data['fds'])) {
+      $message .= ' '. t('<span class="status-alert">(No forecast data available, try again later)</span>');
+    }
+    $items[] = $message;
+  }
+  if ($params['ads']) {
+    $message = '<button class="clear-ads">'. t('Clear anomalies') .'</button>'. 
+      t('Showing anomalies:');
+
+    $anomalies = array();
+    foreach ($data['ads'] as $type => $values) {
+      if (!empty($values)) {
+        $anomalies = $type;
+      }
+    }
+    if (empty($anomalies)) {
+      $message .= ' '. t('<span class="status-ok">No anomalies detected</span>');
+    }
+    else {
+      $message .= ' '. t('<span class="status-alert">@types anomalies detected</span>', array('@types' => implode(', ', $anomalies)));
+    }
+
+    $items[] = $message;
+  }
+
+  return theme('item_list', $items, NULL, 'ul', array('class' => 'ecenter-messages'));
+}

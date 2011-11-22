@@ -170,6 +170,12 @@ function ecenter_network_theme() {
         'data' => NULL,
       ),
     ) + $options,
+    'ecenter_network_messages' => array(
+      'arguments' => array(
+        'data' => NULL,
+        'params' => NULL,
+      ),
+    ) + $options,
   );
   return $registry;
 }
@@ -497,6 +503,7 @@ function ecenter_network_select_form(&$form_state) {
       if ($fds) {
         $data['fds'] = ecenter_network_get_fds_data($src, $dst, $start, $end, $fds_type);
         $params['fds'] = 1;
+        $params['fds_type'] = $fds_type;
       }
     }
 
@@ -533,15 +540,14 @@ function ecenter_network_select_form_submit($form, &$form_state) {
   else {
     $tz = $form_state['post']['timezone'];
   }
-  $tz = timezone_open($tz);
 
   if ($form_state['values']['network_wrapper']['query']['recent_select']
     && !$form_state['values']['network_wrapper']['query']['date_select']) {
 
     $date = $form_state['values']['build_time'];
     $offset = 3600 * $form_state['values']['network_wrapper']['query']['recent_select'];
-    $end = date_make_date($date, $tz, DATE_UNIX);
-    $start = date_make_date($date - $offset, $tz, DATE_UNIX);
+    $end = date_make_date($date, 'UTC', DATE_UNIX);
+    $start = date_make_date($date - $offset, 'UTC', DATE_UNIX);
 
     date_increment_round($start, $inc);
     date_increment_round($end, $inc);
@@ -552,6 +558,7 @@ function ecenter_network_select_form_submit($form, &$form_state) {
   else if ($form_state['values']['network_wrapper']['query']['date_select']) {
     $date = $form_state['values']['network_wrapper']['query']['date_select'];
     $day = date_make_date($date, $tz);
+    date_timezone_set($day, timezone_open('UTC'));
 
     $start = date_format($day, 'Y-m-d H:i:00');
     $end_date = date_modify($day, '+24 hours');
@@ -1216,7 +1223,6 @@ function _ecenter_network_utc_to_local($date, $format = 'Y-m-d H:i:s', $tz = '')
   if (empty($date)) {
     return NULL;
   }
-
   if (empty($tz)) {
     $tz = date_default_timezone_name(TRUE);
   }
@@ -1272,11 +1278,9 @@ function _ecenter_network_extract_query() {
     $vars = array(
       'src' => $_REQUEST['network_wrapper']['query']['src_wrapper']['src'],
       'dst' => $_REQUEST['network_wrapper']['query']['dst_wrapper']['dst'],
-      'start' => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['start']),
-      'end' => _ecenter_network_local_to_utc($_REQUEST['network_wrapper']['query']['end']),
+      'start' => $_REQUEST['network_wrapper']['query']['start'],
+      'end' => $_REQUEST['network_wrapper']['query']['end'],
       'timezone' => $_REQUEST['timezone'],
-
-
       'traceroute' => $_REQUEST['network_wrapper']['query']['traceroute_paste'],
     );
 

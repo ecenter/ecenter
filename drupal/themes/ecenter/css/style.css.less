@@ -17,6 +17,7 @@
 @color_dark_red:  #700707;
 @color_light_red: #ffa4a4;
 @color_dark_blue: #00195e;
+@color_dark_green: #03a100;
 @color_red: #d92020;
 @color_green: #00ff00;
 @color_orange: #f68104;
@@ -345,6 +346,17 @@ code {
   .page_padding;
   background-color: @color_white;
   width: 930px;
+}
+// }}}
+// Alerts {{{
+.status-alert {
+  color: @color_red;
+}
+.status-ok {
+  color: @color_dark_green;
+}
+.status-marginal {
+  color: @color_orange;
 }
 // }}}
 // Columns {{{
@@ -940,7 +952,6 @@ form {
       margin-top: .75em;
     } // }}}
   } // }}} 
-
   #src-wrapper, #dst-wrapper, #date-select { // {{{
     .box;
     width: 300px;
@@ -1127,22 +1138,22 @@ form {
         }
       }
       .issuelink {
-        width: 175px;
+        width: 195px;
         margin-right: 10px;
       }
       .permalink {
-        width: 500px;
+        width: 490px;
         .form-item {
           display: inline;
           input {
             font-family: @font_mono;
             color: @color_black;
-            background-color: @color_grey_93;
-            font-size: 10px;
-            line-height: 10px;
-            padding-top: 5px;
-            padding-bottom: 5px;
-            width: 420px;
+            background-color: @color_white;
+            font-size: 12px;
+            line-height: 12px;
+            padding-top: 4px;
+            padding-bottom: 4px;
+            width: 400px;
           }
         }
       }
@@ -1209,7 +1220,7 @@ form {
         }
         #fds-settings-wrapper {
           margin-right: 35px;
-          width: 400px;
+          width: 370px;
           #fds-enable-wrapper {
             display: none;
           }
@@ -1221,7 +1232,7 @@ form {
           }
         }
         #ads-settings-wrapper {
-          width: 260px;
+          width: 290px;
           #ads-enable-wrapper {
             display: none;
           }
@@ -1349,7 +1360,7 @@ form {
       display: none;
       margin-bottom: 55px;
       .data-table {
-        width: 210px;
+        width: 290px;
       }
     }
     .chart-title {
@@ -1366,6 +1377,20 @@ form {
   .show-data { // {{{
     font-size: 12px;
     padding: 2px 3px;
+  } // }}}
+  .ecenter-messages { // {{{
+    font-size: 13px;
+    margin-top: -10px;
+    margin-bottom: 10px;
+    background-color: @color_grey_87;
+    button {
+      font-size: 13px;
+      margin-right: 5px;
+    }
+    li {
+      padding: 5px;
+      margin: 0;
+    }
   } // }}}
 }
 // }}}
@@ -1827,6 +1852,10 @@ body.page-search {
 .jqplot-yaxis-tick {
   top: 0;
 }
+.jqplot-xaxis-tick {
+  line-height: 14px;
+  text-align: center;
+}
 .jqplot-yaxis-tick, .jqplot-xaxis-tick {
   font-size: 11px;
 }
@@ -2245,7 +2274,7 @@ body.node-type-issue #results { // {{{
 #ui-datepicker-div {
   font-size: 14px;
   background: @color_white;
-  z-index: 9999;
+  z-index: 9999 !important;
   .shadow(3px; 3px; 7px; @color_grey_43;);
 }
 .ui-datepicker {
@@ -2320,7 +2349,7 @@ body.node-type-issue #results { // {{{
   }
 }
 /* }}} */
-
+// Combobox {{{
 .form-combobox {
   input.ui-widget {
     .round_corner(5px; 0; 0; 5px;);
@@ -2352,10 +2381,16 @@ body.node-type-issue #results { // {{{
     }
   }
 }
-
-// Forecast
+// }}}
+// Forecast {{{
 tr.forecast {
   th, td {
     background-color: @color_yellow !important;
   }
 }
+// }}}
+// Modal chart {{{
+#modal-chart {
+  height: 400px !important;
+}
+// }}}

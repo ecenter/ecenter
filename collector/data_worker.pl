@@ -200,7 +200,8 @@ sub get_data  {
 sub _initialize {
     my ($request, $what_db,  @names) = @_;
     if($request && ref $request eq ref {}) {
-        map {return  " Empty or malformed request - missing -  $_" unless $request->{$_}}
+        map {return  " Empty or malformed request - missing -  $_" 
+	                         unless $_ eq 'start' ||  $request->{$_}}
 	    @names if @names;
     } else {
        return ' Empty or malformed request ';
@@ -245,7 +246,7 @@ sub get_remote_snmp  {
     my $request = decode_json $job->arg();
     my $dbh  = _initialize($request, 'dbic', qw/metaid service start end  direction snmp_ip/);
     return encode_json {status => 'error', data => $dbh} unless ref $dbh;
-    return _get_remote_snmp($request, $dbh);
+    return encode_json (_get_remote_snmp($request, $dbh));
 }
 #
 #  send remote request, store data into the db and sends json back
@@ -324,7 +325,7 @@ sub _get_remote_data  {
 	   ($EVAL_ERROR || !@{$result->{data}}) && $t_delta > 20 &&  $request->{type} =~ /owamp|pinger/i;
     };
     $logger->info("..Done processing data...");
-    return encode_json $result;
+    return  $result;
 }
 #
 #  wrapped remote call to SNMP MA
@@ -483,11 +484,12 @@ sub dispatch_snmp {
 #
 sub  process_trace {
     my ($dbh, $sql_datum, $results ) = @_;
-    $dbh->resultset('Node')->find_or_create(
-   					{ip_addr  => $sql_datum->{hop_ip},
-   					 nodename => $sql_datum->{ip_noted},
-   					 ip_noted => $sql_datum->{ip_noted}
-   					});
+    update_create_fixed($dbh->resultset('Node'),
+        			 {ip_addr =>  \"=inet6_pton('$sql_datum->{ip_noted}')"},
+        			 {ip_addr => \"inet6_pton('$sql_datum->{ip_noted}')",
+        			  nodename =>  $sql_datum->{ip_noted},
+        			  ip_noted =>  $sql_datum->{ip_noted}}, 
+				  undef); # no updates
     my %tmp = %$sql_datum;
     $tmp{hop_ip} =  ref  $tmp{hop_ip}?$tmp{hop_ip}->ip_addr:$tmp{hop_ip};
     push @{$results->{data}}, \%tmp;
@@ -516,11 +518,13 @@ sub dispatch_data {
     my $dbh  = _initialize($request, 'dbic',   qw/metaid  md_row start table end resolution type/);
     return encode_json {status => 'error', data => $dbh} unless ref $dbh;
     my $result = {status => 'ok', data => []};
+    my $time_condition = { '<=' => $request->{end}  };
+    $time_condition->{'>='} = $request->{start}
+        if $request->{start}; # find latest if not set
     my @datas = $dbh->resultset($request->{table})->search({ metaid =>  $request->{metaid},
-                                                             timestamp => { '>=' => $request->{start},
-							                    '<=' => $request->{end}
-								          }
-						          });
+                                                             timestamp =>  $time_condition
+						          },
+							  { rows => $request->{resolution} } );
  
     my ($start_time, $end_time) = get_datums(\@datas,  $result->{data},
                                              $DATA->{$request->{type}}{data}, 
@@ -530,11 +534,14 @@ sub dispatch_data {
     $logger->debug("$request->{type} ---  Times: start_dif=" .
                      abs($start_time - $request->{start}) .  
 		   "... end_dif=" . abs( $request->{end} -  $end_time ));
-    if( abs($end_time   -  $request->{end})	> $OPTIONS{period} ||
+    if( abs($end_time   -  $request->{end})   > $OPTIONS{period} ||
      	abs($start_time -  $request->{start}) > $OPTIONS{period} ) {
-     	  @{$result->{data}} = () if    $result->{data};
-     	  $logger->info("$request->{type} --- params to ma: ip=$request->{md_row}{service} start= $request->{start} end= $request->{end} ");
-     	  return  get_remote_data($job);
+     	###@{$result->{data}} = () if    $result->{data};
+     	$logger->info("$request->{type} --- params to ma: ip=$request->{md_row}{service} start= $request->{start} end= $request->{end} ");
+     	my $remote_data = _get_remote_data($request, $dbh);
+	if( @{$remote_data->{data}} && @{$remote_data->{data}} > @{$result->{data}} ) {
+	    return encode_json $remote_data;
+	}
     }
     return encode_json $result;
 }

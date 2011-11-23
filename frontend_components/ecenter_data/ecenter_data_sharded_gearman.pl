@@ -390,9 +390,9 @@ sub process_site {
             $params{resolution} = 20;
 	} 
 	if($params{timeout}) {
-            $params{timeout} =  $params{timeout} > 0 && $params{timeout} <= 1000?$params{timeout}:1000;
+            $params{timeout} =  $params{timeout} > 0 && $params{timeout} <= 500?$params{timeout}:500;
 	} else {
-            $params{timeout} = 120;
+            $params{timeout} = 500;
 	}
         my $date_params  =  params_to_date({start => $params{start},end => $params{end}});
         map { $params{$_} = $date_params->{$_} } keys %{$date_params};
@@ -438,13 +438,13 @@ sub process_site {
 	map {$data->{$_} = {}} @data_keys;
 	eval {
 	    foreach my $dir (qw/direct reverse/) {
-	        my $md_href = get_e2e_mds( $trace_cond->{"$dir\_traceroute"}{src} );
-		#debug " MD for the E2E ::: " . Dumper $md_href;
-		unless($md_href && %{$md_href}) {
-		   $logger->error("No metadata for e2e on $dir ....");
-		   next;
-		}
 		foreach my $e_type (@data_keys)  {
+		    my $md_href = get_e2e_mds($e_type, $trace_cond->{"$dir\_traceroute"}{src} );
+		    #debug " MD for the E2E ::: " . Dumper $md_href;
+		    unless($md_href && %{$md_href}) {
+		       $logger->error("No metadata for e2e on $dir ....");
+		       next;
+		    }   
 		    $logger->debug(" ...  Running  ------------  $e_type");
 		    get_e2e($task_set, $data->{$e_type}, \%params, $md_href, $e_type, 'site_view');
 		    $logger->debug(" +++++ Done  $dir ------------  $e_type");
@@ -576,7 +576,7 @@ sub process_data {
     # my $trace_cond = qq|  inet6_mask(md.src_ip, 24) = inet6_mask(inet6_pton('$params{src_ip}'), 24) and $dst_cond |;
     $params{table_map} = $TABLEMAP;
     $logger->debug("Traceroute results:", sub {Dumper({ trace_cond => $trace_cond, traceroute => $traceroute, params => \%params})});
-    unless($params{only_data}) {
+    if(!$params{only_data} || ($params{data_type} && $params{data_type} eq 'snmp')) {
         foreach my $way (qw/direct_traceroute reverse_traceroute/) {
 	    unless( $way eq 'direct_traceroute' && $params{trace}) { ### skip direct raceroute because we got it from the request
                 $traceroute->{$way} = get_traceroute($g_client, $trace_cond->{$way}, \%params);
@@ -605,7 +605,7 @@ sub process_data {
 	    error "  No SNMP data - failed $EVAL_ERROR";
         }
     }
-     #return $data;
+    # return $data;
     # end to end data  stats if available
     ### return $data unless $params{src_ip} && $params{dst_ip};
     my @data_keys = ();
@@ -664,7 +664,7 @@ sub get_e2e_mds {
     my $e2e_conditions = $src_cond;
     $e2e_conditions .= " $dst_cond" if $dst_cond;
     my  $exclude_services_sql ;
-    if($e2e_type eq 'pinger') {
+    if($e2e_type =~ /pinger|owamp/) {
        my $slow_services  =  database('ecenter')->selectall_hashref(q|select distinct s.service   from service_performance sp 
                                                             join metadata md using(metaid)
 							    join  node n_src on(md.src_ip = n_src.ip_addr)
@@ -839,7 +839,7 @@ sub  get_traceroute_mds {
     my ($trace_cond) = @_;
     my $trace_cond_string =  $trace_cond->{src};
     $trace_cond_string .= " $trace_cond->{dst}" if $trace_cond->{dst};
-    my  $cmd =   qq|select  distinct md.metaid as metaid, md.src_ip, md.dst_ip, md.subject, hb1.hub_name as src_hub, hb2.hub_name as dst_hub,
+    my  $cmd =   qq|select  distinct md.metaid as metaid, md.src_ip, inet6_ntop(md.src_ip) as src_ipaddr, md.dst_ip, inet6_ntop(md.dst_ip) as dst_ipaddr, md.subject, hb1.hub_name as src_hub, hb2.hub_name as dst_hub,
                              s.service  from 
 	                                                    metadata md 
 	                                               join eventtype e on(md.eventtype_id = e.ref_id)  
@@ -853,7 +853,7 @@ sub  get_traceroute_mds {
      	                                               left join hub         hb2  on(hb2.hub =l2p2.hub)
 						       join service s   on(s.service = e.service)
 						    where  
-						         e.service_type = 'traceroute' and   s.service like '%raceroute%'
+							  e.service_type = 'traceroute' and   s.service like '%raceroute%'
 							  $trace_cond_string|;
   
     $logger->debug(" TRACEROUTE SQL_mds: $cmd");						     
@@ -896,31 +896,45 @@ sub get_traceroute {
     $logger->debug(" TRACEroute MDS:", sub{Dumper $md_traces}); 
     my @metaids = ();
     my @md_rows = ();
-    if($trace_cond->{src} &&  $trace_cond->{dst}) {
-        ($metaids[0], $md_rows[0]) = each  %{$md_traces};
-    } else {
-        @metaids =    keys %{$md_traces};
-	@md_rows =    values %{$md_traces};
+    #if($trace_cond->{src} &&  $trace_cond->{dst}) {
+     #    ($metaids[0], $md_rows[0]) = each  %{$md_traces};
+     #} else {
+     foreach my $md (keys %{ $md_traces }) {
+        if($md_traces->{$md}{src_ipaddr} !~ /^::/ && $md_traces->{$md}{dst_ipaddr} !~ /^::/) {
+	  push @metaids, $md;
+	  push @md_rows, $md_traces->{$md};
+	  last;
+	}
     }
     return {hops => {}, hop_ips => {}}  unless @md_rows && ref $md_rows[0] eq ref {} && $md_rows[0]->{service};
     #######
-
+    my $FAILED = 0;
     my $task_set = $g_client->new_task_set();
     foreach my $metaid (@metaids) {
         my $md_row = shift @md_rows;
 	for(my $st_time = $params->{traceroute}{start}; $st_time <= $params->{traceroute}{end}; $st_time += config->{time_slice_secs}) {
             my $data_table = strftime "%Y%m", localtime($st_time);
 	    my $st_end_i = $st_time +  config->{time_slice_secs};
-	    $logger->debug("Dispatching::$params->{table_map}{traceroute}{table}$data_table md=$metaid st=$st_time" , sub{Dumper($md_row)});
-            $task_set->add_task("dispatch_data" => 
-     				 encode_json {md_row => $md_row, 
-			                      table =>  "$params->{table_map}{traceroute}{table}$data_table",
-			    		      resolution => 200, 
+	    my $request_start_time = $st_time; 
+	    my $shards =  get_shards({data =>  'hop', start => $st_time, end => $st_end_i  }, database('ecenter'));
+    	    foreach my $shard (sort  { $a <=> $b } keys %$shards) {
+	        ### most recent traceroute - if not found then return the latest available, unset start time
+		#if((time() - $st_end_i) < 3600) {
+		#    $request_start_time = 0; 
+		#}
+	        $logger->debug("Dispatching:: $shards->{$shard}{table}{dbic} md=$metaid st=$request_start_time " , sub{Dumper($md_row)});
+                $task_set->add_task("dispatch_data" => 
+     				encode_json {md_row => $md_row, 
+			                      table =>   $shards->{$shard}{table}{dbic},
+			    		      resolution => $params->{resolution}, 
 			    		      type=> 'traceroute', 
 					      metaid => $metaid, 
-			    		      start =>  $st_time, 
+			    		      start =>  $request_start_time, 
 			    		      end =>   ($params->{traceroute}{end}<$st_end_i?$params->{traceroute}{end}:$st_end_i)},
-				 { on_complete => sub { 
+				{  on_fail     => sub {$FAILED++;
+					                      $logger->error("FAILED TRACEROUTE: $metaid  $shards->{$shard}{table}{dbic}  ".
+					                                                " start=  $request_start_time -  $st_end_i");},
+				    on_complete => sub { 
 			    	       my $returned = decode_json  ${$_[0]};  
 			    	       if($returned->{status} eq 'ok' && $returned->{data} && @{$returned->{data}}) {
 			    		  foreach my $datum ( @{$returned->{data}} ) {
@@ -930,15 +944,17 @@ sub get_traceroute {
 					     $hops->{$datum->{ip_noted}}{$datum->{timestamp}}  = $datum;
 			    		  }
 			    	       } else {
-					   $logger->error("request is not OK = $returned->{status}:::", sub{Dumper($md_row)});
+					   $logger->error("Traceroute request md=$metaid st=$st_time is not OK (no data or status) = $returned->{status} - ", sub{Dumper($returned)});
 				       }
-				        $logger->debug("HOP-IPS:::", sub{Dumper($hop_ips)});
+				       $logger->debug("HOP-IPS:::", sub{Dumper($hop_ips)});
 			    	    }
-				 }
-				);
+				}
+		);
+	    }
 	}
     }
     $task_set->wait(timeout => $params->{timeout});
+    
     return {hops => {}, hop_ips => {}} unless  %$hops && %$hop_ips;
     my $ips_str = join (',', map {database('ecenter')->quote($_)} keys %$hop_ips);
     ##  get hub info for each hop in the traceroute

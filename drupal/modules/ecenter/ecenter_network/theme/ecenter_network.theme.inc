@@ -423,7 +423,7 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
         }
 
         $attributes = array(
-          'class' => $direction .' '. strtolower($hub_id) .'-data-table',
+          'class' => 'data '. $direction .' '. strtolower($hub_id) .'-data-table',
           'data-jqplotHighlightColor' => '#ff0000',
           'data-jqplotSeriesOptions' => '{"label":"'. ucfirst($direction) .' utilization' .'"}',
         );
@@ -448,6 +448,8 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
             $value = 100 * ($forecast['value'] / $last_value[1]['capacity']);
             $err = $forecast['stderr'] / 2;
 
+            // The following code was meant to handle negative bands and/or
+            // negative values, but I'm running into trouble with it.
             /*if ( ($forecast['value'] - $err) > 0 ) {
               $min_err = 100 * (($forecast['value'] - $err) / $last_value[1]['capacity']);
             }
@@ -491,7 +493,7 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
           $sidx++;
 
           $attributes = array(
-            'class' => $direction .' '. strtolower($hub_id) .'-data-table',
+            'class' => 'forecast '. $direction .' '. strtolower($hub_id) .'-data-table',
             'data-jqplotSeriesOptions' => '{"label":"'. ucfirst($direction) .' forecast' .'","linePattern":"dashed"}'
           );
 

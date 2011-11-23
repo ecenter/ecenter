@@ -410,6 +410,21 @@ $.fn.ecenter_network.plugins.map = function() {
           input.data('autocomplete')._trigger('change');
         }
       }
+      else if (layer.drupalID == 'ecenter_network_traceroute') {
+        var tables = $('#utilization-tables .' + feature.ecenterID.toLowerCase() +'-data-table'),
+            title_parts = feature.ecenterID.split('_'),
+            options = {
+              'plotOptions' : {
+                'axes' : {
+                  'yaxis' : {
+                    'min' : 0,
+                    'max' : 100
+                  }
+                }
+              }
+            };
+        $.fn.ecenter_network.popup_chart(tables, title_parts[1] + ' utilization', options);
+      }
     });
 
     $(id).live('featureOver', function(e, feature, layer, control, cancel) {
@@ -604,98 +619,19 @@ $.fn.ecenter_network.plugins.traceroute = function() {
         $.ecenter_network.hoverOut.call(element);
       },
       'elementclick' : function(e, element) {
-        var dialog = $('#modal-chart'),
-            tables = $('#utilization-tables .' + element.groups[0].toLowerCase() +'-data-table').clone(false),
-            title_parts = element.groups[0].split('_');
-        
-        $('h2', dialog).text(title_parts[1] +' utilization');
-
-        console.log('Tablechart:');
-        console.log(dialog.data('tablechart'));
-
-        dialog.removeData('tablechart');
-        
-        console.log('Tablechart after:');
-        console.log(dialog.data('tablechart'));
-
-        $('table, .jqplot-target', dialog).remove();
-        dialog.append(tables);
-        dialog.dialog('open');
-        
-        dialog.tablechart({
-          'hideTables' : true,
-          'parseX' : $.tablechart.parseText,
-          'height' : 300,
-          'plotOptions' : {
-            'seriesDefaults' : {
-              'lineWidth' : 1.5,
-              'shadow' : false,
-              'fill' : false,
-              'markerOptions' : {
-                'size' : 3.5,
-                'shadow' : false
-              }
-            },
-            'highlighter' : {
-              'show' : true,
-              'sizeAdjust' : 0,
-              'lineWidthAdjust' : 0,
-              'tooltipLocation' : 'n',
-              'tooltipOffset' : 10,
-              'tooltipSeparator' : ': '
-            },
-            'legend' : {
-              'show' : true,
-              'renderer' : $.jqplot.EnhancedLegendRenderer,
-              'placement' : 'outsideGrid',
-              'location' : 's',
-              'rendererOptions' : {
-                'numberRows' : 1
-              }
-            },
-            'seriesColors' : ['#035dc5', '#a71932'],
-            'axes' : {
-              'xaxis' : {
-                'pad' : 1,
-                'renderer' : $.jqplot.DateAxisRenderer,
-                'autoscale' : true,
-                'numberTicks' : 15,
-                'tickOptions' : {
-                  'formatString' : '%H:%M <br /> %#m/%#d',
-                }
-              },
-              'yaxis' : {
-                'autoscale' : true,
-                'min' : 0,
-                'max' : 100,
-                'labelRenderer' : $.jqplot.CanvasAxisLabelRenderer,
-                'tickOptions' : {
-                  'formatString' : '%d',
-                  'showGridLine' : true,
-                  'showMark' : false
-                }
-              }
-            },
-            'grid' : {
-              'shadow' : false,
-              'borderWidth' : 0,
-              'background' : '#e5e5e5',
-              'gridLineColor' : '#ffffff'
-            },
-            'cursor' : {
-              'show' : true,
-              'showTooltip' : false,
-              'zoom' : true,
-              'clickReset' : true
-            },
-            'series' : [
-              { 'linePattern' : 'solid' },
-              { 'linePattern' : 'solid' },
-              { 'linePattern' : 'solid' },
-              { 'linePattern' : 'solid' }
-            ]
-          }
-        }); 
+         var tables = $('#utilization-tables .' + element.groups[0].toLowerCase() +'-data-table'),
+             title_parts = element.groups[0].split('_'),
+             options = {
+               'plotOptions' : {
+                 'axes' : {
+                   'yaxis' : {
+                     'min' : 0,
+                     'max' : 100
+                   }
+                 }
+               }
+             };
+         $.fn.ecenter_network.popup_chart(tables, title_parts[1] + ' utilization', options);
       }
     });
   }
@@ -899,6 +835,116 @@ $.fn.ecenter_network.plugins.popup_chart = function() {
     position: 'center'
   });
 }
+
+// Pop-up a chart
+$.fn.ecenter_network.popup_chart = function(source_tables, title, options) {
+  var dialog = $('#modal-chart'),
+      tables = source_tables.clone(false),
+      default_options = $.fn.ecenter_network.popup_chart.default_options,
+      options = options || {},
+      seriesColors = [];
+
+  $('h2', dialog).text(title);
+  
+  dialog.removeData('tablechart');
+  $('table, .jqplot-target', dialog).remove();
+  
+  dialog.append(tables);
+  dialog.dialog('open');
+
+  // Calculate colors
+  tables.each(function() {
+    var table = $(this),
+        color = false;
+    if (table.is('.forward')) {
+      color = (table.is('.forecast')) ? '#48b4db' : '#035dc5';
+    }
+    if (table.is('.reverse')) {
+      color = (table.is('.forecast')) ? '#be4c2e' : '#a71932';
+    }
+    if (color) { 
+      seriesColors.push(color);
+    }
+  });
+
+  console.log(seriesColors);
+  default_options.plotOptions.seriesColors = seriesColors;
+ 
+  options = $.extend(true, default_options, options);
+  dialog.tablechart(options); 
+}
+
+$.fn.ecenter_network.popup_chart.default_options = {
+  'hideTables' : true,
+  'parseX' : $.tablechart.parseText,
+  'height' : 300,
+  'plotOptions' : {
+    'seriesDefaults' : {
+      'lineWidth' : 1.5,
+      'shadow' : false,
+      'fill' : false,
+      'markerOptions' : {
+        'size' : 3.5,
+        'shadow' : false
+      }
+    },
+    'highlighter' : {
+      'show' : true,
+      'sizeAdjust' : 0,
+      'lineWidthAdjust' : 0,
+      'tooltipLocation' : 'n',
+      'tooltipOffset' : 10,
+      'tooltipSeparator' : ': '
+    },
+    'legend' : {
+      'show' : true,
+      'renderer' : $.jqplot.EnhancedLegendRenderer,
+      'placement' : 'outsideGrid',
+      'location' : 's',
+      'rendererOptions' : {
+        'numberRows' : 1
+      }
+    },
+    'axes' : {
+      'xaxis' : {
+        'pad' : 1,
+        'renderer' : $.jqplot.DateAxisRenderer,
+        'autoscale' : true,
+        'numberTicks' : 15,
+        'tickOptions' : {
+          'formatString' : '%H:%M <br /> %#m/%#d',
+        }
+      },
+      'yaxis' : {
+        'autoscale' : true,
+        'labelRenderer' : $.jqplot.CanvasAxisLabelRenderer,
+        'tickOptions' : {
+          'formatString' : '%d',
+          'showGridLine' : true,
+          'showMark' : false
+        }
+      }
+    },
+    'grid' : {
+      'shadow' : false,
+      'borderWidth' : 0,
+      'background' : '#e5e5e5',
+      'gridLineColor' : '#ffffff'
+    },
+    'cursor' : {
+      'show' : true,
+      'showTooltip' : false,
+      'zoom' : true,
+      'clickReset' : true
+    },
+    'series' : [
+      { 'linePattern' : 'solid' },
+      { 'linePattern' : 'solid' },
+      { 'linePattern' : 'solid' },
+      { 'linePattern' : 'solid' }
+    ]
+  }
+};
 
 
 /**

@@ -856,18 +856,19 @@ $.fn.ecenter_network.popup_chart = function(source_tables, title, options) {
   tables.each(function() {
     var table = $(this),
         color = false;
+
     if (table.is('.forward')) {
       color = (table.is('.forecast')) ? '#48b4db' : '#035dc5';
     }
-    if (table.is('.reverse')) {
+    else if (table.is('.reverse')) {
       color = (table.is('.forecast')) ? '#be4c2e' : '#a71932';
     }
+
     if (color) { 
       seriesColors.push(color);
     }
   });
 
-  console.log(seriesColors);
   default_options.plotOptions.seriesColors = seriesColors;
  
   options = $.extend(true, default_options, options);

@@ -110,7 +110,7 @@ projects[insert][subdir] = "contrib"
 projects[insert][version] = "1.1"
 
 projects[jquery_ui][subdir] = "contrib"
-projects[jquery_ui][version] = "1.4"
+projects[jquery_ui][version] = "1.5"
 projects[jquery_ui][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/jquery_ui_multiple_versions.patch"
 
 projects[jquery_update][subdir] = "contrib"
@@ -122,9 +122,6 @@ projects[less][version] = "2.7"
 
 projects[libraries][subdir] = "contrib"
 projects[libraries][version] = "1.0"
-
-projects[linkedin][subdir] = "contrib"
-projects[linkedin][version] = "1.x-dev"
 
 projects[linkit][subdir] = "contrib"
 projects[linkit][version] = "1.10"
@@ -140,7 +137,6 @@ projects[markdownify][subdir] = "ecenter-contrib"
 projects[markdownify][download][type] = "git"
 projects[markdownify][download][url] = "git://github.com/ecenter/markdownify"
 projects[markdownify][download][branch] = "6.x-1.0-dev"
-
 
 projects[menu_block][subdir] = "contrib"
 projects[menu_block][version] = "2.4"
@@ -167,7 +163,7 @@ projects[semanticviews][subdir] = "contrib"
 projects[semanticviews][version] = "1.1"
 
 projects[shib_auth][subdir] = "contrib"
-projects[shib_auth][version] = "4.0-rc6"
+projects[shib_auth][version] = "4.0"
 
 projects[simplemenu][subdir] = "contrib"
 projects[simplemenu][version] = "1.14"
@@ -182,16 +178,16 @@ projects[syntaxhighlighter][subdir] = "contrib"
 projects[syntaxhighlighter][version] = "1.26"
 
 projects[tableofcontents][subdir] = "contrib"
-projects[tableofcontents][version] = "3.6"
+projects[tableofcontents][version] = "3.7"
 
 projects[token][subdir] = "contrib"
-projects[token][version] = "1.17"
+projects[token][version] = "1.18"
 
 projects[vertical_tabs][subdir] = "contrib"
 projects[vertical_tabs][version] = "1.0-rc2"
 
 projects[views][subdir] = "contrib"
-projects[views][version] = "3.0-alpha3"
+projects[views][version] = "3.0-rc3"
 
 projects[views_slideshow][subdir] = "contrib"
 projects[views_slideshow][version] = "3.0"
@@ -262,11 +258,6 @@ libraries[syntaxhighlighter][directory_name] = "syntaxhighlighter"
 libraries[openid_selector][download][type] = "get"
 libraries[openid_selector][download][url] = "http://openid-selector.googlecode.com/files/openid-selector-1.3.zip"
 libraries[openid_selector][directory_name] = "openid-selector"
-
-; jQuery SVG (@TODO remove)
-libraries[jquery-svg][download][type] = "get"
-libraries[jquery-svg][download][url] = "http://plugins.jquery.com/files/jquery.svg.package-1.4.3.zip"
-libraries[jquery-svg][directory_name] = "jquery-svg"
 
 ; jQuery cycle
 libraries[jquery.cycle][download][type] = "get"

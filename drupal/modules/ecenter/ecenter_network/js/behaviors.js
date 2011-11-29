@@ -795,7 +795,6 @@ $.fn.ecenter_network.plugins.traceroute_paste = function() {
 
   var dialog = $('#traceroute-paste-copy').dialog({
     autoOpen : false,
-    closeText : null,
     modal: true,
     width: 700,
     buttons: {

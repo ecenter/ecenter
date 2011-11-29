@@ -38,7 +38,7 @@ else
 fi
 
 echo -e "Creating Drupal instance in $dir.\n\n"
-drush -y -v make --working-copy --contrib-destination=profiles/ecenter ecenter.make $dir
+drush -y make --contrib-destination=profiles/ecenter ecenter.make $dir
 
 ln -s $script_dir/profile/* $dir/profiles/ecenter/
 ln -s $script_dir/modules/ecenter $dir/profiles/ecenter/modules/

@@ -54,6 +54,7 @@ projects[conditional_styles][version] = "1.2"
 
 projects[context][subdir] = "contrib"
 projects[context][version] = "3.0"
+projects[context][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/context_jquery_ui_1.8.patch"
 
 projects[ctools][subdir] = "contrib"
 projects[ctools][version] = "1.8"

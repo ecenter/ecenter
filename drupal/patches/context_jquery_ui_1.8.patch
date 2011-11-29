@@ -1,6 +1,3 @@
-diff --git a/plugins/.context_reaction_block.inc.swp b/plugins/.context_reaction_block.inc.swp
-index 4fc689f..92c4148 100644
-Binary files a/plugins/.context_reaction_block.inc.swp and b/plugins/.context_reaction_block.inc.swp differ
 diff --git a/plugins/context_reaction_block.inc b/plugins/context_reaction_block.inc
 index cecdf6c..9ce5ac5 100644
 --- a/plugins/context_reaction_block.inc

@@ -242,7 +242,7 @@ libraries[jqplot][directory_name] = "jqplot"
 
 ; TinyMCE
 libraries[tinymce][download][type] = "get"
-libraries[tinymce][download][url] = "http://github.com/downloads/tinymce/tinymce/tinymce_3_3_9_3.zip"
+libraries[tinymce][download][url] = "http://github.com/downloads/tinymce/tinymce/tinymce_3.4.7.zip"
 libraries[tinymce][directory_name] = "tinymce"
 
 ; SyntaxHighlighter, probably won't work because of download url

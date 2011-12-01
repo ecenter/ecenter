@@ -1,5 +1,3 @@
-; $Id$
-;
 ; E-Center Project makefile
 ;
 ; E-Center uses a monolithic git repository to store its codebase.  This
@@ -134,7 +132,7 @@ projects[markdown][subdir] = "contrib"
 projects[markdown][version] = "1.2"
 
 projects[markdownify][type] = "module"
-projects[markdownify][subdir] = "ecenter-contrib"
+projects[markdownify][subdir] = "contrib"
 projects[markdownify][download][type] = "git"
 projects[markdownify][download][url] = "git://github.com/ecenter/markdownify"
 projects[markdownify][download][branch] = "6.x-1.0-dev"

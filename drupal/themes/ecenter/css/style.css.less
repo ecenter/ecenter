@@ -223,8 +223,8 @@
 // Body {{{
 body {
   font-family: @font_body;
-  font-size: 18px;
-  line-height: 24px;
+  font-size: 16px;
+  line-height: 21px;
   color: @color_grey_20;
   background-color: @color_grey_33;
 }
@@ -263,19 +263,21 @@ table {
 h1, h2, h3, h4, h5, h6 {
   font-family: @font_heading;
   font-weight: bold;
+  margin-bottom: 21px;
 }
 h1 {
   font-size: 32px;
   line-height: 42px;
-  margin-bottom: 21px;
 }
 h2 {
   font-size: 28px;
-  line-height: 35px;
-  margin-bottom: 18px
+  line-height: 34px;
+  margin-bottom: 8px
 }
 h3 {
   font-size: 24px;
+  line-height: 34px;
+  margin-bottom: 8px
 }
 h4 {
   font-size: 20px;
@@ -336,8 +338,11 @@ code, abbr {
   font-weight: strong;
 }
 code {
-  color: @color_black;
-  background-color: @color_grey_87;
+  color: @color_grey_27;
+  font-size: 14px;
+  background-color: @color_grey_93;
+  padding-left: 3px;
+  padding-right: 3px;
 }
 
 // }}}
@@ -1477,6 +1482,9 @@ form {
   }
   pre {
     font-size: 14px;
+    margin-bottom: 22px;
+    padding: 10px;
+    background-color: @color_grey_93;
   }
   .submitted {
     border-bottom: 1px solid @color_grey_80;
@@ -2261,7 +2269,6 @@ table.network-health {
   }
   .ui-dialog-titlebar {
     float: right;
-    margin-bottom: 10px;
     .ui-dialog-titlebar-close {
       display: block;
       float: right;

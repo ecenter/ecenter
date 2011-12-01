@@ -74,5 +74,8 @@ function _ecenter_profile_post_install() {
     _drupal_install_module($module);
     module_invoke($module, 'enable');
     drupal_get_schema(NULL, TRUE);
+
+    // Reset messages
+    drupal_get_messages();
   }
 }

@@ -15,11 +15,6 @@ projects[drupal][version] = "6.22"
 projects[drupal][patch][] = "http://drupal.org/files/issues/do479468-drupal_to_js-expanded-comments-nostatic.patch"
 
 ; Modules
-
-; Handle multiple jQuery UI versions
-; Make removal of submit and validation handlers optional
-; Patch for jQuery 1.4.4, required by jqPlot and jQuery UI 1.8.x
-; Update Javascript settings
 projects[adminrole][subdir] = "contrib"
 projects[adminrole][version] = "1.3"
 
@@ -216,17 +211,14 @@ libraries[profiler][directory_name] = "profiler"
 libraries[jquery_ui_1_6][download][type] = "get"
 libraries[jquery_ui_1_6][download][url] = "http://jquery-ui.googlecode.com/files/jquery.ui-1.6.zip"
 libraries[jquery_ui_1_6][directory_name] = "jquery.ui-1.6"
-libraries[jquery_ui_1_6][destination] = "modules/contrib/jquery_ui"
 
 libraries[jquery_ui_1_7][download][type] = "get"
 libraries[jquery_ui_1_7][download][url] = "http://jquery-ui.googlecode.com/files/jquery-ui-1.7.3.zip"
 libraries[jquery_ui_1_7][directory_name] = "jquery.ui-1.7"
-libraries[jquery_ui_1_7][destination] = "modules/contrib/jquery_ui"
 
 libraries[jquery_ui_1_8][download][type] = "get"
 libraries[jquery_ui_1_8][download][url] = "http://jquery-ui.googlecode.com/files/jquery-ui-1.8.7.zip"
 libraries[jquery_ui_1_8][directory_name] = "jquery.ui-1.8"
-libraries[jquery_ui_1_8][destination] = "modules/contrib/jquery_ui"
 
 ; OpenLayers
 libraries[openlayers][download][type] = "get"
@@ -235,7 +227,7 @@ libraries[openlayers][directory_name] = "openlayers"
 
 ; jqPlot
 libraries[jqplot][download][type] = "get"
-libraries[jqplot][download][url] = "http://bitbucket.org/cleonello/jqplot/downloads/jquery.jqplot.0.9.7r635.zip"
+libraries[jqplot][download][url] = "http://bitbucket.org/cleonello/jqplot/downloads/jquery.jqplot.1.0.0b2_r947.tar.gz"
 libraries[jqplot][directory_name] = "jqplot"
 
 ; TinyMCE

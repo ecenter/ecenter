@@ -5,8 +5,8 @@
  *
  * Created by David Eads (davideads__at__gmail_com), 2011 for the US
  * Department of Energy E-Center Project (https://ecenter.fnal.gov).
- * 
- * Released under the Fermitools license (modified BSD). See LICENSE.txt for 
+ *
+ * Released under the Fermitools license (modified BSD). See LICENSE.txt for
  * more information.
  *
  * Requires jQuery 1.3+ (http://jquery.com)
@@ -15,7 +15,7 @@
  * Usage and behavior:
  *
  * Invoke with $('#drawing-target-selector').traceroute(data, options)
- * 
+ *
  * Data must be an array representation of a diffed traceroute of the following
  * form:
  *
@@ -26,26 +26,26 @@
  * Each item of the array is an object which represents a section of the path.
  * The object's key is used to differentiate between two types of sections:
  *
- *  - A traceroute match (forward and reverse hops correspond to the same 
- *    device, location, or interface) with a single forward hop and/or a 
+ *  - A traceroute match (forward and reverse hops correspond to the same
+ *    device, location, or interface) with a single forward hop and/or a
  *    single reverse hop.
  *  - A traceroute diff (forward and reverse hops diverge for this section
- *    of the path) with one or more forward and/or reverse hops. 
+ *    of the path) with one or more forward and/or reverse hops.
  *
  * Because of the complicated and data-dependent nature of the drawing routine,
  * no effort has been made to generalize the plugin to support configurable
- * rendering callbacks or similar customization tricks. 
+ * rendering callbacks or similar customization tricks.
  *
  * See $.fn.traceroute.defaults for an overview of traceroute options.
  *
- * The E-Center fork of RaphaelJS enables complex interaction by allowing 
+ * The E-Center fork of RaphaelJS enables complex interaction by allowing
  * named groups. This plugin wraps that functionality in a further layer
  * of synthetic events triggered from the top level drawing node. These
- * events occur in the context of the $.traceroute object and use an 
+ * events occur in the context of the $.traceroute object and use an
  * 'element' prefix to distinguish them from actual events on the top level
  * of the canvas element. An example event binding:
  *
- * $(traceroute.paper.canvas).bind('elementclick', function(e, element) { 
+ * $(traceroute.paper.canvas).bind('elementclick', function(e, element) {
  *   console.log(this.options); // Traceroute object options
  *   console.log(this.paper);   // Traceroute object Raphael object
  *   console.log(element);      // Element object
@@ -56,7 +56,7 @@
 
 /**
  * Raphael plugin to create equilateral triangle
- * 
+ *
  * @param x
  *   x-coordinate of triangle center.
  * @param y
@@ -71,7 +71,7 @@ Raphael.fn.triangle = function(x, y, size) {
   return this.path(path.concat(["z"]).join(" "));
 };
 
-/** 
+/**
  * Raphael plugin to create slightly elliptical half circle
  *
  * @param x
@@ -86,11 +86,11 @@ Raphael.fn.triangle = function(x, y, size) {
 Raphael.fn.halfCircle = function(x, y, radius, flip) {
   var flip = (flip) ? 0 : 1;
   var path = ["M", x - radius, y, "A", radius, radius * .9, 0, 0, flip, x + radius, y, "z"];
-  return this.path(path.join(" ")); 
+  return this.path(path.join(" "));
 }
 
 /**
- * Traceroute plugin 
+ * Traceroute plugin
  *
  * @param data
  *   Traceroute array (see introductory documentation).
@@ -112,7 +112,7 @@ $.fn.traceroute = function(data, options) {
 /**
  * Traceroute object constructor
  *
- * @param el 
+ * @param el
  *   Element
  * @param options
  *   Options
@@ -125,28 +125,28 @@ $.traceroute = function(el, data, options) {
   this.options = options;
   this.data = data;
   this.tracerouteDirections = { 'forward' : false, 'reverse' : false };
-  
+
   this.paper = Raphael(el, options.container.width, options.container.height);
   this.paper.tracerouteOptions = options; // Needed for event handlers scoped to Raphael object
 
   // Container dimensions
-  this.height = $(this.el).height(); 
-  this.width = $(this.el).width(); 
+  this.height = $(this.el).height();
+  this.width = $(this.el).width();
 
   // Marker dimensions
-  this.marker = { 
+  this.marker = {
     'size' : (2 * parseInt(options.marker.radius)) + parseInt(options.marker.style['stroke-width']),
     'xOffset' : options.link.width / 2,
     'forwardYOffset' : parseInt(options.marker.radius) + (parseInt(options.marker.style['stroke-width']) / 2),
     'reverseYOffset' : parseInt(options.marker.radius) + (parseInt(options.marker.style['stroke-width']) / 2)
-      + (parseInt(options.label.style['font-size']) / 2) 
+      + (parseInt(options.label.style['font-size']) / 2)
   };
 
   this.label = {
     'yOffset' : (this.marker.size / 2) + (parseInt(options.label.style['font-size']) / 4)
   };
 
-  // Marker + label bounding box dimensions 
+  // Marker + label bounding box dimensions
   this.bbox = { 'height' : this.marker.size, 'width' : options.link.width };
 
   // Check for directions present in traceroute (if only one or other, drawing will
@@ -163,15 +163,15 @@ $.traceroute = function(el, data, options) {
       }
     }
   }
-  
+
   // Y offset
   this.diffYOffset = this.height - (this.bbox.height * 1.5);
 }
 
 $.traceroute.prototype.draw = function() {
-  var set, 
-    paper = this.paper, 
-    data = this.data, 
+  var set,
+    paper = this.paper,
+    data = this.data,
     boxOffset = -this.bbox.width,
     lastHops = { 'forward': false, 'reverse' : false };
 
@@ -200,10 +200,10 @@ $.traceroute.prototype.draw = function() {
     }
 
     for (direction in this.tracerouteDirections) {
-      var yOffset = (i > 0 && row_type == 'diff' && direction == 'reverse') ? 
+      var yOffset = (i > 0 && row_type == 'diff' && direction == 'reverse') ?
         this.diffYOffset : 0,
         oppositeDirection = (direction == 'forward') ? 'reverse' : 'forward',
-        markerWidth = (this.options.marker.radius * 2) + this.options.marker.style['stroke-width']; 
+        markerWidth = (this.options.marker.radius * 2) + this.options.marker.style['stroke-width'];
 
       if (typeof step[direction] == 'undefined' || step[direction].length == 0) {
         continue;
@@ -225,7 +225,7 @@ $.traceroute.prototype.draw = function() {
         else {
           var markerYOffset = yOffset + this.label.yOffset;
         }
-        
+
         if (row_type == 'match') {
           // Only increment x counter once on matches
           if (direction == 'forward' || !step['forward']) {
@@ -249,12 +249,12 @@ $.traceroute.prototype.draw = function() {
           var flip = (direction != 'forward') ? true : false;
           var marker = paper.halfCircle(boxOffset + this.marker.xOffset, markerYOffset,
             this.options.marker.radius, flip);
-          markerWidth = this.options.marker.radius * 2.2; 
+          markerWidth = this.options.marker.radius * 2.2;
         } else {
           // Note the fudge factor
           var marker = paper.circle(boxOffset + this.marker.xOffset, markerYOffset,
             this.options.marker.radius * 1.15);
-          markerWidth = this.options.marker.radius * 2.5; 
+          markerWidth = this.options.marker.radius * 2.5;
         }
         marker.attr(this.options.marker.style);
         marker['tracerouteDirection'] = direction;
@@ -265,7 +265,7 @@ $.traceroute.prototype.draw = function() {
 
         var bbox = label.getBBox();
         var labelWidth = (bbox.width > markerWidth) ? bbox.width : markerWidth;
-        
+
         var labelCenterOffset = (bbox.width > markerWidth) ? 0 : (markerWidth - bbox.width) / 2;
 
         labelBox = paper.rect(bbox.x - this.options.labelBox.paddingX - labelCenterOffset,

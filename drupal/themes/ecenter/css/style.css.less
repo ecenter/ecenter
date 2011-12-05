@@ -1027,7 +1027,6 @@ form {
     }
   } // }}}
   #end-to-end-charts { // {{{
-    margin-top: 25px;
     .box;
     width: 500px;
     .data-wrapper {
@@ -1037,23 +1036,27 @@ form {
       .chart-title {
         .box;
         border-bottom: 1px solid @color_grey_80;
-        margin-top: -25px;
         h3 {
           .box;
-          width: 150px;
-          font-size: .875em;
+          width: 130px;
+          font-size: 18px;
           margin: 0;
+          line-height: 21px;
         }
         .chart-label {
-          font-size: 13px;
-          color: @color_grey_33;
+          font-size: 14px;
+          font-weight: bold;
           float: left;
-          width: 330px;
+          width: 350px;
           text-align: right;
+          line-height: 21px;
         }
         h4 {
           font-size: .8em;
         }
+      }
+      .jqplot-target {
+        margin-top: 40px;
       }
     }
     .active-row {
@@ -1756,7 +1759,6 @@ form {
       }
       p {
         margin: 0;
-        font-size: 1.15em;
       }
     }
   }

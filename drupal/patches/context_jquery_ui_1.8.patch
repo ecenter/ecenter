@@ -1,22 +1,14 @@
 diff --git a/plugins/context_reaction_block.inc b/plugins/context_reaction_block.inc
-index cecdf6c..9ce5ac5 100644
+index 14c191a..7e6a4ed 100644
 --- a/plugins/context_reaction_block.inc
 +++ b/plugins/context_reaction_block.inc
-@@ -115,7 +115,7 @@ class context_reaction_block extends context_reaction {
-   function editor_form($context) {
-     $form = array();
-     if (module_exists('jquery_ui')) {
--      jquery_ui_add(array('ui.draggable', 'ui.droppable', 'ui.sortable'));
-+      jquery_ui_add(array('ui.draggable', 'ui.droppable', 'ui.sortable'), '1.8');
-       drupal_add_js(drupal_get_path('module', 'context_ui') .'/json2.js');
-       drupal_add_js(drupal_get_path('module', 'context') .'/plugins/context_reaction_block.js');
-       drupal_add_css(drupal_get_path('module', 'context') .'/plugins/context_reaction_block.css');
-@@ -237,7 +237,7 @@ class context_reaction_block extends context_reaction {
+@@ -237,9 +237,6 @@ class context_reaction_block extends context_reaction {
        global $user;
        if (module_exists('jquery_ui') && $user->uid) {
          $editable = TRUE;
 -        jquery_ui_add(array('ui.draggable', 'ui.droppable', 'ui.sortable'));
-+        jquery_ui_add(array('ui.draggable', 'ui.droppable', 'ui.sortable'), '1.8');
-         drupal_add_js(drupal_get_path('module', 'context') .'/plugins/context_reaction_block.js');
-         drupal_add_css(drupal_get_path('module', 'context') .'/plugins/context_reaction_block.css');
+-        drupal_add_js(drupal_get_path('module', 'context') .'/plugins/context_reaction_block.js');
+-        drupal_add_css(drupal_get_path('module', 'context') .'/plugins/context_reaction_block.css');
        }
+       else {
+         $editable = FALSE;

@@ -701,16 +701,17 @@ $.fn.ecenter_network.plugins.show_data_button = function() {
       var wrapper = this;
       var show_text = Drupal.t('Show data tables');
       var hide_text = Drupal.t('Hide data tables');
-      $('.tablechart', this).after('<button class="show-data">' + show_text + '</button>');
-      $('button.show-data', this).toggle(function(e) {
-        $('.data-tables', wrapper).show();
-        $(this).html(hide_text);
-        return false;
-      }, function(e) {
-        $('.data-tables', wrapper).hide();
-        $(this).html(Drupal.t(show_text));
-        return false;
-      });
+      $('<button class="show-data">' + show_text + '</button>')
+        .insertBefore($('.data-tables', this))
+        .toggle(function(e) {
+          $('.data-tables', wrapper).show();
+          $(this).html(hide_text);
+          return false;
+        }, function(e) {
+          $('.data-tables', wrapper).hide();
+          $(this).html(Drupal.t(show_text));
+          return false;
+        });
       $(this).data('showDataButton', true);
     }
   });

@@ -68,9 +68,11 @@ function ecenter_network_parse_site_data($data, $site) {
     'source' => $site,
   );
   foreach (array('direct_traceroute' => 'forward', 'reverse_traceroute' => 'reverse') as $key => $direction) {
-    foreach ($data[$key] as $hub => $results) {
-      if ($hub != $site) {
-        $parsed_data['destinations'][$hub]['traceroute'][$direction]['snmp'] = $results['snmp'];
+    if (!empty($data[$key])) {
+      foreach ($data[$key] as $hub => $results) {
+        if ($hub != $site) {
+          $parsed_data['destinations'][$hub]['traceroute'][$direction]['snmp'] = $results['snmp'];
+        }
       }
     }
   }

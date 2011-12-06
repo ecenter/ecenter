@@ -725,6 +725,29 @@ $.fn.ecenter_network.plugins.end_to_end = function() {
     var parts = this.id.split('-');
     $('#' + parts[0] + '-' + parts[1] + '-data-tables').removeClass('active-row');
   });
+
+  $('#end-to-end-charts .data-wrapper', this.el).each(function() {
+    var tables = $('.data-tables table', this), 
+      title = $('.chart-title h3', this);
+      tc = $(this).data('tablechart');
+
+    // Copy options
+    var options = $.extend(true, {}, tc['default'].options);
+    delete options.height;
+    delete options.width;
+    options.hideTables = true;
+
+    if (!$(this).data('showMagnifyButton')) {
+      $('<button class="popup-chart"><span class="icon">'+ Drupal.t('Popup chart') +'</span></button>')
+        .insertBefore( $('.data-tables', this) )
+        .click(function(e) {
+          $.fn.ecenter_network.popup_chart(tables, title.text(), options);
+          e.stopPropagation();
+          return false;
+        });
+      $(this).data('showMagnifyButton', true);
+    }
+  });
 }
 
 

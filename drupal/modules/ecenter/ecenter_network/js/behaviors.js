@@ -576,6 +576,7 @@ $.fn.ecenter_network.plugins.traceroute = function() {
       'elementmouseover' : function(e, element, cancel_map, cancel_highlight) {
         var hub_id = element.groups[0];
 
+        $('body').css('cursor', 'pointer');
         $.ecenter_network.hoverOver.call(element);
 
         if (!cancel_highlight) {
@@ -617,6 +618,7 @@ $.fn.ecenter_network.plugins.traceroute = function() {
         }
 
         $.ecenter_network.hoverOut.call(element);
+        $('body').css('cursor', 'default');
       },
       'elementclick' : function(e, element) {
          var tables = $('#utilization-tables .' + element.groups[0].toLowerCase() +'-data-table'),

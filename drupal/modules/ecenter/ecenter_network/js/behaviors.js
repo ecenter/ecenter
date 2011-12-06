@@ -587,7 +587,7 @@ $.fn.ecenter_network.plugins.traceroute = function() {
             lh.highlightSeries(hop.sidx[key], tc['default'].chart);
           }
         }
-        
+
         if (element.tracerouteType == 'match' && !cancel_map) {
           var ol = $('#openlayers-map-auto-id-0').data('openlayers');
           var map = ol.openlayers;
@@ -603,7 +603,7 @@ $.fn.ecenter_network.plugins.traceroute = function() {
         var hop = Drupal.settings.ecenterNetwork.seriesLookupByHub[hub_id];
         var tc = $('#utilization-tables').data('tablechart');
         var lh = tc['default'].chart.plugins.linehighlighter;
-        
+
         for (key in hop.sidx) {
           lh.unhighlightSeries(hop.sidx[key], tc['default'].chart);
         }
@@ -933,7 +933,6 @@ $.fn.ecenter_network.popup_chart.default_options = {
     },
     'axes' : {
       'xaxis' : {
-        'pad' : 1,
         'renderer' : $.jqplot.DateAxisRenderer,
         'autoscale' : true,
         'numberTicks' : 15,
@@ -992,9 +991,9 @@ $.fn.ecenter_network.defaults = {
     $.fn.ecenter_network.plugins.change,
     $.fn.ecenter_network.plugins.traceroute,
     $.fn.ecenter_network.plugins.draw_map,
-    $.fn.ecenter_network.plugins.show_data_button,
     $.fn.ecenter_network.plugins.timezone_select,
-    $.fn.ecenter_network.plugins.end_to_end
+    $.fn.ecenter_network.plugins.end_to_end,
+    $.fn.ecenter_network.plugins.show_data_button
   ]
 };
 

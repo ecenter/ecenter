@@ -584,10 +584,18 @@ function theme_ecenter_network_end_to_end_tables($tables, $timezone = NULL) {
       $output .= '</div>';
 
       $output .= '<div class="data-tables">';
-      foreach ($measurement_data as $key => $table) {
+      foreach ($measurement_data as $direction => $table) {
+
+        ksort($table);
+
+        $attributes = array(
+          'class' => $direction, 
+          'data-jqplotSeriesOptions' => '{"label":"'. ucfirst($direction) .' utilization' .'"}',
+        );
+
         $output .= '<div class="data-table">';
-        $output .= '<h4>'. t(ucfirst($key)) .'</h4>';
-        $output .= theme('jqplot_table', array(), $table);
+        $output .= '<h3>'. t(ucfirst($direction)) .'</h3>';
+        $output .= theme('jqplot_table', array(), $table, $attributes);
         $output .= '</div>';
       }
       $output .= '</div>';

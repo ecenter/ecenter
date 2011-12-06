@@ -380,7 +380,7 @@ $.fn.traceroute.defaults = {
   // Style for drawing container
   'container' : {
     'width' : '100%',
-    'height' : '70px'
+    'height' : '60px'
   },
 
   // Width, offset from vertical center, and style for link connector lines

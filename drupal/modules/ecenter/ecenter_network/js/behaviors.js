@@ -896,7 +896,7 @@ $.fn.ecenter_network.popup_chart = function(source_tables, title, options) {
 
   default_options.plotOptions.seriesColors = seriesColors;
  
-  options = $.extend(true, default_options, options);
+  options = $.extend(true, {}, default_options, options);
   dialog.tablechart(options); 
 }
 

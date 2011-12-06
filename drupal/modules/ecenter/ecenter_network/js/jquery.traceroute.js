@@ -105,6 +105,7 @@ $.fn.traceroute = function(data, options) {
       traceroutes[options.tracerouteName] = new $.traceroute(this, data, options);
       $(this).data('traceroute', traceroutes);
       traceroutes[options.tracerouteName].draw();
+      traceroutes[options.tracerouteName].drawLegend();
     }
   });
 };
@@ -350,6 +351,24 @@ $.traceroute.prototype.draw = function() {
       }
     }
   }
+}
+
+$.traceroute.prototype.drawLegend = function() {
+  console.log(this);
+  var traceroute = this;
+  $('<div class="traceroute-legend"></div>')
+    .prependTo( $( traceroute.el ) )
+    .append(function() {
+      var legend = '<div class="traceroute-legend-element traceroute-legend-title">'+ Drupal.t('Traceroute (logical)') +'</div>';
+      if (traceroute.tracerouteDirections.forward) {
+        legend += '<div class="traceroute-legend-element traceroute-legend-forward"><span class="marker"></span><span class="label">'+ Drupal.t('Forward') +'</span></div>';
+      }
+      if (traceroute.tracerouteDirections.reverse) {
+        legend += '<div class="traceroute-legend-element traceroute-legend-reverse"><span class="marker"></span><span class="label">' + Drupal.t('Reverse') +'</span></div>';
+      }
+      legend += '<div class="traceroute-legend-element traceroute-legend-help">'+ Drupal.t('Click nodes to see detail') +'</div>';
+      return legend;
+    });
 }
 
 // Defaults

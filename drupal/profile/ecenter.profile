@@ -78,4 +78,7 @@ function _ecenter_profile_post_install() {
     // Reset messages
     drupal_get_messages();
   }
+
+  // Disable Shib auth blocks
+  db_query("UPDATE {blocks} SET status=0 WHERE module='shib_auth'");
 }

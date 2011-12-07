@@ -120,6 +120,9 @@ projects[libraries][version] = "1.0"
 projects[linkit][subdir] = "contrib"
 projects[linkit][version] = "1.10"
 
+projects[logintoboggan][subdir] = "contrib"
+projects[logintoboggan][version] = "6.x-1.10"
+
 projects[mapbox][subdir] = "contrib"
 projects[mapbox][version] = "1.0-alpha3"
 

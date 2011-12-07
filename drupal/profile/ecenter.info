@@ -84,7 +84,6 @@ dependencies[] = pathauto
 dependencies[] = pathologic
 dependencies[] = semanticviews
 dependencies[] = simplemenu
-dependencies[] = simplemenu_devel
 dependencies[] = statistics_granularity
 dependencies[] = strongarm
 dependencies[] = tableofcontents

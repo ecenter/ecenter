@@ -83,7 +83,6 @@ dependencies[] = optionwidgets
 dependencies[] = pathauto
 dependencies[] = pathologic
 dependencies[] = semanticviews
-dependencies[] = shib_auth
 dependencies[] = simplemenu
 dependencies[] = simplemenu_devel
 dependencies[] = statistics_granularity

@@ -59,9 +59,9 @@ $.tablechart.scrapeSingle = function(table) {
 
 $.jqplot.Highlighter.errorTooltip = function(str, seriesIndex, pointIndex, plot) {
   var series = plot.series[seriesIndex];
-  if (typeof series.renderer.bandData !== 'undefined' && series.renderer.bandData.length) {
-    lowValue = series.renderer.bandData[0][pointIndex],
-    highValue = series.renderer.bandData[1][pointIndex];
+  if (typeof series.rendererOptions.bandData !== 'undefined' && series.rendererOptions.bandData.length) {
+    lowValue = series.rendererOptions.bandData[0][pointIndex],
+    highValue = series.rendererOptions.bandData[1][pointIndex];
     str += '<span class="max-err">Err max: '+ highValue[1] +'</span>';
     str += '<span class="min-err">Err min: '+ lowValue[1] +'</span>';
   }

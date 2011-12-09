@@ -229,11 +229,15 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
             $forecast_data = $vars['fds_data'][$test][$measurement][$direction];
             foreach ($forecast_data as $timestamp => $values) {
               $time = _ecenter_network_timestamp_to_local($timestamp);
+              $err = $values['stderr'] / 2;
+
               $forecast_table[] = array(
                 'class' => 'forecast',
                 'data' => array(
                   array('data' => $time, 'header' => TRUE),
                   theme($value_suggestions, $values['value'], $test, $measurement, FALSE),
+                  theme($value_suggestions, $values['value'] - $err, $test, $measurement, FALSE),
+                  theme($value_suggestions, $values['value'] + $err, $test, $measurement, FALSE),
                 ),
               );
 
@@ -448,15 +452,6 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
             $value = 100 * ($forecast['value'] / $last_value[1]['capacity']);
             $err = $forecast['stderr'] / 2;
 
-            // The following code was meant to handle negative bands and/or
-            // negative values, but I'm running into trouble with it.
-            /*if ( ($forecast['value'] - $err) > 0 ) {
-              $min_err = 100 * (($forecast['value'] - $err) / $last_value[1]['capacity']);
-            }
-            else {
-              $err = (2 * $err) - $forecast['value'];
-              $min_err = 0.0;
-            }*/
             $min_err = 100 * (($forecast['value'] - $err) / $last_value[1]['capacity']);
             $max_err = 100 * (($forecast['value'] + $err) / $last_value[1]['capacity']);
 
@@ -594,7 +589,7 @@ function theme_ecenter_network_end_to_end_tables($tables, $timezone = NULL) {
         );
 
         $output .= '<div class="data-table">';
-        $output .= '<h3>'. t(ucfirst($direction)) .'</h3>';
+        $output .= '<h3>'. t(ucfirst(str_replace('_', ' ', $direction))) .'</h3>';
         $output .= theme('jqplot_table', array(), $table, $attributes);
         $output .= '</div>';
       }
@@ -603,16 +598,7 @@ function theme_ecenter_network_end_to_end_tables($tables, $timezone = NULL) {
       $output .= '</div>';
 
       $plot_options = _ecenter_network_plot_options_template();
-      $plot_options['legend'] = array(
-        'show' => TRUE,
-        'renderer' => '$.jqplot.EnhancedLegendRenderer',
-        'placement' => 'outsideGrid',
-        'location' => 's',
-        'rendererOptions' => array(
-          'numberRows' => 1,
-        ),
-      );
-
+      
       $forecast_colors = array('#48b4db', '#be4c2e');
       if (empty($measurement_data['reverse'])) {
         $plot_options['seriesColors'] = array($plot_options['seriesColors'][0], $forecast_colors[0]);  
@@ -907,8 +893,9 @@ function theme_ecenter_network_site_centric_data($data) {
  */
 function _ecenter_network_plot_options_template() {
   return array( 
+    'seriesColors' => array('#035dc5', '#a71932',), 
     'seriesDefaults' => array(
-      'lineWidth' => 1.5,
+      'lineWidth' => 1,
       'shadow' => FALSE,
       'fill' => FALSE,
       'markerOptions' => array(
@@ -917,9 +904,14 @@ function _ecenter_network_plot_options_template() {
       ),
     ),
     'legend' => array(
-      'show' => FALSE,
+      'show' => TRUE,
+      'renderer' => '$.jqplot.EnhancedLegendRenderer',
+      'placement' => 'outsideGrid',
+      'location' => 's',
+      'rendererOptions' => array(
+        'numberRows' => 1,
+      ),
     ),
-    'seriesColors' => array('#035dc5', '#a71932',), // '#133f52', '#e34605', '#672b18', '#049e33',  '#650fc2',),
     'axes' => array(
       'xaxis' => array(
         'autoscale' => TRUE,
@@ -967,6 +959,7 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
       'tooltipLocation' => 'n',
       'tooltipOffset' => 10,
       'tooltipSeparator' => ': ',
+      'formatter' => '$.jqplot.DavesFormatter',
     ),
     'cursor' => array(
       'show' => TRUE,
@@ -1010,6 +1003,7 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
       break;
     case 'utilization':
       $options += $line_options;
+      $options['legend'] = array('show' => FALSE);
       $options['axes']['yaxis']['label'] = t('% utilization');
       $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%d%</span>';
       break;

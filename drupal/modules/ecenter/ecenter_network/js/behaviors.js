@@ -75,7 +75,6 @@ $.tablechart.scrapeSingle = function(table) {
   return { 'series' : series, 'options' : seriesOptions };
 }
 
-
 /**
  * Drupal behavior to attach network weathermap behaviors
  */
@@ -896,7 +895,7 @@ $.fn.ecenter_network.popup_chart = function(source_tables, title, options) {
 
   default_options.plotOptions.seriesColors = seriesColors;
  
-  options = $.extend(true, {}, default_options, options);
+  options = $.extend(true, {}, options, default_options);
   dialog.tablechart(options); 
 }
 
@@ -906,11 +905,12 @@ $.fn.ecenter_network.popup_chart.default_options = {
   'height' : 300,
   'plotOptions' : {
     'seriesDefaults' : {
-      'lineWidth' : 1.5,
+      'renderer' : $.jqplot.LineRenderer,
+      'lineWidth' : 1,
       'shadow' : false,
       'fill' : false,
       'markerOptions' : {
-        'size' : 3.5,
+        'size' : 4,
         'shadow' : false
       }
     },

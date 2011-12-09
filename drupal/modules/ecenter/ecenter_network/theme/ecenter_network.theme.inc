@@ -919,7 +919,7 @@ function _ecenter_network_plot_options_template() {
         'renderer' => '$.jqplot.DateAxisRenderer',
         'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
         'tickOptions' => array(
-          'formatString' => "%H:%M <br /> %#m/%#d",
+          'formatString' => "%#m/%#d <br /> %H:%M",
           'angle' => 30,
           'fontSize' => '11px',
         ),
@@ -959,7 +959,7 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
       'tooltipLocation' => 'n',
       'tooltipOffset' => 10,
       'tooltipSeparator' => ': ',
-      'formatter' => '$.jqplot.DavesFormatter',
+      'tooltipContentEditor' => '$.jqplot.Highlighter.errorTooltip',
     ),
     'cursor' => array(
       'show' => TRUE,
@@ -971,6 +971,7 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
 
   switch ($measurement) {
     case 'throughput':
+      $options += $line_options;
       $options['axes']['yaxis']['label'] = t('mbps');
       $options['axes']['yaxis']['min'] = 0;
       $options['seriesDefaults']['renderer'] = '$.jqplot.BarRenderer';
@@ -978,6 +979,7 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
         'barWidth' => 2,
       );
       $options['axes']['xaxis']['tickOptions']['formatString'] = "%#m/%d";
+      $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%dmbps</span>';
       break;
     case 'max_delay':
     case 'min_delay':

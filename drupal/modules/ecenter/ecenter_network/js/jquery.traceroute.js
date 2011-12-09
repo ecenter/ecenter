@@ -354,7 +354,6 @@ $.traceroute.prototype.draw = function() {
 }
 
 $.traceroute.prototype.drawLegend = function() {
-  console.log(this);
   var traceroute = this;
   $('<div class="traceroute-legend"></div>')
     .prependTo( $( traceroute.el ) )

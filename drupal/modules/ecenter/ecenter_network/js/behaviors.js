@@ -19,63 +19,6 @@
 (function($) {
 
 /**
- * Override tablechart attachMethod
- */
-$.fn.tablechart.defaults.attachMethod = function(container) {
-  $('.chart-title', this.el).after(container);
-}
-
-/**
- * Utility function: Scrape single table for values
- */
-$.tablechart.scrapeSingle = function(table) {
-  var series = [],
-      options = this.options,
-      tablechart = this,
-      seriesOptions = {},
-      bandHigh = [],
-      bandLow = [];
-
-  if (options.headerSeriesLabels) {
-    $(table).find('thead th:gt(0)').each(function(i) {
-      seriesOptions.label = $(this).text();
-    });
-  }
-
-  $(table).find('tbody tr').each(function(j) {
-    var x = 0, y = 0, max, min;
-    $(this).find('th').each(function() {
-      x = options.parseX.call(tablechart, this);
-    });
-    $(this).find('td').each(function(i) {
-      if (i == 0) {
-        if (!series[0]) {
-          series[0] = [];
-        }
-        y = options.parseY.call(tablechart, this);
-        series[0].push([x, y]);
-      }
-      else if (i == 1) {
-        min = options.parseY.call(tablechart, this);
-      }
-      else if (i == 2) {
-        max = options.parseY.call(tablechart, this);
-      }
-    });
-    if (min && max) {
-      bandLow.push( [x, min] );
-      bandHigh.push( [x, max] );
-    }
-  });
-
-  if (bandHigh.length && bandLow.length) {
-    seriesOptions = { 'rendererOptions' : { 'bandData' : [bandLow, bandHigh] } };
-  }
-
-  return { 'series' : series, 'options' : seriesOptions };
-}
-
-/**
  * Drupal behavior to attach network weathermap behaviors
  */
 Drupal.behaviors.EcenterNetwork = function(context) {
@@ -732,9 +675,6 @@ $.fn.ecenter_network.plugins.end_to_end = function() {
 
     // Copy options
     var options = $.extend(true, {}, tc['default'].options);
-    delete options.height;
-    delete options.width;
-    options.hideTables = true;
 
     if (!$(this).data('showMagnifyButton')) {
       $('<button class="popup-chart"><span class="icon">'+ Drupal.t('Popup chart') +'</span></button>')
@@ -903,6 +843,7 @@ $.fn.ecenter_network.popup_chart.default_options = {
   'hideTables' : true,
   'parseX' : $.tablechart.parseText,
   'height' : 300,
+  'width'  : 850,
   'plotOptions' : {
     'seriesDefaults' : {
       'renderer' : $.jqplot.LineRenderer,
@@ -920,7 +861,8 @@ $.fn.ecenter_network.popup_chart.default_options = {
       'lineWidthAdjust' : 0,
       'tooltipLocation' : 'n',
       'tooltipOffset' : 10,
-      'tooltipSeparator' : ': '
+      'tooltipSeparator' : ': ',
+      'tooltipContentEditor' : $.jqplot.Highlighter.errorTooltip
     },
     'legend' : {
       'show' : true,
@@ -937,7 +879,7 @@ $.fn.ecenter_network.popup_chart.default_options = {
         'autoscale' : true,
         'numberTicks' : 15,
         'tickOptions' : {
-          'formatString' : '%H:%M <br /> %#m/%#d',
+          'formatString' : '%#m/%#d <br /> %H:%M',
         }
       },
       'yaxis' : {

@@ -160,8 +160,10 @@ sub get_circuits {
         	$logger->debug("\t\t[Port] $port");
 		my ($hub) = $port =~ m/:node=([^:]+):/;
 		my $hub_name = "\L$hub";
-		$src_hub = $hub_name if $port_num == 1;
-		$dst_hub = $hub_name;
+		if($direction eq 'forward' ) {
+		    $src_hub = $hub_name if $port_num == 1;
+		    $dst_hub = $hub_name;
+		}
 		my ($l2_port) = $dbh->resultset('L2Port')->search({'hub.hub' => $hub_name}, {join => 'hub', limit => 1});
                 
 		unless($l2_port && $l2_port->l2_urn) {

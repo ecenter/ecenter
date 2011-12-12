@@ -21,6 +21,7 @@ use Ecenter::Types;
 =head1 DESCRIPTION
 
 perfSONAR-PS - snmp  data retrieval API,see L<Ecenter::Data::Requester> fro more info
+it supports SNMP data for statuc and dynamic circuits
   
 =head1 SYNOPSIS 
    
@@ -173,13 +174,14 @@ sub parse_metadata {
 	my $port      =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='ifName']",    1), 0);
  	my $ip        =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='ifAddress']", 1), 0);
  	my $name      =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='hostName']",  1), 0);
+	my $urn      =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='urn']",  1), 0);	
  	my $direction =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='direction']", 1), 0);
  	my $capacity  =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='capacity']",  1), 0);
 	my $eventtype  =  extract( find($metadata->getDocumentElement, "./*[local-name()='eventType']",  1), 0);
 	$eventtype  ||=  extract( find($metadata->getDocumentElement, "./*[local-name()='subject']/*[local-name()='eventType']",  1), 0);
 	
 	
- 	$mds->{$id} = {port => $port, ip => $ip, name => $name, direction => $direction, capacity => $capacity, eventtype=>$eventtype};
+ 	$mds->{$id} = {port => $port, ip => $ip, urn => $urn, name => $name, direction => $direction, capacity => $capacity, eventtype=>$eventtype};
     }
     $self->metadata($mds); 
 }
@@ -189,7 +191,7 @@ sub parse_params {
    map {$self->$_($params->{$_}) if $self->can($_)}  keys %$params if $params && ref $params eq ref {};
    return unless $self->hostName or $self->ifAddress;
    my $subject = qq|  <nmwg:subject id="s-in-16"><nmwgt:interface xmlns:nmwgt="http://ggf.org/ns/nmwg/topology/2.0/">|;
-   foreach my $key (qw/ifName ifIndex hostName direction  ifAddress/) {
+   foreach my $key (qw/ifName ifIndex urn hostName direction  ifAddress/) {
       $subject .=    "<nmwgt:$key>" . $self->$key . "</nmwgt:$key>\n" if  $self->$key;
    }
    $subject .=  q|</nmwgt:interface></nmwg:subject>|;
@@ -204,12 +206,12 @@ __PACKAGE__->meta->make_immutable;
 
 =head1   AUTHOR
 
-    Maxim Grigoriev, 2010, maxim@fnal.gov
+    Maxim Grigoriev, 2010-2011, maxim@fnal.gov
          
 
 =head1 COPYRIGHT
 
-Copyright (c) 2010, Fermi Research Alliance (FRA)
+Copyright (c) 2010-2011, Fermi Research Alliance (FRA)
 
 =head1 LICENSE
 

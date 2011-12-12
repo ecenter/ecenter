@@ -38,10 +38,14 @@ FOREIGN KEY ( hub ) REFERENCES hub ( hub ) on DELETE CASCADE ON UPDATE CASCADE
 CREATE TABLE  [% preserve %]  circuit_[% datestamp %] ( 
 circuit  varchar(64) NOT  NULL,
 description varchar(512)   NULL,
+src_hub  varchar(32) NOT NULL,
+dst_hub  varchar(32) NOT NULL,
 start_time  bigint(12) unsigned NOT NULL,
 end_time  bigint(12) unsigned NOT NULL,
 PRIMARY KEY  (circuit),
-KEY (start_time, end_time)
+KEY (start_time, end_time),
+FOREIGN KEY ( src_hub ) REFERENCES hub ( hub ) on DELETE CASCADE ON UPDATE CASCADE,
+FOREIGN KEY ( dst_hub ) REFERENCES hub ( hub ) on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='circuits';
 --
 --
@@ -49,13 +53,14 @@ KEY (start_time, end_time)
 --
 --
 CREATE TABLE  [% preserve %]  circuit_link_[% datestamp %] (
-circuit_link   varchar(512)   NOT NULL, 
+circuit_link   bigint  unsigned AUTO_INCREMENT  NOT NULL,
+circuit_link_id   varchar(512)   NOT NULL, 
 l2_urn varchar(512)   NOT NULL,
 circuit  varchar(64) NOT  NULL,
 link_num smallint unsigned NOT NULL default '1',
 direction  enum('forward', 'reverse') NOT NULL default 'forward',
 PRIMARY KEY  (circuit_link),
-KEY (direction),
+UNIQUE KEY  cir_link_[% datestamp %]_port (circuit_link_id, l2_urn),
 FOREIGN KEY ( circuit ) REFERENCES  circuit_[% datestamp %] (circuit)  on DELETE CASCADE ON UPDATE CASCADE,
 FOREIGN KEY ( l2_urn ) REFERENCES l2_port ( l2_urn)  on DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='circuits topology  ports linkage';

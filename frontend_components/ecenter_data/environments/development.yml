@@ -6,6 +6,7 @@ show_errors: 1
 auto_reload: 0
 time_slice_secs: 200000
 port: 8098
+circuits_ma:  http://ps6.es.net:8080/perfSONAR_PS/services/snmpMA
 gearman:
    servers: 
        xenmon.fnal.gov: ['10131']

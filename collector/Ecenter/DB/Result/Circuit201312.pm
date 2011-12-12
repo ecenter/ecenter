@@ -31,6 +31,20 @@ __PACKAGE__->table("circuit_201312");
   is_nullable: 1
   size: 512
 
+=head2 src_hub
+
+  data_type: 'varchar'
+  is_foreign_key: 1
+  is_nullable: 0
+  size: 32
+
+=head2 dst_hub
+
+  data_type: 'varchar'
+  is_foreign_key: 1
+  is_nullable: 0
+  size: 32
+
 =head2 start_time
 
   data_type: 'bigint'
@@ -50,6 +64,10 @@ __PACKAGE__->add_columns(
   { data_type => "varchar", is_nullable => 0, size => 64 },
   "description",
   { data_type => "varchar", is_nullable => 1, size => 512 },
+  "src_hub",
+  { data_type => "varchar", is_foreign_key => 1, is_nullable => 0, size => 32 },
+  "dst_hub",
+  { data_type => "varchar", is_foreign_key => 1, is_nullable => 0, size => 32 },
   "start_time",
   { data_type => "bigint", extra => { unsigned => 1 }, is_nullable => 0 },
   "end_time",
@@ -58,6 +76,36 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("circuit");
 
 =head1 RELATIONS
+
+=head2 src_hub
+
+Type: belongs_to
+
+Related object: L<Ecenter::DB::Result::Hub>
+
+=cut
+
+__PACKAGE__->belongs_to(
+  "src_hub",
+  "Ecenter::DB::Result::Hub",
+  { hub => "src_hub" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+);
+
+=head2 dst_hub
+
+Type: belongs_to
+
+Related object: L<Ecenter::DB::Result::Hub>
+
+=cut
+
+__PACKAGE__->belongs_to(
+  "dst_hub",
+  "Ecenter::DB::Result::Hub",
+  { hub => "dst_hub" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+);
 
 =head2 circuit_link_201312s
 
@@ -75,8 +123,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07010 @ 2011-10-21 16:12:54
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:GSgInD/TxCQvZUjbi2LSbQ
+# Created by DBIx::Class::Schema::Loader v0.07010 @ 2011-12-09 17:22:48
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:uLeeckIGplNBWTCGEGbrmQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

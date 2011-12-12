@@ -495,7 +495,7 @@ sub process_data {
    my $task_set;
    my %params = ();
    eval {
-     %params = validate(@_, { data_type  => {type => SCALAR, regex => qr/^(snmp|bwctl|owamp|pinger|traceroute)$/i, optional => 1}, 
+        %params = validate(@_, { data_type  => {type => SCALAR, regex => qr/^(snmp|bwctl|owamp|pinger|traceroute|circuit)$/i, optional => 1}, 
                               id	 => {type => SCALAR, regex => qr/^\d+$/, optional => 1}, 
                               src_ip	 => {type => SCALAR, regex => $REG_IP,   optional => 1}, 
 			      src_hub	 => {type => SCALAR, regex => qr/^\w+$/i,optional => 1}, 
@@ -509,7 +509,11 @@ sub process_data {
       		              trace      => {type => SCALAR, regex => qr/traceroute/xim, optional => 1},
 			   }
 		 );
-		 
+    };
+    if($EVAL_ERROR) {
+        $logger->error("parameters failed - $EVAL_ERROR");
+        GeneralException->throw(error => $EVAL_ERROR ); 
+    }
     # debug Dumper(\%params );
     ### query allowed  as:?src_ip=131.225.1.1&dst_ip=212.4.4.4&start=2010-05-02%20:01:02&end=2010-05-02%20:01:02
     
@@ -538,33 +542,39 @@ sub process_data {
     #
     my $g_client =   get_gearman(config->{gearman}{servers});
     ### parse traceroute and get hops, reverse trqaceoute between identified HUBs and e2e metrics
-    ###
-    if($params{trace}) {
-        my $tr  = Ecenter::TracerouteParser->new();
-	$tr->text($params{trace}); 
-        my $hops = $tr->parse();# get hops
-	MalformedParameterException->throw( error => 'No hops were found in the provided traceroute')
-	    unless $tr->hops;
-	    
-	my $ips_str = join (',', map {database('ecenter')->quote($_)} keys %{$hops->{hops}});
-	$traceroute->{direct_traceroute}{hops} = $hops->{hops};
-        _fix_sites($hops->{hops}, $ips_str);
-	my $cmd =    qq|select  distinct   n_hop.netmask, n_hop.ip_noted, n_hop.nodename, hb.hub, hb.hub_name, hb.longitude, hb.latitude  
-					             from 
-						            node   n_hop 
-						      left join l2_l3_map    llm on( n_hop.ip_addr = llm.ip_addr) 
-     	                                              left join l2_port      l2p on(llm.l2_urn = l2p.l2_urn) 
-     	                                              left join hub          hb using(hub) 
-						     where  
-						            n_hop.ip_noted in ($ips_str) and hb.hub is not NULL|;
-        $logger->debug(" TRACEROUTE SQL_hhops: $cmd");		
-        my $hops_ref = database('ecenter')->selectall_hashref($cmd, 'ip_noted');
-        $traceroute->{direct_traceroute}{hop_ips} =  $hops_ref;
-	MalformedParameterException->throw( error => 'No HUBs were found for the provided traceroute')
-	    unless    $hops->{src_ip} && $hops->{dst_ip} 
-	           && $hops_ref->{$hops->{src_ip}}{hub_name} &&  $hops_ref->{$hops->{dst_ip}}{hub_name};
-        $params{src_hub} = $hops_ref->{$hops->{src_ip}}{hub_name};
-	$params{dst_hub} = $hops_ref->{$hops->{dst_ip}}{hub_name};
+    ### 
+    eval {
+        if($params{trace}) {
+            my $tr  = Ecenter::TracerouteParser->new();
+	    $tr->text($params{trace}); 
+            my $hops = $tr->parse();# get hops
+	    MalformedParameterException->throw( error => 'No hops were found in the provided traceroute')
+		unless $tr->hops;
+
+	    my $ips_str = join (',', map {database('ecenter')->quote($_)} keys %{$hops->{hops}});
+	    $traceroute->{direct_traceroute}{hops} = $hops->{hops};
+            _fix_sites($hops->{hops}, $ips_str);
+	    my $cmd =    qq|select  distinct   n_hop.netmask, n_hop.ip_noted, n_hop.nodename, hb.hub, hb.hub_name, hb.longitude, hb.latitude  
+					        	 from 
+						        	node   n_hop 
+							  left join l2_l3_map    llm on( n_hop.ip_addr = llm.ip_addr) 
+     	                                        	  left join l2_port      l2p on(llm.l2_urn = l2p.l2_urn) 
+     	                                        	  left join hub          hb using(hub) 
+							 where  
+						        	n_hop.ip_noted in ($ips_str) and hb.hub is not NULL|;
+            $logger->debug(" TRACEROUTE SQL_hhops: $cmd");		
+            my $hops_ref = database('ecenter')->selectall_hashref($cmd, 'ip_noted');
+            $traceroute->{direct_traceroute}{hop_ips} =  $hops_ref;
+	    MalformedParameterException->throw( error => 'No HUBs were found for the provided traceroute')
+		unless    $hops->{src_ip} && $hops->{dst_ip} 
+	               && $hops_ref->{$hops->{src_ip}}{hub_name} &&  $hops_ref->{$hops->{dst_ip}}{hub_name};
+            $params{src_hub} = $hops_ref->{$hops->{src_ip}}{hub_name};
+	    $params{dst_hub} = $hops_ref->{$hops->{dst_ip}}{hub_name};
+        }
+    };
+    if($EVAL_ERROR) {
+        $logger->error("parsing traceroute failed - $EVAL_ERROR");
+        GeneralException->throw(error => $EVAL_ERROR ); 
     }
     my $trace_cond = get_trace_conditions( %params );
     #
@@ -576,86 +586,111 @@ sub process_data {
     # my $trace_cond = qq|  inet6_mask(md.src_ip, 24) = inet6_mask(inet6_pton('$params{src_ip}'), 24) and $dst_cond |;
     $params{table_map} = $TABLEMAP;
     $logger->debug("Traceroute results:", sub {Dumper({ trace_cond => $trace_cond, traceroute => $traceroute, params => \%params})});
-    if(!$params{only_data} || ($params{data_type} && $params{data_type} eq 'snmp')) {
-        foreach my $way (qw/direct_traceroute reverse_traceroute/) {
-	    unless( $way eq 'direct_traceroute' && $params{trace}) { ### skip direct raceroute because we got it from the request
-                $traceroute->{$way} = get_traceroute($g_client, $trace_cond->{$way}, \%params);
-            }
-	    $data->{$way} = $traceroute->{$way}{hops}
-                              if($traceroute->{$way} && $traceroute->{$way}{hops} && 
-			         ref $traceroute->{$way}{hops} &&  %{$traceroute->{$way}{hops}}); 
-        }
-        ### snmp data for each hop - all unique hop IPs
-    	%allhops = (%{$traceroute->{direct_traceroute}{hop_ips}}, %{$traceroute->{reverse_traceroute}{hop_ips}});
-	$data->{traceroute_nodes} = \%allhops;
-	return $data unless $traceroute->{direct_traceroute}{hop_ips} || $traceroute->{reverse_traceroute}{hop_ips};
-    } else {
-        %allhops = ( $params{src_ip} => 1 );
-    }
-    
-    $logger->debug("HOPS:::", sub{Dumper(\%allhops)});
-
-    $task_set = $g_client->new_task_set; 
-    $data->{snmp} = {};
-    if(!$params{data_type} || $params{data_type} =~ /^snmp$/i) {
+    #
+    #    circuit data
+    #
+    if($params{only_data} && $params{data_type} eq 'circuit') {
         eval {
-	    get_snmp($task_set, $data->{snmp}, \%allhops, \%params);
-        }; 
+          $data = get_circuit_data($g_client, $trace_cond,  \%params);
+	  reduce_snmp_dataset($data->{snmp}, \%params);
+        };
         if($EVAL_ERROR) {
-	    error "  No SNMP data - failed $EVAL_ERROR";
-        }
+            $logger->error("parsing traceroute failed - $EVAL_ERROR");
+            GeneralException->throw(error => $EVAL_ERROR ); 
+        } else {
+	    return $data;
+	}
     }
-    # return $data;
-    # end to end data  stats if available
-    ### return $data unless $params{src_ip} && $params{dst_ip};
-    my @data_keys = ();
-    if($params{data_type}) {
-        @data_keys = ($params{data_type}) if  $params{data_type} =~ /^bwctl|owamp|pinger$/i;
-    } else {
-        @data_keys =  qw/bwctl owamp pinger/;
-    }
-    # my @data_keys = qw/owamp/;
-    map {$data->{$_} = {}} @data_keys;
-    #
-    # B logic - get list of slowest pinger and owamp services and creat exclusion list to avoid them  
-    #
-    if(@data_keys) {
-	foreach my $dir (qw/direct reverse/) {
-	    foreach my $e_type (@data_keys)  {
-		$logger->debug(" ...  Running  ------------  $e_type");
-		 my $md_href = get_e2e_mds($e_type, $trace_cond->{"$dir\_traceroute"}{src}, $trace_cond->{"$dir\_traceroute"}{dst});
-	         unless($md_href && %{$md_href}) {
-	            $logger->error("!!!! No metadata for $e_type on $dir ....");
-	             next;
-	         }
-		get_e2e($task_set, $data->{$e_type}, \%params, $md_href, $e_type );
-		$logger->debug(" +++++ Done  $dir ------------  $e_type");
-	    }
-	 }
-     }
+    eval {
+	if(!$params{only_data} || ($params{data_type} && $params{data_type} eq 'snmp')) {
+            foreach my $way (qw/direct_traceroute reverse_traceroute/) {
+		unless( $way eq 'direct_traceroute' && $params{trace}) { ### skip direct raceroute because we got it from the request
+                    $traceroute->{$way} = get_traceroute($g_client, $trace_cond->{$way}, \%params);
+        	}
+		$data->{$way} = $traceroute->{$way}{hops}
+                        	  if($traceroute->{$way} && $traceroute->{$way}{hops} && 
+			             ref $traceroute->{$way}{hops} &&  %{$traceroute->{$way}{hops}}); 
+            }
+            ### snmp data for each hop - all unique hop IPs
+    	    %allhops = (%{$traceroute->{direct_traceroute}{hop_ips}}, %{$traceroute->{reverse_traceroute}{hop_ips}});
+	    $data->{traceroute_nodes} = \%allhops;
+	    return $data unless $traceroute->{direct_traceroute}{hop_ips} || $traceroute->{reverse_traceroute}{hop_ips};
+	} else {
+            %allhops = ( $params{src_ip} => 1 );
+	}
+
+	$logger->debug("HOPS:::", sub{Dumper(\%allhops)});
+
+	$task_set = $g_client->new_task_set; 
+	$data->{snmp} = {};
+	if(!$params{data_type} || $params{data_type} =~ /^snmp$/i) {
+            eval {
+		get_snmp($task_set, $data->{snmp}, \%allhops, \%params);
+            }; 
+            if($EVAL_ERROR) {
+		error "  No SNMP data - failed $EVAL_ERROR";
+            }
+	}
+	# return $data;
+	# end to end data  stats if available
+	### return $data unless $params{src_ip} && $params{dst_ip};
+	my @data_keys = ();
+	if($params{data_type}) {
+            @data_keys = ($params{data_type}) if  $params{data_type} =~ /^bwctl|owamp|pinger$/i;
+	} else {
+            @data_keys =  qw/bwctl owamp pinger/;
+	}
+	# my @data_keys = qw/owamp/;
+	map {$data->{$_} = {}} @data_keys;
+	#
+	# B logic - get list of slowest pinger and owamp services and creat exclusion list to avoid them  
+	#
+	if(@data_keys) {
+	    foreach my $dir (qw/direct reverse/) {
+		foreach my $e_type (@data_keys)  {
+		    $logger->debug(" ...  Running  ------------  $e_type");
+		     my $md_href = get_e2e_mds($e_type, $trace_cond->{"$dir\_traceroute"}{src}, $trace_cond->{"$dir\_traceroute"}{dst});
+	             unless($md_href && %{$md_href}) {
+	        	$logger->error("!!!! No metadata for $e_type on $dir ....");
+	        	 next;
+	             }
+		    get_e2e($task_set, $data->{$e_type}, \%params, $md_href, $e_type );
+		    $logger->debug(" +++++ Done  $dir ------------  $e_type");
+		}
+	     }
+	}
   };
   if($EVAL_ERROR) {
-      error "data call  failed - $EVAL_ERROR";
+      $logger->error("data calls  failed - $EVAL_ERROR");
       GeneralException->throw(error => $EVAL_ERROR ); 
   }
   $logger->debug(" +++++ Waiting  +++++++++++");
   $task_set->wait(timeout => $params{timeout}) if $task_set;
   $logger->debug(" +++++ E2E is DONE  +++++++++++");
-  foreach my $ip_noted (keys %{$data->{snmp}}) { 
+  reduce_snmp_dataset($data->{snmp}, \%params);
+  return $data; 
+}
+
+#
+# reduce snmp data set to resolution
+#
+sub reduce_snmp_dataset {
+    my ($snmp, $params) = @_;
+    foreach my $ip_noted (keys %{$snmp}) { 
         my @result =(); 
-        foreach my $time  (sort {$a<=>$b} grep {$_} keys %{$data->{snmp}{$ip_noted}}) { 
-	    push @result,[ $time,  { capacity =>  $data->{snmp}{$ip_noted}{$time}{capacity},  
-		                     utilization => $data->{snmp}{$ip_noted}{$time}{utilization},
-				     errors => $data->{snmp}{$ip_noted}{$time}{errors},
-				     drops => $data->{snmp}{$ip_noted}{$time}{drops},
-		   	           }
-		         ];
+        foreach my $time  (sort {$a<=>$b} grep {$_} keys %{$snmp->{$ip_noted}}) { 
+     	    push @result,[ $time,  { capacity =>  $snmp->{$ip_noted}{$time}{capacity},  
+     				  utilization => $snmp->{$ip_noted}{$time}{utilization},
+     				  errors => $snmp->{$ip_noted}{$time}{errors},
+     				  drops => $snmp->{$ip_noted}{$time}{drops},
+     				}
+     		        ];
         }
         ### debug "Data for ip=$hop_ip hop_id=$hops_ref->{$hop_ip}:: " . Dumper( $snmp{$hops_ref->{$hop_ip}});
-       $data->{snmp}{$ip_noted} = refactor_result(\@result, 'snmp', $params{resolution});
-       ##$data->{snmp}{$ip_noted} = \@result;
-  }
-  return $data; 
+        $snmp->{$ip_noted} = refactor_result(\@result, 'snmp', $params->{resolution});
+        ##$snmp->{$ip_noted} = \@result;
+    }
+    return $snmp;
 }
 #
 # get list of metadata ids for the e2e data and some src/dts conditions
@@ -971,7 +1006,74 @@ sub get_traceroute {
     return {hops => $hops, hop_ips =>  $hops_ref, mds => $md_traces};
 }
 #
-#    for the list of hop IPs get SNMP data localy or remotely ( forked )
+#   get circuit data
+#
+sub get_circuit_data {
+    my ($g_client, $trace_cond,  $params) = @_;
+    my $snmp = {};
+    my $FAILED = 0;
+    $logger->debug(" get_circuit_data ---------- ");
+    my $task_set = $g_client->new_task_set;
+    my $shards =  get_shards({data =>  'snmp', start => $params->{snmp}{start} , end =>  $params->{snmp}{end} }, database('ecenter'));
+    foreach my $shard (sort  { $a <=> $b } keys %$shards) {
+       $logger->debug(" Circuits table:$shard start=$shards->{$shard}{start} end=$shards->{$shard}{end}");
+       my $sql = qq|select  clink.circuit_link,  hop_l2p.l2_urn as hop_urn, h_hop.hub_name as hop_hubname, 
+	                                                                 clink.link_num as hop_num, h_hop.longitude as hop_longitude, 
+									 h_hop.latitude as hop_latitude,
+	                                                                 c.circuit, c.description, c.start_time, c.end_time
+	                                                     from 
+							               circuit_link_$shard clink 
+								  join l2_port hop_l2p on(clink.l2_urn=hop_l2p.l2_urn) 
+							          join circuit_$shard c on(clink.circuit=c.circuit)
+	                                                          join hub h_src on(c.src_hub = h_src.hub)
+								  join hub h_dst on(c.dst_hub=h_dst.hub)
+								  join hub h_hop on(hop_l2p.hub=h_hop.hub)
+                                                                where clink.direction = 'forward' and 
+								      (h_src.hub_name = '$params->{src_hub}' and h_dst.hub_name = '$params->{dst_hub}')
+								       and  c.end_time >=   $shards->{$shard}{start}|;
+	$logger->debug(" Circuits table	SQL:$sql");						      
+        my $hops = database('ecenter')->selectall_hashref($sql, 'circuit_link');
+        #$snmp->{hops}{$shard} = $hops;
+        my %urns = ();
+	$logger->debug(" Circuits hops:", sub{Dumper($hops)});
+        foreach my $hop (keys %{$hops}) {
+	    $snmp->{hops}{$hops->{$hop}{circuit}}{$hops->{$hop}{hop_urn}} = $hops->{$hop};
+	    $urns{$hops->{$hop}{hop_urn}}++;
+        }
+        foreach my $urn (keys %urns) {
+	    $snmp->{snmp}{$urn} = {};
+    	    $task_set->add_task("get_remote_snmp" =>  
+    			  encode_json {
+	 			   start =>  $shards->{$shard}{start},
+	 			   urn =>    $urn,
+	 			   end =>    $shards->{$shard}{end},
+				   direction => 'out',
+				   service => config->{circuits_ma},
+	 			      },
+	 	     {  
+	 		on_fail     => sub {$FAILED++;
+	 					       $logger->error("FAILED:  CIRCUITS snmp_data_$shard ".
+	 									 " start=$shards->{$shard}{start}-$shards->{$shard}{end}");},
+	 		on_complete => sub { 
+	 		    my $returned = decode_json  ${$_[0]};  
+	 		    if($returned->{status} eq 'ok' && $returned->{data} && ref $returned->{data} eq ref {}) {
+	 			###$logger->debug(" Circuits DATA OK:::", sub{Dumper($returned)}); 
+	 			%{$snmp->{snmp}{$urn}} =  (%{$snmp->{snmp}{$urn}},  %{$returned->{data}});
+	 		     } else {
+	 			$logger->error("request is not OK:::", sub{Dumper($returned)});
+	 		     }
+	 		 }
+	 	     }
+            );
+        }
+    }
+    $task_set->wait(timeout => $params->{timeout})
+        if $task_set;
+    return $snmp;
+}
+
+#
+#    for the list of hop IPs get SNMP data localy or remotely
 #
 
 sub get_snmp {
@@ -988,7 +1090,8 @@ sub get_snmp {
             my $data_table = strftime "%Y%m", localtime($st_time);
 	    my $st_end_i = $st_time + config->{time_slice_secs};
 	    my $end_time = ($params->{snmp}{end} && $params->{snmp}{end}<$st_end_i)?$params->{snmp}{end}:$st_end_i;
-	    debug "  Sending request for::$ip_noted snmp_data_$data_table $st_time  $end_time";    
+	    $logger->debug("  Sending request for::$ip_noted snmp_data_$data_table $st_time  $end_time");
+	    
             $task_set->add_task("dispatch_snmp" =>  
 	                         encode_json {
 	                                  table =>  "snmp_data_$data_table",

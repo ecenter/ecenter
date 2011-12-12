@@ -244,9 +244,9 @@ sub get_remote_data  {
 sub get_remote_snmp  {
     my ($job) = @_;
     my $request = decode_json $job->arg();
-    my $dbh  = _initialize($request, 'dbic', qw/metaid service start end  direction snmp_ip/);
+    my $dbh  = _initialize($request, 'dbic', qw/service start end  direction/);
     return encode_json {status => 'error', data => $dbh} unless ref $dbh;
-    return encode_json (_get_remote_snmp($request, $dbh));
+    return  _get_remote_snmp($request, $dbh);
 }
 #
 #  send remote request, store data into the db and sends json back
@@ -334,53 +334,41 @@ sub _get_remote_snmp {
     my ($request, $dbh) = @_;
     my $snmp_ma;
     my $result = {status => 'ok', data => {}};
-    my $t1 = time();
-    my $t_delta = 0;
     eval {
 	$snmp_ma =  Ecenter::Data::Snmp->new({ url => $request->{service} });
-	$snmp_ma->get_data({ direction =>  $request->{direction},
-			     ifAddress =>  $request->{snmp_ip},
-			     start =>  DateTime->from_epoch( epoch =>  $request->{start}),
-			     end =>  DateTime->from_epoch( epoch =>  $request->{end}),
-			     resolution => 5,
-			  });
+	my $meta_cond = {  direction =>  $request->{direction},
+    	    		   start     =>  DateTime->from_epoch( epoch =>   $request->{start}),
+    	    		   end       =>  DateTime->from_epoch( epoch =>  $request->{end}), 
+			   resolution => 5,
+	    		 };
+     	if($request->{snmp_ip}) {
+     	    $meta_cond->{ifAddress} =  $request->{snmp_ip};
+        } else {
+     	    $meta_cond->{urn} = $request->{urn};
+        }
+	$snmp_ma->get_data( $meta_cond );
     };
     if($EVAL_ERROR) {
-         eval {
-	     $dbh->resultset('ServicePerformance')->find_or_create( { metaid =>  $request->{metaid},
-	                                                 requested_start => $request->{start},
-	                                                 requested_time => ($request->{end}- $request->{start}),
-	                                                 response =>  time() - $t1,
-							 is_data => 0} ) if  $OPTIONS{metrics} &&  (time() - $t1) > 20 &&  $request->{type} =~ /owamp|pinger/i;
-	};
 	$logger->error(" Remote MA --  $request->{service} failed $EVAL_ERROR");
         $result->{status} = 'error';
         $result->{data} = " Remote MA -- $request->{service} failed $EVAL_ERROR";
 	return encode_json  $result;
-    }
-    $t_delta = time() - $t1;
+    } 
     #$logger->info("$request->{service} :: SNMP Data=", sub {Dumper($snmp_ma->data)});
     $logger->info("$request->{service} :: SNMP DataN=" . scalar @{$snmp_ma->data});
     
     if($snmp_ma->data && @{$snmp_ma->data}) {
-        eval {
-	   $dbh->resultset('ServicePerformance')->find_or_create( { metaid =>  $request->{metaid},
-	                                                 requested_start => $request->{start},
-	                                                 requested_time => ($request->{end}- $request->{start}),
-	                                                 response => $t_delta,
-							 is_data => 1} ) if  $OPTIONS{metrics} && $t_delta > 20 &&  $request->{type} =~ /owamp|pinger/i;
-	 };
 	 foreach my $data (@{$snmp_ma->data}) {
 	     eval {
-	          my $datum = {  metaid => $request->{metaid},
-			         timestamp => $data->[0],
+	          my $datum = {  timestamp => $data->[0],
 			         utilization => $data->[1],
 				 errors => $data->[2],
 				 drops => $data->[3]
 			      };
-		  $dbh->resultset($request->{table})->find_or_create( $datum,
-							                {key => 'meta_time'}
-							               );
+		  if($request->{snmp_ip} && $request->{metaid}) {
+		      $datum->{metaid} = $request->{metaid};
+		      $dbh->resultset($request->{table})->find_or_create( $datum,   {key => 'meta_time'}  );
+		  }
 		  $datum->{capacity} = $data->[4];
 	          $result->{data}{$data->[0]} = $datum;
 	     };
@@ -388,14 +376,6 @@ sub _get_remote_snmp {
 		$logger->error("  Some error with insertion    $EVAL_ERROR");
 	     }
         }
-    } else {
-        eval {
-	  $dbh->resultset('ServicePerformance')->find_or_create( { metaid =>  $request->{metaid},
-	                                                 requested_start => $request->{start},
-	                                                 requested_time => ($request->{end}- $request->{start}),
-	                                                 response =>  $t_delta,
-							 is_data => 0} ) if  $OPTIONS{metrics} && $t_delta > 20 &&  $request->{type} =~ /owamp|pinger/i;
-	};
     }
     return encode_json $result;
 }
@@ -449,7 +429,7 @@ sub dispatch_snmp {
     my $request = decode_json $job->arg();
     my %snmp=();
     my $dbic  = _initialize($request, 'dbic');  
-    my $dbh  = _initialize($request, 'dbh', qw/snmp_ip table class start end/);
+    my $dbh  = _initialize($request, 'dbh', qw/snmp_ip table  class start end/);
     return encode_json {status => 'error', data => $dbh} unless ref $dbh;
     my $result = {status => 'ok', data => []};
     
@@ -467,7 +447,7 @@ sub dispatch_snmp {
     	my (undef, $request_params) = each(%{$data_ref->{md}});
         $logger->info("params to ma: ip=$request_params->{snmp_ip} start=$request->{start} end=$request->{end} ");
     	return  _get_remote_snmp({ table  => $request->{class},
-				   service =>$request_params->{service},
+				   service => $request_params->{service},
 				   metaid => $request_params->{metaid},
 				   snmp_ip => $request_params->{snmp_ip},
 				   direction => 'out', 

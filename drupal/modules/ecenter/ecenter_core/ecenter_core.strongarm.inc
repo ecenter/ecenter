@@ -400,6 +400,7 @@ function ecenter_core_strongarm() {
   $strongarm->api_version = 1;
   $strongarm->name = 'simplemenu_visibility_pages';
   $strongarm->value = 'imce*
+noderelationships/*
 ';
   $export['simplemenu_visibility_pages'] = $strongarm;
 
@@ -456,7 +457,7 @@ function ecenter_core_strongarm() {
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
   $strongarm->name = 'user_email_verification';
-  $strongarm->value = FALSE;
+  $strongarm->value = TRUE;
   $export['user_email_verification'] = $strongarm;
 
   $strongarm = new stdClass;

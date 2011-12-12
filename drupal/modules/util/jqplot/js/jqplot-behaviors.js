@@ -4,7 +4,8 @@ $.jqplot.config.enablePlugins = false;
 Drupal.behaviors.jqPlot = function(context) {
   if (Drupal.settings.jqPlot) {
     var replace = ['renderer', 'markerRenderer', 'labelRenderer', 'parseX',
-      'parseY', 'scrapeSingle', 'scrapeMultiple', 'tickRenderer', 'processSeries'];
+      'parseY', 'scrapeSingle', 'scrapeMultiple', 'tickRenderer',
+      'processSeries', 'formatter', 'tooltipContentEditor'];
     $.each(Drupal.settings.jqPlot, function(selector, settings) {
       settings = Drupal.jqPlot.replaceFunctions(settings, replace);
       $(selector).tablechart(settings);

@@ -223,8 +223,8 @@
 // Body {{{
 body {
   font-family: @font_body;
-  font-size: 18px;
-  line-height: 24px;
+  font-size: 16px;
+  line-height: 21px;
   color: @color_grey_20;
   background-color: @color_grey_33;
 }
@@ -263,19 +263,21 @@ table {
 h1, h2, h3, h4, h5, h6 {
   font-family: @font_heading;
   font-weight: bold;
+  margin-bottom: 21px;
 }
 h1 {
   font-size: 32px;
   line-height: 42px;
-  margin-bottom: 21px;
 }
 h2 {
   font-size: 28px;
-  line-height: 35px;
-  margin-bottom: 18px
+  line-height: 34px;
+  margin-bottom: 8px
 }
 h3 {
   font-size: 24px;
+  line-height: 34px;
+  margin-bottom: 8px
 }
 h4 {
   font-size: 20px;
@@ -336,8 +338,11 @@ code, abbr {
   font-weight: strong;
 }
 code {
-  color: @color_black;
-  background-color: @color_grey_87;
+  color: @color_grey_27;
+  font-size: 14px;
+  background-color: @color_grey_93;
+  padding-left: 3px;
+  padding-right: 3px;
 }
 
 // }}}
@@ -867,6 +872,38 @@ form {
           background-color: @color_grey_33;
         }
       }
+      .traceroute-legend {
+        .clearfix;
+        border-top: 1px solid @color_grey_73;
+        margin-top: 7px;
+        padding-top: 7px;
+        margin-bottom: 14px;
+        .marker {
+          display: inline-block;
+          width: 10px;
+          height: 10px;
+          margin-right: 4px;
+        }
+        .traceroute-legend-forward {
+          .marker { background-color: #035dc5; }
+        }
+        .traceroute-legend-reverse {
+          .marker { background-color: #a71932; }
+        }
+        .traceroute-legend-element {
+          .box;
+          margin-right: 20px;
+          font-size: 12px;
+        }
+        .traceroute-legend-title {
+          font-weight: bold;
+        }
+        .traceroute-legend-help {
+          font-style: italic;
+          padding-left: 18px;
+          background: url('../img/magnifier.png') no-repeat 0 4px;
+        }
+      }
     }
   } // }}}
   #query-wrapper { // {{{
@@ -1022,7 +1059,6 @@ form {
     }
   } // }}}
   #end-to-end-charts { // {{{
-    margin-top: 25px;
     .box;
     width: 500px;
     .data-wrapper {
@@ -1032,23 +1068,27 @@ form {
       .chart-title {
         .box;
         border-bottom: 1px solid @color_grey_80;
-        margin-top: -25px;
         h3 {
           .box;
-          width: 150px;
-          font-size: .875em;
+          width: 130px;
+          font-size: 18px;
           margin: 0;
+          line-height: 21px;
         }
         .chart-label {
-          font-size: 13px;
-          color: @color_grey_33;
+          font-size: 14px;
+          font-weight: bold;
           float: left;
-          width: 330px;
+          width: 350px;
           text-align: right;
+          line-height: 21px;
         }
         h4 {
           font-size: .8em;
         }
+      }
+      .jqplot-target {
+        margin-top: 40px;
       }
     }
     .active-row {
@@ -1094,7 +1134,6 @@ form {
   #result-links-wrapper { // {{{
     padding-bottom: 10px;
     margin-bottom: 10px;
-    border-bottom: 1px solid @color_grey_67;
     .form-item {
       margin: 0 !important;
     }
@@ -1374,10 +1413,18 @@ form {
       }
     }
   } // }}}
-  .show-data { // {{{
+  .show-data, .popup-chart { // {{{
     font-size: 12px;
     padding: 2px 3px;
-  } // }}}
+    margin-right: 5px;
+  } 
+  .popup-chart {
+    span.icon {
+      padding-left: 18px;
+      background: url('../img/magnifier.png') no-repeat 0 2px;
+    }
+  }
+  // }}}
   .ecenter-messages { // {{{
     font-size: 13px;
     margin-top: -10px;
@@ -1477,6 +1524,9 @@ form {
   }
   pre {
     font-size: 14px;
+    margin-bottom: 22px;
+    padding: 10px;
+    background-color: @color_grey_93;
   }
   .submitted {
     border-bottom: 1px solid @color_grey_80;
@@ -1748,7 +1798,6 @@ form {
       }
       p {
         margin: 0;
-        font-size: 1.15em;
       }
     }
   }
@@ -1845,6 +1894,16 @@ body.page-search {
   font-size: 11px !important;
   line-height: 13px !important;
   color: #fff;
+  span {
+    display: block;
+    margin: 3px 0;
+    &.max-err {
+      margin-top: 7px;
+    }
+  }
+  br {
+    display: none;
+  }
   .value {
     font-weight: bold;
   }
@@ -2259,6 +2318,18 @@ table.network-health {
     font-family: @font_mono;
     width: 100%;
   }
+  .ui-dialog-titlebar {
+    float: right;
+    .ui-dialog-titlebar-close {
+      display: block;
+      float: right;
+      .button;
+      font-size: 12px;
+      padding-left: 8px;
+      padding-right: 8px;
+      text-transform: uppercase;
+    }
+  }
 }
 .ui-widget-overlay {
   background-color: rgba(255, 255, 255, 0.75);
@@ -2392,5 +2463,10 @@ tr.forecast {
 // Modal chart {{{
 #modal-chart {
   height: 400px !important;
+}
+// }}}
+// Context block {{{
+a.context-block-region {
+  display: none;
 }
 // }}}

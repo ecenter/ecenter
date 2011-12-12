@@ -1,7 +1,7 @@
-diff --git a/jquery_ui.install b/jquery_ui.install
+diff --git jquery_ui.install jquery_ui.install
 index 5d74f07..1994e33 100644
---- a/jquery_ui.install
-+++ b/jquery_ui.install
+--- jquery_ui.install
++++ jquery_ui.install
 @@ -6,43 +6,6 @@
   */
  
@@ -46,10 +46,10 @@ index 5d74f07..1994e33 100644
   * Implementation of hook_uninstall().
   */
  function jquery_ui_uninstall() {
-diff --git a/jquery_ui.module b/jquery_ui.module
+diff --git jquery_ui.module jquery_ui.module
 index 8e47caa..8c47871 100644
---- a/jquery_ui.module
-+++ b/jquery_ui.module
+--- jquery_ui.module
++++ jquery_ui.module
 @@ -19,10 +19,13 @@
   *   An array of what additional files (other than UI core) should be loaded
   *   on the page, or a string with a single file name.

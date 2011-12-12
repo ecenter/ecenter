@@ -1,5 +1,3 @@
-; $Id$
-;
 ; E-Center Project makefile
 ;
 ; E-Center uses a monolithic git repository to store its codebase.  This
@@ -17,11 +15,6 @@ projects[drupal][version] = "6.22"
 projects[drupal][patch][] = "http://drupal.org/files/issues/do479468-drupal_to_js-expanded-comments-nostatic.patch"
 
 ; Modules
-
-; Handle multiple jQuery UI versions
-; Make removal of submit and validation handlers optional
-; Patch for jQuery 1.4.4, required by jqPlot and jQuery UI 1.8.x
-; Update Javascript settings
 projects[adminrole][subdir] = "contrib"
 projects[adminrole][version] = "1.3"
 
@@ -33,9 +26,6 @@ projects[ahah_helper][version] = "2.1"
 projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/ahah_helper_form_id.patch"
 projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/ahah_helper_js_settings.patch"
 projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/ahah_helper_optional_validation_handlers.patch"
-
-projects[autoload][subdir] = "contrib"
-projects[autoload][version] = "2.0"
 
 projects[beautytips][subdir] = "contrib"
 projects[beautytips][version] = "2.0"
@@ -54,6 +44,7 @@ projects[conditional_styles][version] = "1.2"
 
 projects[context][subdir] = "contrib"
 projects[context][version] = "3.0"
+projects[context][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/context_jquery_ui_1.8.patch"
 
 projects[ctools][subdir] = "contrib"
 projects[ctools][version] = "1.8"
@@ -70,11 +61,8 @@ projects[devel][version] = "1.26"
 projects[diff][subdir] = "contrib"
 projects[diff][version] = "2.3"
 
-projects[exportables][subdir] = "contrib"
-projects[exportables][version] = "2.x-dev"
-
-projects[fbconnect][subdir] = "contrib"
-projects[fbconnect][version] = "2.0-beta1"
+projects[elysia_cron][subdir] = "contrib"
+projects[elysia_cron][version] = "2.0"
 
 projects[features][subdir] = "contrib"
 projects[features][version] = "1.1"
@@ -110,7 +98,7 @@ projects[insert][subdir] = "contrib"
 projects[insert][version] = "1.1"
 
 projects[jquery_ui][subdir] = "contrib"
-projects[jquery_ui][version] = "1.4"
+projects[jquery_ui][version] = "1.5"
 projects[jquery_ui][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/jquery_ui_multiple_versions.patch"
 
 projects[jquery_update][subdir] = "contrib"
@@ -123,11 +111,11 @@ projects[less][version] = "2.7"
 projects[libraries][subdir] = "contrib"
 projects[libraries][version] = "1.0"
 
-projects[linkedin][subdir] = "contrib"
-projects[linkedin][version] = "1.x-dev"
-
 projects[linkit][subdir] = "contrib"
 projects[linkit][version] = "1.10"
+
+projects[logintoboggan][subdir] = "contrib"
+projects[logintoboggan][version] = "1.10"
 
 projects[mapbox][subdir] = "contrib"
 projects[mapbox][version] = "1.0-alpha3"
@@ -136,11 +124,10 @@ projects[markdown][subdir] = "contrib"
 projects[markdown][version] = "1.2"
 
 projects[markdownify][type] = "module"
-projects[markdownify][subdir] = "ecenter-contrib"
+projects[markdownify][subdir] = "contrib"
 projects[markdownify][download][type] = "git"
 projects[markdownify][download][url] = "git://github.com/ecenter/markdownify"
 projects[markdownify][download][branch] = "6.x-1.0-dev"
-
 
 projects[menu_block][subdir] = "contrib"
 projects[menu_block][version] = "2.4"
@@ -167,7 +154,7 @@ projects[semanticviews][subdir] = "contrib"
 projects[semanticviews][version] = "1.1"
 
 projects[shib_auth][subdir] = "contrib"
-projects[shib_auth][version] = "4.0-rc6"
+projects[shib_auth][version] = "4.0"
 
 projects[simplemenu][subdir] = "contrib"
 projects[simplemenu][version] = "1.14"
@@ -182,16 +169,16 @@ projects[syntaxhighlighter][subdir] = "contrib"
 projects[syntaxhighlighter][version] = "1.26"
 
 projects[tableofcontents][subdir] = "contrib"
-projects[tableofcontents][version] = "3.6"
+projects[tableofcontents][version] = "3.7"
 
 projects[token][subdir] = "contrib"
-projects[token][version] = "1.17"
+projects[token][version] = "1.18"
 
 projects[vertical_tabs][subdir] = "contrib"
 projects[vertical_tabs][version] = "1.0-rc2"
 
 projects[views][subdir] = "contrib"
-projects[views][version] = "3.0-alpha3"
+projects[views][version] = "3.0-rc3"
 
 projects[views_slideshow][subdir] = "contrib"
 projects[views_slideshow][version] = "3.0"
@@ -221,17 +208,14 @@ libraries[profiler][directory_name] = "profiler"
 libraries[jquery_ui_1_6][download][type] = "get"
 libraries[jquery_ui_1_6][download][url] = "http://jquery-ui.googlecode.com/files/jquery.ui-1.6.zip"
 libraries[jquery_ui_1_6][directory_name] = "jquery.ui-1.6"
-libraries[jquery_ui_1_6][destination] = "modules/contrib/jquery_ui"
 
 libraries[jquery_ui_1_7][download][type] = "get"
 libraries[jquery_ui_1_7][download][url] = "http://jquery-ui.googlecode.com/files/jquery-ui-1.7.3.zip"
 libraries[jquery_ui_1_7][directory_name] = "jquery.ui-1.7"
-libraries[jquery_ui_1_7][destination] = "modules/contrib/jquery_ui"
 
 libraries[jquery_ui_1_8][download][type] = "get"
 libraries[jquery_ui_1_8][download][url] = "http://jquery-ui.googlecode.com/files/jquery-ui-1.8.7.zip"
 libraries[jquery_ui_1_8][directory_name] = "jquery.ui-1.8"
-libraries[jquery_ui_1_8][destination] = "modules/contrib/jquery_ui"
 
 ; OpenLayers
 libraries[openlayers][download][type] = "get"
@@ -240,12 +224,12 @@ libraries[openlayers][directory_name] = "openlayers"
 
 ; jqPlot
 libraries[jqplot][download][type] = "get"
-libraries[jqplot][download][url] = "http://bitbucket.org/cleonello/jqplot/downloads/jquery.jqplot.0.9.7r635.zip"
+libraries[jqplot][download][url] = "http://bitbucket.org/cleonello/jqplot/downloads/jquery.jqplot.1.0.0b2_r947.tar.gz"
 libraries[jqplot][directory_name] = "jqplot"
 
 ; TinyMCE
 libraries[tinymce][download][type] = "get"
-libraries[tinymce][download][url] = "http://github.com/downloads/tinymce/tinymce/tinymce_3_3_9_3.zip"
+libraries[tinymce][download][url] = "http://github.com/downloads/tinymce/tinymce/tinymce_3.4.7.zip"
 libraries[tinymce][directory_name] = "tinymce"
 
 ; SyntaxHighlighter, probably won't work because of download url
@@ -263,11 +247,6 @@ libraries[openid_selector][download][type] = "get"
 libraries[openid_selector][download][url] = "http://openid-selector.googlecode.com/files/openid-selector-1.3.zip"
 libraries[openid_selector][directory_name] = "openid-selector"
 
-; jQuery SVG (@TODO remove)
-libraries[jquery-svg][download][type] = "get"
-libraries[jquery-svg][download][url] = "http://plugins.jquery.com/files/jquery.svg.package-1.4.3.zip"
-libraries[jquery-svg][directory_name] = "jquery-svg"
-
 ; jQuery cycle
 libraries[jquery.cycle][download][type] = "get"
 libraries[jquery.cycle][download][url] = "https://raw.github.com/malsup/cycle/master/jquery.cycle.all.js"
@@ -275,7 +254,7 @@ libraries[jquery.cycle][directory_name] = "jquery.cycle"
 
 ; qTip library
 libraries[qtip][download][type] = "get"
-libraries[qtip][download][url] = "https://raw.github.com/Craga89/qTip2/master/dist/jquery.qtip.js"
+libraries[qtip][download][url] = "http://bazaar.launchpad.net/~craig.craigsworks/qtip/trunk/download/head:/jquery.qtip.js-20090423181637-fwr6qh3994kcod3i-2/jquery.qtip.js"
 libraries[qtip][directory_name] = "qtip"
 
 ; Masonry

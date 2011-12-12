@@ -19,64 +19,6 @@
 (function($) {
 
 /**
- * Override tablechart attachMethod
- */
-$.fn.tablechart.defaults.attachMethod = function(container) {
-  $('.chart-title', this.el).after(container);
-}
-
-/**
- * Utility function: Scrape single table for values
- */
-$.tablechart.scrapeSingle = function(table) {
-  var series = [],
-      options = this.options,
-      tablechart = this,
-      seriesOptions = {},
-      bandHigh = [],
-      bandLow = [];
-
-  if (options.headerSeriesLabels) {
-    $(table).find('thead th:gt(0)').each(function(i) {
-      seriesOptions.label = $(this).text();
-    });
-  }
-
-  $(table).find('tbody tr').each(function(j) {
-    var x = 0, y = 0, max, min;
-    $(this).find('th').each(function() {
-      x = options.parseX.call(tablechart, this);
-    });
-    $(this).find('td').each(function(i) {
-      if (i == 0) {
-        if (!series[0]) {
-          series[0] = [];
-        }
-        y = options.parseY.call(tablechart, this);
-        series[0].push([x, y]);
-      }
-      else if (i == 1) {
-        min = options.parseY.call(tablechart, this);
-      }
-      else if (i == 2) {
-        max = options.parseY.call(tablechart, this);
-      }
-    });
-    if (min && max) {
-      bandLow.push( [x, min] );
-      bandHigh.push( [x, max] );
-    }
-  });
-
-  if (bandHigh.length && bandLow.length) {
-    seriesOptions = { 'rendererOptions' : { 'bandData' : [bandLow, bandHigh] } };
-  }
-
-  return { 'series' : series, 'options' : seriesOptions };
-}
-
-
-/**
  * Drupal behavior to attach network weathermap behaviors
  */
 Drupal.behaviors.EcenterNetwork = function(context) {
@@ -410,6 +352,21 @@ $.fn.ecenter_network.plugins.map = function() {
           input.data('autocomplete')._trigger('change');
         }
       }
+      else if (layer.drupalID == 'ecenter_network_traceroute') {
+        var tables = $('#utilization-tables .' + feature.ecenterID.toLowerCase() +'-data-table'),
+            title_parts = feature.ecenterID.split('_'),
+            options = {
+              'plotOptions' : {
+                'axes' : {
+                  'yaxis' : {
+                    'min' : 0,
+                    'max' : 100
+                  }
+                }
+              }
+            };
+        $.fn.ecenter_network.popup_chart(tables, title_parts[1] + ' utilization', options);
+      }
     });
 
     $(id).live('featureOver', function(e, feature, layer, control, cancel) {
@@ -561,6 +518,7 @@ $.fn.ecenter_network.plugins.traceroute = function() {
       'elementmouseover' : function(e, element, cancel_map, cancel_highlight) {
         var hub_id = element.groups[0];
 
+        $('body').css('cursor', 'pointer');
         $.ecenter_network.hoverOver.call(element);
 
         if (!cancel_highlight) {
@@ -571,7 +529,7 @@ $.fn.ecenter_network.plugins.traceroute = function() {
             lh.highlightSeries(hop.sidx[key], tc['default'].chart);
           }
         }
-        
+
         if (element.tracerouteType == 'match' && !cancel_map) {
           var ol = $('#openlayers-map-auto-id-0').data('openlayers');
           var map = ol.openlayers;
@@ -587,7 +545,7 @@ $.fn.ecenter_network.plugins.traceroute = function() {
         var hop = Drupal.settings.ecenterNetwork.seriesLookupByHub[hub_id];
         var tc = $('#utilization-tables').data('tablechart');
         var lh = tc['default'].chart.plugins.linehighlighter;
-        
+
         for (key in hop.sidx) {
           lh.unhighlightSeries(hop.sidx[key], tc['default'].chart);
         }
@@ -602,100 +560,22 @@ $.fn.ecenter_network.plugins.traceroute = function() {
         }
 
         $.ecenter_network.hoverOut.call(element);
+        $('body').css('cursor', 'default');
       },
       'elementclick' : function(e, element) {
-        var dialog = $('#modal-chart'),
-            tables = $('#utilization-tables .' + element.groups[0].toLowerCase() +'-data-table').clone(false),
-            title_parts = element.groups[0].split('_');
-        
-        $('h2', dialog).text(title_parts[1] +' utilization');
-
-        console.log('Tablechart:');
-        console.log(dialog.data('tablechart'));
-
-        dialog.removeData('tablechart');
-        
-        console.log('Tablechart after:');
-        console.log(dialog.data('tablechart'));
-
-        $('table, .jqplot-target', dialog).remove();
-        dialog.append(tables);
-        dialog.dialog('open');
-        
-        dialog.tablechart({
-          'hideTables' : true,
-          'parseX' : $.tablechart.parseText,
-          'height' : 300,
-          'plotOptions' : {
-            'seriesDefaults' : {
-              'lineWidth' : 1.5,
-              'shadow' : false,
-              'fill' : false,
-              'markerOptions' : {
-                'size' : 3.5,
-                'shadow' : false
-              }
-            },
-            'highlighter' : {
-              'show' : true,
-              'sizeAdjust' : 0,
-              'lineWidthAdjust' : 0,
-              'tooltipLocation' : 'n',
-              'tooltipOffset' : 10,
-              'tooltipSeparator' : ': '
-            },
-            'legend' : {
-              'show' : true,
-              'renderer' : $.jqplot.EnhancedLegendRenderer,
-              'placement' : 'outsideGrid',
-              'location' : 's',
-              'rendererOptions' : {
-                'numberRows' : 1
-              }
-            },
-            'seriesColors' : ['#035dc5', '#a71932'],
-            'axes' : {
-              'xaxis' : {
-                'pad' : 1,
-                'renderer' : $.jqplot.DateAxisRenderer,
-                'autoscale' : true,
-                'numberTicks' : 15,
-                'tickOptions' : {
-                  'formatString' : '%H:%M <br /> %#m/%#d',
-                }
-              },
-              'yaxis' : {
-                'autoscale' : true,
-                'min' : 0,
-                'max' : 100,
-                'labelRenderer' : $.jqplot.CanvasAxisLabelRenderer,
-                'tickOptions' : {
-                  'formatString' : '%d',
-                  'showGridLine' : true,
-                  'showMark' : false
-                }
-              }
-            },
-            'grid' : {
-              'shadow' : false,
-              'borderWidth' : 0,
-              'background' : '#e5e5e5',
-              'gridLineColor' : '#ffffff'
-            },
-            'cursor' : {
-              'show' : true,
-              'showTooltip' : false,
-              'zoom' : true,
-              'clickReset' : true
-            },
-            'series' : [
-              { 'linePattern' : 'solid' },
-              { 'linePattern' : 'solid' },
-              { 'linePattern' : 'solid' },
-              { 'linePattern' : 'solid' }
-            ]
-          }
-        }); 
+         var tables = $('#utilization-tables .' + element.groups[0].toLowerCase() +'-data-table'),
+             title_parts = element.groups[0].split('_'),
+             options = {
+               'plotOptions' : {
+                 'axes' : {
+                   'yaxis' : {
+                     'min' : 0,
+                     'max' : 100
+                   }
+                 }
+               }
+             };
+         $.fn.ecenter_network.popup_chart(tables, title_parts[1] + ' utilization', options);
       }
     });
   }
@@ -763,16 +643,17 @@ $.fn.ecenter_network.plugins.show_data_button = function() {
       var wrapper = this;
       var show_text = Drupal.t('Show data tables');
       var hide_text = Drupal.t('Hide data tables');
-      $('.tablechart', this).after('<button class="show-data">' + show_text + '</button>');
-      $('button.show-data', this).toggle(function(e) {
-        $('.data-tables', wrapper).show();
-        $(this).html(hide_text);
-        return false;
-      }, function(e) {
-        $('.data-tables', wrapper).hide();
-        $(this).html(Drupal.t(show_text));
-        return false;
-      });
+      $('<button class="show-data">' + show_text + '</button>')
+        .insertBefore($('.data-tables', this))
+        .toggle(function(e) {
+          $('.data-tables', wrapper).show();
+          $(this).html(hide_text);
+          return false;
+        }, function(e) {
+          $('.data-tables', wrapper).hide();
+          $(this).html(Drupal.t(show_text));
+          return false;
+        });
       $(this).data('showDataButton', true);
     }
   });
@@ -785,6 +666,26 @@ $.fn.ecenter_network.plugins.end_to_end = function() {
   }, function() {
     var parts = this.id.split('-');
     $('#' + parts[0] + '-' + parts[1] + '-data-tables').removeClass('active-row');
+  });
+
+  $('#end-to-end-charts .data-wrapper', this.el).each(function() {
+    var tables = $('.data-tables table', this), 
+      title = $('.chart-title h3', this);
+      tc = $(this).data('tablechart');
+
+    // Copy options
+    var options = $.extend(true, {}, tc['default'].options);
+
+    if (!$(this).data('showMagnifyButton')) {
+      $('<button class="popup-chart"><span class="icon">'+ Drupal.t('Popup chart') +'</span></button>')
+        .insertBefore( $('.data-tables', this) )
+        .click(function(e) {
+          $.fn.ecenter_network.popup_chart(tables, title.text(), options);
+          e.stopPropagation();
+          return false;
+        });
+      $(this).data('showMagnifyButton', true);
+    }
   });
 }
 
@@ -859,7 +760,6 @@ $.fn.ecenter_network.plugins.traceroute_paste = function() {
 
   var dialog = $('#traceroute-paste-copy').dialog({
     autoOpen : false,
-    closeText : null,
     modal: true,
     width: 700,
     buttons: {
@@ -900,6 +800,119 @@ $.fn.ecenter_network.plugins.popup_chart = function() {
   });
 }
 
+// Pop-up a chart
+$.fn.ecenter_network.popup_chart = function(source_tables, title, options) {
+  var dialog = $('#modal-chart'),
+      tables = source_tables.clone(false),
+      default_options = $.fn.ecenter_network.popup_chart.default_options,
+      options = options || {},
+      seriesColors = [];
+
+  $('h2', dialog).text(title);
+  
+  dialog.removeData('tablechart');
+  $('table, .jqplot-target', dialog).remove();
+  
+  dialog.append(tables);
+  dialog.dialog('open');
+
+  // Calculate colors
+  tables.each(function() {
+    var table = $(this),
+        color = false;
+
+    if (table.is('.forward')) {
+      color = (table.is('.forecast')) ? '#48b4db' : '#035dc5';
+    }
+    else if (table.is('.reverse')) {
+      color = (table.is('.forecast')) ? '#be4c2e' : '#a71932';
+    }
+
+    if (color) { 
+      seriesColors.push(color);
+    }
+  });
+
+  default_options.plotOptions.seriesColors = seriesColors;
+ 
+  options = $.extend(true, {}, options, default_options);
+  dialog.tablechart(options); 
+}
+
+$.fn.ecenter_network.popup_chart.default_options = {
+  'hideTables' : true,
+  'parseX' : $.tablechart.parseText,
+  'height' : 300,
+  'width'  : 850,
+  'plotOptions' : {
+    'seriesDefaults' : {
+      'renderer' : $.jqplot.LineRenderer,
+      'lineWidth' : 1,
+      'shadow' : false,
+      'fill' : false,
+      'markerOptions' : {
+        'size' : 4,
+        'shadow' : false
+      }
+    },
+    'highlighter' : {
+      'show' : true,
+      'sizeAdjust' : 0,
+      'lineWidthAdjust' : 0,
+      'tooltipLocation' : 'n',
+      'tooltipOffset' : 10,
+      'tooltipSeparator' : ': ',
+      'tooltipContentEditor' : $.jqplot.Highlighter.errorTooltip
+    },
+    'legend' : {
+      'show' : true,
+      'renderer' : $.jqplot.EnhancedLegendRenderer,
+      'placement' : 'outsideGrid',
+      'location' : 's',
+      'rendererOptions' : {
+        'numberRows' : 1
+      }
+    },
+    'axes' : {
+      'xaxis' : {
+        'renderer' : $.jqplot.DateAxisRenderer,
+        'autoscale' : true,
+        'numberTicks' : 15,
+        'tickOptions' : {
+          'formatString' : '%#m/%#d <br /> %H:%M',
+        }
+      },
+      'yaxis' : {
+        'autoscale' : true,
+        'labelRenderer' : $.jqplot.CanvasAxisLabelRenderer,
+        'tickOptions' : {
+          'formatString' : '%d',
+          'showGridLine' : true,
+          'showMark' : false
+        }
+      }
+    },
+    'grid' : {
+      'shadow' : false,
+      'borderWidth' : 0,
+      'background' : '#e5e5e5',
+      'gridLineColor' : '#ffffff'
+    },
+    'cursor' : {
+      'show' : true,
+      'showTooltip' : false,
+      'zoom' : true,
+      'clickReset' : true
+    },
+    'series' : [
+      { 'linePattern' : 'solid' },
+      { 'linePattern' : 'solid' },
+      { 'linePattern' : 'solid' },
+      { 'linePattern' : 'solid' }
+    ]
+  }
+};
+
 
 /**
  * Default options: Define default plugins to call
@@ -920,9 +933,9 @@ $.fn.ecenter_network.defaults = {
     $.fn.ecenter_network.plugins.change,
     $.fn.ecenter_network.plugins.traceroute,
     $.fn.ecenter_network.plugins.draw_map,
-    $.fn.ecenter_network.plugins.show_data_button,
     $.fn.ecenter_network.plugins.timezone_select,
-    $.fn.ecenter_network.plugins.end_to_end
+    $.fn.ecenter_network.plugins.end_to_end,
+    $.fn.ecenter_network.plugins.show_data_button
   ]
 };
 

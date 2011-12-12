@@ -67,17 +67,7 @@ function ecenter_help_strongarm() {
   $strongarm->api_version = 1;
   $strongarm->name = 'beautytips_defaults';
   $strongarm->value = array(
-    'fill' => '#ffffaa',
-    'padding' => 8,
-    'strokeStyle' => '#666666',
-    'cornerRadius' => 0,
-    'cssStyles' => array(
-      'fontFamily' => '"lucida grande",tahoma,verdana,arial,sans-serif',
-      'fontSize' => '11px',
-    ),
-    'shadowBlur' => 4,
-    'shadowColor' => '#444444',
-    'shadow' => TRUE,
+    'cssStyles' => array(),
   );
   $export['beautytips_defaults'] = $strongarm;
 

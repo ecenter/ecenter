@@ -229,11 +229,15 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
             $forecast_data = $vars['fds_data'][$test][$measurement][$direction];
             foreach ($forecast_data as $timestamp => $values) {
               $time = _ecenter_network_timestamp_to_local($timestamp);
+              $err = $values['stderr'] / 2;
+
               $forecast_table[] = array(
                 'class' => 'forecast',
                 'data' => array(
                   array('data' => $time, 'header' => TRUE),
                   theme($value_suggestions, $values['value'], $test, $measurement, FALSE),
+                  theme($value_suggestions, $values['value'] - $err, $test, $measurement, FALSE),
+                  theme($value_suggestions, $values['value'] + $err, $test, $measurement, FALSE),
                 ),
               );
 
@@ -423,7 +427,7 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
         }
 
         $attributes = array(
-          'class' => $direction .' '. strtolower($hub_id) .'-data-table',
+          'class' => 'data '. $direction .' '. strtolower($hub_id) .'-data-table',
           'data-jqplotHighlightColor' => '#ff0000',
           'data-jqplotSeriesOptions' => '{"label":"'. ucfirst($direction) .' utilization' .'"}',
         );
@@ -448,13 +452,6 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
             $value = 100 * ($forecast['value'] / $last_value[1]['capacity']);
             $err = $forecast['stderr'] / 2;
 
-            /*if ( ($forecast['value'] - $err) > 0 ) {
-              $min_err = 100 * (($forecast['value'] - $err) / $last_value[1]['capacity']);
-            }
-            else {
-              $err = (2 * $err) - $forecast['value'];
-              $min_err = 0.0;
-            }*/
             $min_err = 100 * (($forecast['value'] - $err) / $last_value[1]['capacity']);
             $max_err = 100 * (($forecast['value'] + $err) / $last_value[1]['capacity']);
 
@@ -491,7 +488,7 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
           $sidx++;
 
           $attributes = array(
-            'class' => $direction .' '. strtolower($hub_id) .'-data-table',
+            'class' => 'forecast '. $direction .' '. strtolower($hub_id) .'-data-table',
             'data-jqplotSeriesOptions' => '{"label":"'. ucfirst($direction) .' forecast' .'","linePattern":"dashed"}'
           );
 
@@ -582,10 +579,18 @@ function theme_ecenter_network_end_to_end_tables($tables, $timezone = NULL) {
       $output .= '</div>';
 
       $output .= '<div class="data-tables">';
-      foreach ($measurement_data as $key => $table) {
+      foreach ($measurement_data as $direction => $table) {
+
+        ksort($table);
+
+        $attributes = array(
+          'class' => $direction, 
+          'data-jqplotSeriesOptions' => '{"label":"'. ucfirst($direction) .' utilization' .'"}',
+        );
+
         $output .= '<div class="data-table">';
-        $output .= '<h4>'. t(ucfirst($key)) .'</h4>';
-        $output .= theme('jqplot_table', array(), $table);
+        $output .= '<h3>'. t(ucfirst(str_replace('_', ' ', $direction))) .'</h3>';
+        $output .= theme('jqplot_table', array(), $table, $attributes);
         $output .= '</div>';
       }
       $output .= '</div>';
@@ -593,16 +598,7 @@ function theme_ecenter_network_end_to_end_tables($tables, $timezone = NULL) {
       $output .= '</div>';
 
       $plot_options = _ecenter_network_plot_options_template();
-      $plot_options['legend'] = array(
-        'show' => TRUE,
-        'renderer' => '$.jqplot.EnhancedLegendRenderer',
-        'placement' => 'outsideGrid',
-        'location' => 's',
-        'rendererOptions' => array(
-          'numberRows' => 1,
-        ),
-      );
-
+      
       $forecast_colors = array('#48b4db', '#be4c2e');
       if (empty($measurement_data['reverse'])) {
         $plot_options['seriesColors'] = array($plot_options['seriesColors'][0], $forecast_colors[0]);  
@@ -897,8 +893,9 @@ function theme_ecenter_network_site_centric_data($data) {
  */
 function _ecenter_network_plot_options_template() {
   return array( 
+    'seriesColors' => array('#035dc5', '#a71932',), 
     'seriesDefaults' => array(
-      'lineWidth' => 1.5,
+      'lineWidth' => 1,
       'shadow' => FALSE,
       'fill' => FALSE,
       'markerOptions' => array(
@@ -907,9 +904,14 @@ function _ecenter_network_plot_options_template() {
       ),
     ),
     'legend' => array(
-      'show' => FALSE,
+      'show' => TRUE,
+      'renderer' => '$.jqplot.EnhancedLegendRenderer',
+      'placement' => 'outsideGrid',
+      'location' => 's',
+      'rendererOptions' => array(
+        'numberRows' => 1,
+      ),
     ),
-    'seriesColors' => array('#035dc5', '#a71932',), // '#133f52', '#e34605', '#672b18', '#049e33',  '#650fc2',),
     'axes' => array(
       'xaxis' => array(
         'autoscale' => TRUE,
@@ -917,7 +919,7 @@ function _ecenter_network_plot_options_template() {
         'renderer' => '$.jqplot.DateAxisRenderer',
         'labelRenderer' => '$.jqplot.CanvasAxisLabelRenderer',
         'tickOptions' => array(
-          'formatString' => "%H:%M <br /> %#m/%#d",
+          'formatString' => "%#m/%#d <br /> %H:%M",
           'angle' => 30,
           'fontSize' => '11px',
         ),
@@ -957,6 +959,7 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
       'tooltipLocation' => 'n',
       'tooltipOffset' => 10,
       'tooltipSeparator' => ': ',
+      'tooltipContentEditor' => '$.jqplot.Highlighter.errorTooltip',
     ),
     'cursor' => array(
       'show' => TRUE,
@@ -968,6 +971,7 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
 
   switch ($measurement) {
     case 'throughput':
+      $options += $line_options;
       $options['axes']['yaxis']['label'] = t('mbps');
       $options['axes']['yaxis']['min'] = 0;
       $options['seriesDefaults']['renderer'] = '$.jqplot.BarRenderer';
@@ -975,6 +979,7 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
         'barWidth' => 2,
       );
       $options['axes']['xaxis']['tickOptions']['formatString'] = "%#m/%d";
+      $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%dmbps</span>';
       break;
     case 'max_delay':
     case 'min_delay':
@@ -1000,6 +1005,7 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
       break;
     case 'utilization':
       $options += $line_options;
+      $options['legend'] = array('show' => FALSE);
       $options['axes']['yaxis']['label'] = t('% utilization');
       $options['highlighter']['formatString'] = '<span class="date">%s:</span> <span class="value">%d%</span>';
       break;

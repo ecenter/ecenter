@@ -11,17 +11,18 @@ function ecenter_issues_views_default_views() {
   $view->name = 'ecenter_issues';
   $view->description = 'E-Center issues';
   $view->tag = 'ecenter';
-  $view->view_php = '';
   $view->base_table = 'node';
-  $view->is_cacheable = FALSE;
-  $view->api_version = 3.0-alpha1;
+  $view->human_name = '';
+  $view->core = 0;
+  $view->api_version = '3.0';
   $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
-  
-/* Display: Defaults */
+
+  /* Display: Defaults */
   $handler = $view->new_display('default', 'Defaults', 'default');
   $handler->display->display_options['title'] = 'Network issues';
   $handler->display->display_options['access']['type'] = 'none';
   $handler->display->display_options['cache']['type'] = 'none';
+  $handler->display->display_options['query']['type'] = 'views_query';
   $handler->display->display_options['exposed_form']['type'] = 'basic';
   $handler->display->display_options['exposed_form']['options']['reset_button'] = TRUE;
   $handler->display->display_options['pager']['type'] = 'full';
@@ -48,10 +49,10 @@ function ecenter_issues_views_default_views() {
   $handler->display->display_options['fields']['title']['label'] = '';
   $handler->display->display_options['fields']['title']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['title']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['title']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['title']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['title']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['title']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['title']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['title']['alter']['html'] = 0;
   $handler->display->display_options['fields']['title']['hide_empty'] = 0;
   $handler->display->display_options['fields']['title']['empty_zero'] = 0;
@@ -62,10 +63,10 @@ function ecenter_issues_views_default_views() {
   $handler->display->display_options['fields']['field_issue_query_nid']['field'] = 'field_issue_query_nid';
   $handler->display->display_options['fields']['field_issue_query_nid']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['field_issue_query_nid']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['field_issue_query_nid']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['field_issue_query_nid']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['field_issue_query_nid']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['field_issue_query_nid']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['field_issue_query_nid']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['field_issue_query_nid']['alter']['html'] = 0;
   $handler->display->display_options['fields']['field_issue_query_nid']['hide_empty'] = 0;
   $handler->display->display_options['fields']['field_issue_query_nid']['empty_zero'] = 0;
@@ -81,11 +82,11 @@ function ecenter_issues_views_default_views() {
   $handler->display->display_options['fields']['body']['label'] = '';
   $handler->display->display_options['fields']['body']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['body']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['body']['alter']['trim'] = 1;
   $handler->display->display_options['fields']['body']['alter']['max_length'] = '200';
   $handler->display->display_options['fields']['body']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['body']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['body']['alter']['strip_tags'] = 1;
+  $handler->display->display_options['fields']['body']['alter']['trim'] = 1;
   $handler->display->display_options['fields']['body']['alter']['html'] = 1;
   $handler->display->display_options['fields']['body']['hide_empty'] = 0;
   $handler->display->display_options['fields']['body']['empty_zero'] = 0;
@@ -96,10 +97,10 @@ function ecenter_issues_views_default_views() {
   $handler->display->display_options['fields']['picture']['label'] = '';
   $handler->display->display_options['fields']['picture']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['picture']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['picture']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['picture']['alter']['word_boundary'] = 0;
   $handler->display->display_options['fields']['picture']['alter']['ellipsis'] = 0;
   $handler->display->display_options['fields']['picture']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['picture']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['picture']['alter']['html'] = 0;
   $handler->display->display_options['fields']['picture']['hide_empty'] = 0;
   $handler->display->display_options['fields']['picture']['empty_zero'] = 0;
@@ -110,10 +111,10 @@ function ecenter_issues_views_default_views() {
   $handler->display->display_options['fields']['name']['label'] = 'By';
   $handler->display->display_options['fields']['name']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['name']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['name']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['name']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['name']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['name']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['name']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['name']['alter']['html'] = 0;
   $handler->display->display_options['fields']['name']['hide_empty'] = 0;
   $handler->display->display_options['fields']['name']['empty_zero'] = 0;
@@ -126,10 +127,10 @@ function ecenter_issues_views_default_views() {
   $handler->display->display_options['fields']['created']['label'] = '';
   $handler->display->display_options['fields']['created']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['created']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['created']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['created']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['created']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['created']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['created']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['created']['alter']['html'] = 0;
   $handler->display->display_options['fields']['created']['hide_empty'] = 0;
   $handler->display->display_options['fields']['created']['empty_zero'] = 0;
@@ -140,10 +141,10 @@ function ecenter_issues_views_default_views() {
   $handler->display->display_options['fields']['changed']['label'] = 'Last updated';
   $handler->display->display_options['fields']['changed']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['changed']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['changed']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['changed']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['changed']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['changed']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['changed']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['changed']['alter']['html'] = 0;
   $handler->display->display_options['fields']['changed']['hide_empty'] = 1;
   $handler->display->display_options['fields']['changed']['empty_zero'] = 0;
@@ -155,10 +156,10 @@ function ecenter_issues_views_default_views() {
   $handler->display->display_options['fields']['comment_count']['alter']['alter_text'] = 1;
   $handler->display->display_options['fields']['comment_count']['alter']['text'] = '[comment_count] comments';
   $handler->display->display_options['fields']['comment_count']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['comment_count']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['comment_count']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['comment_count']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['comment_count']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['comment_count']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['comment_count']['alter']['html'] = 0;
   $handler->display->display_options['fields']['comment_count']['hide_empty'] = 0;
   $handler->display->display_options['fields']['comment_count']['empty_zero'] = 0;
@@ -169,10 +170,10 @@ function ecenter_issues_views_default_views() {
   $handler->display->display_options['fields']['last_comment_name']['label'] = 'Last comment';
   $handler->display->display_options['fields']['last_comment_name']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['last_comment_name']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['last_comment_name']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['last_comment_name']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['last_comment_name']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['last_comment_name']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['last_comment_name']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['last_comment_name']['alter']['html'] = 0;
   $handler->display->display_options['fields']['last_comment_name']['hide_empty'] = 0;
   $handler->display->display_options['fields']['last_comment_name']['empty_zero'] = 0;
@@ -183,10 +184,10 @@ function ecenter_issues_views_default_views() {
   $handler->display->display_options['fields']['last_comment_timestamp']['label'] = '';
   $handler->display->display_options['fields']['last_comment_timestamp']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['last_comment_timestamp']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['last_comment_timestamp']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['last_comment_timestamp']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['last_comment_timestamp']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['last_comment_timestamp']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['last_comment_timestamp']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['last_comment_timestamp']['alter']['html'] = 0;
   $handler->display->display_options['fields']['last_comment_timestamp']['hide_empty'] = 0;
   $handler->display->display_options['fields']['last_comment_timestamp']['empty_zero'] = 0;
@@ -198,10 +199,10 @@ function ecenter_issues_views_default_views() {
   $handler->display->display_options['fields']['new_comments']['alter']['alter_text'] = 1;
   $handler->display->display_options['fields']['new_comments']['alter']['text'] = 'new comments';
   $handler->display->display_options['fields']['new_comments']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['new_comments']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['new_comments']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['new_comments']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['new_comments']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['new_comments']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['new_comments']['alter']['html'] = 0;
   $handler->display->display_options['fields']['new_comments']['hide_empty'] = 1;
   $handler->display->display_options['fields']['new_comments']['empty_zero'] = 0;
@@ -237,21 +238,21 @@ function ecenter_issues_views_default_views() {
   $handler->display->display_options['filters']['type']['value'] = array(
     'issue' => 'issue',
   );
-  
-/* Display: Page */
+
+  /* Display: Page */
   $handler = $view->new_display('page', 'Page', 'page_1');
   $handler->display->display_options['defaults']['use_ajax'] = FALSE;
   $handler->display->display_options['defaults']['exposed_form'] = FALSE;
   $handler->display->display_options['exposed_form']['type'] = 'basic';
-  $handler->display->display_options['exposed_form']['options']['exposed_sorts_label'] = 'Sort by';
   $handler->display->display_options['path'] = 'issues';
   $handler->display->display_options['menu']['type'] = 'normal';
   $handler->display->display_options['menu']['title'] = 'View issues';
   $handler->display->display_options['menu']['weight'] = '15';
   $handler->display->display_options['menu']['name'] = 'primary-links';
-  
-/* Display: Feed */
+
+  /* Display: Feed */
   $handler = $view->new_display('feed', 'Feed', 'feed_1');
+  $handler->display->display_options['pager']['type'] = 'some';
   $handler->display->display_options['style_plugin'] = 'rss';
   $handler->display->display_options['style_options']['mission_description'] = FALSE;
   $handler->display->display_options['row_plugin'] = 'node_rss';

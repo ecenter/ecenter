@@ -27,9 +27,6 @@ projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecente
 projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/ahah_helper_js_settings.patch"
 projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/ahah_helper_optional_validation_handlers.patch"
 
-projects[autoload][subdir] = "contrib"
-projects[autoload][version] = "2.0"
-
 projects[beautytips][subdir] = "contrib"
 projects[beautytips][version] = "2.0"
 
@@ -64,11 +61,8 @@ projects[devel][version] = "1.26"
 projects[diff][subdir] = "contrib"
 projects[diff][version] = "2.3"
 
-projects[exportables][subdir] = "contrib"
-projects[exportables][version] = "2.x-dev"
-
-projects[fbconnect][subdir] = "contrib"
-projects[fbconnect][version] = "2.0-beta1"
+projects[elysia_cron][subdir] = "contrib"
+projects[elysia_cron][version] = "2.0"
 
 projects[features][subdir] = "contrib"
 projects[features][version] = "1.1"

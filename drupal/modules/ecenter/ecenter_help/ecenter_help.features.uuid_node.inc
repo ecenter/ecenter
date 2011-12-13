@@ -12,7 +12,7 @@ function ecenter_help_uuid_features_default_content() {
     'uid' => '1',
     'status' => '1',
     'created' => '1323710681',
-    'changed' => '1323807011',
+    'changed' => '1323808654',
     'comment' => '0',
     'promote' => '0',
     'moderate' => '0',
@@ -114,8 +114,8 @@ function ecenter_help_uuid_features_default_content() {
     'teaser' => 'The E-Center frontend is packaged as a Drupal 6 distribution. The E-Center distribution follows the standard [Drupal installation procedure][1] and assumes you have a basic understanding of the Drupal installation procedure and PHP web application administration.
   
   The core E-Center network analysis functionality requires a running version of the Data Retrieval Service.',
-    'log' => '',
-    'revision_timestamp' => '1323807011',
+    'log' => 'Created installation guide.',
+    'revision_timestamp' => '1323808654',
     'format' => '3',
     'name' => 'admin',
     'picture' => '',
@@ -125,20 +125,20 @@ function ecenter_help_uuid_features_default_content() {
     'og_groups' => array(),
     'tableofcontents_toc_automatic' => '0',
     'og_public' => TRUE,
-    'last_comment_timestamp' => '1323801464',
+    'last_comment_timestamp' => '1323808503',
     'last_comment_name' => NULL,
     'comment_count' => '0',
     'taxonomy' => array(
       '1' => array(
         'tid' => '1',
-        'vid' => '2',
+        'vid' => '1',
         'name' => 'E-Center Documentation',
         'description' => '',
         'weight' => '0',
       ),
     ),
     'uuid' => 'b0a988e6-24e8-11e1-b676-0026b9b97a6a',
-    'revision_uuid' => '764dc8b8-25c6-11e1-b676-0026b9b97a6a',
+    'revision_uuid' => '49bd87a8-25ca-11e1-b676-0026b9b97a6a',
     'pathauto_perform_alias' => FALSE,
     'date' => '2011-12-12 11:24:41 -0600',
     'uuid_term' => array(

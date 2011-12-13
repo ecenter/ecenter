@@ -34,14 +34,7 @@ function ecenter_editor_install() {
       );
     }
 
-    if ($format == 'Markdown advanced') {
-      $style_setting = 1;
-    }
-    else {
-      $style_setting = 0;
-    }
-
-    // Set WYSIWYG format options
+    // Set WYSIWYG filter options
     $valid_elements = '@[class],
 a[href],
 div,p,pre,table,thead,tbody,tr,th,td,
@@ -54,6 +47,13 @@ br,span,em,strong,cite,code,blockquote,ul,ol,li,dl,dt,dd';
     variable_set('wysiwyg_filter_valid_elements_raw_'. $format_id, $valid_elements);
     variable_set('wysiwyg_filter_valid_elements_parsed_'. $format_id,
       wysiwyg_filter_parse_valid_elements($valid_elements));
+
+    if ($format == 'Markdown advanced') {
+      $style_setting = 1;
+    }
+    else {
+      $style_setting = 0;
+    }
 
     variable_set('wysiwyg_filter_allow_comments_'. $format_id, '0');
     variable_set('wysiwyg_filter_nofollow_domains_'. $format_id, NULL);

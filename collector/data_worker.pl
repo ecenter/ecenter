@@ -244,7 +244,7 @@ sub get_remote_data  {
 sub get_remote_snmp  {
     my ($job) = @_;
     my $request = decode_json $job->arg();
-    my $dbh  = _initialize($request, 'dbic', qw/service start end  direction/);
+    my $dbh  = _initialize($request, 'dbic', qw/service start end/);
     return encode_json {status => 'error', data => $dbh} unless ref $dbh;
     return  _get_remote_snmp($request, $dbh);
 }
@@ -336,11 +336,13 @@ sub _get_remote_snmp {
     my $result = {status => 'ok', data => {}};
     eval {
 	$snmp_ma =  Ecenter::Data::Snmp->new({ url => $request->{service} });
-	my $meta_cond = {  direction =>  $request->{direction},
+	my $meta_cond = {
     	    		   start     =>  DateTime->from_epoch( epoch =>   $request->{start}),
     	    		   end       =>  DateTime->from_epoch( epoch =>  $request->{end}), 
 			   resolution => 5,
-	    		 };
+	    		 }; 
+	$meta_cond->{direction} = $request->{direction} 
+	    if $request->{direction};
      	if($request->{snmp_ip}) {
      	    $meta_cond->{ifAddress} =  $request->{snmp_ip};
         } else {
@@ -356,9 +358,10 @@ sub _get_remote_snmp {
     } 
     #$logger->info("$request->{service} :: SNMP Data=", sub {Dumper($snmp_ma->data)});
     $logger->info("$request->{service} :: SNMP DataN=" . scalar @{$snmp_ma->data});
-    
-    if($snmp_ma->data && @{$snmp_ma->data}) {
-	 foreach my $data (@{$snmp_ma->data}) {
+    my $data_arr = $snmp_ma->data;
+    if($data_arr && @{$data_arr}) {
+        foreach my $direction (0..1) {
+	    foreach my $data (@{$data_arr->[$direction]}) {
 	     eval {
 	          my $datum = {  timestamp => $data->[0],
 			         utilization => $data->[1],
@@ -370,7 +373,9 @@ sub _get_remote_snmp {
 		      $dbh->resultset($request->{table})->find_or_create( $datum,   {key => 'meta_time'}  );
 		  }
 		  $datum->{capacity} = $data->[4];
+		  $datum->{direction} = $direction?'out':'in';
 	          $result->{data}{$data->[0]} = $datum;
+		  
 	     };
 	     if($EVAL_ERROR) {
 		$logger->error("  Some error with insertion    $EVAL_ERROR");
@@ -387,8 +392,9 @@ sub _get_snmp_from_db{
     my $end_time = -1;
     my $start_time =  4000000000;
     my $ip_quoted = $dbh->quote($request->{snmp_ip});
-    my $cmd = qq|select   n.ip_noted  as snmp_ip, m.metaid as metaid, s.service, l2.capacity 
-	          from 
+    my $direction_sql = $request->{direction}?" and m.direction = '$request->{direction}' ":" and 1 ";
+    my $cmd = qq|select   n.ip_noted  as snmp_ip, m.metaid as metaid, m.direction, s.service, l2.capacity
+	          from
 		  	     metadata m
                        join  node n on(m.src_ip = n.ip_addr) 
 		       join  l2_l3_map llm on(m.src_ip = llm.ip_addr) 
@@ -398,15 +404,16 @@ sub _get_snmp_from_db{
 		  where 
 		       e.service_type = 'snmp' and
 		       n.ip_noted =   $ip_quoted
+		       $direction_sql
 		  |;
     my $md_href = $dbh->selectall_hashref( $cmd, 'metaid');
     return  {data => {}, md => $md_href, start_time => $start_time, end_time => $end_time} unless $md_href && %{$md_href};
     my $mds = join(",", map {$dbh->quote($_)}  keys %{$md_href});
     $cmd = qq|select distinct  m.metaid,  sd.timestamp as timestamp,
-                                              sd.utilization as utilization , sd.errors as errors, sd.drops as drops
+                                              sd.utilization as utilization,  m.direction, sd.errors as errors, sd.drops as drops
 	                              from
-			  	        metadata m
-                        	       join $request->{table} sd on(sd.metaid = m.metaid)
+			  	       $request->{table} sd
+                        	       join   metadata m on(sd.metaid = m.metaid)
 				       where
 			  		   sd.timestamp >=  $request->{start} and
 			  		   sd.timestamp <= $request->{end}  and
@@ -446,13 +453,15 @@ sub dispatch_snmp {
     	) {
     	my (undef, $request_params) = each(%{$data_ref->{md}});
         $logger->info("params to ma: ip=$request_params->{snmp_ip} start=$request->{start} end=$request->{end} ");
-    	return  _get_remote_snmp({ table  => $request->{class},
+	my $remote_request = { table  => $request->{class},
 				   service => $request_params->{service},
 				   metaid => $request_params->{metaid},
 				   snmp_ip => $request_params->{snmp_ip},
-				   direction => 'out', 
 				   start => $request->{start},
-				   end => $request->{end}}, $dbic);
+				   end => $request->{end}};
+	$remote_request->{direction} = $request->{direction} 
+	    if $request->{direction} && $request->{direction} =~ /in|out/;
+    	return  _get_remote_snmp($remote_request, $dbic);
     } 
     else {
         $result->{data}  =  $data_ref->{data};

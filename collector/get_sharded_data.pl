@@ -215,7 +215,7 @@ exit(0);
 
 =head2 get_remote_snmp
 
-Get csnmp data form remote host
+Get csnmp data from remote host, support for both directions
 
 =cut
 
@@ -241,8 +241,7 @@ sub get_remote_snmp {
         	my $secs_past = $last_time && ($last_time->timestamp >  $PAST_START)?$last_time->timestamp:$PAST_START;
 		my $t1 = time();
                 my $t_delta = 0;
-		my $meta_cond = { direction => 'out',
-    	    			     start     => DateTime->from_epoch( epoch =>  $secs_past),
+		my $meta_cond = {    start     => DateTime->from_epoch( epoch =>  $secs_past),
     	    			     end       => DateTime->now()	
 	    			  };
 		if($addr) {
@@ -252,48 +251,40 @@ sub get_remote_snmp {
 		}		  
     		$snmp_ma->get_data($meta_cond);
     		$logger->debug("Data :: ", sub{Dumper( $snmp_ma->data)});
-		
-    		my $meta = $dbh->resultset('Metadata')->update_or_create({ 
+		my $meta = [];
+    		foreach my $direction (qw/in out/) {
+		   push @{$meta},  $dbh->resultset('Metadata')->update_or_create({ 
     	    						 eventtype_id => $eventtype_id ,
     	    						 src_ip	  => ($src_ip?$src_ip:''),
     	    						 dst_ip => '0',
-							 l2_urn => $port->l2_urn,
+							 direction => $direction,
+							 l2_urn => $port->l2_urn . ":direction=direction",
     	    					      },
 	    					      {key => 'md_ips_type'}
     	    					      );
-    		if($snmp_ma->data && @{$snmp_ma->data}) {
-		    $dbh->resultset('ServicePerformance')->create( { metaid =>  $meta->metaid,
-	                                                     requested_start =>   $secs_past ,
-	                                                     requested_time => ($t1 - $secs_past), 
-	                                                     response => $t_delta, 
-							     is_data => 1 
-							     } ); 
-    		    foreach my $data (@{ $snmp_ma->data}) { 
-    	    	       eval {
-		       
-		        my ($got_snmp) = $dbh->resultset("SnmpData$now_table")->search({ metaid =>  $meta->metaid,
+		}
+		my $snmp_data  =  $snmp_ma->data;		
+    		if($snmp_data && @{$snmp_data}) {
+    		    foreach my $direction (0..1) {  
+		        foreach my $data (@{$snmp_data->[$direction]}) { 
+    	    	            eval {
+		                my ($got_snmp) = $dbh->resultset("SnmpData$now_table")->search({ metaid =>  $meta->[$direction]->metaid,
     	    								                 timestamp => $data->[0]  },
 										      { limit => 1} );
-		         $dbh->resultset("SnmpData$now_table")->create({ metaid =>  $meta->metaid,
+		                $dbh->resultset("SnmpData$now_table")->create({ metaid =>  $meta->[$direction]->metaid,
     	    								        timestamp => $data->[0],
     	    								        utilization => $data->[1],
 										errors => $data->[2],
 										drops => $data->[3]
     	    								     },
     	    								     { key => 'meta_time'}) unless $got_snmp;
-		      };
-		      if($EVAL_ERROR) {
-		         $logger->error($meta->metaid . " metaid failed due some error $EVAL_ERROR skipping ...  ");
-		      }
-    		    }
-		} else {
-		   $dbh->resultset('ServicePerformance')->create( { metaid =>  $meta->metaid,
-	                                                     requested_start =>   $secs_past ,
-	                                                     requested_time => ($t1 - $secs_past), 
-	                                                     response => $t_delta, 
-							     is_data => 0 
-							     } ); 
-		}
+		            };
+		            if($EVAL_ERROR) {
+		                $logger->error($meta->[$direction]->metaid . " metaid failed due some error $EVAL_ERROR skipping ...  ");
+		            }
+    		        }
+		    }
+		}  
 		$dbh->storage->disconnect if $dbh;
 		return;
 

@@ -124,7 +124,7 @@ after 'get_data' => sub  {
     }
     return unless $ma_result;
     my $parser = XML::LibXML->new();
-    my @datum = ();
+    my $datum = [[],[]];
     my %data_response=();
     my $metadata = $self->metadata;
     $self->logger->debug("SNMP MDS::", sub{Dumper($metadata)});
@@ -142,25 +142,32 @@ after 'get_data' => sub  {
 		    $self->logger->debug("Data value: ".$dt->getAttribute("value"));
                     my $data_value = eval { $dt->getAttribute("value")  };
 		    $data_response{$dt->getAttribute("timeValue")}{data}{$metadata->{$idref}{eventtype}} =  $data_value;
-		    $data_response{$dt->getAttribute("timeValue")}{capacity} = $metadata->{$idref}{capacity};
-		      $self->logger->debug("Post-mod data value: ".$data_value);
+		    $self->logger->debug("Post-mod data value: ".$data_value);
                 }
                 else {
                     $data_response{$dt->getAttribute("timeValue")}{data}{$metadata->{$idref}{eventtype}}=  0;
-		    $data_response{$dt->getAttribute("timeValue")}{capacity}  = $metadata->{$idref}{capacity};
-                   ## push @datum, [$dt->getAttribute("timeValue"), 0, 0, 0, $metadata->{$idref}{capacity}];
-                }
+		}
+		$data_response{$dt->getAttribute("timeValue")}{capacity} = $metadata->{$idref}{capacity};
+		$data_response{$dt->getAttribute("timeValue")}{direction} = $metadata->{$idref}{direction};
             }
         }
 	
-    }
+   }
+   
    foreach my $tm ( sort {$a <=> $b} keys %data_response) {
-       push @datum, [$tm, $data_response{$tm}{data}{'http://ggf.org/ns/nmwg/characteristic/utilization/2.0/'},
+       $data_response{$tm}{direction} eq 'in'?
+                    push @{$datum->[0]}, [$tm, $data_response{$tm}{data}{'http://ggf.org/ns/nmwg/characteristic/utilization/2.0/'},
                           $data_response{$tm}{data}{'http://ggf.org/ns/nmwg/characteristic/errors/2.0/'},
 			  $data_response{$tm}{data}{'http://ggf.org/ns/nmwg/characteristic/discards/2.0/'},
-			  $data_response{$tm}{capacity} ];
+			  $data_response{$tm}{capacity} 
+			  ]: 
+		     push @{$datum->[1]}, [$tm, $data_response{$tm}{data}{'http://ggf.org/ns/nmwg/characteristic/utilization/2.0/'},
+                          $data_response{$tm}{data}{'http://ggf.org/ns/nmwg/characteristic/errors/2.0/'},
+			  $data_response{$tm}{data}{'http://ggf.org/ns/nmwg/characteristic/discards/2.0/'},
+			  $data_response{$tm}{capacity} 
+			  ];
    }
-   return $self->data(\@datum);
+   return $self->data($datum);
 };
 
 sub parse_metadata {

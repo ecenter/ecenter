@@ -507,6 +507,7 @@ sub process_data {
 			      timeout	 => {type => SCALAR, regex => qr/^\d+$/, optional => 1},
 			      only_data  => {type => SCALAR, regex => qr/^(0|1)$/, optional => 1},
       		              trace      => {type => SCALAR, regex => qr/traceroute/xim, optional => 1},
+			      no_snmp    => {type => SCALAR, regex => qr/^(0|1)$/, optional => 1},
 			   }
 		 );
     };
@@ -589,10 +590,11 @@ sub process_data {
     #
     #    circuit data
     #
-    if($params{only_data} && $params{data_type} eq 'circuit') {
+    if($params{data_type} eq 'circuit') {
         eval {
-          $data = get_circuit_data($g_client, $trace_cond,  \%params);
-	  reduce_snmp_dataset($data->{snmp}, \%params);
+            $data = get_circuit_data($g_client, $trace_cond,  \%params);
+	    reduce_snmp_dataset($data->{snmp}, \%params) 
+	        unless $params{no_snmp};
         };
         if($EVAL_ERROR) {
             $logger->error("parsing traceroute failed - $EVAL_ERROR");
@@ -1017,7 +1019,7 @@ sub get_circuit_data {
     my $shards =  get_shards({data =>  'snmp', start => $params->{snmp}{start} , end =>  $params->{snmp}{end} }, database('ecenter'));
     foreach my $shard (sort  { $a <=> $b } keys %$shards) {
        $logger->debug(" Circuits table:$shard start=$shards->{$shard}{start} end=$shards->{$shard}{end}");
-       my $sql = qq|select  clink.circuit_link,  hop_l2p.l2_urn as hop_urn, h_hop.hub_name as hop_hubname, 
+       my $sql = qq|select   h_src.hub_name  as src_hub, h_dst.hub_name as dst_hub, hop_l2p.l2_urn as hop_urn, h_hop.hub_name as hop_hubname, 
 	                                                                 clink.link_num as hop_num, h_hop.longitude as hop_longitude, 
 									 h_hop.latitude as hop_latitude,
 	                                                                 c.circuit, c.description, c.start_time, c.end_time
@@ -1028,26 +1030,33 @@ sub get_circuit_data {
 	                                                          join hub h_src on(c.src_hub = h_src.hub)
 								  join hub h_dst on(c.dst_hub=h_dst.hub)
 								  join hub h_hop on(hop_l2p.hub=h_hop.hub)
-                                                                where clink.direction = 'forward' and 
-								      (h_src.hub_name = '$params->{src_hub}' and h_dst.hub_name = '$params->{dst_hub}')
+                                                                where  clink.direction = 'forward' and 
+								      ((h_src.hub_name = '$params->{src_hub}' and h_dst.hub_name = '$params->{dst_hub}')
+								          OR
+								       (h_dst.hub_name = '$params->{src_hub}' and h_src.hub_name = '$params->{dst_hub}'))
 								       and  c.end_time >=   $shards->{$shard}{start}|;
-	$logger->debug(" Circuits table	SQL:$sql");						      
-        my $hops = database('ecenter')->selectall_hashref($sql, 'circuit_link');
+	$logger->debug(" Circuits table	SQL:$sql");
+        my $hops = database('ecenter')->selectall_hashref($sql, 'hop_num');
         #$snmp->{hops}{$shard} = $hops;
         my %urns = ();
 	$logger->debug(" Circuits hops:", sub{Dumper($hops)});
         foreach my $hop (keys %{$hops}) {
-	    $snmp->{hops}{$hops->{$hop}{circuit}}{$hops->{$hop}{hop_urn}} = $hops->{$hop};
+	    map {  $snmp->{circuits}{$hops->{$hop}{src_hub}}{$hops->{$hop}{dst_hub}}{$hops->{$hop}{circuit}}{circuit}{$_} = $hops->{$hop}{$_} }
+	        qw/start_time end_time description/;
+	    map { $snmp->{circuits}{$hops->{$hop}{src_hub}}{$hops->{$hop}{dst_hub}}{$hops->{$hop}{circuit}}{hops}{$hops->{$hop}{hop_urn}}{$_} =  $hops->{$hop}{$_}}
+	        qw/hop_num hop_hubname hop_longitude hop_latitude/;
 	    $urns{$hops->{$hop}{hop_urn}}++;
         }
+	## skipping
+	next if $params->{no_snmp};
+	## data
         foreach my $urn (keys %urns) {
-	    $snmp->{snmp}{$urn} = {};
+	    $snmp->{snmp}{$urn} = {}; 
     	    $task_set->add_task("get_remote_snmp" =>  
     			  encode_json {
 	 			   start =>  $shards->{$shard}{start},
 	 			   urn =>    $urn,
 	 			   end =>    $shards->{$shard}{end},
-				   direction => 'out',
 				   service => config->{circuits_ma},
 	 			      },
 	 	     {  
@@ -1099,6 +1108,7 @@ sub get_snmp {
 			    		  start =>  $st_time,
 					  snmp_ip => $ip_noted,
 			    		  end =>  $end_time,
+					  direction => 'out',
 					     },
 			    {  
 			       on_fail     => sub {$FAILED++;

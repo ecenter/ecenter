@@ -174,6 +174,12 @@ projects[tableofcontents][version] = "3.7"
 projects[token][subdir] = "contrib"
 projects[token][version] = "1.18"
 
+projects[uuid][subdir] = "contrib"
+projects[uuid][version] = "1.0-beta2"
+
+projects[uuid_features][subdir] = "contrib"
+projects[uuid_features][version] = "1.0-alpha1"
+
 projects[vertical_tabs][subdir] = "contrib"
 projects[vertical_tabs][version] = "1.0-rc2"
 

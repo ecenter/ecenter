@@ -271,8 +271,8 @@ h1 {
 }
 h2 {
   font-size: 28px;
-  line-height: 34px;
-  margin-bottom: 8px
+  line-height: 42px;
+  margin-bottom: 21px
 }
 h3 {
   font-size: 24px;
@@ -338,8 +338,8 @@ code, abbr {
   font-weight: strong;
 }
 code {
-  color: @color_grey_27;
-  font-size: 14px;
+  color: @color_black;
+  font-size: 15px;
   background-color: @color_grey_93;
   padding-left: 3px;
   padding-right: 3px;
@@ -367,18 +367,19 @@ code {
 // Columns {{{
 body.sidebar-right #content {
   float: left;
-  width: 695px;
-  margin-right: 25px;
+  width: 800px;
+  margin-right: 15px;
 }
 body.sidebar-right #sidebar-right {
   float: left;
-  width: 240px;
+  width: 160px;
   .page_top_padding;
+  font-size: 12px;
 
   h2 {
-    font-size: 1.25em;
-    margin-bottom: .75em;
-    line-height: 1.5;
+    font-size: 16px;
+    line-height: 24px;
+    margin-bottom: 14px;
     border-bottom: 1px solid #999;
   }
 
@@ -1502,6 +1503,9 @@ form {
       width: 24px;
     }
   }
+  h2 {
+    border-bottom: 1px solid @color_grey_80;
+  }
   ul, ol {
     margin-bottom: 21px;
     li {
@@ -1523,10 +1527,15 @@ form {
     }
   }
   pre {
-    font-size: 14px;
+    font-size: 13px;
     margin-bottom: 22px;
     padding: 10px;
     background-color: @color_grey_93;
+    overflow: auto;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    white-space: -moz-pre-wrap !important;
+    word-wrap: break-word;
   }
   .submitted {
     border-bottom: 1px solid @color_grey_80;
@@ -2186,16 +2195,22 @@ table.network-health {
 // Table of contents {{{
 #toc {
   float: right;
-  width: 200px;
+  width: 180px;
   padding-left: 30px;
   margin-bottom: 1em;
   background-color: @color_white;
   border: none;
-  font-size: 13px;
+  font-size: 12px;
   ul, ol {
     li {
       margin-left: 27px;
       margin-bottom: 0;
+    }
+    ul, ol {
+      margin: 0;
+      li {
+        margin-left: 20px;
+      }
     }
   }
   .toc-title {
@@ -2218,11 +2233,6 @@ table.network-health {
 // Revision log block {{{
 .block .view-ecenter-wiki-revisions {
   .view-content {
-    font-size: 12px;
-    .user {
-      border-bottom: 1px solid #999;
-      margin-bottom: .5em;
-    }
     .name, .timestamp {
       font-weight: bold;
     }

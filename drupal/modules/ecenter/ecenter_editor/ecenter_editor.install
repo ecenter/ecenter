@@ -9,255 +9,262 @@
 function ecenter_editor_install() {
   module_load_include('inc', 'wysiwyg_filter');
 
-  // Create filter format
-  db_query(
-    'INSERT INTO {filter_formats} (name, cache) VALUES ("WYSIWYG Markdown", 1)'
-  );
-
-  // Get format ID
-  $format = db_result(db_query(
-    'SELECT format FROM {filter_formats} WHERE name = "WYSIWYG Markdown"' 
-  ));
-
-  // Set variables
-  variable_set('ecenter_editor_format', $format);
-
-  // Create filter configuration
-  $modules = array(
-    'markdown', 'wysiwyg_filter', 'syntaxhighlighter', 'oembed', 'pathologic', 'tableofcontents',
-  );
-  foreach ($modules as $weight => $module) {
+  foreach (array('Markdown restricted', 'Markdown advanced') as $format) {
+    // Create filter format
     db_query(
-      'INSERT INTO {filters} (format, module, weight) VALUES (%d, "%s", %d)', 
-      $format, $module, $weight
+      'INSERT INTO {filter_formats} (name, cache) VALUES ("%s", 1)', array($format)
     );
-  }
 
-  // Set WYSIWYG format options
-  $valid_elements = '@[class],
+    // Get format ID
+    $format_id = db_result(db_query(
+      'SELECT format FROM {filter_formats} WHERE name = "%s"', array($format)
+    ));
+
+    // Set variables
+    //variable_set('ecenter_editor_format', $format_id);
+
+    // Create filter configuration
+    $modules = array(
+      'markdown', 'wysiwyg_filter', 'syntaxhighlighter', 'oembed', 'pathologic', 'tableofcontents',
+    );
+    foreach ($modules as $weight => $module) {
+      db_query(
+        'INSERT INTO {filters} (format, module, weight) VALUES (%d, "%s", %d)', 
+        $format_id, $module, $weight
+      );
+    }
+
+    if ($format == 'Markdown advanced') {
+      $style_setting = 1;
+    }
+    else {
+      $style_setting = 0;
+    }
+
+    // Set WYSIWYG format options
+    $valid_elements = '@[class],
 a[href],
 div,p,pre,table,thead,tbody,tr,th,td,
 h2,h3,h4,h5,h6,
 img[src|title|a1lt|width|height],
 br,span,em,strong,cite,code,blockquote,ul,ol,li,dl,dt,dd';
-  variable_set('wysiwyg_filter_valid_classes_'. $format, array('content-*'));
-  variable_set('wysiwyg_filter_valid_ids_'. $format, array());
-  variable_set('wysiwyg_filter_style_urls_'. $format, array());
-  variable_set('wysiwyg_filter_valid_elements_raw_'. $format, $valid_elements);
-  variable_set('wysiwyg_filter_valid_elements_parsed_'. $format,
-    wysiwyg_filter_parse_valid_elements($valid_elements));
+    variable_set('wysiwyg_filter_valid_classes_'. $format_id, array('content-*'));
+    variable_set('wysiwyg_filter_valid_ids_'. $format_id, array());
+    variable_set('wysiwyg_filter_style_urls_'. $format_id, array());
+    variable_set('wysiwyg_filter_valid_elements_raw_'. $format_id, $valid_elements);
+    variable_set('wysiwyg_filter_valid_elements_parsed_'. $format_id,
+      wysiwyg_filter_parse_valid_elements($valid_elements));
 
+    variable_set('wysiwyg_filter_allow_comments_'. $format_id, '0');
+    variable_set('wysiwyg_filter_nofollow_domains_'. $format_id, NULL);
+    variable_set('wysiwyg_filter_nofollow_policy_'. $format_id, 'whitelist');
+    variable_set('wysiwyg_filter_styles_border-1_'. $format_id, array(
+      'border-color' => $style_setting,
+      'border-top-color' => $style_setting,
+      'border-right-color' => $style_setting,
+      'border-bottom-color' => $style_setting,
+      'border-left-color' => $style_setting,
+      'border-style' => $style_setting,
+      'border-top-style' => $style_setting,
+      'border-right-style' => $style_setting,
+      'border-bottom-style' => $style_setting,
+      'border-left-style' => $style_setting,
+    ));
+    variable_set('wysiwyg_filter_styles_border-2_'. $format_id, array(
+      'border-color' => $style_setting,
+      'border-top-color' => $style_setting,
+      'border-right-color' => $style_setting,
+      'border-bottom-color' => $style_setting,
+      'border-left-color' => $style_setting,
+      'border-style' => $style_setting,
+      'border-top-style' => $style_setting,
+      'border-right-style' => $style_setting,
+      'border-bottom-style' => $style_setting,
+      'border-left-style' => $style_setting,
+    ));
+    variable_set('wysiwyg_filter_styles_box_'. $format_id, array(
+      'color' => $style_setting,
+      'background' => $style_setting,
+      'background-color' => $style_setting,
+      'background-image' => $style_setting,
+      'background-repeat' => $style_setting,
+      'background-attachment' => $style_setting,
+      'background-position' => $style_setting,
+    ));
+    variable_set('wysiwyg_filter_styles_color_'. $format_id, array(
+      'color' => $style_setting,
+      'background' => $style_setting,
+      'background-color' => $style_setting,
+      'background-image' => $style_setting,
+      'background-repeat' => $style_setting,
+      'background-attachment' => $style_setting,
+      'background-position' => $style_setting,
+    ));
+    variable_set('wysiwyg_filter_styles_dimension_'. $format_id, array(
+      'height' => $style_setting,
+      'line-height' => $style_setting,
+      'max-height' => $style_setting,
+      'max-width' => $style_setting,
+      'min-height' => $style_setting,
+      'min-width' => $style_setting,
+      'width' => $style_setting,
+    ));
+    variable_set('wysiwyg_filter_styles_font_'. $format_id, array(
+      'font' => $style_setting,
+      'font-family' => $style_setting,
+      'font-size' => $style_setting,
+      'font-size-adjust' => $style_setting,
+      'font-stretch' => $style_setting,
+      'font-style' => $style_setting,
+      'font-variant' => $style_setting,
+      'font-weight' => $style_setting,
+    ));
+    variable_set('wysiwyg_filter_styles_color_'. $format_id, array(
+      'color' => $style_setting,
+      'background' => $style_setting,
+      'background-color' => $style_setting,
+      'background-image' => $style_setting,
+      'background-repeat' => $style_setting,
+      'background-attachment' => $style_setting,
+      'background-position' => $style_setting,
+    ));
+    variable_set('wysiwyg_filter_styles_layout_'. $format_id, array(
+      'clear' => $style_setting,
+      'display' => $style_setting,
+      'float' => $style_setting,
+      'position' => $style_setting,
+      'visibility' => $style_setting,
+    ));
+    variable_set('wysiwyg_filter_styles_list_'. $format_id, array(
+      'list-style' => $style_setting,
+      'list-style-image' => $style_setting,
+      'list-style-position' => $style_setting,
+      'list-style-type' => $style_setting,
+    ));
+    variable_set('wysiwyg_filter_styles_positioning_'. $format_id, array(
+      'bottom' => $style_setting,
+      'clip' => $style_setting,
+      'left' => $style_setting,
+      'overflow' => $style_setting,
+      'right' => $style_setting,
+      'top' => $style_setting,
+      'vertical-align' => $style_setting,
+      'z-index' => $style_setting,
+    ));
+    variable_set('wysiwyg_filter_styles_table_'. $format_id, array(
+      'border-collapse' => $style_setting,
+      'border-spacing' => $style_setting,
+      'caption-side' => $style_setting,
+      'empty-cells' => $style_setting,
+      'table-layout' => $style_setting,
+    ));
+    variable_set('wysiwyg_filter_styles_text_'. $format_id, array(
+      'text-align' => $style_setting,
+      'text-decoration' => $style_setting,
+      'text-indent' => $style_setting,
+      'text-transform' => $style_setting,
+      'letter-spacing' => $style_setting,
+      'word-spacing' => $style_setting,
+      'white-space' => $style_setting,
+      'direction' => $style_setting,
+      'unicode-bidi' => $style_setting,
+    
+    ));
+    variable_set('wysiwyg_filter_styles_user_'. $format_id, array(
+      'cursor' => $style_setting,
+      'outline' => $style_setting,
+      'outline-width' => $style_setting,
+      'outline-style' => $style_setting,
+      'outline-color' => $style_setting,
+      'zoom' => $style_setting,
+    ));
 
-  variable_set('wysiwyg_filter_allow_comments_'. $format, '0');
-  variable_set('wysiwyg_filter_nofollow_domains_'. $format, NULL);
-  variable_set('wysiwyg_filter_nofollow_policy_'. $format, 'whitelist');
-  variable_set('wysiwyg_filter_styles_border-1_'. $format, array(
-    'border-color' => 0,
-    'border-top-color' => 0,
-    'border-right-color' => 0,
-    'border-bottom-color' => 0,
-    'border-left-color' => 0,
-    'border-style' => 0,
-    'border-top-style' => 0,
-    'border-right-style' => 0,
-    'border-bottom-style' => 0,
-    'border-left-style' => 0,
-  ));
-  variable_set('wysiwyg_filter_styles_border-2_'. $format, array(
-    'border-color' => 0,
-    'border-top-color' => 0,
-    'border-right-color' => 0,
-    'border-bottom-color' => 0,
-    'border-left-color' => 0,
-    'border-style' => 0,
-    'border-top-style' => 0,
-    'border-right-style' => 0,
-    'border-bottom-style' => 0,
-    'border-left-style' => 0,
-  ));
-  variable_set('wysiwyg_filter_styles_box_'. $format, array(
-    'color' => 0,
-    'background' => 0,
-    'background-color' => 0,
-    'background-image' => 0,
-    'background-repeat' => 0,
-    'background-attachment' => 0,
-    'background-position' => 0,
-  ));
-  variable_set('wysiwyg_filter_styles_color_'. $format, array(
-    'color' => 0,
-    'background' => 0,
-    'background-color' => 0,
-    'background-image' => 0,
-    'background-repeat' => 0,
-    'background-attachment' => 0,
-    'background-position' => 0,
-  ));
-  variable_set('wysiwyg_filter_styles_dimension_'. $format, array(
-    'height' => 0,
-    'line-height' => 0,
-    'max-height' => 0,
-    'max-width' => 0,
-    'min-height' => 0,
-    'min-width' => 0,
-    'width' => 0,
-  ));
-  variable_set('wysiwyg_filter_styles_font_'. $format, array(
-    'font' => 0,
-    'font-family' => 0,
-    'font-size' => 0,
-    'font-size-adjust' => 0,
-    'font-stretch' => 0,
-    'font-style' => 0,
-    'font-variant' => 0,
-    'font-weight' => 0,
-  ));
-  variable_set('wysiwyg_filter_styles_color_'. $format, array(
-    'color' => 0,
-    'background' => 0,
-    'background-color' => 0,
-    'background-image' => 0,
-    'background-repeat' => 0,
-    'background-attachment' => 0,
-    'background-position' => 0,
-  ));
-  variable_set('wysiwyg_filter_styles_layout_'. $format, array(
-    'clear' => 0,
-    'display' => 0,
-    'float' => 0,
-    'position' => 0,
-    'visibility' => 0,
-  ));
-  variable_set('wysiwyg_filter_styles_list_'. $format, array(
-    'list-style' => 0,
-    'list-style-image' => 0,
-    'list-style-position' => 0,
-    'list-style-type' => 0,
-  ));
-  variable_set('wysiwyg_filter_styles_positioning_'. $format, array(
-    'bottom' => 0,
-    'clip' => 0,
-    'left' => 0,
-    'overflow' => 0,
-    'right' => 0,
-    'top' => 0,
-    'vertical-align' => 0,
-    'z-index' => 0,
-  ));
-  variable_set('wysiwyg_filter_styles_table_'. $format, array(
-    'border-collapse' => 0,
-    'border-spacing' => 0,
-    'caption-side' => 0,
-    'empty-cells' => 0,
-    'table-layout' => 0,
-  ));
-  variable_set('wysiwyg_filter_styles_text_'. $format, array(
-    'text-align' => 0,
-    'text-decoration' => 0,
-    'text-indent' => 0,
-    'text-transform' => 0,
-    'letter-spacing' => 0,
-    'word-spacing' => 0,
-    'white-space' => 0,
-    'direction' => 0,
-    'unicode-bidi' => 0,
-  
-  ));
-  variable_set('wysiwyg_filter_styles_user_'. $format, array(
-    'cursor' => 0,
-    'outline' => 0,
-    'outline-width' => 0,
-    'outline-style' => 0,
-    'outline-color' => 0,
-    'zoom' => 0,
-  ));
-
-  // Table of contents options
-  variable_set('tableofcontents_allowed_tags_'. $format, 
-    '<em> <i> <strong> <b> <u> <del> <ins> <sub> <sup> <cite> <strike> <s> <tt> <span> <font> <abbr> <acronym> <dfn> <q> <bdo> <big> <small>');
-  variable_set('tableofcontents_allow_override_'. $format, 0);
-  variable_set('tableofcontents_attachments_'. $format, 0);
-  variable_set('tableofcontents_automatic_'. $format, 1);
-  variable_set('tableofcontents_back_to_top_'. $format, 'Back to top');
-  variable_set('tableofcontents_back_to_top_anchor_'. $format, 'content');
-  variable_set('tableofcontents_back_to_top_location_'. $format, 'bottom');
-  variable_set('tableofcontents_collapsed_'. $format, 0);
-  variable_set('tableofcontents_comments_'. $format, 0);
-  variable_set('tableofcontents_comments_level_'. $format, '3');
-  variable_set('tableofcontents_hide_show_'. $format, 0);
-  variable_set('tableofcontents_hide_table_'. $format, 0);
-  variable_set('tableofcontents_identifier_introducer_'. $format, 'header');
-  variable_set('tableofcontents_id_generator_'. $format, 'title');
-  variable_set('tableofcontents_id_separator_'. $format, '-');
-  variable_set('tableofcontents_id_stripping_'. $format, array(
-    'periods' => 'periods',
-    'colons' => 'colons',
-    'digits' => 0,
-    'dashes' => 0,
-    'underscores' => 0,
-  ));
-  variable_set('tableofcontents_list_type_'. $format, 'ul');
-  variable_set('tableofcontents_maxlevel_'. $format, '6');
-  variable_set('tableofcontents_minlevel_'. $format, '2');
-  variable_set('tableofcontents_min_limit_'. $format, '5');
-  variable_set('tableofcontents_numbering_'. $format, '0');
-  variable_set('tableofcontents_number_end_letter_'. $format, '.');
-  variable_set('tableofcontents_number_headers_'. $format, 0);
-  variable_set('tableofcontents_number_mode_'. $format, '0');
-  variable_set('tableofcontents_number_separator_'. $format, '.');
-  variable_set('tableofcontents_number_start_letter_'. $format, '');
-  variable_set('tableofcontents_remove_teaser_'. $format, 0);
-  variable_set('tableofcontents_scroll_back_to_top_'. $format, 1);
-  variable_set('tableofcontents_title_'. $format, 'Table of Contents');
-  
-  // WYSIWYG editor configuration 
-  $settings = array(
-    'default' => 1,
-    'user_choose' => 0,
-    'show_toggle' => 1,
-    'theme' => 'advanced',
-    'language' => 'en',
-    'buttons' => array(
-      'default' => array(
-        'bold' => 1,
-        'italic' => 1,
-        'bullist' => 1,
-        'numlist' => 1,
-        'unlink' => 1,
-        'image' => 1,
-        'cut' => 1,
-        'copy' => 1,
-        'paste' => 1,
-        'removeformat' => 1,
+    // Table of contents options
+    variable_set('tableofcontents_allowed_tags_'. $format_id, 
+      '<em> <i> <strong> <b> <u> <del> <ins> <sub> <sup> <cite> <strike> <s> <tt> <span> <font> <abbr> <acronym> <dfn> <q> <bdo> <big> <small>');
+    variable_set('tableofcontents_allow_override_'. $format_id, 0);
+    variable_set('tableofcontents_attachments_'. $format_id, 0);
+    variable_set('tableofcontents_automatic_'. $format_id, 1);
+    variable_set('tableofcontents_back_to_top_'. $format_id, 'Back to top');
+    variable_set('tableofcontents_back_to_top_anchor_'. $format_id, 'content');
+    variable_set('tableofcontents_back_to_top_location_'. $format_id, 'bottom');
+    variable_set('tableofcontents_collapsed_'. $format_id, 0);
+    variable_set('tableofcontents_comments_'. $format_id, 0);
+    variable_set('tableofcontents_comments_level_'. $format_id, '3');
+    variable_set('tableofcontents_hide_show_'. $format_id, 0);
+    variable_set('tableofcontents_hide_table_'. $format_id, 0);
+    variable_set('tableofcontents_identifier_introducer_'. $format_id, 'header');
+    variable_set('tableofcontents_id_generator_'. $format_id, 'title');
+    variable_set('tableofcontents_id_separator_'. $format_id, '-');
+    variable_set('tableofcontents_id_stripping_'. $format_id, array(
+      'periods' => 'periods',
+      'colons' => 'colons',
+      'digits' => 0,
+      'dashes' => 0,
+      'underscores' => 0,
+    ));
+    variable_set('tableofcontents_list_type_'. $format_id, 'ul');
+    variable_set('tableofcontents_maxlevel_'. $format_id, '6');
+    variable_set('tableofcontents_minlevel_'. $format_id, '2');
+    variable_set('tableofcontents_min_limit_'. $format_id, '5');
+    variable_set('tableofcontents_numbering_'. $format_id, '0');
+    variable_set('tableofcontents_number_end_letter_'. $format_id, '.');
+    variable_set('tableofcontents_number_headers_'. $format_id, 0);
+    variable_set('tableofcontents_number_mode_'. $format_id, '0');
+    variable_set('tableofcontents_number_separator_'. $format_id, '.');
+    variable_set('tableofcontents_number_start_letter_'. $format_id, '');
+    variable_set('tableofcontents_remove_teaser_'. $format_id, 0);
+    variable_set('tableofcontents_scroll_back_to_top_'. $format_id, 1);
+    variable_set('tableofcontents_title_'. $format_id, 'Table of Contents');
+    
+    // WYSIWYG editor configuration 
+    $settings = array(
+      'default' => 1,
+      'user_choose' => 0,
+      'show_toggle' => 1,
+      'theme' => 'advanced',
+      'language' => 'en',
+      'buttons' => array(
+        'default' => array(
+          'bold' => 1,
+          'italic' => 1,
+          'bullist' => 1,
+          'numlist' => 1,
+          'unlink' => 1,
+          'image' => 1,
+          'cut' => 1,
+          'copy' => 1,
+          'paste' => 1,
+          'removeformat' => 1,
+        ),
+        'font' => array(
+          'formatselect' => 1,
+          'styleselect' => 1,
+        ),
+        'inlinepopups' => array(
+          'inlinepopups' => 1,
+        ),
+        'markdown' => array(
+          'markdown' => 1,
+        ),
+        'linkit' => array(
+          'linkit' => 1,
+        ),
       ),
-      'font' => array(
-        'formatselect' => 1,
-        'styleselect' => 1,
-      ),
-      'inlinepopups' => array(
-        'inlinepopups' => 1,
-      ),
-      'markdown' => array(
-        'markdown' => 1,
-      ),
-      'linkit' => array(
-        'linkit' => 1,
-      ),
-    ),
-    'toolbar_loc' => 'top',
-    'toolbar_align' => 'left',
-    'path_loc' => 'bottom',
-    'resizing' => 1,
-    'verify_html' => 0,
-    'preformatted' => 1,
-    'convert_fonts_to_spans' => 0,
-    'apply_source_formatting' => 0,
-    'remove_linebreaks' => 0,
-    'paste_auto_cleanup_on_paste' => 1,
-    'block_formats' => 'p,h2,h3,h4,h5,h6,pre,div',
-    'css_setting' => 'self',
-    'css_path' => '%b%t/css/editor.css',
-    'css_classes' => 'Align center=content-align-center
+      'toolbar_loc' => 'top',
+      'toolbar_align' => 'left',
+      'path_loc' => 'bottom',
+      'resizing' => 1,
+      'verify_html' => 0,
+      'preformatted' => 1,
+      'convert_fonts_to_spans' => 0,
+      'apply_source_formatting' => 0,
+      'remove_linebreaks' => 0,
+      'paste_auto_cleanup_on_paste' => 1,
+      'block_formats' => 'p,h2,h3,h4,h5,h6,pre,div',
+      'css_setting' => 'self',
+      'css_path' => '%b%t/css/editor.css',
+      'css_classes' => 'Align center=content-align-center
 Align right=content-align-right
 Float left=content-float-left
 Float right=content-float-right
@@ -267,76 +274,77 @@ Large=content-large
 Small=content-small
 Loud=content-loud
 Quiet=content-quiet',
-  );  
+    );  
 
-  // Create WYSIWYG format
-  db_query(
-    "INSERT INTO {wysiwyg} (format, editor, settings) VALUES (%d, '%s', '%s')", 
-    $format, 'tinymce', serialize($settings)
-  );
-
+    // Create WYSIWYG format
+    db_query(
+      "INSERT INTO {wysiwyg} (format, editor, settings) VALUES (%d, '%s', '%s')", 
+      $format_id, 'tinymce', serialize($settings)
+    );
+  }
 }
 
 /**
  * Implementation of hook_uninstall().
  */
 function ecenter_editor_uninstall() {
-  // Clean up 
-  $format = variable_get('ecenter_editor_format', NULL);
+  foreach (array('Markdown restricted', 'Markdown advanced') as $format) {
+    $format_id = db_result(db_query(
+      'SELECT format FROM {filter_formats} WHERE name = "%s"', array($format)
+    ));
 
-  db_query("DELETE FROM {wysiwyg} WHERE format=%d", $format);
-  db_query("DELETE FROM {filters} WHERE format=%d", $format);
-  db_query("DELETE FROM {filter_formats} WHERE format=%d", $format);
+    db_query("DELETE FROM {wysiwyg} WHERE format=%d", $format_id);
+    db_query("DELETE FROM {filters} WHERE format=%d", $format_id);
+    db_query("DELETE FROM {filter_formats} WHERE format=%d", $format_id);
 
-  variable_del('wysiwyg_filter_valid_classes_'. $format);
-  variable_del('wysiwyg_filter_valid_ids_'. $format);
-  variable_del('wysiwyg_filter_style_urls_'. $format);
-  variable_del('wysiwyg_filter_valid_elements_raw_'. $format);
-  variable_del('wysiwyg_filter_valid_elements_parsed_'. $format);
-  variable_del('wysiwyg_filter_allow_comments_'. $format);
-  variable_del('wysiwyg_filter_nofollow_domains_'. $format);
-  variable_del('wysiwyg_filter_nofollow_policy_'. $format);
-  variable_del('wysiwyg_filter_styles_border-1_'. $format);
-  variable_del('wysiwyg_filter_styles_border-2_'. $format);
-  variable_del('wysiwyg_filter_styles_box_'. $format);
-  variable_del('wysiwyg_filter_styles_color_'. $format);
-  variable_del('wysiwyg_filter_styles_dimension_'. $format);
-  variable_del('wysiwyg_filter_styles_layout_'. $format);
-  variable_del('wysiwyg_filter_styles_list_'. $format);
-  variable_del('wysiwyg_filter_styles_positioning_'. $format);
-  variable_del('wysiwyg_filter_styles_table_'. $format);
-  variable_del('wysiwyg_filter_styles_text_'. $format);
-  variable_del('wysiwyg_filter_styles_user_'. $format);
+    variable_del('wysiwyg_filter_valid_classes_'. $format_id);
+    variable_del('wysiwyg_filter_valid_ids_'. $format_id);
+    variable_del('wysiwyg_filter_style_urls_'. $format_id);
+    variable_del('wysiwyg_filter_valid_elements_raw_'. $format_id);
+    variable_del('wysiwyg_filter_valid_elements_parsed_'. $format_id);
+    variable_del('wysiwyg_filter_allow_comments_'. $format_id);
+    variable_del('wysiwyg_filter_nofollow_domains_'. $format_id);
+    variable_del('wysiwyg_filter_nofollow_policy_'. $format_id);
+    variable_del('wysiwyg_filter_styles_border-1_'. $format_id);
+    variable_del('wysiwyg_filter_styles_border-2_'. $format_id);
+    variable_del('wysiwyg_filter_styles_box_'. $format_id);
+    variable_del('wysiwyg_filter_styles_color_'. $format_id);
+    variable_del('wysiwyg_filter_styles_dimension_'. $format_id);
+    variable_del('wysiwyg_filter_styles_layout_'. $format_id);
+    variable_del('wysiwyg_filter_styles_list_'. $format_id);
+    variable_del('wysiwyg_filter_styles_positioning_'. $format_id);
+    variable_del('wysiwyg_filter_styles_table_'. $format_id);
+    variable_del('wysiwyg_filter_styles_text_'. $format_id);
+    variable_del('wysiwyg_filter_styles_user_'. $format_id);
 
-  variable_del('tableofcontents_allowed_tags_'. $format);
-  variable_del('tableofcontents_allowed_override_'. $format);
-  variable_del('tableofcontents_attachments_'. $format);
-  variable_del('tableofcontents_automatic_'. $format);
-  variable_del('tableofcontents_back_to_top_'. $format); 
-  variable_del('tableofcontents_back_to_top_anchor_'. $format); 
-  variable_del('tableofcontents_back_to_top_location_'. $format); 
-  variable_del('tableofcontents_collapsed_'. $format); 
-  variable_del('tableofcontents_comments_'. $format);
-  variable_del('tableofcontents_comments_level_'. $format);
-  variable_del('tableofcontents_hide_show_'. $format);
-  variable_del('tableofcontents_hide_table_'. $format);
-  variable_del('tableofcontents_identifier_introducer_'. $format);
-  variable_del('tableofcontents_id_generator_'. $format);
-  variable_del('tableofcontents_id_separator_'. $format);
-  variable_del('tableofcontents_id_stripping_'. $format);
-  variable_del('tableofcontents_list_type_'. $format); 
-  variable_del('tableofcontents_maxlevel_'. $format);
-  variable_del('tableofcontents_minlevel_'. $format);
-  variable_del('tableofcontents_min_limit_'. $format);
-  variable_del('tableofcontents_numbering_'. $format);
-  variable_del('tableofcontents_number_end_letter_'. $format);
-  variable_del('tableofcontents_number_headers_'. $format);
-  variable_del('tableofcontents_number_mode_'. $format);
-  variable_del('tableofcontents_number_separator_'. $format);
-  variable_del('tableofcontents_number_start_letter_'. $format);
-  variable_del('tableofcontents_remove_teaser_'. $format);
-  variable_del('tableofcontents_scroll_back_to_top_'. $format);
-  variable_del('tableofcontents_title_'. $format);
-
-  variable_del('ecenter_editor_format');
+    variable_del('tableofcontents_allowed_tags_'. $format_id);
+    variable_del('tableofcontents_allowed_override_'. $format_id);
+    variable_del('tableofcontents_attachments_'. $format_id);
+    variable_del('tableofcontents_automatic_'. $format_id);
+    variable_del('tableofcontents_back_to_top_'. $format_id); 
+    variable_del('tableofcontents_back_to_top_anchor_'. $format_id); 
+    variable_del('tableofcontents_back_to_top_location_'. $format_id); 
+    variable_del('tableofcontents_collapsed_'. $format_id); 
+    variable_del('tableofcontents_comments_'. $format_id);
+    variable_del('tableofcontents_comments_level_'. $format_id);
+    variable_del('tableofcontents_hide_show_'. $format_id);
+    variable_del('tableofcontents_hide_table_'. $format_id);
+    variable_del('tableofcontents_identifier_introducer_'. $format_id);
+    variable_del('tableofcontents_id_generator_'. $format_id);
+    variable_del('tableofcontents_id_separator_'. $format_id);
+    variable_del('tableofcontents_id_stripping_'. $format_id);
+    variable_del('tableofcontents_list_type_'. $format_id); 
+    variable_del('tableofcontents_maxlevel_'. $format_id);
+    variable_del('tableofcontents_minlevel_'. $format_id);
+    variable_del('tableofcontents_min_limit_'. $format_id);
+    variable_del('tableofcontents_numbering_'. $format_id);
+    variable_del('tableofcontents_number_end_letter_'. $format_id);
+    variable_del('tableofcontents_number_headers_'. $format_id);
+    variable_del('tableofcontents_number_mode_'. $format_id);
+    variable_del('tableofcontents_number_separator_'. $format_id);
+    variable_del('tableofcontents_number_start_letter_'. $format_id);
+    variable_del('tableofcontents_remove_teaser_'. $format_id);
+    variable_del('tableofcontents_scroll_back_to_top_'. $format_id);
+    variable_del('tableofcontents_title_'. $format_id);
+  }
 }

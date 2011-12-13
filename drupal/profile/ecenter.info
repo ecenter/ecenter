@@ -35,7 +35,6 @@ dependencies[] = ecenter_core
 dependencies[] = ecenter_dashboard
 dependencies[] = ecenter_forms
 dependencies[] = ecenter_groups
-dependencies[] = ecenter_help
 dependencies[] = ecenter_issues
 dependencies[] = ecenter_network
 dependencies[] = ecenter_user

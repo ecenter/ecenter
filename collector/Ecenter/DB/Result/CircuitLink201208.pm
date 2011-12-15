@@ -21,6 +21,13 @@ __PACKAGE__->table("circuit_link_201208");
 
 =head2 circuit_link
 
+  data_type: 'bigint'
+  extra: {unsigned => 1}
+  is_auto_increment: 1
+  is_nullable: 0
+
+=head2 circuit_link_id
+
   data_type: 'varchar'
   is_nullable: 0
   size: 512
@@ -57,6 +64,13 @@ __PACKAGE__->table("circuit_link_201208");
 
 __PACKAGE__->add_columns(
   "circuit_link",
+  {
+    data_type => "bigint",
+    extra => { unsigned => 1 },
+    is_auto_increment => 1,
+    is_nullable => 0,
+  },
+  "circuit_link_id",
   { data_type => "varchar", is_nullable => 0, size => 512 },
   "l2_urn",
   { data_type => "varchar", is_foreign_key => 1, is_nullable => 0, size => 512 },
@@ -78,6 +92,7 @@ __PACKAGE__->add_columns(
   },
 );
 __PACKAGE__->set_primary_key("circuit_link");
+__PACKAGE__->add_unique_constraint("cir_link_201208_port", ["circuit_link_id", "l2_urn"]);
 
 =head1 RELATIONS
 
@@ -112,8 +127,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07010 @ 2011-10-21 16:08:05
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:qvLs+YA5nD71/E1x4aqBPg
+# Created by DBIx::Class::Schema::Loader v0.07010 @ 2011-12-12 16:41:44
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:SjcR4Q76FIt09HXWaHXnvQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

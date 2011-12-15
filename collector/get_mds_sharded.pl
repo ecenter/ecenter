@@ -229,7 +229,7 @@ unless(@hlses) {
     @hlses = keys %hls_cache;
 }
 my %e2e_threads= (); 
-push @hlses, 'http://monitor.sc11.org:9995/perfSONAR_PS/services/hLS';
+#push @hlses, 'http://monitor.sc11.org:9995/perfSONAR_PS/services/hLS';
 foreach my $hls (@hlses) {
     $logger->debug("LSS INDEX BEFORE:	$hls"); 
     $logger->info("CHECKING HLS: $hls");  

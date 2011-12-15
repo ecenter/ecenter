@@ -21,6 +21,7 @@ use Ecenter::Types;
 =head1 DESCRIPTION
 
 perfSONAR-PS - snmp  data retrieval API,see L<Ecenter::Data::Requester> fro more info
+it supports SNMP data for statuc and dynamic circuits
   
 =head1 SYNOPSIS 
    
@@ -122,8 +123,9 @@ after 'get_data' => sub  {
      	$self->logger->error("Unhandled exception or crash: $EVAL_ERROR");
     }
     return unless $ma_result;
+    $self->logger->debug("SNMP MA Result::", sub{Dumper($ma_result)});
     my $parser = XML::LibXML->new();
-    my @datum = ();
+    my $datum = [[],[]];
     my %data_response=();
     my $metadata = $self->metadata;
     $self->logger->debug("SNMP MDS::", sub{Dumper($metadata)});
@@ -140,26 +142,29 @@ after 'get_data' => sub  {
                 if ( $dt->getAttribute("value") and $dt->getAttribute("value") ne "nan" ) {
 		    $self->logger->debug("Data value: ".$dt->getAttribute("value"));
                     my $data_value = eval { $dt->getAttribute("value")  };
-		    $data_response{$dt->getAttribute("timeValue")}{data}{$metadata->{$idref}{eventtype}} =  $data_value;
-		    $data_response{$dt->getAttribute("timeValue")}{capacity} = $metadata->{$idref}{capacity};
-		      $self->logger->debug("Post-mod data value: ".$data_value);
+		    $data_response{$metadata->{$idref}{direction}}{$dt->getAttribute("timeValue")}{data}{$metadata->{$idref}{eventtype}} =  $data_value;
+		    $self->logger->debug("Post-mod data value: ".$data_value);
                 }
                 else {
-                    $data_response{$dt->getAttribute("timeValue")}{data}{$metadata->{$idref}{eventtype}}=  0;
-		    $data_response{$dt->getAttribute("timeValue")}{capacity}  = $metadata->{$idref}{capacity};
-                   ## push @datum, [$dt->getAttribute("timeValue"), 0, 0, 0, $metadata->{$idref}{capacity}];
-                }
+                    $data_response{$metadata->{$idref}{direction}}{$dt->getAttribute("timeValue")}{data}{$metadata->{$idref}{eventtype}}=  0;
+		}
+		$data_response{$metadata->{$idref}{direction}}{$dt->getAttribute("timeValue")}{capacity} = $metadata->{$idref}{capacity};
             }
-        }
+	}
 	
-    }
-   foreach my $tm ( sort {$a <=> $b} keys %data_response) {
-       push @datum, [$tm, $data_response{$tm}{data}{'http://ggf.org/ns/nmwg/characteristic/utilization/2.0/'},
-                          $data_response{$tm}{data}{'http://ggf.org/ns/nmwg/characteristic/errors/2.0/'},
-			  $data_response{$tm}{data}{'http://ggf.org/ns/nmwg/characteristic/discards/2.0/'},
-			  $data_response{$tm}{capacity} ];
    }
-   return $self->data(\@datum);
+  # $self->logger->debug("SNMP Data response::", sub{Dumper(\%data_response)});
+   foreach my $dir (0,1) {
+       my $dir_name = $dir?'out':'in';
+       foreach my $tm ( sort {$a <=> $b} keys %{$data_response{$dir_name}}) {
+                    push @{$datum->[$dir]}, [$tm, $data_response{$dir_name}{$tm}{data}{'http://ggf.org/ns/nmwg/characteristic/utilization/2.0/'},
+                          $data_response{$dir_name}{$tm}{data}{'http://ggf.org/ns/nmwg/characteristic/errors/2.0/'},
+			  $data_response{$dir_name}{$tm}{data}{'http://ggf.org/ns/nmwg/characteristic/discards/2.0/'},
+			  $data_response{$dir_name}{$tm}{capacity} 
+			  ];
+       }
+   }
+   return $self->data($datum);
 };
 
 sub parse_metadata {
@@ -173,13 +178,16 @@ sub parse_metadata {
 	my $port      =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='ifName']",    1), 0);
  	my $ip        =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='ifAddress']", 1), 0);
  	my $name      =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='hostName']",  1), 0);
+	my $urn      =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='urn']",  1), 0);	
  	my $direction =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='direction']", 1), 0);
  	my $capacity  =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='capacity']",  1), 0);
 	my $eventtype  =  extract( find($metadata->getDocumentElement, "./*[local-name()='eventType']",  1), 0);
 	$eventtype  ||=  extract( find($metadata->getDocumentElement, "./*[local-name()='subject']/*[local-name()='eventType']",  1), 0);
-	
-	
- 	$mds->{$id} = {port => $port, ip => $ip, name => $name, direction => $direction, capacity => $capacity, eventtype=>$eventtype};
+	# filter only requested ones
+	next unless ($self->urn && $urn &&  $self->urn eq $urn) || 
+	            ($self->ifAddress && $ip && $self->ifAddress eq $ip) || 
+		    ($self->hostName && $name && $self->hostName eq $name);
+ 	$mds->{$id} = {port => $port, ip => $ip, urn => $urn, name => $name, direction => $direction, capacity => $capacity, eventtype=>$eventtype};
     }
     $self->metadata($mds); 
 }
@@ -187,9 +195,9 @@ sub parse_metadata {
 sub parse_params {
    my ($self, $params) = @_;
    map {$self->$_($params->{$_}) if $self->can($_)}  keys %$params if $params && ref $params eq ref {};
-   return unless $self->hostName or $self->ifAddress;
+   return unless $self->hostName or $self->ifAddress or $self->urn;
    my $subject = qq|  <nmwg:subject id="s-in-16"><nmwgt:interface xmlns:nmwgt="http://ggf.org/ns/nmwg/topology/2.0/">|;
-   foreach my $key (qw/ifName ifIndex hostName direction  ifAddress/) {
+   foreach my $key (qw/ifName ifIndex urn hostName direction  ifAddress/) {
       $subject .=    "<nmwgt:$key>" . $self->$key . "</nmwgt:$key>\n" if  $self->$key;
    }
    $subject .=  q|</nmwgt:interface></nmwg:subject>|;
@@ -204,12 +212,12 @@ __PACKAGE__->meta->make_immutable;
 
 =head1   AUTHOR
 
-    Maxim Grigoriev, 2010, maxim@fnal.gov
+    Maxim Grigoriev, 2010-2011, maxim@fnal.gov
          
 
 =head1 COPYRIGHT
 
-Copyright (c) 2010, Fermi Research Alliance (FRA)
+Copyright (c) 2010-2011, Fermi Research Alliance (FRA)
 
 =head1 LICENSE
 

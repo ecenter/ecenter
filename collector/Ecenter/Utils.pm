@@ -51,7 +51,7 @@ our $logger =   Log::Log4perl->get_logger(__PACKAGE__);
 # exported functions  
 
 our @EXPORT = qw/get_ip_name get_gearman gearman_status pack_snmp_data params_to_date get_shards get_datums refactor_result
-                 db_connect update_create_fixed pool_control ip_ton nto_ip $DAYS7_SECS $REG_IP $REG_DATE @HEALTH_NAMES $TABLEMAP/;
+                 db_connect update_create_fixed get_circuits pool_control ip_ton nto_ip $DAYS7_SECS $REG_IP $REG_DATE @HEALTH_NAMES $TABLEMAP/;
  
 
 our $DAYS7_SECS = 604800;
@@ -128,6 +128,68 @@ sub gearman_status {
 	$result->{$line[0]}{available} =  $line[3];
     }
     return $result;
+}
+
+=head2 get_circuits
+
+Get circuits  and cache  them in the DB
+
+=cut
+
+sub get_circuits {
+    my ($dbh,  $circuits) = @_;
+    my $now_str = strftime('%Y-%m-%d %H:%M:%S', localtime()); 
+    my $date_table = strftime('%Y%m', localtime());
+    foreach my $circuit_id (keys %{$circuits}){
+	$logger->debug("\t[Capacity] " . $circuits->{$circuit_id}{capacity} . 'Mbps');
+	my $circuit = $dbh->resultset('Circuit' . $date_table)->update_or_create({ 
+	                                                      circuit =>  $circuits->{$circuit_id}{name},
+							      src_hub => 'albu-sdn1',
+							      dst_hub => 'albu-sdn1',
+							      description =>  $circuits->{$circuit_id}{description},
+							      start_time =>  $circuits->{$circuit_id}{start},
+							      end_time=>  $circuits->{$circuit_id}{end},
+							    });
+	my $src_hub = '';
+	my $dst_hub = '';
+	foreach my $link(@{$circuits->{$circuit_id}{links}}){
+            $logger->debug("\t[Link] " . $link->{id});
+	    my $port_num = 1;
+	    my $direction = $link->{id} =~ /atoz/?'forward':'reverse';
+            foreach my $port(@{$link->{ports}}){
+        	$logger->debug("\t\t[Port] $port");
+		my ($hub) = $port =~ m/:node=([^:]+):/;
+		my $hub_name = "\L$hub";
+		if($direction eq 'forward' ) {
+		    $src_hub = $hub_name if $port_num == 1;
+		    $dst_hub = $hub_name;
+		}
+		my ($l2_port) = $dbh->resultset('L2Port')->search({'hub.hub' => $hub_name}, {join => 'hub', limit => 1});
+                
+		unless($l2_port && $l2_port->l2_urn) {
+                   $logger->error("NO ports available - check topology info or hub_name:$hub_name");
+                   next;
+                }
+		$dbh->resultset('L2Port')->update_or_create({ 
+	                                                      l2_urn => $port,
+							      capacity =>  $circuits->{$circuit_id}{capacity},
+							      hub =>  $l2_port->hub->hub,
+							      description => '',
+							    });
+	       $dbh->resultset('CircuitLink' . $date_table)->update_or_create({ 
+	                                                      circuit_link_id => $link->{id},
+							      circuit =>  $circuits->{$circuit_id}{name},
+							      l2_urn => $port,
+							      link_num =>  $port_num,
+							      direction => $direction,
+						        });
+              $port_num++;
+	    }
+	}
+	$circuit->src_hub($src_hub);
+	$circuit->dst_hub($dst_hub);
+	$circuit->update;
+    }
 }
 
 =head2 get_shards

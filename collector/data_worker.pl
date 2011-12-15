@@ -333,7 +333,7 @@ sub _get_remote_data  {
 sub _get_remote_snmp {
     my ($request, $dbh) = @_;
     my $snmp_ma;
-    my $result = {status => 'ok', data => {}};
+    my $result = {status => 'ok', data =>  { in => {}, out => {}}};
     eval {
 	$snmp_ma =  Ecenter::Data::Snmp->new({ url => $request->{service} });
 	my $meta_cond = {
@@ -408,10 +408,11 @@ sub _get_snmp_from_db{
 		       $direction_sql
 		  |;
     my $md_href = $dbh->selectall_hashref( $cmd, 'metaid');
-    return  {data => {}, md => $md_href, start_time => $start_time, end_time => $end_time} unless $md_href && %{$md_href};
+    $logger->debug("---------SNMP DB::", sub{Dumper($md_href)});
+    return  {data => { in => {}, out => {}}, md => $md_href, start_time => $start_time, end_time => $end_time} unless $md_href && %{$md_href};
     my $mds = join(",", map {$dbh->quote($_)}  keys %{$md_href});
     $cmd = qq|select distinct  CONCAT(sd.timestamp,  m.direction) as data_id, m.metaid,  sd.timestamp as timestamp,
-                                              sd.utilization as utilization,  m.direction, sd.errors as errors, sd.drops as drops
+                                              sd.utilization as utilization,   sd.errors as errors, sd.drops as drops
 	                              from
 			  	       $request->{table} sd
                         	       join   metadata m on(sd.metaid = m.metaid)
@@ -420,17 +421,19 @@ sub _get_snmp_from_db{
 			  		   sd.timestamp <= $request->{end}  and
 			  		   m.metaid IN ($mds)|;
     my $data_ref =  $dbh->selectall_hashref( $cmd, 'data_id');
-    if($data_ref) {
-      
+    my $result_data = {};
+    if($data_ref) {    
         foreach my $data_id (grep {$_} keys %{$data_ref}) {
-	    my $time    = $data_ref->{timestamp};
-	    my $metaid = $data_ref->{$time}{metaid};
+	    my $time    = $data_ref->{$data_id}{timestamp};
+	    my $metaid = $data_ref->{$data_id}{metaid};
+	    my $direction = $md_href->{$metaid}{direction};
 	    $end_time   = $time if  $time > $end_time;
 	    $start_time = $time if  $time < $start_time;
-	    $data_ref->{$md_href->{$metaid}{direction}}{$time}{capacity} = $md_href->{$metaid}{capacity};
+	    map { $result_data->{$direction}{$time}{$_} = $data_ref->{$data_id}{$_}} qw/metaid drops errors utilization/;
+	    $result_data->{$direction}{$time}{capacity} = $md_href->{$metaid}{capacity};
 	}
     }
-    return  {data =>  $data_ref, md => $md_href, start_time => $start_time, end_time => $end_time};
+    return  {data =>  $result_data, md => $md_href, start_time => $start_time, end_time => $end_time};
 }
 #
 #  call to get local data and if not there then call remote snmp service

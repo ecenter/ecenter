@@ -1099,7 +1099,8 @@ sub get_snmp {
     my $FAILED =0;
     foreach my $ip_noted (keys %{$hops_ref}) {
         next unless $ip_noted;
-        $snmp->{$ip_noted} = {};
+        $snmp->{in}{$ip_noted} = {};
+	$snmp->{out}{$ip_noted} = {};
     #####  for each time slice 
         for(my $st_time = $params->{snmp}{start}; $st_time <= $params->{snmp}{end}; $st_time += config->{time_slice_secs}) {
             my $data_table = strftime "%Y%m", localtime($st_time);
@@ -1113,8 +1114,7 @@ sub get_snmp {
 					  class =>  "SnmpData$data_table",
 			    		  start =>  $st_time,
 					  snmp_ip => $ip_noted,
-			    		  end =>  $end_time,
-					  direction => 'out',
+			    		  end =>  $end_time
 					     },
 			    {  
 			       on_fail     => sub {$FAILED++;
@@ -1124,9 +1124,11 @@ sub get_snmp {
 			    	   my $returned = decode_json  ${$_[0]};  
 			    	   if($returned->{status} eq 'ok' && $returned->{data} && ref $returned->{data} eq ref {}) {
 				       ####debug "request is not OK:::" . Dumper($returned);
-			    	       %{$snmp->{$ip_noted}} =  (%{$snmp->{$ip_noted}},  %{$returned->{data}});
+			    	       # %{$snmp->{$ip_noted}} =  (%{$snmp->{$ip_noted}},  %{$returned->{data}});
+				       %{$snmp->{in}{$ip_noted}} =  (%{$snmp->{in}{$ip_noted}},  %{$returned->{data}{in}}) if $returned->{data}{in};
+	 			       %{$snmp->{out}{$ip_noted}} =  (%{$snmp->{out}{$ip_noted}},  %{$returned->{data}{out}}) if $returned->{data}{out};
 			    	    } else {
-				       error "request is not OK:::" . Dumper($returned);
+				       $logger->error("request is not OK:::", sub{Dumper($returned)});
 				    }
 			    	}
 			    }

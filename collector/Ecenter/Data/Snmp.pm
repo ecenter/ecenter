@@ -62,7 +62,7 @@ it supports SNMP data for statuc and dynamic circuits
 
  
 has 'direction'  => (is => 'rw', isa => 'Str');
-has 'urn'        => (is => 'rw', isa => 'Str');
+has 'urn'        => (is => 'rw', isa => 'Str', required => 0);
 has 'ifName'     => (is => 'rw', isa => 'Str');
 has 'ifIndex'    => (is => 'rw', isa => 'Str');
 has 'ifAddress'  => (is => 'rw', isa => 'Ecenter::Types::IPAddr');

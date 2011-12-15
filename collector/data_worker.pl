@@ -356,30 +356,31 @@ sub _get_remote_snmp {
         $result->{data} = " Remote MA -- $request->{service} failed $EVAL_ERROR";
 	return encode_json  $result;
     } 
-    #$logger->info("$request->{service} :: SNMP Data=", sub {Dumper($snmp_ma->data)});
-    $logger->info("$request->{service} :: SNMP DataN=" . scalar @{$snmp_ma->data});
+    #   $logger->info("$request->{service} :: SNMP Data=", sub {Dumper($snmp_ma->data)});
+   #  $logger->info("$request->{service} :: SNMP DataN=" . scalar @{$snmp_ma->data});
     my $data_arr = $snmp_ma->data;
     if($data_arr && @{$data_arr}) {
-        foreach my $direction (0..1) {
+        foreach my $direction (0,1) {
 	    foreach my $data (@{$data_arr->[$direction]}) {
-	     eval {
-	          my $datum = {  timestamp => $data->[0],
-			         utilization => $data->[1],
-				 errors => $data->[2],
-				 drops => $data->[3]
-			      };
-		  if($request->{snmp_ip} && $request->{metaid}) {
-		      $datum->{metaid} = $request->{metaid};
-		      $dbh->resultset($request->{table})->find_or_create( $datum,   {key => 'meta_time'}  );
-		  }
-		  $datum->{capacity} = $data->[4];
-		  $datum->{direction} = $direction?'out':'in';
-	          $result->{data}{$data->[0]} = $datum;
-		  
-	     };
-	     if($EVAL_ERROR) {
-		$logger->error("  Some error with insertion    $EVAL_ERROR");
-	     }
+		eval {
+	             my $datum = {  timestamp => $data->[0],
+			            utilization => $data->[1],
+				    errors => $data->[2],
+				    drops => $data->[3]
+				 };
+		     if($request->{snmp_ip} && $request->{metaid}) {
+			 $datum->{metaid} = $request->{metaid};
+			 $dbh->resultset($request->{table})->find_or_create( $datum,   {key => 'meta_time'}  );
+		     }
+		     $datum->{capacity} = $data->[4];
+		     $datum->{direction} = $direction?'out':'in';
+	             $result->{data}{$datum->{direction}}{$data->[0]} = $datum;
+
+		};
+		if($EVAL_ERROR) {
+		   $logger->error("  Some error with insertion    $EVAL_ERROR");
+		}
+            }
         }
     }
     return encode_json $result;
@@ -409,7 +410,7 @@ sub _get_snmp_from_db{
     my $md_href = $dbh->selectall_hashref( $cmd, 'metaid');
     return  {data => {}, md => $md_href, start_time => $start_time, end_time => $end_time} unless $md_href && %{$md_href};
     my $mds = join(",", map {$dbh->quote($_)}  keys %{$md_href});
-    $cmd = qq|select distinct  m.metaid,  sd.timestamp as timestamp,
+    $cmd = qq|select distinct  CONCAT(sd.timestamp,  m.direction) as data_id, m.metaid,  sd.timestamp as timestamp,
                                               sd.utilization as utilization,  m.direction, sd.errors as errors, sd.drops as drops
 	                              from
 			  	       $request->{table} sd
@@ -418,15 +419,18 @@ sub _get_snmp_from_db{
 			  		   sd.timestamp >=  $request->{start} and
 			  		   sd.timestamp <= $request->{end}  and
 			  		   m.metaid IN ($mds)|;
-    my $data_ref =  $dbh->selectall_hashref( $cmd, 'timestamp');
+    my $data_ref =  $dbh->selectall_hashref( $cmd, 'data_id');
     if($data_ref) {
-        foreach my $time (grep {$_} keys %{$data_ref}) {
-	    $end_time = $time if $time > $end_time;
-	    $start_time = $time if $time < $start_time;
-	    $data_ref->{$time}{capacity} = $md_href->{$data_ref->{$time}{metaid}}{capacity};
+      
+        foreach my $data_id (grep {$_} keys %{$data_ref}) {
+	    my $time    = $data_ref->{timestamp};
+	    my $metaid = $data_ref->{$time}{metaid};
+	    $end_time   = $time if  $time > $end_time;
+	    $start_time = $time if  $time < $start_time;
+	    $data_ref->{$md_href->{$metaid}{direction}}{$time}{capacity} = $md_href->{$metaid}{capacity};
 	}
     }
-    return  {data => $data_ref, md => $md_href, start_time => $start_time, end_time => $end_time};
+    return  {data =>  $data_ref, md => $md_href, start_time => $start_time, end_time => $end_time};
 }
 #
 #  call to get local data and if not there then call remote snmp service
@@ -436,12 +440,14 @@ sub dispatch_snmp {
     my $request = decode_json $job->arg();
     my %snmp=();
     my $dbic  = _initialize($request, 'dbic');  
-    my $dbh  = _initialize($request, 'dbh', qw/snmp_ip table  class start end/);
+    my $dbh  = _initialize($request, 'dbh', qw/table  class start end/);
     return encode_json {status => 'error', data => $dbh} unless ref $dbh;
     my $result = {status => 'ok', data => []};
     
     my $data_ref    = _get_snmp_from_db($dbh, $request);
-    $logger->info("---------SNMP:: IP=$request->{snmp_ip}  Found Times: start= $data_ref->{start_time} start_dif=" .
+    my $requested_param  = $request->{snmp_ip}?$request->{snmp_ip}:$request->{urn};
+    
+    $logger->info("---------SNMP:: IP=$requested_param  Found Times: start= $data_ref->{start_time} start_dif=" .
                    ($data_ref->{start_time} - $request->{start}) .
     	           "... end=$data_ref->{end_time} end_dif=" . ( $request->{end} - $data_ref->{end_time}));
     ##################### no metadata, skip
@@ -452,13 +458,17 @@ sub dispatch_snmp {
            abs($data_ref->{end_time}  - $request->{end}) > $OPTIONS{period}
     	) {
     	my (undef, $request_params) = each(%{$data_ref->{md}});
-        $logger->info("params to ma: ip=$request_params->{snmp_ip} start=$request->{start} end=$request->{end} ");
+	###$logger->info("params to ma: ip=$request_param_md start=$request->{start} end=$request->{end} ");
 	my $remote_request = { table  => $request->{class},
 				   service => $request_params->{service},
 				   metaid => $request_params->{metaid},
-				   snmp_ip => $request_params->{snmp_ip},
 				   start => $request->{start},
-				   end => $request->{end}};
+				   end => $request->{end}}; 
+	if($request->{snmp_ip}) {
+	    $remote_request->{snmp_ip} = $request_params->{snmp_ip};
+	} else {
+	    $remote_request->{urn} = $request_params->{urn}; 
+	}
 	$remote_request->{direction} = $request->{direction} 
 	    if $request->{direction} && $request->{direction} =~ /in|out/;
     	return  _get_remote_snmp($remote_request, $dbic);

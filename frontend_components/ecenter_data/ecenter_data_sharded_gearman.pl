@@ -678,19 +678,22 @@ sub process_data {
 #
 sub reduce_snmp_dataset {
     my ($snmp, $params) = @_;
-    foreach my $ip_noted (keys %{$snmp}) { 
-        my @result =(); 
-        foreach my $time  (sort {$a<=>$b} grep {$_} keys %{$snmp->{$ip_noted}}) { 
-     	    push @result,[ $time,  { capacity =>  $snmp->{$ip_noted}{$time}{capacity},  
-     				  utilization => $snmp->{$ip_noted}{$time}{utilization},
-     				  errors => $snmp->{$ip_noted}{$time}{errors},
-     				  drops => $snmp->{$ip_noted}{$time}{drops},
+    foreach my $direction (qw/in out/) {
+      foreach my $ip_noted (keys %{$snmp->{$direction}}) { 
+        my @result = (); 
+        foreach my $time  (sort {$a<=>$b} grep {$_} keys %{$snmp->{$direction}{$ip_noted}}) { 
+     	    push @result,[ $time,  { capacity =>  $snmp->{$direction}{$ip_noted}{$time}{capacity},  
+     				  utilization => $snmp->{$direction}{$ip_noted}{$time}{utilization},
+     				  errors => $snmp->{$direction}{$ip_noted}{$time}{errors},
+     				  drops => $snmp->{$direction}{$ip_noted}{$time}{drops}
      				}
      		        ];
         }
         ### debug "Data for ip=$hop_ip hop_id=$hops_ref->{$hop_ip}:: " . Dumper( $snmp{$hops_ref->{$hop_ip}});
-        $snmp->{$ip_noted} = refactor_result(\@result, 'snmp', $params->{resolution});
-        ##$snmp->{$ip_noted} = \@result;
+        delete $snmp->{$direction}{$ip_noted};
+	$snmp->{$direction}{$ip_noted}  = refactor_result(\@result, 'snmp', $params->{resolution}) if @result;
+	##$snmp->{$ip_noted} = \@result;
+      }
     }
     return $snmp;
 }
@@ -1051,8 +1054,10 @@ sub get_circuit_data {
 	next if $params->{no_snmp};
 	## data
         foreach my $urn (keys %urns) {
-	    $snmp->{snmp}{$urn} = {}; 
-    	    $task_set->add_task("get_remote_snmp" =>  
+	    $snmp->{snmp}{in}{$urn} = {}; 
+    	    $snmp->{snmp}{out}{$urn} = {}; 
+    	    
+	    $task_set->add_task("get_remote_snmp" =>  
     			  encode_json {
 	 			   start =>  $shards->{$shard}{start},
 	 			   urn =>    $urn,
@@ -1066,8 +1071,9 @@ sub get_circuit_data {
 	 		on_complete => sub { 
 	 		    my $returned = decode_json  ${$_[0]};  
 	 		    if($returned->{status} eq 'ok' && $returned->{data} && ref $returned->{data} eq ref {}) {
-	 			###$logger->debug(" Circuits DATA OK:::", sub{Dumper($returned)}); 
-	 			%{$snmp->{snmp}{$urn}} =  (%{$snmp->{snmp}{$urn}},  %{$returned->{data}});
+	 			$logger->debug(" Circuits DATA OK:::", sub{Dumper($returned->{data})});
+				%{$snmp->{snmp}{in}{$urn}} =  (%{$snmp->{snmp}{in}{$urn}},  %{$returned->{data}{in}}) if $returned->{data}{in};
+	 			%{$snmp->{snmp}{out}{$urn}} =  (%{$snmp->{snmp}{out}{$urn}},  %{$returned->{data}{out}}) if $returned->{data}{out};
 	 		     } else {
 	 			$logger->error("request is not OK:::", sub{Dumper($returned)});
 	 		     }

@@ -39,11 +39,13 @@ function ecenter_forms_form_alter(&$form, &$form_state, $form_id) {
     }
     $form['field_wiki_file_attachment']['#weight'] = 0;
 
-    $form['taxonomy']['#title'] = t('Tags');
-    $form['taxonomy']['#type'] = 'fieldset';
-    $form['taxonomy']['#collapsible'] = TRUE;
-    foreach ($form['taxonomy']['tags'] as $tid => $tag) {
-      unset ($form['taxonomy']['tags'][$tid]['#title']);
+    if (!empty($form['taxonomy'])) {
+      $form['taxonomy']['#title'] = t('Tags');
+      $form['taxonomy']['#type'] = 'fieldset';
+      $form['taxonomy']['#collapsible'] = TRUE;
+      foreach ($form['taxonomy']['tags'] as $tid => $tag) {
+        unset ($form['taxonomy']['tags'][$tid]['#title']);
+      }
     }
   }
 }

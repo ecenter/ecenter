@@ -71,7 +71,7 @@ projects[filefield][subdir] = "contrib"
 projects[filefield][version] = "3.10"
 
 projects[flag][subdir] = "contrib"
-projects[flag][version] = "1.3"
+projects[flag][version] = "2.0-beta6"
 
 projects[fontyourface][subdir] = "contrib"
 projects[fontyourface][version] = "2.8"
@@ -173,6 +173,12 @@ projects[tableofcontents][version] = "3.7"
 
 projects[token][subdir] = "contrib"
 projects[token][version] = "1.18"
+
+projects[uuid][subdir] = "contrib"
+projects[uuid][version] = "1.0-beta2"
+
+projects[uuid_features][subdir] = "contrib"
+projects[uuid_features][version] = "1.x-dev"
 
 projects[vertical_tabs][subdir] = "contrib"
 projects[vertical_tabs][version] = "1.0-rc2"

@@ -3,7 +3,7 @@
 /**
  * Implementation of hook_uuid_features_default_vocabularies().
  */
-function ecenter_help_uuid_features_default_vocabularies() {
+function ecenter_core_uuid_features_default_vocabularies() {
   $vocabularies = array();
 
   $vocabularies[] = array(
@@ -18,10 +18,10 @@ function ecenter_help_uuid_features_default_vocabularies() {
     'module' => 'features_tags',
     'weight' => '0',
     'nodes' => array(
-      'blog_post' => 'blog_post',
-      'issue' => 'issue',
-      'page' => 'page',
       'wiki' => 'wiki',
+      'page' => 'page',
+      'issue' => 'issue',
+      'blog_post' => 'blog_post',
     ),
   );
   return $vocabularies;

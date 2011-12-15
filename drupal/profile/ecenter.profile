@@ -66,7 +66,7 @@ function _ecenter_profile_post_install() {
 
   // Install syntaxhighlighter and ecenter_editor (must be installed after 
   // everything else)
-  foreach (array('shib_auth', 'syntaxhighlighter', 'ecenter_editor') as $module) {
+  foreach (array('shib_auth', 'syntaxhighlighter', 'ecenter_editor', 'ecenter_help') as $module) {
     module_load_install($module);
     $versions = drupal_get_schema_versions($module);
     drupal_set_installed_schema_version($module, SCHEMA_UNINSTALLED);

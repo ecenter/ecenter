@@ -121,6 +121,26 @@ function template_preprocess_ecenter_dashboard(&$vars) {
   }
 }
 
+/**
+ * Implementation of hook_content_build_modes().
+ */
+function ecenter_dashboard_content_build_modes() {
+  return array(
+    'ecenter' => array(
+      'title' => t('E-Center'),
+      'build modes' => array(
+        'ecenter_activity' => array(
+          'title' => 'E-Center activity',
+          'views style' => TRUE,
+        ),
+      ),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_cron().
+ */
 function ecenter_dashboard_cron() {
   module_load_include('inc', 'date_api', 'date_api_elements');
   $now = time();

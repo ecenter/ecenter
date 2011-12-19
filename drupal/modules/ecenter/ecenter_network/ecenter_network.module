@@ -490,26 +490,39 @@ function ecenter_network_select_form(&$form_state) {
       );
     }
     elseif (!empty($src) && !empty($dst)) {
-      $data = array(
-        'drs' => ecenter_network_get_data($src, $dst, $start, $end)
-      );
+      
+      if ($circuit) {
+        dpm('circuit mode');
+      } else {
+        $data = array(
+          'drs' => ecenter_network_get_data($src, $dst, $start, $end)
+        );
 
-      $params += array(
-        'src' => $src,
-        'dst' => $dst,
-        'fds' => 0,
-        'ads' => 0,
-      );
+        $circuits = ecenter_network_get_circuit_data($src, $dst, $start, $end, TRUE);
+        if (!empty($circuits)) {
+          $form['results_wrapper']['circuits']['#value'] = '<p>Circuits detected!</p>';
+          $circuit_data = ecenter_network_get_circuit_data($src, $dst, $start, $end);
+          dpm($circuit_data);
+        }
 
-      if ($ads) {
-        $data['ads'] = ecenter_network_get_ads_data($src, $dst, $start, $end, $algorithm, $detector_type, $sensitivity, $elevation1, $elevation2, $swc);
-        $params['ads'] = 1;
-      }
 
-      if ($fds) {
-        $data['fds'] = ecenter_network_get_fds_data($src, $dst, $start, $end, $fds_type);
-        $params['fds'] = 1;
-        $params['fds_type'] = $fds_type;
+        $params += array(
+          'src' => $src,
+          'dst' => $dst,
+          'fds' => 0,
+          'ads' => 0,
+        );
+
+        if ($ads) {
+          $data['ads'] = ecenter_network_get_ads_data($src, $dst, $start, $end, $algorithm, $detector_type, $sensitivity, $elevation1, $elevation2, $swc);
+          $params['ads'] = 1;
+        }
+
+        if ($fds) {
+          $data['fds'] = ecenter_network_get_fds_data($src, $dst, $start, $end, $fds_type);
+          $params['fds'] = 1;
+          $params['fds_type'] = $fds_type;
+        }
       }
     }
 

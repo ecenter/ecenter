@@ -180,4 +180,59 @@ class DataRetrievalService extends EcenterService {
     return $this->query('site', $params);
   }
 
+  /**
+   * Get data from service
+   *
+   * @param $src
+   *   Source, of the form <query_type>:<source identifier>.
+   * @param $dst
+   *   Destination, of the form <query_type>:<destination identifier>.
+   * @param $start
+   *   Start time.
+   * @param $end
+   *   End time.
+   * @param $resolution
+   *   (optional) Maximum number of data points to return for any measurement.
+   * @return
+   *   Result for this query.
+   */
+  public function getCircuitData($src, $dst, $start, $end, $no_smnp = FALSE, $resolution = 20) {
+
+    // Parse out query type
+    list($src_type, $src_value) = explode(':', $src, 2);
+    list($dst_type, $dst_value) = explode(':', $dst, 2);
+
+    if (array_search($src_type, $this->query_types) === FALSE
+      && array_search($dst_type, $this->query_types) !== FALSE) {
+      throw new Exception('Invalid source query type.');
+    }
+    else if (array_search($src_type, $this->query_types) !== FALSE
+      && array_search($dst_type, $this->query_types) === FALSE) {
+      throw new Exception('Invalid destination query type.');
+    }
+    else if (array_search($src_type, $this->query_types) === FALSE 
+      && array_search($dst_type, $this->query_types) === FALSE) {
+      throw new Exception('Invalid source and destination query types.');
+    }
+
+    $params = array(
+      'src' => array(
+        'query' => array('src_'. $src_type => $src_value),
+        'type' => $src_type,
+        'value' => $src_value,
+      ),  
+      'dst' => array(
+        'query' => array('dst_'. $dst_type => $dst_value),
+        'type' => $dst_type,
+        'value' => $dst_value,
+      ),  
+      'start' => $start,
+      'end' => $end,
+      'no_snmp' => $no_smnp,
+      'resolution' => $resolution,
+    );
+
+    return $this->query('data/circuit', $params);
+  }
+
 }

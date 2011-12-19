@@ -10,10 +10,11 @@ function ecenter_network_admin_form() {
   $services = array(
     'drs' => t('Data Retrieval Service'),
     'drs_sitecentric' => t('Data Retrieval Service (Site-centric)'),
+    'drs_circuit' => t('Circuit data service'),
     'ads' => t('Anomaly Detection Service'),
     'fds' => t('Forecasting Detection Service'),
   );
-  $form = array(); 
+  $form = array();
 
   foreach ($services as $type => $name) {
 

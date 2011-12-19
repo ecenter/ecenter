@@ -2,6 +2,7 @@
 // Load helpers
 require_once('data_retrieval_service.inc');
 require_once('data_retrieval_service_sitecentric.inc');
+require_once('data_retrieval_service_circuit.inc');
 require_once('anomaly_detection_service.inc');
 require_once('forecasting_data_service.inc');
 
@@ -28,6 +29,11 @@ function ecenter_network_get_client($status_check = FALSE, $type = 'drs', $name 
       require_once('data_retrieval_service.class.inc');
       $klass = 'DataRetrievalService';
       $name = ($name) ? $name : 'drs_default';
+      break;
+    case 'drs_circuit':
+      require_once('data_retrieval_service.class.inc');
+      $klass = 'DataRetrievalService';
+      $name = ($name) ? $name : 'drs_circuit';
       break;
     case 'drs_sitecentric':
       require_once('data_retrieval_service.class.inc');

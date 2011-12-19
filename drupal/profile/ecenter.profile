@@ -79,6 +79,15 @@ function _ecenter_profile_post_install() {
     drupal_get_messages();
   }
 
+  // Flag carousel snippets
+  /*$result = db_query("SELECT {nid} FROM {node} WHERE type='snippet'");
+  drupal_set_message('HI! I AM RUNING NOW');
+  dpm('HI AM I DPMED');
+  while ($nid = db_result($result)) {
+    drupal_set_message($nid);
+    $flag->flag('flag', $nid);
+  }*/
+
   // Disable Shib auth blocks
   db_query("UPDATE {blocks} SET status=0, region=NULL WHERE module='shib_auth'");
 }

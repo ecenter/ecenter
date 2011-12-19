@@ -11,17 +11,18 @@ function ecenter_dashboard_views_default_views() {
   $view->name = 'ecenter_dashboard_activity';
   $view->description = '';
   $view->tag = 'ecenter';
-  $view->view_php = '';
   $view->base_table = 'node';
-  $view->is_cacheable = FALSE;
-  $view->api_version = 3.0-alpha1;
+  $view->human_name = '';
+  $view->core = 0;
+  $view->api_version = '3.0';
   $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
-  
-/* Display: Defaults */
+
+  /* Display: Defaults */
   $handler = $view->new_display('default', 'Defaults', 'default');
   $handler->display->display_options['title'] = 'Activity';
   $handler->display->display_options['access']['type'] = 'none';
   $handler->display->display_options['cache']['type'] = 'none';
+  $handler->display->display_options['query']['type'] = 'views_query';
   $handler->display->display_options['exposed_form']['type'] = 'basic';
   $handler->display->display_options['pager']['type'] = 'full';
   $handler->display->display_options['pager']['options']['items_per_page'] = '15';
@@ -43,10 +44,10 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['fields']['type']['field'] = 'type';
   $handler->display->display_options['fields']['type']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['type']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['type']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['type']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['type']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['type']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['type']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['type']['alter']['html'] = 0;
   $handler->display->display_options['fields']['type']['hide_empty'] = 0;
   $handler->display->display_options['fields']['type']['empty_zero'] = 0;
@@ -58,10 +59,10 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['fields']['title']['field'] = 'title';
   $handler->display->display_options['fields']['title']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['title']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['title']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['title']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['title']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['title']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['title']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['title']['alter']['html'] = 0;
   $handler->display->display_options['fields']['title']['hide_empty'] = 0;
   $handler->display->display_options['fields']['title']['empty_zero'] = 0;
@@ -78,10 +79,10 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['fields']['picture']['field'] = 'picture';
   $handler->display->display_options['fields']['picture']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['picture']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['picture']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['picture']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['picture']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['picture']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['picture']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['picture']['alter']['html'] = 0;
   $handler->display->display_options['fields']['picture']['hide_empty'] = 0;
   $handler->display->display_options['fields']['picture']['empty_zero'] = 0;
@@ -91,10 +92,10 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['fields']['name']['field'] = 'name';
   $handler->display->display_options['fields']['name']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['name']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['name']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['name']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['name']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['name']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['name']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['name']['alter']['html'] = 0;
   $handler->display->display_options['fields']['name']['hide_empty'] = 0;
   $handler->display->display_options['fields']['name']['empty_zero'] = 0;
@@ -106,10 +107,10 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['fields']['comment_count']['field'] = 'comment_count';
   $handler->display->display_options['fields']['comment_count']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['comment_count']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['comment_count']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['comment_count']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['comment_count']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['comment_count']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['comment_count']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['comment_count']['alter']['html'] = 0;
   $handler->display->display_options['fields']['comment_count']['hide_empty'] = 0;
   $handler->display->display_options['fields']['comment_count']['empty_zero'] = 0;
@@ -119,10 +120,10 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['fields']['timestamp']['field'] = 'timestamp';
   $handler->display->display_options['fields']['timestamp']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['timestamp']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['timestamp']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['timestamp']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['timestamp']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['timestamp']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['timestamp']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['timestamp']['alter']['html'] = 0;
   $handler->display->display_options['fields']['timestamp']['hide_empty'] = 0;
   $handler->display->display_options['fields']['timestamp']['empty_zero'] = 0;
@@ -134,10 +135,10 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['fields']['last_comment_name']['field'] = 'last_comment_name';
   $handler->display->display_options['fields']['last_comment_name']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['last_comment_name']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['last_comment_name']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['last_comment_name']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['last_comment_name']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['last_comment_name']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['last_comment_name']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['last_comment_name']['alter']['html'] = 0;
   $handler->display->display_options['fields']['last_comment_name']['hide_empty'] = 0;
   $handler->display->display_options['fields']['last_comment_name']['empty_zero'] = 0;
@@ -147,10 +148,10 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['fields']['last_comment_timestamp']['field'] = 'last_comment_timestamp';
   $handler->display->display_options['fields']['last_comment_timestamp']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['last_comment_timestamp']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['last_comment_timestamp']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['last_comment_timestamp']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['last_comment_timestamp']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['last_comment_timestamp']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['last_comment_timestamp']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['last_comment_timestamp']['alter']['html'] = 0;
   $handler->display->display_options['fields']['last_comment_timestamp']['hide_empty'] = 0;
   $handler->display->display_options['fields']['last_comment_timestamp']['empty_zero'] = 0;
@@ -160,10 +161,10 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['fields']['new_comments']['field'] = 'new_comments';
   $handler->display->display_options['fields']['new_comments']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['new_comments']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['new_comments']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['new_comments']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['new_comments']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['new_comments']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['new_comments']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['new_comments']['alter']['html'] = 0;
   $handler->display->display_options['fields']['new_comments']['hide_empty'] = 0;
   $handler->display->display_options['fields']['new_comments']['empty_zero'] = 0;
@@ -174,10 +175,10 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['fields']['changed']['field'] = 'changed';
   $handler->display->display_options['fields']['changed']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['changed']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['changed']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['changed']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['changed']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['changed']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['changed']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['changed']['alter']['html'] = 0;
   $handler->display->display_options['fields']['changed']['hide_empty'] = 0;
   $handler->display->display_options['fields']['changed']['empty_zero'] = 0;
@@ -187,10 +188,10 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['fields']['og_public']['field'] = 'og_public';
   $handler->display->display_options['fields']['og_public']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['og_public']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['og_public']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['og_public']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['og_public']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['og_public']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['og_public']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['og_public']['alter']['html'] = 0;
   $handler->display->display_options['fields']['og_public']['hide_empty'] = 0;
   $handler->display->display_options['fields']['og_public']['empty_zero'] = 0;
@@ -201,10 +202,10 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['fields']['log']['field'] = 'log';
   $handler->display->display_options['fields']['log']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['log']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['log']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['log']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['log']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['log']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['log']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['log']['alter']['html'] = 0;
   $handler->display->display_options['fields']['log']['hide_empty'] = 0;
   $handler->display->display_options['fields']['log']['empty_zero'] = 0;
@@ -214,8 +215,8 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['sorts']['last_updated']['field'] = 'last_updated';
   $handler->display->display_options['sorts']['last_updated']['order'] = 'DESC';
   $handler->display->display_options['filter_groups']['groups'] = array(
-    '0' => 'AND',
-    '1' => 'OR',
+    0 => 'AND',
+    1 => 'OR',
   );
   /* Filter: Node: Type */
   $handler->display->display_options['filters']['type']['id'] = 'type';
@@ -239,31 +240,31 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['filters']['uid']['relationship'] = 'group_nid';
   $handler->display->display_options['filters']['uid']['value'] = '1';
   $handler->display->display_options['filters']['uid']['group'] = '1';
-  
-/* Display: Personal activity block */
+
+  /* Display: Personal activity block */
   $handler = $view->new_display('block', 'Personal activity block', 'block_personal');
   $handler->display->display_options['defaults']['use_more'] = FALSE;
   $handler->display->display_options['use_more'] = TRUE;
   $handler->display->display_options['defaults']['access'] = FALSE;
   $handler->display->display_options['access']['type'] = 'role';
   $handler->display->display_options['access']['role'] = array(
-    '3' => 3,
-    '2' => 2,
-    '5' => 5,
+    3 => 3,
+    2 => 2,
+    5 => 5,
   );
   $handler->display->display_options['defaults']['pager'] = FALSE;
   $handler->display->display_options['pager']['type'] = 'some';
   $handler->display->display_options['pager']['options']['items_per_page'] = '15';
   $handler->display->display_options['pager']['options']['offset'] = '0';
-  
-/* Display: Page */
+
+  /* Display: Page */
   $handler = $view->new_display('page', 'Page', 'page_1');
   $handler->display->display_options['defaults']['access'] = FALSE;
   $handler->display->display_options['access']['type'] = 'role';
   $handler->display->display_options['access']['role'] = array(
-    '3' => 3,
-    '2' => 2,
-    '5' => 5,
+    3 => 3,
+    2 => 2,
+    5 => 5,
   );
   $handler->display->display_options['defaults']['pager'] = FALSE;
   $handler->display->display_options['pager']['type'] = 'full';
@@ -271,8 +272,8 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['pager']['options']['offset'] = '0';
   $handler->display->display_options['pager']['options']['id'] = '0';
   $handler->display->display_options['path'] = 'activity';
-  
-/* Display: Public activity block */
+
+  /* Display: Public activity block */
   $handler = $view->new_display('block', 'Public activity block', 'block_public');
   $handler->display->display_options['defaults']['pager'] = FALSE;
   $handler->display->display_options['pager']['type'] = 'some';
@@ -308,16 +309,17 @@ function ecenter_dashboard_views_default_views() {
   $view->name = 'ecenter_dashboard_carousel';
   $view->description = 'E-Center: Dashboard carousel';
   $view->tag = 'ecenter';
-  $view->view_php = '';
   $view->base_table = 'node';
-  $view->is_cacheable = FALSE;
-  $view->api_version = 3.0-alpha1;
+  $view->human_name = '';
+  $view->core = 0;
+  $view->api_version = '3.0';
   $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
-  
-/* Display: Defaults */
+
+  /* Display: Defaults */
   $handler = $view->new_display('default', 'Defaults', 'default');
   $handler->display->display_options['access']['type'] = 'none';
   $handler->display->display_options['cache']['type'] = 'none';
+  $handler->display->display_options['query']['type'] = 'views_query';
   $handler->display->display_options['exposed_form']['type'] = 'basic';
   $handler->display->display_options['pager']['type'] = 'some';
   $handler->display->display_options['pager']['options']['items_per_page'] = '3';
@@ -380,10 +382,10 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['fields']['body']['label'] = '';
   $handler->display->display_options['fields']['body']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['body']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['body']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['body']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['body']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['body']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['body']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['body']['alter']['html'] = 0;
   $handler->display->display_options['fields']['body']['hide_empty'] = 0;
   $handler->display->display_options['fields']['body']['empty_zero'] = 0;
@@ -395,10 +397,10 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['fields']['title']['exclude'] = TRUE;
   $handler->display->display_options['fields']['title']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['title']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['title']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['title']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['title']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['title']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['title']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['title']['alter']['html'] = 0;
   $handler->display->display_options['fields']['title']['hide_empty'] = 0;
   $handler->display->display_options['fields']['title']['empty_zero'] = 0;
@@ -408,8 +410,8 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['sorts']['changed']['table'] = 'node';
   $handler->display->display_options['sorts']['changed']['field'] = 'changed';
   $handler->display->display_options['sorts']['changed']['order'] = 'DESC';
-  
-/* Display: Block */
+
+  /* Display: Block */
   $handler = $view->new_display('block', 'Block', 'block');
 
   $views[$view->name] = $view;
@@ -419,24 +421,25 @@ function ecenter_dashboard_views_default_views() {
   $view->name = 'ecenter_dashboard_hot_comments';
   $view->description = '';
   $view->tag = 'ecenter';
-  $view->view_php = '';
   $view->base_table = 'comments';
-  $view->is_cacheable = FALSE;
-  $view->api_version = 3.0-alpha1;
+  $view->human_name = '';
+  $view->core = 0;
+  $view->api_version = '3.0';
   $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
-  
-/* Display: Defaults */
+
+  /* Display: Defaults */
   $handler = $view->new_display('default', 'Defaults', 'default');
   $handler->display->display_options['group_by'] = TRUE;
   $handler->display->display_options['access']['type'] = 'none';
   $handler->display->display_options['cache']['type'] = 'none';
+  $handler->display->display_options['query']['type'] = 'views_query';
   $handler->display->display_options['exposed_form']['type'] = 'basic';
   $handler->display->display_options['pager']['type'] = 'some';
   $handler->display->display_options['pager']['options']['items_per_page'] = '5';
   $handler->display->display_options['pager']['options']['offset'] = '0';
   $handler->display->display_options['style_plugin'] = 'default';
   $handler->display->display_options['row_plugin'] = 'fields';
-  /* Relationship: Comment: Node */
+  /* Relationship: Comment: Content */
   $handler->display->display_options['relationships']['nid']['id'] = 'nid';
   $handler->display->display_options['relationships']['nid']['table'] = 'comments';
   $handler->display->display_options['relationships']['nid']['field'] = 'nid';
@@ -455,10 +458,10 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['fields']['title']['label'] = '';
   $handler->display->display_options['fields']['title']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['title']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['title']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['title']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['title']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['title']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['title']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['title']['alter']['html'] = 0;
   $handler->display->display_options['fields']['title']['hide_empty'] = 0;
   $handler->display->display_options['fields']['title']['empty_zero'] = 0;
@@ -471,10 +474,10 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['fields']['name']['label'] = 'by';
   $handler->display->display_options['fields']['name']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['name']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['name']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['name']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['name']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['name']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['name']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['name']['alter']['html'] = 0;
   $handler->display->display_options['fields']['name']['hide_empty'] = 0;
   $handler->display->display_options['fields']['name']['empty_zero'] = 0;
@@ -489,10 +492,10 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['fields']['cid']['alter']['alter_text'] = 1;
   $handler->display->display_options['fields']['cid']['alter']['text'] = '[cid] recent comments';
   $handler->display->display_options['fields']['cid']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['cid']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['cid']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['cid']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['cid']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['cid']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['cid']['alter']['html'] = 0;
   $handler->display->display_options['fields']['cid']['hide_empty'] = 0;
   $handler->display->display_options['fields']['cid']['empty_zero'] = 0;
@@ -504,10 +507,10 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['fields']['last_comment_timestamp']['label'] = 'Last comment';
   $handler->display->display_options['fields']['last_comment_timestamp']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['last_comment_timestamp']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['last_comment_timestamp']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['last_comment_timestamp']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['last_comment_timestamp']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['last_comment_timestamp']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['last_comment_timestamp']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['last_comment_timestamp']['alter']['html'] = 0;
   $handler->display->display_options['fields']['last_comment_timestamp']['hide_empty'] = 0;
   $handler->display->display_options['fields']['last_comment_timestamp']['empty_zero'] = 0;
@@ -525,8 +528,8 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['sorts']['timestamp']['group_type'] = 'max';
   $handler->display->display_options['sorts']['timestamp']['order'] = 'DESC';
   $handler->display->display_options['filter_groups']['groups'] = array(
-    '0' => 'AND',
-    '1' => 'OR',
+    0 => 'AND',
+    1 => 'OR',
   );
   /* Filter: Comment: Post date */
   $handler->display->display_options['filters']['timestamp']['id'] = 'timestamp';
@@ -549,8 +552,8 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['filters']['og_public']['relationship'] = 'nid';
   $handler->display->display_options['filters']['og_public']['value'] = '1';
   $handler->display->display_options['filters']['og_public']['group'] = '1';
-  
-/* Display: Block */
+
+  /* Display: Block */
   $handler = $view->new_display('block', 'Block', 'block');
 
   $views[$view->name] = $view;
@@ -560,16 +563,17 @@ function ecenter_dashboard_views_default_views() {
   $view->name = 'ecenter_dashboard_hot_content';
   $view->description = '';
   $view->tag = 'ecenter';
-  $view->view_php = '';
   $view->base_table = 'node';
-  $view->is_cacheable = FALSE;
-  $view->api_version = 3.0-alpha1;
+  $view->human_name = '';
+  $view->core = 0;
+  $view->api_version = '3.0';
   $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
-  
-/* Display: Defaults */
+
+  /* Display: Defaults */
   $handler = $view->new_display('default', 'Defaults', 'default');
   $handler->display->display_options['access']['type'] = 'none';
   $handler->display->display_options['cache']['type'] = 'none';
+  $handler->display->display_options['query']['type'] = 'views_query';
   $handler->display->display_options['exposed_form']['type'] = 'basic';
   $handler->display->display_options['pager']['type'] = 'some';
   $handler->display->display_options['pager']['options']['items_per_page'] = '5';
@@ -588,10 +592,10 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['fields']['title']['label'] = '';
   $handler->display->display_options['fields']['title']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['title']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['title']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['title']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['title']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['title']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['title']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['title']['alter']['html'] = 0;
   $handler->display->display_options['fields']['title']['hide_empty'] = 0;
   $handler->display->display_options['fields']['title']['empty_zero'] = 0;
@@ -603,10 +607,10 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['fields']['name']['label'] = 'by';
   $handler->display->display_options['fields']['name']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['name']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['name']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['name']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['name']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['name']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['name']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['name']['alter']['html'] = 0;
   $handler->display->display_options['fields']['name']['hide_empty'] = 0;
   $handler->display->display_options['fields']['name']['empty_zero'] = 0;
@@ -619,10 +623,10 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['fields']['type']['label'] = '';
   $handler->display->display_options['fields']['type']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['type']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['type']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['type']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['type']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['type']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['type']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['type']['alter']['html'] = 0;
   $handler->display->display_options['fields']['type']['hide_empty'] = 0;
   $handler->display->display_options['fields']['type']['empty_zero'] = 0;
@@ -635,10 +639,10 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['fields']['changed']['label'] = 'Last updated';
   $handler->display->display_options['fields']['changed']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['changed']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['changed']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['changed']['alter']['word_boundary'] = 1;
   $handler->display->display_options['fields']['changed']['alter']['ellipsis'] = 1;
   $handler->display->display_options['fields']['changed']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['changed']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['changed']['alter']['html'] = 0;
   $handler->display->display_options['fields']['changed']['hide_empty'] = 0;
   $handler->display->display_options['fields']['changed']['empty_zero'] = 0;
@@ -655,8 +659,8 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['sorts']['last_updated']['field'] = 'last_updated';
   $handler->display->display_options['sorts']['last_updated']['order'] = 'DESC';
   $handler->display->display_options['filter_groups']['groups'] = array(
-    '0' => 'AND',
-    '1' => 'OR',
+    0 => 'AND',
+    1 => 'OR',
   );
   /* Filter: Organic groups: Post: Public */
   $handler->display->display_options['filters']['og_public']['id'] = 'og_public';
@@ -684,8 +688,8 @@ function ecenter_dashboard_views_default_views() {
   $handler->display->display_options['filters']['status']['table'] = 'node';
   $handler->display->display_options['filters']['status']['field'] = 'status';
   $handler->display->display_options['filters']['status']['value'] = '1';
-  
-/* Display: Block */
+
+  /* Display: Block */
   $handler = $view->new_display('block', 'Block', 'block');
 
   $views[$view->name] = $view;

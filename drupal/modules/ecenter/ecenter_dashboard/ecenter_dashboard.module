@@ -139,6 +139,16 @@ function ecenter_dashboard_content_build_modes() {
 }
 
 /**
+ * Implementation of hook_uuid_node_features_rebuild_alter().
+ */
+function ecenter_dashboard_uuid_node_features_rebuild_alter(&$node, $module) {
+  if ($node->type == 'snippet' && $module == 'ecenter_dashboard') {
+    $flag = flag_get_flag('ecenter_dashboard_carousel');
+    $flag->flag('flag', $node->nid);
+  }
+}
+
+/**
  * Implementation of hook_cron().
  */
 function ecenter_dashboard_cron() {

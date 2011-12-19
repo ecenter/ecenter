@@ -189,6 +189,9 @@ function ecenter_network_init() {
   }
 }
 
+/**
+ * Helper function to add Javascript behaviors.
+ */
 function _ecenter_network_add_behaviors() {
   // Compression type
   $compression = variable_get('jquery_update_compression_type', 'none');

@@ -19,6 +19,8 @@ function template_preprocess_ecenter_network_data(&$vars) {
   // All parameters
   $query_params = $data['parameters'];
 
+  dpm($data);
+
   // Call helper function to create messages
   $vars['ecenter_messages'] = theme('ecenter_network_messages', $data, $query_params);
 
@@ -133,6 +135,11 @@ function template_preprocess_ecenter_network_data(&$vars) {
     'absolute' => TRUE,
     'attributes' => array('title' => $vars['title']),
   ));
+ 
+  // @TODO This works! Should we include it?
+  //$url = url('network', array('query' => $params, 'absolute' => TRUE,));
+  //$short_url = shorturl_shorten($url, TRUE);
+
   $permalink_field['permalink'] = array(
     '#id' => 'ecenter-permalink',
     '#type' => 'textfield',
@@ -374,6 +381,8 @@ function theme_ecenter_network_recent_query($query, $time) {
  */
 function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FALSE, $fds_data = array()) {
   $tables = array();
+
+  dpm('called');
 
   if (empty($traceroute)) {
     return t('No traceroute available.');

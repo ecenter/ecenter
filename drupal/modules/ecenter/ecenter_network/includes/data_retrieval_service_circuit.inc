@@ -23,6 +23,7 @@ function ecenter_network_get_circuit_data($src, $dst, $start, $end, $no_snmp = F
 
   if (!array_key_exists($query, $results)) {
     $caching = variable_get('ecenter_network_data_cache_enabled', 0);
+    $caching = FALSE;
     if ($caching && $result = cache_get($query, 'cache_ecenter_data')) {
       $results[$query] = $result->data;
     }
@@ -31,8 +32,7 @@ function ecenter_network_get_circuit_data($src, $dst, $start, $end, $no_snmp = F
       $client = ecenter_network_get_client('message', 'drs_circuit');
       $result = $client->getCircuitData($src, $dst, $start, $end, $no_snmp, $resolution);
       if ($result['code'] == 200) {
-        //$data = ecenter_network_parse_response($result);
-        $data = $result['response'];
+        $data = ecenter_network_parse_circuit_response($result);
         if ($caching) {
           $expires = time() + variable_get('ecenter_network_data_cache_ttl', 3600);
           cache_set($query, $data, 'cache_ecenter_data', $expires);
@@ -47,31 +47,47 @@ function ecenter_network_get_circuit_data($src, $dst, $start, $end, $no_snmp = F
         return NULL;
       }
     }
-
-    // Remember user's last queries: Anonymous users queries are stored in
-    // their session; authenticated users queries are stored along with their
-    // user object. Only capture successful queries.
-    if (!empty($results[$query]) && $user->uid > 0) {
-      $queries = $user->ecenter_network_queries;
-      if (count($queries) >
-        (variable_get('ecenter_network_recent_query_limit', 5))) {
-        array_shift($queries);
-      }
-      $queries[$query] = array('time' => time(), 'query' => $query);
-      user_save($user, array('ecenter_network_queries' => $queries));
-    }
-    else if (!empty($results[$query]) && isset($_COOKIE[session_name()])) {
-      $queries = unserialize(sess_read('ecenter_network_queries'));
-      if (count($queries) >
-        (variable_get('ecenter_network_recent_query_limit', 5) - 1)) {
-        array_shift($queries);
-      }
-      $queries[$query] = array('time' => time(), 'query' => $query);
-      sess_write('ecenter_network_queries', serialize($queries));
-    }
-
   }
   return $results[$query];
 }
 
+function ecenter_network_parse_circuit_response($response) {
+  dpm($response['response']);
+  $parsed_data = array(
+    'parameters' => $response['parameters'],
+  );
+  $data = $response['response'];
 
+  $traceroute = array();
+  $diff = array();
+  foreach ($data['circuits'] as $source => $destinations) {
+    foreach ($destinations as $destination => $circuits) {
+      foreach ($circuits as $circuit_name => $circuit) {
+        foreach ($circuit['hops'] as $urn => $hop) {
+          $hop['urn'] = $urn;
+          $hop['hub'] = $hop['hub_name'];
+          $traceroute[$hop['hop_num']] = $hop;
+          $diff[$hop['hop_num']] = array(
+            'match' => array(
+              'forward' => array($hop),
+              'reverse' => array($hop)
+            )
+          );
+        }
+      }
+    }
+  }
+
+  ksort($traceroute);
+  ksort($diff);
+  
+  $parsed_data['traceroute']['forward'] = $traceroute;
+  $parsed_data['traceroute']['reverse'] = array_reverse($traceroute);
+  
+  $parsed_data['traceroute']['diff'] = $diff;
+  $parsed_data['traceroute']['traceroute_max'] = count($diff);
+
+  dpm($parsed_data);
+
+  return $parsed_data;
+}

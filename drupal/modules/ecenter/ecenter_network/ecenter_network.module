@@ -478,7 +478,7 @@ function ecenter_network_select_form(&$form_state) {
 
   if (!empty($start) && !empty($end)) {
     
-    $params = array(
+    $data['parameters'] = array(
       'start' => $start,
       'end' => $end,
       'timezone' => $user_timezone,
@@ -490,51 +490,52 @@ function ecenter_network_select_form(&$form_state) {
       );
     }
     elseif (!empty($src) && !empty($dst)) {
-      
-      if ($circuit) {
-        dpm('circuit mode');
-      } else {
-        $data = array(
-          'drs' => ecenter_network_get_data($src, $dst, $start, $end)
-        );
 
-        $circuits = ecenter_network_get_circuit_data($src, $dst, $start, $end, TRUE);
-        if (!empty($circuits)) {
-          $form['results_wrapper']['circuits']['#value'] = '<p>Circuits detected!</p>';
-          $circuit_data = ecenter_network_get_circuit_data($src, $dst, $start, $end);
-          dpm($circuit_data);
-        }
+      $data['parameters'] += array(
+        'src' => $src,
+        'dst' => $dst,
+        'fds' => 0,
+        'ads' => 0,
+      );
 
+      switch ($mode) {
+        case 'circuit':
+          $data += array(
+            'drs' => ecenter_network_get_circuit_data($src, $dst, $start, $end),
+          );
+          break;
+        default:
+          $data += array(
+            'drs' => ecenter_network_get_data($src, $dst, $start, $end)
+          );
 
-        $params += array(
-          'src' => $src,
-          'dst' => $dst,
-          'fds' => 0,
-          'ads' => 0,
-        );
+          $circuits = ecenter_network_get_circuit_data($src, $dst, $start, $end, TRUE);
+          if (!empty($circuits)) {
+            $form['results_wrapper']['circuits']['#value'] = '<p>Circuits detected!</p>';
+          }
 
-        if ($ads) {
-          $data['ads'] = ecenter_network_get_ads_data($src, $dst, $start, $end, $algorithm, $detector_type, $sensitivity, $elevation1, $elevation2, $swc);
-          $params['ads'] = 1;
-        }
+          if ($ads) {
+            $data['ads'] = ecenter_network_get_ads_data($src, $dst, $start, $end, $algorithm, $detector_type, $sensitivity, $elevation1, $elevation2, $swc);
+            $data['parameters']['ads'] = 1;
+          }
 
-        if ($fds) {
-          $data['fds'] = ecenter_network_get_fds_data($src, $dst, $start, $end, $fds_type);
-          $params['fds'] = 1;
-          $params['fds_type'] = $fds_type;
-        }
+          if ($fds) {
+            $data['fds'] = ecenter_network_get_fds_data($src, $dst, $start, $end, $fds_type);
+            $data['parameters']['fds'] = 1;
+            $data['parameters']['fds_type'] = $fds_type;
+          }
       }
-    }
 
-    $data['parameters'] = $params;
 
-    // If we've got the data (at bare minimum, a traceroute), delegate to rendering function
-    if ($data['drs']) {
-      $form['results_wrapper']['results']['#value'] =
-        theme('ecenter_network_data', $data);
-      $form['results_wrapper']['recent']['#value'] =
-        theme('ecenter_network_recent_queries', TRUE);
-    }
+      // If we've got the data (at bare minimum, a traceroute), delegate to rendering function
+      if ($data['drs']) {
+        dpm($data);
+        $form['results_wrapper']['results']['#value'] =
+          theme('ecenter_network_data', $data);
+        $form['results_wrapper']['recent']['#value'] =
+          theme('ecenter_network_recent_queries', TRUE);
+      }
+    }      
   }
   else {
     $form['results_wrapper']['#value'] = theme('ecenter_network_recent_queries');
@@ -889,9 +890,9 @@ function ecenter_network_layers_sites() {
     'projection' => array('900913'),
   );
 
-  if (!empty($src) && !empty($dst) && !empty($start) && !empty($end)) {
-    $data = ecenter_network_get_data($src, $dst, $start, $end);
-  }
+  //if (!empty($src) && !empty($dst) && !empty($start) && !empty($end)) {
+  //  $data = ecenter_network_get_data($src, $dst, $start, $end);
+  //}
 
   if (empty($src) || empty($dst) || empty($start) || empty($end)) {
     foreach ($hops['hubs'] as $hub) {
@@ -1012,7 +1013,13 @@ function ecenter_network_layers_traceroute() {
 
   if (!empty($src) && !empty($dst) && !empty($start) && !empty($end)) {
 
-    $data = ecenter_network_get_data($src, $dst, $start, $end);
+    switch ($mode) {
+      case 'circuit':
+        $data = ecenter_network_get_circuit_data($src, $dst, $start, $end);
+        break;
+      default:
+        $data = ecenter_network_get_data($src, $dst, $start, $end);
+    }
 
     $direction = (!empty($data['traceroute']['forward'])) ? 'forward' : 'reverse';
 
@@ -1323,7 +1330,7 @@ function _ecenter_network_extract_query() {
     }
   }
   else {
-    foreach (array('src', 'dst', 'start', 'end', 'timezone',  'fds', 'fds_type') as $key) {
+    foreach (array('src', 'dst', 'start', 'end', 'timezone', 'mode', 'fds', 'fds_type') as $key) {
       if (empty($vars[$key]) && !empty($_REQUEST[$key])) {
         $vars[$key] = $_REQUEST[$key];
       }

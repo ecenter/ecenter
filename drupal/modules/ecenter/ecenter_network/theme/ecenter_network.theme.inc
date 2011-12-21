@@ -13,11 +13,10 @@ function template_preprocess_ecenter_network_data(&$vars) {
   global $user;
   $data = $vars['data'];
 
-  // DRS parameters
-  $params = $data['drs']['parameters'];
-
   // All parameters
-  $query_params = $data['parameters'];
+  $params = $data['parameters'];
+  list($src_type, $src_value) = explode(':', $params['src']);
+  list($dst_type, $dst_value) = explode(':', $params['dst']);
 
   // Call helper function to create messages
   $vars['ecenter_messages'] = theme('ecenter_network_messages', $data, $query_params);
@@ -32,19 +31,6 @@ function template_preprocess_ecenter_network_data(&$vars) {
   foreach (array('start', 'end') as $val) {
     $dates[$val] = _ecenter_network_utc_to_local($params[$val], 
       'M j, Y H:i', $query_params['timezone']);
-  }
-
-  if (empty($query_params['src'])) {
-    list($src_type, $src_value) = explode(':', $params['src']);
-  }
-  else {
-    list($src_type, $src_value) = explode(':', $query_params['src']);
-  }
-  if (empty($query_params['dst'])) {
-    list($dst_type, $dst_value) = explode(':', $params['dst']);
-  }
-  else {
-    list($dst_type, $dst_value) = explode(':', $query_params['dst']);
   }
 
   $vars['title'] = t('<span class="src-dst">@src_hub to
@@ -133,6 +119,11 @@ function template_preprocess_ecenter_network_data(&$vars) {
     'absolute' => TRUE,
     'attributes' => array('title' => $vars['title']),
   ));
+ 
+  // @TODO This works! Should we include it?
+  $url = url('network', array('query' => $params, 'absolute' => TRUE,));
+  $short_url = shorturl_shorten($url, TRUE);
+
   $permalink_field['permalink'] = array(
     '#id' => 'ecenter-permalink',
     '#type' => 'textfield',

@@ -121,8 +121,8 @@ function template_preprocess_ecenter_network_data(&$vars) {
   ));
  
   // @TODO This works! Should we include it?
-  $url = url('network', array('query' => $params, 'absolute' => TRUE,));
-  $short_url = shorturl_shorten($url, TRUE);
+  //$url = url('network', array('query' => $params, 'absolute' => TRUE,));
+  //$short_url = shorturl_shorten($url, TRUE);
 
   $permalink_field['permalink'] = array(
     '#id' => 'ecenter-permalink',

@@ -494,8 +494,6 @@ function ecenter_network_select_form(&$form_state) {
       $data['parameters'] += array(
         'src' => $src,
         'dst' => $dst,
-        'fds' => 0,
-        'ads' => 0,
       );
 
       switch ($mode) {
@@ -518,10 +516,21 @@ function ecenter_network_select_form(&$form_state) {
             'drs' => ecenter_network_get_data($src, $dst, $start, $end)
           );
 
-          $circuits = ecenter_network_get_circuit_data($src, $dst, $start, $end, TRUE);
-          if (!empty($circuits)) {
-            $form['results_wrapper']['circuits']['#value'] = '<p>Circuits detected!</p>';
+          $circuit_data = ecenter_network_get_circuit_data($src, $dst, $start, $end, TRUE);
+          if (!empty($circuit_data)) {
+            foreach ($circuit_data['circuits'] as $circuit_name => $circuit) {
+              $params = $data['parameters'] + array(
+                'mode' => 'circuit',
+                'circuit' => $circuit_name,
+              );
+            }
+            // Build links...
           }
+
+          $data['parameters'] += array(
+            'fds' => 0,
+            'ads' => 0,
+          );
 
           if ($ads) {
             $data['ads'] = ecenter_network_get_ads_data($src, $dst, $start, $end, $algorithm, $detector_type, $sensitivity, $elevation1, $elevation2, $swc);

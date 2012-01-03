@@ -247,13 +247,13 @@ function ecenter_network_parse_response($response) {
     $node['id'] = str_replace('.', '_', $node_ip);
     $parsed_data['hops'][$node_ip] = $node + array('data' => 
       array(
-        'snmp' => $data['snmp'][$node_ip],
+        'snmp' => $data['snmp']['out'][$node_ip],
       ),
     );
   }
 
   // Process traceroute
-  /*foreach (array('forward' => 'src', 'reverse' => 'dst') 
+  foreach (array('forward' => 'src', 'reverse' => 'dst') 
     as $direction => $end_type) {
     $traceroute = array();
     $traceroute_direction = ($direction == 'forward') ? 'direct' : 'reverse';
@@ -290,7 +290,7 @@ function ecenter_network_parse_response($response) {
 
       $parsed_data['traceroute'][$direction] = $traceroute;
     }
-  }*/
+  }
 
   // Determine source and destination 
   if (!empty($parsed_data['traceroute']['forward']) || !empty($parsed_data['traceroute']['reverse'])) {

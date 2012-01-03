@@ -67,32 +67,38 @@ function ecenter_network_parse_circuit_response($response) {
           $fwd_traceroute = array();
           $rev_traceroute = array();
           $diff = array();
+          $last_hop = array('hub_name' => '');
+
+          // Sort circuits based on hop number
+          uasort($circuit['hops'], '_ecenter_network_sort_circuit_hops');
+
           foreach ($circuit['hops'] as $urn => $hop) {
-            $hop['urn'] = $urn;
-            $hop['hub'] = $hop['hub_name'];
+            //dpm($hop); 
+            if ($hop['hub_name'] != $last_hop['hub_name']) {
+            //if ($hop['hop_num'] % 2 === 1) {
+              $hop['urn'] = $urn;
+              $hop['hub'] = $hop['hub_name'];
+              $last_hop = $hop;
 
-            list($fwd_hop, $rev_hop) = array($hop, $hop);
+              list($fwd_hop, $rev_hop) = array($hop, $hop);
 
-            $fwd_hop['data']['snmp'] = $data['snmp']['out'][$urn];
-            $rev_hop['data']['snmp'] = $data['snmp']['in'][$urn];
-            
-            $fwd_traceroute[$hop['hop_num']] = $fwd_hop;
-            $rev_traceroute[$hop['hop_num']] = $rev_hop;
-            
-            $diff[$hop['hop_num']] = array(
-              'match' => array(
-                'forward' => array($fwd_hop),
-                'reverse' => array($rev_hop)
-              )
-            );
+              $fwd_hop['data']['snmp'] = $data['snmp']['out'][$urn];
+              $rev_hop['data']['snmp'] = $data['snmp']['in'][$urn];
+
+              $fwd_traceroute[] = $fwd_hop;
+              $rev_traceroute[] = $rev_hop;
+              
+              $diff[] = array(
+                'match' => array(
+                  'forward' => array($fwd_hop),
+                  'reverse' => array($rev_hop)
+                )
+              );
+            }
           }
-
-          ksort($fwd_traceroute);
-          ksort($rev_traceroute);
+          //dpm($diff);
           $parsed_data['circuits'][$circuit_name]['traceroute']['forward'] = $fwd_traceroute;
           $parsed_data['circuits'][$circuit_name]['traceroute']['reverse'] = array_reverse($rev_traceroute);
-
-          ksort($diff);
           $parsed_data['circuits'][$circuit_name]['traceroute']['diff'] = $diff;
           $parsed_data['circuits'][$circuit_name]['traceroute']['traceroute_max'] = count($diff);
         }
@@ -100,4 +106,8 @@ function ecenter_network_parse_circuit_response($response) {
     }
   }
   return $parsed_data;
+}
+
+function _ecenter_network_sort_circuit_hops($a, $b) {
+  return (intval($a['hop_num']) > intval($b['hop_num'])) ? 1 : -1;
 }

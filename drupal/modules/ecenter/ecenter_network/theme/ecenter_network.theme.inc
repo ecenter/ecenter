@@ -105,9 +105,11 @@ function template_preprocess_ecenter_network_data(&$vars) {
   }
 
   // End to end measurements
-  $vars['end_to_end'] = theme('ecenter_network_end_to_end',
-    $data['drs']['end_to_end'], $query_params['timezone'], $data['ads'], 
-    $data['fds'], !$vars['standalone']);
+  if (!empty($vars['end_to_end'])) {
+    $vars['end_to_end'] = theme('ecenter_network_end_to_end',
+      $data['drs']['end_to_end'], $query_params['timezone'], $data['ads'], 
+      $data['fds'], !$vars['standalone']);
+  }
 
   // Per-hop measurements
   $vars['hops'] = theme('ecenter_network_traceroute', 

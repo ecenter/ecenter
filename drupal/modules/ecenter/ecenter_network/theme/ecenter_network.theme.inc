@@ -45,13 +45,17 @@ function template_preprocess_ecenter_network_data(&$vars) {
     )
   );
 
+  if ($params['mode'] == 'circuit') {
+    $vars['title'] = t('<span class="circuit-name">Circuit: @circuit_name</span>', array('@circuit_name' => $params['circuit'])) .' '. $vars['title'];
+  }
+
   if (!$vars['standalone']) {
     // Set title
-    drupal_set_title(t('E-Center Network Query | ') . $vars['title']);
+    //drupal_set_title(t('E-Center Network Query | ') . $vars['title']);
 
     // Generate issue link -- encode params for use with custom ecenter_issues
     // module
-    if (module_exists('ecenter_issues') && user_access('create issue content')) {
+    /*if (module_exists('ecenter_issues') && user_access('create issue content')) {
       $issue_params = array();
       foreach ($params as $key => $param) {
         $issue_params[] = "$key=$param";
@@ -63,7 +67,7 @@ function template_preprocess_ecenter_network_data(&$vars) {
           'query' => array('query' => $issue_query),
         )
       );
-    }
+    }*/
 
     $query = ecenter_issues_get_query_node($params);
     if ($query->nid) {
@@ -75,30 +79,32 @@ function template_preprocess_ecenter_network_data(&$vars) {
       $vars['issues'] = '<label>'. t('Issues from this query: ') .'</label>'. implode(', ', $issue_links);
     }
 
-    $ads = ecenter_network_ads_form($query_params['ads']);
-    $vars['ads'] = drupal_render($ads);
+    if ($params['mode'] != 'circuit') {
+      $ads = ecenter_network_ads_form($query_params['ads']);
+      $vars['ads'] = drupal_render($ads);
 
-    $has_bwctl = (!empty($data['drs']['end_to_end']['bwctl']['forward']) || !empty($data['drs']['end_to_end']['bwctl']['reverse']));
-    $has_snmp = (!empty($data['drs']['traceroute']['forward']) || !empty($data['drs']['traceroute']['reverse']));
-    $has_owamp = (!empty($data['drs']['end_to_end']['owamp']['forward']) || !empty($data['drs']['end_to_end']['owamp']['reverse']));
+      $has_bwctl = (!empty($data['drs']['end_to_end']['bwctl']['forward']) || !empty($data['drs']['end_to_end']['bwctl']['reverse']));
+      $has_snmp = (!empty($data['drs']['traceroute']['forward']) || !empty($data['drs']['traceroute']['reverse']));
+      $has_owamp = (!empty($data['drs']['end_to_end']['owamp']['forward']) || !empty($data['drs']['end_to_end']['owamp']['reverse']));
 
-    $fds = ecenter_network_fds_form($query_params['fds'], $has_snmp, $has_bwctl, $has_owamp);
-    $vars['fds'] = drupal_render($fds);
+      $fds = ecenter_network_fds_form($query_params['fds'], $has_snmp, $has_bwctl, $has_owamp);
+      $vars['fds'] = drupal_render($fds);
+    }
 
     $timezones = array_map('_ecenter_network_process_tz_name', date_timezone_names());
     $timezone_select = array(
       '#type' => 'combobox',
-      '#title' => t('Timezone'),
+      '#title' => t('Result timezone'),
       '#value' => $query_params['timezone'],
       '#options' => $timezones,
       '#id' => 'timezone-select',
       '#name' => 'timezone',
     );
     if ($user->uid) {
-      $timezone_select['#description'] = t('Timezone for results. <a href="@url">Set default timezone</a>.', array('@url' => url('user')));
+      $timezone_select['#description'] = t('<a href="@url">Set default timezone</a>.', array('@url' => url('user')));
     }
     else {
-      $timezone_select['#description'] = t('Timezone for results. <a href="@login_url">Login</a> or <a href="@register_url">register</a> to set default.', array('@login_url' => url('user'), '@register_url' => url('user/register')));
+      $timezone_select['#description'] = t('<a href="@login_url">Login</a> or <a href="@register_url">register</a> to set default.', array('@login_url' => url('user'), '@register_url' => url('user/register')));
     }
     $vars['timezone_select'] = drupal_render($timezone_select);
  
@@ -123,17 +129,15 @@ function template_preprocess_ecenter_network_data(&$vars) {
   ));
  
   // @TODO This works! Should we include it?
-  //$url = url('network', array('query' => $params, 'absolute' => TRUE,));
-  //$short_url = shorturl_shorten($url, TRUE);
+  $url = url('network', array('query' => $params, 'absolute' => TRUE,));
+  $short_url = shorturl_shorten($url, TRUE);
 
   $permalink_field['permalink'] = array(
     '#id' => 'ecenter-permalink',
     '#type' => 'textfield',
     '#size' => 115,
     '#attributes' => array('readonly' => 'readonly'),
-    '#value' => url('network',
-      array('query' => $params, 'absolute' => TRUE,)
-    ),
+    '#value' => $short_url, 
   );
   $vars['permalink_field'] = drupal_render($permalink_field);
 }

@@ -19,11 +19,12 @@ function ecenter_network_get_circuit_data($src, $dst, $start, $end, $no_snmp = F
   global $user;
   static $results = array();
 
+  $params['mode'] = 'circuit';
+
   $query = http_build_query($params);
 
   if (!array_key_exists($query, $results)) {
     $caching = variable_get('ecenter_network_data_cache_enabled', 0);
-    $caching = FALSE;
     if ($caching && $result = cache_get($query, 'cache_ecenter_data')) {
       $results[$query] = $result->data;
     }
@@ -59,7 +60,6 @@ function ecenter_network_parse_circuit_response($response) {
   $data = $response['response'];
 
   if (!empty($data)) {
-    //$diff = array();
     $parsed_data['circuits'] = array();
     foreach ($data['circuits'] as $source => $destinations) {
       foreach ($destinations as $destination => $circuits) {
@@ -73,9 +73,7 @@ function ecenter_network_parse_circuit_response($response) {
           uasort($circuit['hops'], '_ecenter_network_sort_circuit_hops');
 
           foreach ($circuit['hops'] as $urn => $hop) {
-            //dpm($hop); 
             if ($hop['hub_name'] != $last_hop['hub_name']) {
-            //if ($hop['hop_num'] % 2 === 1) {
               $hop['urn'] = $urn;
               $hop['hub'] = $hop['hub_name'];
               $last_hop = $hop;
@@ -96,7 +94,6 @@ function ecenter_network_parse_circuit_response($response) {
               );
             }
           }
-          //dpm($diff);
           $parsed_data['circuits'][$circuit_name]['traceroute']['forward'] = $fwd_traceroute;
           $parsed_data['circuits'][$circuit_name]['traceroute']['reverse'] = array_reverse($rev_traceroute);
           $parsed_data['circuits'][$circuit_name]['traceroute']['diff'] = $diff;

@@ -1,6 +1,6 @@
 <div id="results">
   <div id="hop-wrapper" class="clearfix">
-    <div id="result-links-wrapper" class="clearfix">
+    <?php /* <div id="result-links-wrapper" class="clearfix">
       <div class="title-col">
         <h2><?php print $title; ?></h2>
       </div>
@@ -8,6 +8,12 @@
       <div class="meta-col">
 
         <div class="links-wrapper">
+          <?php if ($permalink): ?>
+          <div class="permalink">
+            <?php print $permalink_field; ?>
+            <?php print $permalink; ?>
+          </div>
+          <?php endif; ?>
           <?php if ($issuelink): ?>
           <div class="issuelink">
             <?php print $issuelink; ?>
@@ -17,13 +23,7 @@
           <div class="issues">
             <?php print $issues; ?>
           </div>
-          <?php endif; ?>
-          <?php if ($permalink): ?>
-          <div class="permalink">
-            <?php print $permalink_field; ?>
-            <?php print $permalink; ?>
-          </div>
-          <?php endif; ?>
+          <?php endif; ?> 
         </div>
 
         <?php if ($fds && $ads): ?>
@@ -43,7 +43,7 @@
         </div>
 
       </div>
-    </div>
+    </div> */ ?>
 
     <?php print $ecenter_messages; ?>
 

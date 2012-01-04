@@ -500,14 +500,16 @@ function ecenter_network_select_form(&$form_state) {
         case 'circuit':
           $circuits = ecenter_network_get_circuit_data($src, $dst, $start, $end);
           if (!empty($circuits['circuits'])) {
-            if (!$circuit && empty($circuits['circuits'][$circuit])) {
-              $circuit_data = array_shift($circuits['circuits']);
+            if (!$circuit || empty($circuits['circuits'][$circuit])) {
+              $circuit = array_shift(array_keys($circuits['circuits']));
             }
-            else {
-              $circuit_data = $circuits['circuits'][$circuit];
-            }
+            $circuit_data = $circuits['circuits'][$circuit];
             $data += array(
               'drs' => $circuit_data,
+            );
+            $data['parameters'] += array(
+              'circuit' => $circuit,
+              'mode' => 'circuit',
             );
           }
           break;
@@ -517,23 +519,30 @@ function ecenter_network_select_form(&$form_state) {
           );
 
           $circuit_data = ecenter_network_get_circuit_data($src, $dst, $start, $end, TRUE);
-          if (!empty($circuit_data)) {
+          if (!empty($circuit_data['circuits'])) {
+            $circuit_links = array(); 
             foreach ($circuit_data['circuits'] as $circuit_name => $circuit) {
               $params = $data['parameters'] + array(
                 'mode' => 'circuit',
                 'circuit' => $circuit_name,
               );
+              $circuit_links[] = l($circuit_name, 'network', array('query' => $params, 'absolute' => TRUE));
             }
-            // Build links...
-          }
 
+            // Build links...
+            $form['results_wrapper']['results']['circuit_messages'] = array(
+              '#value' => '<p>'. t('Circuits detected: '). implode(', ', $circuit_links) .'.</p>',
+            );
+          }
+          
           $data['parameters'] += array(
             'fds' => 0,
             'ads' => 0,
           );
 
           if ($ads) {
-            $data['ads'] = ecenter_network_get_ads_data($src, $dst, $start, $end, $algorithm, $detector_type, $sensitivity, $elevation1, $elevation2, $swc);
+            $data['ads'] = ecenter_network_get_ads_data($src, $dst, $start, $end,
+              $algorithm, $detector_type, $sensitivity, $elevation1, $elevation2, $swc);
             $data['parameters']['ads'] = 1;
           }
 
@@ -545,12 +554,42 @@ function ecenter_network_select_form(&$form_state) {
       }
 
 
-      // If we've got the data (at bare minimum, a traceroute), delegate to rendering function
+      // Render if data present
       if ($data['drs']) {
-        $form['results_wrapper']['results']['#value'] =
-          theme('ecenter_network_data', $data);
-        $form['results_wrapper']['recent']['#value'] =
-          theme('ecenter_network_recent_queries', TRUE);
+
+        // Build timezone selector
+        $timezones = array_map('_ecenter_network_process_tz_name', date_timezone_names());
+        $timezone_select = array(
+          '#type' => 'combobox',
+          '#title' => t('Result timezone'),
+          '#value' => $query_params['timezone'],
+          '#options' => $timezones,
+          '#id' => 'timezone-select',
+          '#name' => 'timezone',
+        );
+        if ($user->uid) {
+          $timezone_select['#description'] = t('<a href="@url">Set default timezone</a>.', array('@url' => url('user')));
+        }
+        else {
+          $timezone_select['#description'] = t('<a href="@login_url">Login</a> or <a href="@register_url">register</a> to set default.', array('@login_url' => url('user'), '@register_url' => url('user/register')));
+        }
+
+        $form['results_wrapper']['results']['title_bar'] = array(
+          '#value' => 'Title',
+        );
+        $form['results_wrapper']['results']['query_settings'] = array(
+          'timezone' => $timezone_select,
+        );
+
+        // Render data
+        $form['results_wrapper']['results']['result_data'] = array(
+          '#value' => theme('ecenter_network_data', $data),
+        );
+
+        // Render recent queries
+        $form['results_wrapper']['results']['recent'] = array(
+          '#value' => theme('ecenter_network_recent_queries', TRUE),
+        );
       }
     }      
   }
@@ -1034,7 +1073,7 @@ function ecenter_network_layers_traceroute() {
       case 'circuit':
         $circuits = ecenter_network_get_circuit_data($src, $dst, $start, $end);
         if (!empty($circuits['circuits'])) {
-          if (!$circuit && empty($circuits['circuits'][$circuit])) {
+          if (!$circuit || empty($circuits['circuits'][$circuit])) {
             $data = array_shift($circuits['circuits']);
           }
           else {

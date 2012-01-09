@@ -168,13 +168,10 @@ $.fn.ecenter_network.plugins.ajax = function() {
           return false;
         });
 
+        $('#results-wrapper > div').fadeOut(900, function() {
+          $(this).remove();
+        });
         $('.messages').fadeOut(900, function() {
-          $(this).remove();
-        });
-        $('#results').fadeOut(900, function() {
-          $(this).remove();
-        });
-        $('#recent-queries').slideUp(900, function() {
           $(this).remove();
         });
       }

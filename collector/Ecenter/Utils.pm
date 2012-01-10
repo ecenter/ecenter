@@ -213,12 +213,12 @@ sub get_shards {
     $endTime ||= $startTime;
     
     my $list = {};
-    $logger->debug("Loading data tables for time period $startTime to $endTime");
+    #$logger->debug("Loading data tables for time period $startTime to $endTime");
     # go through every day and populate with new months
     for ( my $i = $startTime; $i <= $endTime; $i += 86400 ) {
         my $date_fmt = strftime "%Y%m",  localtime($i);
         my $end_i = $i + 86400;
-	$logger->debug("time_i=$i startime=$startTime end_time=$endTime");
+	#$logger->debug("time_i=$i startime=$startTime end_time=$endTime");
 	$list->{$date_fmt}{table}{dbic} = "\u$param->{data}Data$date_fmt";
         $list->{$date_fmt}{table}{dbi}  = "$param->{data}\_data_$date_fmt";
 	$list->{$date_fmt}{start} = $startTime;

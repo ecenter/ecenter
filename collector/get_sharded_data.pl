@@ -654,16 +654,17 @@ sub get_e2e {
 		         $logger->error("BAD: DNS is not there for:     md=$md   ip=$ip_noted node=$nodename");
 			 next;
 		     }  
-		     update_create_fixed($dbh->resultset('Node'),
+		     my $ip = update_create_fixed($dbh->resultset('Node'),
     						  {ip_addr =>  \"=inet6_pton('$ip_noted')"},
     						  {ip_addr => \"inet6_pton('$ip_noted')",
     						   nodename =>  $nodename,
-    						   ip_noted => $ip_noted}, 0); 
+    						   ip_noted => $ip_noted}, 0);
+		    $data->[1]->{hop_ip} = $ip->ip_addr;
 		 }
 		 eval {
     		     $dbh->resultset("${table_name}Data$now_table")->update_or_create({ metaid =>  $md,
-    	    									   timestamp => $data->[0],
-    	    									   %{$data->[1]},
+    	    									        timestamp => $data->[0],
+    	    									        %{$data->[1]},
     	    									},
     	    									{ key => 'meta_time'});
 		};

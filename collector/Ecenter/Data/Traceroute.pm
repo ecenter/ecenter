@@ -52,9 +52,9 @@ augment  'process_datum' => sub {
    my $hop_delay = $dt->getAttribute("value");
    return [] unless   $hop_ip && $hop_num && $hop_delay;
    $hop_delay *= $unit; 
-   my $ip_bin =   inet_any2n($hop_ip);
+   ####my $ip_bin =   inet_any2n($hop_ip);
    $self->logger->debug("parsing..  t=$secs ip=$hop_ip hop_num=$hop_num  hop_delay=$hop_delay") if $hop_ip  && $hop_num  && $hop_delay;
-   return  ($secs?[ $secs, {hop_ip  =>  $ip_bin,  ip_noted =>  $hop_ip, hop_num => $hop_num, hop_delay => $hop_delay } ]:[]);
+   return  ($secs?[ $secs, {ip_noted =>  $hop_ip, hop_num => $hop_num, hop_delay => $hop_delay } ]:[]);
 };
 
 

@@ -482,14 +482,16 @@ sub dispatch_snmp {
 #
 sub  process_trace {
     my ($dbh, $sql_datum, $results ) = @_;
-    update_create_fixed($dbh->resultset('Node'),
+    my $ip = update_create_fixed($dbh->resultset('Node'),
         			 {ip_addr =>  \"=inet6_pton('$sql_datum->{ip_noted}')"},
         			 {ip_addr => \"inet6_pton('$sql_datum->{ip_noted}')",
         			  nodename =>  $sql_datum->{ip_noted},
         			  ip_noted =>  $sql_datum->{ip_noted}}, 
 				  undef); # no updates
     my %tmp = %$sql_datum;
-    $tmp{hop_ip} =  ref  $tmp{hop_ip}?$tmp{hop_ip}->ip_addr:$tmp{hop_ip};
+    $tmp{hop_ip} =  $ip?$ip->ip_addr:
+                              ref  $tmp{hop_ip}?$tmp{hop_ip}->ip_addr:
+			        $tmp{hop_ip};
     push @{$results->{data}}, \%tmp;
     delete $sql_datum->{ip_noted};
     #delete $sql_datum->{ip_noted};

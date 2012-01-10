@@ -208,10 +208,6 @@ sub parse_params {
     map {$self->$_($params->{$_}) if $self->can($_)}  keys %$params if $params && ref $params eq ref {};
     return $self->subject
         if $self->subject;
-    unless($self->hostName or $self->ifAddress or $self->urn) {
-        $self->logger->logdie(" subjects or hostName or ifAddress or urn MUST be provided");
-	return;
-    }
     my $subject = [];
     foreach my $key (qw/ifName ifIndex urn hostName  ifAddress/) {
 	if($self->$key && @{$self->$key} ) {

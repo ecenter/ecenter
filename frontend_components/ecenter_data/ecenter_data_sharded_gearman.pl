@@ -463,9 +463,10 @@ sub process_site {
 						  drops       => {ip => 'NA', value => 0},
 					       };
 	       foreach my $ip  (keys %{$utilization->{$way}{$dst_hub}}) {
-	            foreach my $time (sort {$a<=>$b} grep {$_} keys %{$snmp->{$ip}}) {
-		        next unless $snmp->{$ip}{$time}{capacity};
-		        my %tmp =  %{$snmp->{$ip}{$time}};
+	            next unless $snmp && $snmp->{out} && $snmp->{out}{$ip};
+	            foreach my $time (sort {$a<=>$b} grep {$_} keys %{$snmp->{out}{$ip}}) {
+		        next unless $snmp->{out}{$ip}{$time}{capacity};
+		        my %tmp =  %{$snmp->{out}{$ip}{$time}};
 			$tmp{utilization} = $tmp{utilization}?($tmp{utilization}/$tmp{capacity})*100.:0;
 			foreach my $metric (qw/utilization  errors drops/) {
 		            if( $tmp{$metric} &&  
@@ -475,6 +476,7 @@ sub process_site {
 			    }
 		        }
 	    	    }
+		  }
 	        }
 	    }
 	}

@@ -141,7 +141,9 @@ sub get_circuits {
     my $now_str = strftime('%Y-%m-%d %H:%M:%S', localtime()); 
     my $date_table = strftime('%Y%m', localtime());
     foreach my $circuit_id (keys %{$circuits}){
-	$logger->debug("\t[Capacity] " . $circuits->{$circuit_id}{capacity} . 'Mbps');
+	$logger->debug("\t[Capacity] " . $circuits->{$circuit_id}{capacity} . "Mbps  $date_table circuit: " .  
+	             join("\n", map{ "\u$_=$circuits->{$circuit_id}{$_}"} qw/name description start end/));
+        $logger->debug("\t[Links] ", Dumper($circuits->{$circuit_id}{links}));	     
 	my $circuit = $dbh->resultset('Circuit' . $date_table)->update_or_create({ 
 	                                                      circuit =>  $circuits->{$circuit_id}{name},
 							      src_hub => 'albu-sdn1',

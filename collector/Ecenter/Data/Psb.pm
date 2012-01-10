@@ -55,6 +55,7 @@ has 'src_ip'   => (is => 'rw', isa => 'Ecenter::Types::IPAddr');
 has 'dst_ip'   => (is => 'rw', isa => 'Ecenter::Types::IPAddr');
 has 'src_name' => (is => 'rw', isa => 'Str');
 has 'dst_name' => (is => 'rw', isa => 'Str');
+has 'data'     => (is => 'rw', isa => 'ArrayRef');
  
 sub BUILD {
       my $self = shift;

@@ -358,30 +358,26 @@ sub _get_remote_snmp {
     } 
     #   $logger->info("$request->{service} :: SNMP Data=", sub {Dumper($snmp_ma->data)});
    #  $logger->info("$request->{service} :: SNMP DataN=" . scalar @{$snmp_ma->data});
-    my $data_arr = $snmp_ma->data;
-    if($data_arr && @{$data_arr}) {
-        foreach my $direction (0,1) {
-	    foreach my $data (@{$data_arr->[$direction]}) {
-		eval {
-	             my $datum = {  timestamp => $data->[0],
-			            utilization => $data->[1],
-				    errors => $data->[2],
-				    drops => $data->[3]
-				 };
-		     if($request->{snmp_ip} && $request->{metaid}) {
-			 $datum->{metaid} = $request->{metaid};
-			 $dbh->resultset($request->{table})->find_or_create( $datum,   {key => 'meta_time'}  );
-		     }
-		     $datum->{capacity} = $data->[4];
-		     $datum->{direction} = $direction?'out':'in';
-	             $result->{data}{$datum->{direction}}{$data->[0]} = $datum;
-
-		};
-		if($EVAL_ERROR) {
-		   $logger->error("  Some error with insertion    $EVAL_ERROR");
-		}
+    my $data_hash_ref = $snmp_ma->data;
+    if($data_hash_ref && %{$data_hash_ref}) {
+        foreach my $md_id (keys %{$data_hash_ref}) {
+	    foreach my $direction (keys %{$data_hash_ref->{$md_id}} ) {
+		foreach my $tm (keys %{$data_hash_ref->{$md_id}{$direction}} ) {
+		    eval {
+	                my %datum = %{$data_hash_ref->{$md_id}{$direction}{$tm}};
+		        $datum{timestamp} = $tm;
+		        if($request->{snmp_ip} && $request->{metaid}) {
+			    $datum{metaid} = $request->{metaid};
+			    $dbh->resultset($request->{table})->find_or_create( $datum,   {key => 'meta_time'}  );
+		         }
+		         $result->{data}{$direction}{$tm} = \%datum;
+		    };
+		    if($EVAL_ERROR) {
+		        $logger->error("  Some error with insertion    $EVAL_ERROR");
+		    } 
+                }
             }
-        }
+	}
     }
     return encode_json $result;
 }

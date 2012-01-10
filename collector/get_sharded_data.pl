@@ -156,9 +156,15 @@ unless($OPTIONS{password}) {
 my $parser = XML::LibXML->new();
 our $IP_TOPOLOGY = 'ps.es.net';
 my @esnet_hosts = qw/ps1 ps2 ps3/;
-my $dbh =  Ecenter::DB->connect("DBI:mysql:database=$OPTIONS{db};hostname=$OPTIONS{host};", $OPTIONS{user}, $OPTIONS{password}, 
+my $dbh;
+
+eval { $dbh =  Ecenter::DB->connect("DBI:mysql:database=$OPTIONS{db};hostname=$OPTIONS{host};", $OPTIONS{user}, $OPTIONS{password}, 
                                     {RaiseError => 1, PrintError => 1});
-$dbh->storage->debug(1)  if $OPTIONS{debug} || $OPTIONS{v};
+    $dbh->storage->debug(1)  if $OPTIONS{debug} || $OPTIONS{v};
+};
+if($EVAL_ERROR) {
+    $logger->logdie("Failed DB connect $EVAL_ERROR");
+}
 #
 #  if asked then collect e2e stats from remote services asynchronously
 #
@@ -403,7 +409,7 @@ sub set_end_sites {
       my $aliases =   $hub->get_aliases();
       my $alias_sql = " n.nodename like '%$hub_name%'"; 
       if($aliases && @{$aliases}) {
-          map { $alias_sql .= " OR  n.nodename like '%$_%'"} @{$aliases};
+          map { $alias_sql .= " OR  n.nodename like '$_%'"} @{$aliases};
       }
       my %subnets =  %{$hub->get_ips()};
       my ($l2_port) =   $dbh->resultset('L2Port')->search({'hub.hub_name' => $hub_name}, {join => 'hub', limit => 1});

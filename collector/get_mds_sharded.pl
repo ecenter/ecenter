@@ -108,7 +108,7 @@ my $MAX_THREADS = 10;
 #
 #    pattern to match on hLS names
  
-our $HOST_MATCH = qr/((es|deemz)\.net|\w+\.gov|slac\.stanford\.edu|sc11\.org)/i;
+our $HOST_MATCH = qr/((es|deemz)\.net|\w+\.gov|slac\.stanford\.edu)/i;
 #our $HOST_MATCH = qr/sc11\.org/i;
 #our $HOST_MATCH = qr/nersc\.gov/i;
 #our $HOST_MATCH = qr/((es|deemz)\.net|ornl.gov)/i;

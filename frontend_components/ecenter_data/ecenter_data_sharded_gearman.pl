@@ -475,8 +475,7 @@ sub process_site {
 		                $data->{$way}{$dst_hub}{snmp}{$metric}{ip} = $ip;
 			    }
 		        }
-	    	    }
-		  }
+		   }
 	        }
 	    }
 	}

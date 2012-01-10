@@ -481,11 +481,10 @@ function ecenter_network_select_form(&$form_state) {
   }
 
   if (!empty($start) && !empty($end)) {
-    
+
     $data['parameters'] = array(
       'start' => $start,
       'end' => $end,
-      'timezone' => $timezone,
     );
 
     if (!empty($traceroute)) {
@@ -499,6 +498,11 @@ function ecenter_network_select_form(&$form_state) {
         'src' => $src,
         'dst' => $dst,
       );
+
+      // For later use: We capture this now to omit fds, ads, timezone...
+      $permalink = shorturl_shorten(url('network', array('query' => $data['parameters'], 'absolute' => TRUE)), TRUE);
+
+      $data['parameters']['timezone'] = $timezone;
 
       $form['results_wrapper']['results']['query_tools'] = array(
         '#prefix' => '<div id="query-tools-wrapper" class="clearfix">',
@@ -588,8 +592,6 @@ function ecenter_network_select_form(&$form_state) {
           '#id' => 'timezone-select',
           '#name' => 'timezone',
         );
-
-        $permalink = shorturl_shorten(url('network', array('query' => $data['parameters'], 'absolute' => TRUE)), TRUE);
 
         $form['results_wrapper']['results']['title_bar'] = array(
           '#weight' => 0,

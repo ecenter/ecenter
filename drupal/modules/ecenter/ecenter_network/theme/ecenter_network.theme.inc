@@ -16,9 +16,6 @@ function template_preprocess_ecenter_network_data(&$vars) {
   // All parameters
   $params = $data['parameters'];
   
-  /*list($src_type, $src_value) = explode(':', $params['src']);
-  list($dst_type, $dst_value) = explode(':', $params['dst']);*/
-
   // Call helper function to create messages
   $vars['ecenter_messages'] = theme('ecenter_network_messages', $data, $query_params);
 
@@ -26,8 +23,6 @@ function template_preprocess_ecenter_network_data(&$vars) {
     $data['drs']['traceroute']['diff'])), 'setting');
   drupal_add_js(array('ecenterNetwork' => array('tracerouteMaxLength' => 
     $data['drs']['traceroute']['traceroute_max'])), 'setting');
-
-
 
   // End to end measurements
   if (!empty($data['drs']['end_to_end'])) {

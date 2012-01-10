@@ -1258,11 +1258,19 @@ function _ecenter_network_layers_sites_rejigger(&$features) {
       case 'SLAC':
         $features[$k]['style']['labelYOffset'] = -5;
         $features[$k]['style']['labelXOffset'] = -30;
+        $lat = $features[$k]['extra']['coords']['lat'] - .2;
+        $lon = $features[$k]['extra']['coords']['lon'] - .15;
+        $features[$k]['wkt'] = "POINT({$lon} {$lat})";
         break;
       case 'ANL':
         $features[$k]['style']['labelYOffset'] = -20;
         $features[$k]['style']['labelXOffset'] = 4;
         $lat = $features[$k]['extra']['coords']['lat'] - 0.4;
+        $lon = $features[$k]['extra']['coords']['lon'];
+        $features[$k]['wkt'] = "POINT({$lon} {$lat})";
+        break;
+      case 'FNAL':
+        $lat = $features[$k]['extra']['coords']['lat'] + 0.4;
         $lon = $features[$k]['extra']['coords']['lon'];
         $features[$k]['wkt'] = "POINT({$lon} {$lat})";
         break;
@@ -1276,33 +1284,42 @@ function _ecenter_network_layers_sites_rejigger(&$features) {
       case 'LBL':
         $features[$k]['style']['labelXOffset'] = 24;
         $features[$k]['style']['labelYOffset'] = 5;
-        $lat = $features[$k]['extra']['coords']['lat'] + .5;
-        $lon = $features[$k]['extra']['coords']['lon'] + 1.1;
+        $lat = $features[$k]['extra']['coords']['lat'] + .6;
+        $lon = $features[$k]['extra']['coords']['lon'] + 1.25;
         $features[$k]['wkt'] = "POINT({$lon} {$lat})";
         break;
       case 'LLNL':
         $features[$k]['style']['labelXOffset'] = 15;
         $features[$k]['style']['labelYOffset'] = -15;
-        $lat = $features[$k]['extra']['coords']['lat'] - 1;
-        $lon = $features[$k]['extra']['coords']['lon'] + .3;
+        $lat = $features[$k]['extra']['coords']['lat'] - 1.1;
+        $lon = $features[$k]['extra']['coords']['lon'] + .4;
         $features[$k]['wkt'] = "POINT({$lon} {$lat})";
         break;
       case 'JGI':
         $features[$k]['style']['labelXOffset'] = 5;
         $features[$k]['style']['labelYOffset'] = 15;
-        $lat = $features[$k]['extra']['coords']['lat'] + 1;
+        $lat = $features[$k]['extra']['coords']['lat'] + 1.1;
         $lon = $features[$k]['extra']['coords']['lon'];
         $features[$k]['wkt'] = "POINT({$lon} {$lat})";
         break;
       case 'SNLL':
         $features[$k]['style']['labelXOffset'] = 30;
         $features[$k]['style']['labelYOffset'] = 0;
-        $lat = $features[$k]['extra']['coords']['lat'] - .1;
-        $lon = $features[$k]['extra']['coords']['lon'] + .75;
+        $lat = $features[$k]['extra']['coords']['lat'] - .2;
+        $lon = $features[$k]['extra']['coords']['lon'] + .95;
         $features[$k]['wkt'] = "POINT({$lon} {$lat})";
         break;
       case 'PNWG':
-        $features[$k]['wkt'] = "POINT(-119.16 46.20)";
+        $features[$k]['style']['labelYOffset'] = -20;
+        $features[$k]['style']['labelXOffset'] = 10;
+        $lat = $features[$k]['extra']['coords']['lat'] - .2;
+        $lon = $features[$k]['extra']['coords']['lon'] + .6;
+        $features[$k]['wkt'] = "POINT({$lon} {$lat})";
+        break;
+      case 'SC11':
+        $lat = $features[$k]['extra']['coords']['lat'] + .2;
+        $lon = $features[$k]['extra']['coords']['lon'] - .6;
+        $features[$k]['wkt'] = "POINT({$lon} {$lat})";
         break;
       default:
         break;

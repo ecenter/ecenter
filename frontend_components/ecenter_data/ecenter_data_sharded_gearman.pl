@@ -590,7 +590,7 @@ sub process_data {
     #
     #    circuit data
     #
-    if($params{data_type} eq 'circuit') {
+    if($params{data_type} && $params{data_type} eq 'circuit') {
         eval {
             $data = get_circuit_data($g_client, $trace_cond,  \%params);
 	    reduce_snmp_dataset($data->{snmp}, \%params) 
@@ -978,6 +978,7 @@ sub get_traceroute {
 			    	       my $returned = decode_json  ${$_[0]};  
 			    	       if($returned->{status} eq 'ok' && $returned->{data} && @{$returned->{data}}) {
 			    		  foreach my $datum ( @{$returned->{data}} ) {
+					     next unless $datum->{ip_noted};
 				             $datum->{hop_ip} =  $datum->{ip_noted};
 					     $datum->{hop_ip} = $datum->{nodename} if !$datum->{hop_ip} && $datum->{nodename} && $datum->{nodename} =~ /^[abcdfe0-9:\.]+]$/i;
 					     $hop_ips->{$datum->{ip_noted}}++;
@@ -1022,9 +1023,9 @@ sub get_circuit_data {
     my $shards =  get_shards({data =>  'snmp', start => $params->{snmp}{start} , end =>  $params->{snmp}{end} }, database('ecenter'));
     foreach my $shard (sort  { $a <=> $b } keys %$shards) {
        $logger->debug(" Circuits table:$shard start=$shards->{$shard}{start} end=$shards->{$shard}{end}");
-       my $sql = qq|select   h_src.hub_name  as src_hub, h_dst.hub_name as dst_hub, hop_l2p.l2_urn as hop_urn, h_hop.hub_name as hop_hubname, 
-	                                                                 clink.link_num as hop_num, h_hop.longitude as hop_longitude, 
-									 h_hop.latitude as hop_latitude,
+       my $sql = qq|select   h_src.hub_name  as src_hub, h_dst.hub_name as dst_hub, hop_l2p.l2_urn as hop_urn, h_hop.hub_name as hub_name, 
+	                                                                 clink.link_num as hop_num, h_hop.longitude as longitude, 
+									 h_hop.latitude as latitude,
 	                                                                 c.circuit, c.description, c.start_time, c.end_time
 	                                                     from 
 							               circuit_link_$shard clink 
@@ -1047,7 +1048,7 @@ sub get_circuit_data {
 	    map {  $snmp->{circuits}{$hops->{$hop}{src_hub}}{$hops->{$hop}{dst_hub}}{$hops->{$hop}{circuit}}{circuit}{$_} = $hops->{$hop}{$_} }
 	        qw/start_time end_time description/;
 	    map { $snmp->{circuits}{$hops->{$hop}{src_hub}}{$hops->{$hop}{dst_hub}}{$hops->{$hop}{circuit}}{hops}{$hops->{$hop}{hop_urn}}{$_} =  $hops->{$hop}{$_}}
-	        qw/hop_num hop_hubname hop_longitude hop_latitude/;
+	        qw/hop_num hub_name longitude latitude/;
 	    $urns{$hops->{$hop}{hop_urn}}++;
         }
 	## skipping

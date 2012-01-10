@@ -86,7 +86,15 @@ parse data in the request according to the data_type and sort it by timestamp
 sub parse_data {
     my ( $self,  $args ) = @_; 
     map {$self->$_($args->{$_}) if $self->can($_)}  keys %$args if $args && ref $args eq ref {};
-    my $data =  $self->data->{$self->data_type};
+    my $data =  {};
+    if($self->data_type eq 'snmp') {
+      return 
+        unless $self->data->{$self->data_type} && %{$self->data->{$self->data_type}} &&
+	       %{$self->data->{$self->data_type}{out}}; # only out interfaces
+	$data = $self->data->{$self->data_type}{out};
+    } else {
+       $data = $self->data->{$self->data_tytype};
+    }
     my $parsed_data = {};
     my %src_ips = ();
     ## 

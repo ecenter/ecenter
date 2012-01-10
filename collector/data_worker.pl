@@ -368,7 +368,7 @@ sub _get_remote_snmp {
 		        $datum{timestamp} = $tm;
 		        if($request->{snmp_ip} && $request->{metaid}) {
 			    $datum{metaid} = $request->{metaid};
-			    $dbh->resultset($request->{table})->find_or_create( $datum,   {key => 'meta_time'}  );
+			    $dbh->resultset($request->{table})->find_or_create( \%datum,   {key => 'meta_time'}  );
 		         }
 		         $result->{data}{$direction}{$tm} = \%datum;
 		    };

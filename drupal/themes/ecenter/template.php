@@ -35,6 +35,7 @@ function ecenter_preprocess_node(&$vars) {
   // Unset author picture on group node
   if ($node->type == 'group') {
     unset($vars['picture']);
+    drupal_set_title(t('Group: !title', array('!title' => $node->title)));
   }
 
   if ($vars['teaser']) {

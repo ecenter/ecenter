@@ -582,6 +582,15 @@ function ecenter_network_select_form(&$form_state) {
 
       // Render if data present
       if ($data['drs']) {
+
+        // Call helper function to create messages
+        $form['results_wrapper']['results']['ecenter_messages'] = array(
+          '#prefix' => '<div id="ecenter-messages-wrapper">',
+          '#suffix' => '</div>',
+          '#weight' => 7, 
+          '#value' => theme('ecenter_network_messages', $data, $data['parameters']),
+        );
+
         // Build timezone selector
         $timezones = array_map('_ecenter_network_process_tz_name', date_timezone_names());
         $timezone_select = array(
@@ -593,6 +602,9 @@ function ecenter_network_select_form(&$form_state) {
           '#name' => 'timezone',
         );
 
+        $title = theme('ecenter_network_query_title', $params);
+        drupal_set_title(strip_tags($title));
+
         $form['results_wrapper']['results']['title_bar'] = array(
           '#weight' => 0,
           '#prefix' => '<div id="title-bar-wrapper" class="clearfix">',
@@ -600,7 +612,7 @@ function ecenter_network_select_form(&$form_state) {
           'title' => array(
             '#prefix' => '<div id="title-wrapper">',
             '#suffix' => '</div>',
-            '#value' => theme('ecenter_network_query_title', $params),
+            '#value' => $title,
           ),
           'permalink' => array(
             '#prefix' => '<div id="permalink-wrapper">',

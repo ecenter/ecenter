@@ -16,9 +16,6 @@ function template_preprocess_ecenter_network_data(&$vars) {
   // All parameters
   $params = $data['parameters'];
   
-  // Call helper function to create messages
-  $vars['ecenter_messages'] = theme('ecenter_network_messages', $data, $query_params);
-
   drupal_add_js(array('ecenterNetwork' => array('tracerouteData' => 
     $data['drs']['traceroute']['diff'])), 'setting');
   drupal_add_js(array('ecenterNetwork' => array('tracerouteMaxLength' => 
@@ -952,7 +949,7 @@ function theme_ecenter_network_query_title($params, $data = NULL) {
 
   return t('<span class="src-dst"><span class="value">@src_hub</span> to
 <span class="value">@dst_hub</span>!circuit
-</span><span class="separator">, </span>
+</span><span class="separator"> - </span>
 <span class="date-range"><span class="start">@start to</span> 
 <span class="end">@end</span></span>',
     array(

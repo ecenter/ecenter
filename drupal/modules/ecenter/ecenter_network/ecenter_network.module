@@ -1440,9 +1440,6 @@ function _ecenter_network_layers_traceroute_rejigger(&$features) {
         $features[$k]['style']['labelXOffset'] = 35;
         $features[$k]['style']['labelYOffset'] = 10;
         break;
-      case 'STAR':
-        $features[$k]['style']['labelXOffset'] = -10;
-        $features[$k]['style']['labelYOffset'] = 15;
         break;
       case 'star-sdn1':
         $features[$k]['style']['labelXOffset'] = 30;
@@ -1479,9 +1476,38 @@ function _ecenter_network_layers_traceroute_rejigger(&$features) {
         $features[$k]['style']['labelXOffset'] = -20;
         $features[$k]['style']['labelYOffset'] = 15;
         break;
+      case 'STAR':
+        $features[$k]['style']['labelXOffset'] = -10;
+        $features[$k]['style']['labelYOffset'] = 15;
+        break;
       case 'NEWY':
         $features[$k]['style']['labelXOffset'] = -25;
         $features[$k]['style']['labelYOffset'] = 0;
+        break;
+      case 'NERSC':
+        $features[$k]['style']['labelYOffset'] = 15;
+        $features[$k]['style']['labelXOffset'] = -10;
+        break;
+      case 'SNLL':
+        $features[$k]['style']['labelXOffset'] = -30;
+        $features[$k]['style']['labelYOffset'] = 0;
+        break;
+      case 'LLNL':
+        $features[$k]['style']['labelXOffset'] = -20;
+        $features[$k]['style']['labelYOffset'] = -15;
+        break;
+      case 'SNV':
+        $features[$k]['style']['labelXOffset'] = 10;
+        $features[$k]['style']['labelYOffset'] = -10;
+        break;
+      case 'SUNN':
+        $features[$k]['style']['labelXOffset'] = 25;
+        $features[$k]['style']['labelYOffset'] = 0;
+        break;
+      case 'ANL':
+        $features[$k]['style']['labelYOffset'] = 10;
+        $features[$k]['style']['labelXOffset'] = -15;
+        break;
       default:
         break;
     }

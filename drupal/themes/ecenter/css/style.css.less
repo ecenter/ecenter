@@ -1218,7 +1218,7 @@ form {
             width: 295px;
             background-color: @color_grey_87;
             left: 5px;
-            top: 5px;
+            margin-top: 10px;
             border: 1px solid @color_grey_73;
             .form-item {
               margin: 3px 0;
@@ -1498,11 +1498,15 @@ form {
       width: 60%;
       margin-right: 18px;
     }
-    #edit-taxonomy-tags-1-wrapper {
+    #edit-taxonomy-tags-1-wrapper, fieldset {
       float: left;
+      width: 35%;
       input {
         max-width: 300px;
       }
+    }
+    .vertical-tabs fieldset {
+      float: none;
     }
     #edit-title-wrapper {
       margin-bottom: 21px;

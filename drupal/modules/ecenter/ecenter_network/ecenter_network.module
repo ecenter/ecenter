@@ -1592,6 +1592,15 @@ function ecenter_network_refresh_map($preset, $id = NULL) {
 }
 
 /**
+ * Implementation of hook_cron()
+ */
+function ecenter_network_cron() {
+  cache_clear_all(NULL, 'cache_ecenter_data');
+  cache_clear_all(NULL, 'cache_ecenter_nodes');
+  cache_clear_all(NULL, 'cache_ecenter_hops');
+}
+
+/**
  * Implementation of template_preprocess_page().
  */
 function ecenter_network_preprocess_page(&$vars) {

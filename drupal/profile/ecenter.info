@@ -82,6 +82,7 @@ dependencies[] = optionwidgets
 dependencies[] = pathauto
 dependencies[] = pathologic
 dependencies[] = semanticviews
+dependencies[] = shorturl
 dependencies[] = simplemenu
 dependencies[] = statistics_granularity
 dependencies[] = strongarm

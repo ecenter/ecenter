@@ -156,6 +156,9 @@ projects[semanticviews][version] = "1.1"
 projects[shib_auth][subdir] = "contrib"
 projects[shib_auth][version] = "4.0"
 
+projects[shorturl][subdir] = "contrib"
+projects[shorturl][version] = "1.3"
+
 projects[simplemenu][subdir] = "contrib"
 projects[simplemenu][version] = "1.14"
 

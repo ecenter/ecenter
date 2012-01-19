@@ -1,0 +1,39 @@
+<?php
+// $Id$
+
+/**
+ * Implementation of hook_menu().
+ */
+function ecenter_backbone_menu() {
+  $items = array();
+  $items['data'] = array(
+    'page callback' => 'ecenter_backbone_load',
+    'page arguments' => array(1),
+    'access arguments' => array('access ecenter network'),
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+function ecenter_backbone_load($module = NULL) {
+  $module = ($module == NULL) ? 'index' : $module;
+  $path = dirname(__FILE__) .'/app/'. $module .'.html';
+  if ($doc = qp($path)) {
+    $doc
+      ->find('script')->each('_ecenter_backbone_parse_src')->top()
+      ->find('link')->each('_ecenter_backbone_parse_link')->top();
+    print $doc->writeHTML();
+    exit();
+  }
+}
+
+// @TODO Add more robust parsing
+function _ecenter_backbone_parse_src($index, $item) {
+  $src = $item->getAttribute('src');
+  $item->setAttribute('src', drupal_get_path('module', 'ecenter_backbone'). '/app/'. $src);
+}
+
+function _ecenter_backbone_parse_link($index, $item) {
+  $src = $item->getAttribute('href');
+  $item->setAttribute('href', drupal_get_path('module', 'ecenter_backbone'). '/app/'. $src);
+}

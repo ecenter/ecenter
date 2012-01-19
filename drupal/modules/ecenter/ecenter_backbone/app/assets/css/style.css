@@ -27,6 +27,7 @@ body {
 	line-height: 1;
   background-color: #eee;
   font-family: Arial, sans-serif;
+  font-size: 16px;
 }
 ol, ul {
 	list-style: none;
@@ -44,22 +45,20 @@ table {
 	border-spacing: 0;
 }
 
-#main-wrapper {
-  overflow-y: scroll;
-}
-
 #header {
   position: absolute;
   top: 0;
   width: 100%;
   color: #fff;
   background-color: #000;
+  padding-left: 5px;
 }
 
 #header a {
   color: #fff;
   display: inline-block;
-  padding: 3px;
+  padding: 5px;
+  text-decoration: none;
 }
 
 ul.menu li {
@@ -69,4 +68,13 @@ ul.menu li {
 #main-wrapper {
   position: absolute;
   overflow-y: scroll;
+}
+
+#main {
+  padding: 10px;
+}
+
+.chart rect {
+  fill: #7ac5cd;
+  stroke: white;
 }

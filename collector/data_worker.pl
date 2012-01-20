@@ -334,6 +334,7 @@ sub _get_remote_snmp {
     my ($request, $dbh) = @_;
     my $snmp_ma;
     my $result = {status => 'ok', data =>  { in => {}, out => {}}};
+    $logger->debug("SNMP remote request=", sub{Dumper($request)});
     eval {
 	$snmp_ma =  Ecenter::Data::Snmp->new({ url => $request->{service} });
 	my $meta_cond = {
@@ -368,7 +369,8 @@ sub _get_remote_snmp {
 		        $datum{timestamp} = $tm;
 		        if($request->{snmp_ip} && $request->{metaid}) {
 			    $datum{metaid} = $request->{metaid};
-			    $dbh->resultset($request->{table})->find_or_create( \%datum,   {key => 'meta_time'}  );
+			    my %sql_data =  map { $_ => $datum{$_}} qw/timestamp metaid utilization drops errors/;
+			    $dbh->resultset($request->{table})->find_or_create( \%sql_data,   {key => 'meta_time'}  );
 		         }
 		         $result->{data}{$direction}{$tm} = \%datum;
 		    };
@@ -493,6 +495,7 @@ sub  process_trace {
                               ref  $tmp{hop_ip}?$tmp{hop_ip}->ip_addr:
 			        $tmp{hop_ip};
     push @{$results->{data}}, \%tmp;
+    $sql_datum->{hop_ip} =  $tmp{hop_ip};
     delete $sql_datum->{ip_noted};
     #delete $sql_datum->{ip_noted};
 }

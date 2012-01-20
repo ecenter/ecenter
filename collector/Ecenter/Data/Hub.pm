@@ -53,7 +53,8 @@ my %HUBS = ( FNAL  => {nets => {'131.225.0.0' => 16, '198.49.208.0' => 24, '198.
 	     SLAC  => {nets => {'134.79.0.0' => 16,  '198.51.111.0' => 24, 
 	                        '198.129.254.146' => 32, '134.55.217.1' => 31}, handle => 'THELE-44-Z'},
 	     BNL   => {nets => {'192.12.15.0' => 24, '134.55.221.138' => 31,
-	                        '198.124.238.38' => 31, '198.124.238.49' => 31}, handle => 'BNL'},
+	                        '198.124.238.38' => 31, '198.124.238.49' => 31, 
+				'130.199.3.0' => 24, '198.124.216.189' => 31}, handle => 'BNL'},
              ANL   => {nets => { '164.54.0.0' => 16,  '146.137.0.0' => 16,
         		       '130.202.0.0' => 16, '198.124.252.97' => 31, '198.124.252.117' => 31,
          		      '140.221.15.0' => 24,'134.55.220.38' => 31,
@@ -162,7 +163,7 @@ sub find_hub {
     my $logger = ref $self && $self->logger?$self->logger:get_logger(__PACKAGE__);
     foreach my $hubname (keys %HUBS) {
         foreach my $subnet (keys %{$HUBS{$hubname}->{nets}}) {
-	    ###$logger->debug( " Checking  $ip   vs $hubname=  $subnet/$HUBS{$hubname}->{nets}{$subnet} ");
+	    $logger->debug( " Checking  $ip   vs $hubname=  $subnet/$HUBS{$hubname}->{nets}{$subnet} ");
             my $block = Net::Netmask->new("$subnet/$HUBS{$hubname}->{nets}{$subnet}");
 	    if($nodename =~ m/$hubname\./i || $block->match($ip)) {
 	        return Ecenter::Data::Hub->new(hub_name => $hubname);

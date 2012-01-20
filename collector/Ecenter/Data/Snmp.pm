@@ -83,7 +83,7 @@ sub BUILD {
       $self->resolution(5);
       $self->logger(get_logger(__PACKAGE__));
       $self->eventtypes([("http://ggf.org/ns/nmwg/tools/snmp/2.0")]);
-      $self->parse_params($args);
+      ###$self->parse_params($args);
       return  $self->url($args->{url}) if $args->{url};
       
 };
@@ -149,19 +149,19 @@ after 'get_data' => sub  {
 	    next;
 	}
         # Extract the datum elements.
-	 $self->logger->debug("MD reffed::", sub{Dumper($metadata->{$idref})});
+	$self->logger->debug("MD reffed::", sub{Dumper($metadata->{$idref})});
         foreach my $dt ( $data->getDocumentElement->getChildrenByTagNameNS( "http://ggf.org/ns/nmwg/base/2.0/", "datum" ) ) {
 
             # Make sure the time and data are legit.
             if ( $dt->getAttribute("timeValue") =~ m/^\d{10}$/ ) {
-		$self->logger->debug("Got valid time: ".$dt->getAttribute("timeValue"));
+		#$self->logger->debug("Got valid time: ".$dt->getAttribute("timeValue"));
 
                 if ( $dt->getAttribute("value") and $dt->getAttribute("value") ne "nan" ) {
-		    $self->logger->debug("Data value: ".$dt->getAttribute("value"));
+		    #$self->logger->debug("Data value: ".$dt->getAttribute("value"));
                     my $data_value = eval { $dt->getAttribute("value")  };
 		    
 		    $data_response{$uniq_id}{$metadata->{$idref}{direction}}{$dt->getAttribute("timeValue")}{$VALUES_MAP{$metadata->{$idref}{eventtype}}} =  $data_value;
-		    $self->logger->debug("Post-mod data value: ".$data_value);
+		    #$self->logger->debug("Post-mod data value: ".$data_value);
                 }
                 else {
 		    $self->logger->error("Unidentified eventtype=$metadata->{$idref}{eventtype}") unless $VALUES_MAP{$metadata->{$idref}{eventtype}};
@@ -180,6 +180,7 @@ sub parse_metadata {
     my ($self, $xml) = @_;
     my $mds = {};
     my $parser = XML::LibXML->new();
+    
     foreach my $md (@{$xml->{"metadata"}}){
         my $metadata = $parser->parse_string($md);
 	my $id = $metadata->getDocumentElement->getAttribute('id');

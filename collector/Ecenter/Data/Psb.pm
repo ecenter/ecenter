@@ -152,7 +152,7 @@ after  'get_data' => sub   {
                 	     eventTypes => $self->eventtypes
 			   };
             my $result = $self->ma->setupDataRequest( $request );
-	    $self->logger->debug(" ------------------- DATA :: ", sub{ Dumper  $result->{"data"}->[1] } );
+	    #$self->logger->debug(" ------------------- DATA :: ", sub{ Dumper  $result->{"data"}->[1] } );
             foreach my $data_el (@{$result->{"data"}} ) { 
 	        my $doc1 =  $self->parser->parse_string( $data_el);
                 my $datum1 = find( $doc1->getDocumentElement, "./*[local-name()='datum']", 0 );

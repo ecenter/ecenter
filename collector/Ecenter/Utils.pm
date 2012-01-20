@@ -353,7 +353,7 @@ sub get_ip_name {
        };
        if($EVAL_ERROR || !$ip_resolved) {
           $logger->error("DNS lookup failed for $unt_test extracted from  $ip_addr with $EVAL_ERROR ");
-	  return;
+	  return $ip_addr;
        }  
        return ( $unt_test, $ip_resolved );
     }
@@ -373,9 +373,9 @@ sub get_ip_name {
             $logger->debug(" Found IP: $ip_addr2  ");
             return  ($ip_addr2,  $unt_test);
 	}
-    }
+   }
    $logger->error(" IP is not found for $unt_test ");
-    return;
+   return $ip_addr;
 }
 
 =head2 pool_control(max_threads, finish_it)

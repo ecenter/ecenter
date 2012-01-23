@@ -62,13 +62,17 @@ it supports SNMP data for statuc and dynamic circuits
 
  
 has 'direction'  => (is => 'rw', isa => 'Str');
-has 'urn'        => (is => 'rw', isa => 'Str', required => 0);
-has 'ifName'     => (is => 'rw', isa => 'Str');
-has 'ifIndex'    => (is => 'rw', isa => 'Str');
-has 'ifAddress'  => (is => 'rw', isa => 'Ecenter::Types::IPAddr');
-has 'hostName'   => (is => 'rw', isa => 'Str');
-has 'subject'    => (is => 'rw', isa => 'Str');
+has 'urn'        => (is => 'rw', isa => 'ArrayRef');
+has 'ifName'     => (is => 'rw', isa => 'ArrayRef');
+has 'ifIndex'    => (is => 'rw', isa => 'ArrayRef');
+has 'ifAddress'  => (is => 'rw', isa => 'ArrayRef');
+has 'hostName'   => (is => 'rw', isa => 'ArrayRef');
+has 'subject'    => (is => 'rw', isa => 'ArrayRef');
 has 'eventtypes' => (is => 'rw', isa => 'ArrayRef');
+has 'lookup_md'  => (is => 'rw', isa => 'HashRef');
+
+# local lookup table
+my $lookup_md = {};
 
 sub BUILD {
       my $self = shift;
@@ -133,6 +137,7 @@ after 'get_data' => sub  {
         my $data = $parser->parse_string($d);
         my $idref = $data->getDocumentElement->getAttribute('metadataIdRef');
         # Extract the datum elements.
+	 $self->logger->debug("MD reffed::", sub{Dumper($metadata->{$idref})});
         foreach my $dt ( $data->getDocumentElement->getChildrenByTagNameNS( "http://ggf.org/ns/nmwg/base/2.0/", "datum" ) ) {
 
             # Make sure the time and data are legit.
@@ -147,6 +152,7 @@ after 'get_data' => sub  {
                 }
                 else {
                     $data_response{$metadata->{$idref}{direction}}{$dt->getAttribute("timeValue")}{data}{$metadata->{$idref}{eventtype}}=  0;
+
 		}
 		$data_response{$metadata->{$idref}{direction}}{$dt->getAttribute("timeValue")}{capacity} = $metadata->{$idref}{capacity};
             }
@@ -160,7 +166,7 @@ after 'get_data' => sub  {
                     push @{$datum->[$dir]}, [$tm, $data_response{$dir_name}{$tm}{data}{'http://ggf.org/ns/nmwg/characteristic/utilization/2.0/'},
                           $data_response{$dir_name}{$tm}{data}{'http://ggf.org/ns/nmwg/characteristic/errors/2.0/'},
 			  $data_response{$dir_name}{$tm}{data}{'http://ggf.org/ns/nmwg/characteristic/discards/2.0/'},
-			  $data_response{$dir_name}{$tm}{capacity} 
+			  $data_response{$dir_name}{$tm}{capacity}
 			  ];
        }
    }
@@ -168,40 +174,51 @@ after 'get_data' => sub  {
 };
 
 sub parse_metadata {
-  my ($self, $xml) = @_;
-  my $mds = {};
-  my $parser = XML::LibXML->new();
-  foreach my $md (@{$xml->{"metadata"}}){
-        my $metadata = $parser->parse_string($md); 
-	my $id = $metadata->getDocumentElement->getAttribute('id'); 
+    my ($self, $xml) = @_;
+    my $mds = {};
+    my $parser = XML::LibXML->new();
+    foreach my $md (@{$xml->{"metadata"}}){
+        my $metadata = $parser->parse_string($md);
+	my $id = $metadata->getDocumentElement->getAttribute('id');
 	my $xpath     = "./*[local-name()='subject']/*[local-name()='interface']";
 	my $port      =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='ifName']",    1), 0);
  	my $ip        =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='ifAddress']", 1), 0);
  	my $name      =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='hostName']",  1), 0);
-	my $urn      =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='urn']",  1), 0);	
+	my $urn       =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='urn']",  1), 0);	
  	my $direction =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='direction']", 1), 0);
  	my $capacity  =  extract( find($metadata->getDocumentElement, "$xpath/*[local-name()='capacity']",  1), 0);
-	my $eventtype  =  extract( find($metadata->getDocumentElement, "./*[local-name()='eventType']",  1), 0);
+	my $eventtype =  extract( find($metadata->getDocumentElement, "./*[local-name()='eventType']",  1), 0);
 	$eventtype  ||=  extract( find($metadata->getDocumentElement, "./*[local-name()='subject']/*[local-name()='eventType']",  1), 0);
 	# filter only requested ones
-	next unless ($self->urn && $urn &&  $self->urn eq $urn) || 
-	            ($self->ifAddress && $ip && $self->ifAddress eq $ip) || 
-		    ($self->hostName && $name && $self->hostName eq $name);
+	
+	next unless ($lookup_md->{urn} && $urn && $lookup_md->{urn}{$urn}) ||
+	            ($lookup_md->{ifAddress} && $ip && $lookup_md->{ifAddress}{$ip}) ||
+		    ($lookup_md->{ifName} && $port &&  $lookup_md->{ifName}{$port}) ||
+		    ($lookup_md->{hostName} && $name &&  $lookup_md->{hostName}{$name});
  	$mds->{$id} = {port => $port, ip => $ip, urn => $urn, name => $name, direction => $direction, capacity => $capacity, eventtype=>$eventtype};
     }
-    $self->metadata($mds); 
+    $self->metadata($mds);
 }
 
 sub parse_params {
-   my ($self, $params) = @_;
-   map {$self->$_($params->{$_}) if $self->can($_)}  keys %$params if $params && ref $params eq ref {};
-   return unless $self->hostName or $self->ifAddress or $self->urn;
-   my $subject = qq|  <nmwg:subject id="s-in-16"><nmwgt:interface xmlns:nmwgt="http://ggf.org/ns/nmwg/topology/2.0/">|;
-   foreach my $key (qw/ifName ifIndex urn hostName direction  ifAddress/) {
-      $subject .=    "<nmwgt:$key>" . $self->$key . "</nmwgt:$key>\n" if  $self->$key;
+    my ($self, $params) = @_;
+    map {$self->$_($params->{$_}) if $self->can($_)}  keys %$params if $params && ref $params eq ref {};
+    return $self->subject
+        if $self->subject;
+    return unless  $self->hostName or $self->ifAddress or $self->urn;
+   
+    my $subject = [];
+    foreach my $key (qw/ifName ifIndex urn hostName  ifAddress/) {
+        if($self->$key && @{$self->$key} ) {
+	    foreach my $el ( @{$self->$key} ) {
+                my $subj = qq|  <nmwg:subject id="s-in-16"><nmwgt:interface xmlns:nmwgt="http://ggf.org/ns/nmwg/topology/2.0/">|;
+	        $subj  .=    "<nmwgt:$key>" . $el . "</nmwgt:$key>";
+		$subj  .=    "<nmwgt:direction>" . $self->direction . "</nmwgt:direction>\n" if $self->direction;
+		$lookup_md->{$key}{$el}++;
+                push @{$subject}, $subj . q|</nmwgt:interface></nmwg:subject>|;
+	    }
+	}
    }
-   $subject .=  q|</nmwgt:interface></nmwg:subject>|;
-
    $self->subject($subject);
 }
 

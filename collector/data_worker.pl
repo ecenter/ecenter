@@ -344,9 +344,9 @@ sub _get_remote_snmp {
 	$meta_cond->{direction} = $request->{direction} 
 	    if $request->{direction};
      	if($request->{snmp_ip}) {
-     	    $meta_cond->{ifAddress} =  $request->{snmp_ip};
+     	    $meta_cond->{ifAddress} =  [$request->{snmp_ip}];
         } else {
-     	    $meta_cond->{urn} = $request->{urn};
+     	    $meta_cond->{urn} = [$request->{urn}];
         }
 	$snmp_ma->get_data( $meta_cond );
     };

@@ -38,6 +38,14 @@ function ecenter_network_menu() {
     'access arguments' => array('access ecenter network'),
     'type' => MENU_CALLBACK,
   );
+  
+  $items['network/sites'] = array(
+    'title' => 'Site centric view', 
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ecenter_network_site_centric_form'),
+    'access arguments' => array('access ecenter network'),
+    'type' => MENU_CALLBACK,
+  );
 
   $items['admin/settings/ecenter'] = array(
     'title' => 'E-Center Network',
@@ -431,8 +439,7 @@ function ecenter_network_select_form(&$form_state) {
   $form = _ecenter_network_select_form();
   ahah_helper_register($form, $form_state);
 
-  $params = _ecenter_network_extract_query();
-  extract($params);
+  extract(_ecenter_network_extract_query());
 
   // Refresh map
   ecenter_network_refresh_map('ecenter_network', 'openlayers-map-auto-id-0');
@@ -485,7 +492,6 @@ function ecenter_network_select_form(&$form_state) {
     $data['parameters'] = array(
       'start' => $start,
       'end' => $end,
-      //'timezone' => $timezone,
     );
     
     $form['results_wrapper']['results']['query_tools'] = array(
@@ -670,8 +676,6 @@ function ecenter_network_select_form(&$form_state) {
         '#value' => theme('ecenter_network_recent_queries', TRUE),
       );
     }
-
-
   }
   else {
     $form['results_wrapper']['#value'] = theme('ecenter_network_recent_queries');
@@ -733,6 +737,74 @@ function ecenter_network_select_form_submit($form, &$form_state) {
 
   $form_state['storage'] = $form_state['values'];
   $form_state['rebuild'] = TRUE;
+}
+
+
+function ecenter_network_site_centric_form(&$form_state) {
+  global $user;
+  extract(_ecenter_network_extract_query());
+
+  if (empty($src)) {
+    $src = (!empty($user->ecenter_default_hub)) ? $user->ecenter_default_hub : variable_get('ecenter_site_default_hub', 'FNAL');
+  }
+  
+  $form = array();
+  
+  $sources = ecenter_network_get_hops();
+  $options = array('');
+
+  if (!empty($sources)) {
+    foreach ($sources['hubs'] as $key => $hop) {
+      $options[$key] = theme('ecenter_network_hop_option', $hop);
+    }
+  }
+  $form['src'] = array(
+    '#title' => t('Source'),
+    '#type' => 'select',
+    '#options' => $options,
+    '#default_value' => $src,
+    '#ahah' => array(
+      'event' => 'change',
+      'path' => ahah_helper_path(array('site_view')),
+      'wrapper' => 'site-view-wrapper',
+    ),
+  );
+
+  drupal_add_js(libraries_get_path('raphael') .'/raphael-min.js');
+  drupal_add_js(libraries_get_path('qtip') .'/jquery.qtip.js');
+  drupal_add_js(drupal_get_path('module', 'ecenter_dashboard') .'/js/ecenter-dashboard.js');
+
+  module_load_include('inc', 'date_api', 'date_api_elements');
+  $now = time() - 3600;
+  $offset = 3600 * 3;
+  $inc = 60;
+  $tz = timezone_open('UTC');
+  $end = date_make_date($now, $tz, DATE_UNIX);
+  $start = date_make_date($now - $offset, $tz, DATE_UNIX);
+  date_increment_round($start, $inc);
+  date_increment_round($end, $inc);
+  $start = date_format($start, 'Y-m-d H:i:00');
+  $end = date_format($end, 'Y-m-d H:i:00');
+
+  $raw_data = ecenter_network_get_site_centric_data($src, $start, $end);
+
+  $site_data = array('source' => $raw_data['source'], 'destinations' => array());
+  foreach ($raw_data['destinations'] as $hub => $data) {
+    $site_data['destinations'][] = array(
+      'hub' => $hub,
+      'data' => $data,
+    );
+  }
+  drupal_add_js(array('ecenterNetwork' => array('siteData' => $site_data)), 'setting');
+
+  $form['site_view'] = array(
+    '#prefix' => '<div id="site-view-wrapper">',
+    '#suffix' => '</div>',
+    '#value' => '<div id="site-view-svg"></div>',  
+  );
+
+
+  return $form; 
 }
 
 /**
@@ -1228,9 +1300,9 @@ function ecenter_network_layers_sites() {
     'projection' => array('900913'),
   );
 
-  //if (!empty($src) && !empty($dst) && !empty($start) && !empty($end)) {
-  //  $data = ecenter_network_get_data($src, $dst, $start, $end);
-  //}
+  if (!empty($src) && !empty($dst) && !empty($start) && !empty($end)) {
+    $data = ecenter_network_get_data($src, $dst, $start, $end);
+  }
 
   if (empty($src) || empty($dst) || empty($start) || empty($end)) {
     foreach ($hops['hubs'] as $hub) {
@@ -1459,7 +1531,6 @@ function _ecenter_network_layers_traceroute_rejigger(&$features) {
       case 'star-cr1':
         $features[$k]['style']['labelXOffset'] = 35;
         $features[$k]['style']['labelYOffset'] = 10;
-        break;
         break;
       case 'star-sdn1':
         $features[$k]['style']['labelXOffset'] = 30;
@@ -1696,19 +1767,15 @@ function _ecenter_network_process_tz_name($val) {
 /**
  * Package query variables as an array
  *
- * E-Center queries can come from form input, or query string variables. Let's
- * not worry about WHERE they came from during data processing. The returned 
- * array can extract()'ed to quickly popular local variables with network
- * query state.
+ * E-Center queries can come from form input, or query string variables.  Let's
+ * not worry about WHERE they came from during data processing.  Typically, you
+ * should invoke by extract()ing the contents of the array.
  *
  * @return array
  *  An array of query values
  */
 function _ecenter_network_extract_query() {
   $vars = array();
-
-  //dpm($_REQUEST);
-
   if (!empty($_REQUEST['form_id']) && $_REQUEST['form_id'] == 'ecenter_network_select_form') {
     $vars = array(
       'src' => $_REQUEST['network_wrapper']['query']['src_wrapper']['src'],

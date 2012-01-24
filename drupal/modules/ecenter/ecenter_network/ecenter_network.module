@@ -755,7 +755,7 @@ function ecenter_network_site_centric_form(&$form_state) {
 
   if (!empty($sources)) {
     foreach ($sources['hubs'] as $key => $hop) {
-      $options[$key] = theme('ecenter_network_hop_option', $hop);
+      $options['hub:'. $key] = theme('ecenter_network_hop_option', $hop);
     }
   }
   $form['src'] = array(
@@ -787,22 +787,106 @@ function ecenter_network_site_centric_form(&$form_state) {
   $end = date_format($end, 'Y-m-d H:i:00');
 
   $raw_data = ecenter_network_get_site_centric_data($src, $start, $end);
+  $circuit_data = ecenter_network_get_circuit_data($src, NULL, $start, $end);
 
   $site_data = array('source' => $raw_data['source'], 'destinations' => array());
+
+  $ip_headers = array('hub' => t('Hub'));
+  $ip_rows = array();
+  
+  $tests = array(
+    'bwctl' => array('throughput'),
+    'owamp' => array('max_delay', 'sent', 'min_delay', 'loss'),
+    // @TODO Pinger? Other values
+  );
+
   foreach ($raw_data['destinations'] as $hub => $data) {
     $site_data['destinations'][] = array(
       'hub' => $hub,
       'data' => $data,
     );
+
+    $row = array('hub' => array(
+      'data' => $hub,
+      'header' => TRUE,
+    ));
+
+    // @TODO Incorporate measurement API
+    foreach ($tests as $test => $measurements) {
+      foreach ($measurements as $measurement) {
+
+        $value_suggestions = array(
+          'ecenter_network_format_'. $test .'_'. $measurement,
+          'ecenter_network_format_'. $test,
+          'ecenter_network_format_default',
+        );
+        $label_suggestions = array(
+          'ecenter_network_format_'. $test .'_'. $measurement .'_label',
+          'ecenter_network_format_'. $test .'_label',
+          'ecenter_network_format_default_label',
+        );
+
+        $key = $test .'_'. $measurement;
+        if (empty($ip_headers[$key])) {
+          $ip_headers[$key] = theme($label_suggestions, $measurement, $test);
+        }
+        $row[$key] = array();
+        if (!empty($data['e2e'][$test][$measurement])) {
+          $row[$key] = array(
+            'data' => theme($value_suggestions, $data['e2e'][$test][$measurement], $test, $measurement, TRUE),
+            'class' => $key,
+          );
+        }
+        else {
+          $row[$key] = array(
+            'data' => t('Not available'),
+            'class' => 'no-data',
+          );
+        }
+      }
+    }
+    $ip_rows[$hub] = $row;
   }
-  drupal_add_js(array('ecenterNetwork' => array('siteData' => $site_data)), 'setting');
+
+  $circuit_headers = array('Hub' => t('Hub'), 'circuit' => t('Circuit name'));
+  $circuit_rows = array();
+  foreach ($circuit_data['circuits'] as $hub => $circuits) {
+    foreach ($circuits as $circuit_name => $circuit) {
+      $row = array(
+        'hub' => array(
+          'data' => $hub,
+          'header' => TRUE,
+        ),
+        $circuit_name,
+      );
+      $circuit_rows[$hub .'_'. $circuit_name] = $row;
+    }
+  }
+
+  ksort($ip_rows);
+  ksort($circuit_rows);
+
+  drupal_add_js(array('ecenterNetwork' => array('siteData' => $site_data)), 
+    'setting');
 
   $form['site_view'] = array(
     '#prefix' => '<div id="site-view-wrapper">',
     '#suffix' => '</div>',
+  );
+
+  $form['site_view']['site_view_svg'] = array(
     '#value' => '<div id="site-view-svg"></div>',  
   );
 
+  $form['site_view']['site_view_ip_table'] = array(
+    '#value' => theme('jqplot_table', $ip_headers, $ip_rows, 
+      array('class' => 'data-table')),  
+  );
+
+  $form['site_view']['site_view_circuit_table'] = array(
+    '#value' => theme('jqplot_table', $circuit_headers, $circuit_rows,
+      array('class' => 'data-table')),  
+  );
 
   return $form; 
 }

@@ -24,8 +24,9 @@ function ecenter_network_get_circuit_data($src, $dst, $start, $end, $no_snmp = F
   $query = http_build_query($params);
 
   if (!array_key_exists($query, $results)) {
+    // Disable cache for src-only queries
     $caching = variable_get('ecenter_network_data_cache_enabled', 0);
-    if ($caching && $result = cache_get($query, 'cache_ecenter_data')) {
+    if (!$no_snmp && $caching && $result = cache_get($query, 'cache_ecenter_data')) {
       $results[$query] = $result->data;
     }
     else {
@@ -63,6 +64,17 @@ function ecenter_network_parse_circuit_response($response) {
     $parsed_data['circuits'] = array();
     foreach ($data['circuits'] as $source => $destinations) {
       foreach ($destinations as $destination => $circuits) {
+        // Circuits are symmetrical, but are registered with a set source and
+        // destination. Flatten into single structure.
+        if ($parsed_data['parameters']['src']['value'] == $destination) {
+          $src_name = $destination;
+          $dst_name = $source;
+        }
+        else {
+          $src_name = $source;
+          $dst_name = $destination;
+        }
+
         foreach ($circuits as $circuit_name => $circuit) {
           $fwd_traceroute = array();
           $rev_traceroute = array();
@@ -94,10 +106,11 @@ function ecenter_network_parse_circuit_response($response) {
               );
             }
           }
-          $parsed_data['circuits'][$circuit_name]['traceroute']['forward'] = $fwd_traceroute;
-          $parsed_data['circuits'][$circuit_name]['traceroute']['reverse'] = array_reverse($rev_traceroute);
-          $parsed_data['circuits'][$circuit_name]['traceroute']['diff'] = $diff;
-          $parsed_data['circuits'][$circuit_name]['traceroute']['traceroute_max'] = count($diff);
+          $parsed_data['circuits'][$dst_name][$circuit_name]['traceroute']['forward'] = $fwd_traceroute;
+          $parsed_data['circuits'][$dst_name][$circuit_name]['traceroute']['forward'] = $fwd_traceroute;
+          $parsed_data['circuits'][$dst_name][$circuit_name]['traceroute']['reverse'] = array_reverse($rev_traceroute);
+          $parsed_data['circuits'][$dst_name][$circuit_name]['traceroute']['diff'] = $diff;
+          $parsed_data['circuits'][$dst_name][$circuit_name]['traceroute']['traceroute_max'] = count($diff);
         }
       }
     }

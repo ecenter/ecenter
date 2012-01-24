@@ -178,9 +178,9 @@
   }
 }
 /* }}} */
-/* Mixins: Content classes (content-introduction, -highlight, -pad, -clearfix
-     -column, -float-left, -float-right, -align-center, -align-right)
-  {{{ */
+/* Mixins: Content classes {{{ */
+// .content-introduction, -highlight, -pad, -clearfix
+// -column, -float-left, -float-right, -align-center, -align-right
 .content-introduction {
   //font-size: .875em;
   font-style: italic;
@@ -222,6 +222,7 @@
 }
 /* }}} */
 
+/* -- Content styles -- */
 // Body {{{
 body {
   font-family: @font_body;
@@ -296,11 +297,12 @@ li {
 
 // Tables
 table {
+  font-size: 14px;
   border-collapse: collapse;
   thead th {
-    font-weight: bold;
-    font-size: 0.875em;
     color: @color_grey_40;
+    text-align: center;
+    font-size: 12px;
   }
   thead th.empty {
     border-bottom: 1px solid #fff;
@@ -316,9 +318,8 @@ table {
     border: 2px solid @color_white;
   }
   td {
-    font-weight: bold;
     background-color: @color_grey_87;
-    color: @color_grey_27;
+    color: @color_grey_20;
     line-height: 1.5;
   }
   tr:hover td, tbody tr:hover th {
@@ -331,6 +332,27 @@ table {
       padding-left: 0;
       border: none;
       background-color: transparent;
+    }
+  }
+  td .value {
+    font-weight: bold;
+    color: @color_black;
+    font-family: @font_mono;
+    font-size: 14px;
+  }
+  td .unit {
+    font-weight: normal;
+    color: @color_grey_33;
+    font-size: 11px;
+  }
+  td.no-data {
+    font-weight: normal;
+    font-style: italic;
+    font-size: 11px;
+  }
+  &.data-table {
+    td {
+      text-align: center;
     }
   }
 }
@@ -1268,15 +1290,16 @@ form {
       h4 {
         margin-bottom: 14px;
       }
-      .data-table {
+      .data-table-wrapper {
         float: left;
-        width: 190px;
-        height: 350px;
+        width: 290px;
+        height: 300px;
         overflow-y: auto;
         margin-right: 20px;
         margin-bottom: 20px;
         h3 {
-          font-size: 18px;
+          font-size: 14px;
+          line-height: 18px;
         }
         th {
           font-size: 11px;
@@ -1287,6 +1310,9 @@ form {
           padding: 0 6px;
         }
       }
+      .no-data {
+        display: none;
+      }
     } // }}}
   } // }}}
   #utilization-tables { // {{{
@@ -1295,9 +1321,6 @@ form {
     .data-tables {
       display: none;
       margin-bottom: 55px;
-      .data-table {
-        width: 290px;
-      }
     }
     .chart-title {
       .box;
@@ -2189,9 +2212,6 @@ table.network-health {
   left: 0;
 }
 // }}}
-body.node-type-issue #results { // {{{
-  background-color: @color_grey_93;
-} // }}}
 /* Date picker {{{ */
 #ui-datepicker-div {
   font-size: 14px;

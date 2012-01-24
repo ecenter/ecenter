@@ -64,8 +64,10 @@ function ecenter_network_get_site_centric_data($site, $start, $end) {
  *   An array of parsed data
  */
 function ecenter_network_parse_site_data($data, $site) {
+  list($src_type, $src_value) = explode(':', $site);
+
   $parsed_data = array(
-    'source' => $site,
+    'source' => $src_value,
   );
   foreach (array('direct_traceroute' => 'forward', 'reverse_traceroute' => 'reverse') as $key => $direction) {
     if (!empty($data[$key])) {

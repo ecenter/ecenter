@@ -10,42 +10,5 @@
  * Implementation hook_form_alter().
  */
 function ecenter_forms_form_alter(&$form, &$form_state, $form_id) {
-  // Node forms
-  if ($form['#id'] == 'node-form') {
-    // Remove options for internal Drupal workflow states
-    $form['options']['promote']['#access'] = FALSE;
-    $form['options']['sticky']['#access'] = FALSE;
 
-    // Remove summary / teaser silliness
-    $form['body_field']['teaser_include']['#access'] = FALSE;
-
-    $form['buttons']['#prefix'] = '<div class="buttons clearfix">';
-    $form['buttons']['#suffix'] = '</div>';
-
-    if (!empty($form['#field_info'])) {
-      foreach ($form['#field_info'] as $field => $settings) {
-
-        // Insert widgets
-        if (!empty($settings['widget']['insert'])) {
-          $form[$field]['#title'] = t('Upload @type', 
-            array('@type' => $form[$field]['#title']));
-
-          // Wrap the pre-existing wrapper for consistent styling
-          $form[$field]['#prefix'] = '<div class="field-insert">'. $form[$field]['#prefix'];
-          $form[$field]['#suffix'] .= '</div>'; 
-        }
-
-      }
-    }
-    $form['field_wiki_file_attachment']['#weight'] = 0;
-
-    if (!empty($form['taxonomy'])) {
-      $form['taxonomy']['#title'] = t('Tags');
-      $form['taxonomy']['#type'] = 'fieldset';
-      $form['taxonomy']['#collapsible'] = TRUE;
-      foreach ($form['taxonomy']['tags'] as $tid => $tag) {
-        unset ($form['taxonomy']['tags'][$tid]['#title']);
-      }
-    }
-  }
 }

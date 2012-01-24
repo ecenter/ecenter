@@ -53,7 +53,7 @@ projects[curl][subdir] = "contrib"
 projects[curl][version] = "2.0-rc1"
 
 projects[date][subdir] = "contrib/date"
-projects[date][version] = "2.7"
+projects[date][version] = "2.8"
 
 projects[devel][subdir] = "contrib"
 projects[devel][version] = "1.26"
@@ -65,7 +65,7 @@ projects[elysia_cron][subdir] = "contrib"
 projects[elysia_cron][version] = "2.0"
 
 projects[features][subdir] = "contrib"
-projects[features][version] = "1.1"
+projects[features][version] = "1.2"
 
 projects[filefield][subdir] = "contrib"
 projects[filefield][version] = "3.10"
@@ -74,7 +74,7 @@ projects[flag][subdir] = "contrib"
 projects[flag][version] = "2.0-beta6"
 
 projects[fontyourface][subdir] = "contrib"
-projects[fontyourface][version] = "2.8"
+projects[fontyourface][version] = "2.10"
 
 projects[geoip][subdir] = "contrib"
 projects[geoip][version] = "1.4"
@@ -136,7 +136,7 @@ projects[oembed][subdir] = "contrib"
 projects[oembed][version] = "0.8"
 
 projects[og][subdir] = "contrib"
-projects[og][version] = "2.1"
+projects[og][version] = "2.2"
 
 projects[openid_selector][subdir] = "contrib"
 projects[openid_selector][version] = "1.x-dev"
@@ -166,7 +166,8 @@ projects[statistics_granularity][subdir] = "contrib"
 projects[statistics_granularity][version] = "1.0"
 
 projects[strongarm][subdir] = "contrib"
-projects[strongarm][version] = "2.0"
+projects[strongarm][version] = "2.1"
+
 
 projects[syntaxhighlighter][subdir] = "contrib"
 projects[syntaxhighlighter][version] = "1.26"
@@ -187,7 +188,7 @@ projects[vertical_tabs][subdir] = "contrib"
 projects[vertical_tabs][version] = "1.0-rc2"
 
 projects[views][subdir] = "contrib"
-projects[views][version] = "3.0-rc3"
+projects[views][version] = "3.0"
 
 projects[views_slideshow][subdir] = "contrib"
 projects[views_slideshow][version] = "3.0"

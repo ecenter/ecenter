@@ -1049,25 +1049,24 @@ sub get_circuit_data {
 	$logger->debug(" Circuits table	SQL:$sql");
         my $hops = database('ecenter')->selectall_hashref($sql, 'hop_id');
         #$snmp->{hops}{$shard} = $hops;
-        my $urn_1='';
-	my $urn_last='';
+        my %urn_snmp = ();
 	
 	$logger->debug(" Circuits hops:", sub{Dumper($hops)});
 	foreach my $hop_id (keys %{$hops}) {
             my $hop = $hops->{$hop_id}{hop_num};
+	    
 	    map { $snmp->{circuits}{$hops->{$hop_id}{src_hub}}{$hops->{$hop_id}{dst_hub}}{$hops->{$hop_id}{circuit}}{circuit}{$_} = $hops->{$hop_id}{$_} }
 	        qw/start_time end_time description/;
 	    map { $snmp->{circuits}{$hops->{$hop_id}{src_hub}}{$hops->{$hop_id}{dst_hub}}{$hops->{$hop_id}{circuit}}{hops}{$hops->{$hop_id}{hop_urn}}{$_} =  $hops->{$hop_id}{$_}}
 	        qw/hop_num hub_name longitude latitude/;
-	    if($hops->{$hop_id}{hop_urn} =~ /\d+\.\d+$/) {
-	        $urn_1 ||= $hops->{$hop_id}{hop_urn};
-	        $urn_last = $hops->{$hop_id}{hop_urn};
-	    }
+	   if($hops->{$hop_id}{hop_urn} =~ /\d+\.\d+$/) {
+	        $urn_snmp{$hops->{$hop_id}{hop_urn}}++;
+	   }
         }
 	## skipping
 	next if $params->{no_snmp};
 	## data
-        foreach my $urn ($urn_1,$urn_last) {
+        foreach my $urn (keys %urn_snmp) {
 	    $snmp->{snmp}{in}{$urn} = {}; 
     	    $snmp->{snmp}{out}{$urn} = {}; 
     	    

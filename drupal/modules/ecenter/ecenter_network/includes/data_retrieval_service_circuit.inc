@@ -24,8 +24,9 @@ function ecenter_network_get_circuit_data($src, $dst, $start, $end, $no_snmp = F
   $query = http_build_query($params);
 
   if (!array_key_exists($query, $results)) {
-    // Disable cache for src-only queries
     $caching = variable_get('ecenter_network_data_cache_enabled', 0);
+
+    // Don't use cache for no snmp queries
     if (!$no_snmp && $caching && $result = cache_get($query, 'cache_ecenter_data')) {
       $results[$query] = $result->data;
     }

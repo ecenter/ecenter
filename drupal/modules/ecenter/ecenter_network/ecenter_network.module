@@ -564,19 +564,21 @@ function ecenter_network_select_form(&$form_state) {
       $permalink = shorturl_shorten(url('network', array('query' => $link_params, 'absolute' => TRUE)), TRUE);
 
       $data['parameters']['timezone'] = $timezone;
-      
-      $circuit_data = ecenter_network_get_circuit_data($data['parameters']['src'], $data['parameters']['dst'], $data['parameters']['start'], $data['parameters']['end'], TRUE);
-      if (!empty($circuit_data['circuits'])) {
-        $circuit_links = array(); 
-        foreach ($circuit_data['circuits'][$dst_value] as $circuit_name => $circuit) {
-          $link_params = $data['parameters'] + array(
-            'mode' => 'circuit',
-            'circuit' => $circuit_name,
-          );
-          $circuit_links[] = l($circuit_name, 'network', array('query' => $link_params, 'absolute' => TRUE));
+     
+      if ($mode != 'circuit') {
+        $circuit_data = ecenter_network_get_circuit_data($data['parameters']['src'], $data['parameters']['dst'], $data['parameters']['start'], $data['parameters']['end'], TRUE);
+        if (!empty($circuit_data['circuits'])) {
+          $circuit_links = array(); 
+          foreach ($circuit_data['circuits'][$dst_value] as $circuit_name => $circuit) {
+            $link_params = $data['parameters'] + array(
+              'mode' => 'circuit',
+              'circuit' => $circuit_name,
+            );
+            $circuit_links[] = l($circuit_name, 'network', array('query' => $link_params, 'absolute' => TRUE));
 
-          // Build links...
-          $form['results_wrapper']['results']['query_tools']['circuit_links']['#value'] = '<p>'. t('Circuits detected: '). implode(', ', $circuit_links) .'.</p>';
+            // Build links...
+            $form['results_wrapper']['results']['query_tools']['circuit_links']['#value'] = '<p>'. t('Circuits detected: '). implode(', ', $circuit_links) .'.</p>';
+          }
         }
       }
       
@@ -1525,15 +1527,18 @@ function ecenter_network_layers_traceroute() {
 
   if (!empty($src) && !empty($dst) && !empty($start) && !empty($end)) {
 
+    list($src_type, $src_value) = explode(':', $src, 2);
+    list($dst_type, $dst_value) = explode(':', $dst, 2);
+    
     switch ($mode) {
       case 'circuit':
         $circuits = ecenter_network_get_circuit_data($src, $dst, $start, $end);
-        if (!empty($circuits['circuits'])) {
-          if (!$circuit || empty($circuits['circuits'][$circuit])) {
-            $data = array_shift($circuits['circuits']);
+        if (!empty($circuits['circuits'][$dst_value])) {
+          if (!$circuit || empty($circuits['circuits'][$dst_value][$circuit])) {
+            $data = array_shift($circuits['circuits'][$dst_value]);
           }
           else {
-            $data = $circuits['circuits'][$circuit];
+            $data = $circuits['circuits'][$dst_value][$circuit];
           }
         }
         break;

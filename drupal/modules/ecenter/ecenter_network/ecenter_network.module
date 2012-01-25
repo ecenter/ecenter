@@ -483,6 +483,7 @@ function ecenter_network_select_form(&$form_state) {
     }
 
     if (!empty($dst)) {
+      list($dst_type, $dst_value) = explode(':', $dst, 2);
       $form['network_wrapper']['query']['dst_wrapper']['dst']['#default_value'] = $dst;
     }
   }
@@ -526,10 +527,10 @@ function ecenter_network_select_form(&$form_state) {
             $form['results_wrapper']['results']['query_tools']['circuit_links']['#value'] = 
               '<p>'. l('&laquo; Back to IP results', 'network', array('html' => TRUE, 'query' => $data['parameters'])) .'</p>';
 
-            if (!$circuit || empty($circuits['circuits'][$circuit])) {
-              $circuit = array_shift(array_keys($circuits['circuits']));
+            if (!$circuit || empty($circuits['circuits'][$dst_value][$circuit])) {
+              $circuit = array_shift(array_keys($circuits[$dst_value]['circuits']));
             }
-            $circuit_data = $circuits['circuits'][$circuit];
+            $circuit_data = $circuits['circuits'][$dst_value][$circuit];
             $data += array(
               'drs' => $circuit_data,
             );
@@ -567,7 +568,7 @@ function ecenter_network_select_form(&$form_state) {
       $circuit_data = ecenter_network_get_circuit_data($data['parameters']['src'], $data['parameters']['dst'], $data['parameters']['start'], $data['parameters']['end'], TRUE);
       if (!empty($circuit_data['circuits'])) {
         $circuit_links = array(); 
-        foreach ($circuit_data['circuits'] as $circuit_name => $circuit) {
+        foreach ($circuit_data['circuits'][$dst_value] as $circuit_name => $circuit) {
           $link_params = $data['parameters'] + array(
             'mode' => 'circuit',
             'circuit' => $circuit_name,

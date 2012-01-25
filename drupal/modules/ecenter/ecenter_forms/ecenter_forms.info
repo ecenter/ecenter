@@ -1,5 +1,0 @@
-;$Id$
-name = E-Center Content Editing
-package = E-Center Project
-description = Override standard Drupal behaviors for node editing
-core = 6.x

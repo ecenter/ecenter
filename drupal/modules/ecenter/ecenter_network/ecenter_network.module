@@ -1767,6 +1767,26 @@ function ecenter_network_cron() {
   cache_clear_all(NULL, 'cache_ecenter_data');
   cache_clear_all(NULL, 'cache_ecenter_nodes');
   cache_clear_all(NULL, 'cache_ecenter_hops');
+  cache_clear_all(NULL, 'cache_ecenter_site_data');
+
+  module_load_include('inc', 'date_api', 'date_api_elements');
+  $now = time();
+  $offset = 3600 * 3;
+  $inc = 60;
+  $tz = timezone_open('UTC');
+  $end = date_make_date($now, $tz, DATE_UNIX);
+  $start = date_make_date($now - $offset, $tz, DATE_UNIX);
+  date_increment_round($start, $inc);
+  date_increment_round($end, $inc);
+  $start = date_format($start, 'Y-m-d H:i:00');
+  $end = date_format($end, 'Y-m-d H:i:00');
+
+  $hubs = ecenter_network_get_hops();
+  foreach ($hubs['hubs'] as $key => $hop) {
+    if ($key != 'PPPL' && $key != 'SNLL' && $key != 'LLNL') {
+      $data = ecenter_network_get_site_centric_data($key, $start, $end);
+    }
+  }
 }
 
 /**

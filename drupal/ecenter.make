@@ -27,6 +27,9 @@ projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecente
 projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/ahah_helper_js_settings.patch"
 projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/ahah_helper_optional_validation_handlers.patch"
 
+projects[autoload][subdir] = "contrib"
+projects[autoload][version] = "2.1"
+
 projects[background_process][subdir] = "contrib"
 projects[background_process][version] = "1.10"
 
@@ -56,7 +59,7 @@ projects[curl][subdir] = "contrib"
 projects[curl][version] = "2.0-rc1"
 
 projects[date][subdir] = "contrib/date"
-projects[date][version] = "2.7"
+projects[date][version] = "2.8"
 
 projects[devel][subdir] = "contrib"
 projects[devel][version] = "1.26"
@@ -68,7 +71,13 @@ projects[ultimate_cron][subdir] = "contrib"
 projects[ultimate_cron][version] = "1.7"
 
 projects[features][subdir] = "contrib"
-projects[features][version] = "1.1"
+projects[features][version] = "1.2"
+
+projects[feeds][subdir] = "contrib"
+projects[feeds][version] = "1.0-beta11"
+
+projects[feeds_comment_processor][subdir] = "contrib"
+projects[feeds_comment_processor][version] = "1.0-beta1"
 
 projects[filefield][subdir] = "contrib"
 projects[filefield][version] = "3.10"
@@ -77,7 +86,7 @@ projects[flag][subdir] = "contrib"
 projects[flag][version] = "2.0-beta6"
 
 projects[fontyourface][subdir] = "contrib"
-projects[fontyourface][version] = "2.8"
+projects[fontyourface][version] = "2.10"
 
 projects[geoip][subdir] = "contrib"
 projects[geoip][version] = "1.4"
@@ -94,11 +103,8 @@ projects[imagecache][version] = "2.0-beta12"
 projects[imagefield][subdir] = "contrib"
 projects[imagefield][version] = "3.10"
 
-projects[input_formats][subdir] = "contrib"
-projects[input_formats][version] = "1.0-beta6"
-
-projects[insert][subdir] = "contrib"
-projects[insert][version] = "1.1"
+projects[job_scheduler][subdir] = "contrib"
+projects[job_scheduler][version] = "1.0-beta3"
 
 projects[jquery_ui][subdir] = "contrib"
 projects[jquery_ui][version] = "1.5"
@@ -151,7 +157,7 @@ projects[oembed][subdir] = "contrib"
 projects[oembed][version] = "0.8"
 
 projects[og][subdir] = "contrib"
-projects[og][version] = "2.1"
+projects[og][version] = "2.2"
 
 projects[openid_selector][subdir] = "contrib"
 projects[openid_selector][version] = "1.x-dev"
@@ -174,6 +180,9 @@ projects[semanticviews][version] = "1.1"
 projects[shib_auth][subdir] = "contrib"
 projects[shib_auth][version] = "4.0"
 
+projects[shorturl][subdir] = "contrib"
+projects[shorturl][version] = "1.3"
+
 projects[simplemenu][subdir] = "contrib"
 projects[simplemenu][version] = "1.14"
 
@@ -181,10 +190,7 @@ projects[statistics_granularity][subdir] = "contrib"
 projects[statistics_granularity][version] = "1.0"
 
 projects[strongarm][subdir] = "contrib"
-projects[strongarm][version] = "2.0"
-
-projects[syntaxhighlighter][subdir] = "contrib"
-projects[syntaxhighlighter][version] = "1.26"
+projects[strongarm][version] = "2.1"
 
 projects[tableofcontents][subdir] = "contrib"
 projects[tableofcontents][version] = "3.7"
@@ -202,7 +208,7 @@ projects[vertical_tabs][subdir] = "contrib"
 projects[vertical_tabs][version] = "1.0-rc2"
 
 projects[views][subdir] = "contrib"
-projects[views][version] = "3.0-rc3"
+projects[views][version] = "3.0"
 
 projects[views_slideshow][subdir] = "contrib"
 projects[views_slideshow][version] = "3.0"

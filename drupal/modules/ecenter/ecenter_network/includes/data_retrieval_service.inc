@@ -283,12 +283,12 @@ function ecenter_network_parse_response($response) {
       // Strip doubled or empty hops from beginning and end of traceroute
       for ($i = 0; $i < 2; $i++) {
         $traceroute = array_reverse($traceroute);
-        while (!empty($traceroute) && (empty($traceroute[0]['data']['snmp']) || $traceroute[0]['hub_name'] == $traceroute[1]['hub_name'])) {
+        while (!empty($traceroute) && $traceroute[0]['hub_name'] == $traceroute[1]['hub_name']) {
           array_shift($traceroute);
         }
       }
 
-      $parsed_data['traceroute'][$direction] = $traceroute;
+      $parsed_data['traceroute'][$direction] = array_values($traceroute);
     }
   }
 

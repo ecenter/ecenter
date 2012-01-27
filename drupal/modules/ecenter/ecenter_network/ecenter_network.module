@@ -38,6 +38,14 @@ function ecenter_network_menu() {
     'access arguments' => array('access ecenter network'),
     'type' => MENU_CALLBACK,
   );
+  
+  $items['network/sites'] = array(
+    'title' => 'Site centric view', 
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ecenter_network_site_centric_form'),
+    'access arguments' => array('access ecenter network'),
+    'type' => MENU_CALLBACK,
+  );
 
   $items['admin/settings/ecenter'] = array(
     'title' => 'E-Center Network',
@@ -431,8 +439,7 @@ function ecenter_network_select_form(&$form_state) {
   $form = _ecenter_network_select_form();
   ahah_helper_register($form, $form_state);
 
-  $params = _ecenter_network_extract_query();
-  extract($params);
+  extract(_ecenter_network_extract_query());
 
   // Refresh map
   ecenter_network_refresh_map('ecenter_network', 'openlayers-map-auto-id-0');
@@ -476,6 +483,7 @@ function ecenter_network_select_form(&$form_state) {
     }
 
     if (!empty($dst)) {
+      list($dst_type, $dst_value) = explode(':', $dst, 2);
       $form['network_wrapper']['query']['dst_wrapper']['dst']['#default_value'] = $dst;
     }
   }
@@ -486,34 +494,29 @@ function ecenter_network_select_form(&$form_state) {
       'start' => $start,
       'end' => $end,
     );
+    
+    $form['results_wrapper']['results']['query_tools'] = array(
+      '#prefix' => '<div id="query-tools-wrapper" class="clearfix">',
+      '#suffix' => '</div>',
+      '#weight' => 5,
+    );
+
+    $form['results_wrapper']['results']['query_tools']['circuit_links'] = array(
+      '#prefix' => '<div id="circuit-links-wrapper">',
+      '#suffix' => '</div>',
+      '#weight' => 0,
+    );
 
     if (!empty($traceroute)) {
       $data = array(
         'drs' => ecenter_network_get_traceroute_data($traceroute, $start, $end)
       );
+      $data['parameters'] = $data['drs']['parameters'];
     }
     elseif (!empty($src) && !empty($dst)) {
-
       $data['parameters'] += array(
         'src' => $src,
         'dst' => $dst,
-      );
-
-      // For later use: We capture this now to omit fds, ads, timezone...
-      $permalink = shorturl_shorten(url('network', array('query' => $data['parameters'], 'absolute' => TRUE)), TRUE);
-
-      $data['parameters']['timezone'] = $timezone;
-
-      $form['results_wrapper']['results']['query_tools'] = array(
-        '#prefix' => '<div id="query-tools-wrapper" class="clearfix">',
-        '#suffix' => '</div>',
-        '#weight' => 5,
-      );
-
-      $form['results_wrapper']['results']['query_tools']['circuit_links'] = array(
-        '#prefix' => '<div id="circuit-links-wrapper">',
-        '#suffix' => '</div>',
-        '#weight' => 0,
       );
 
       switch ($mode) {
@@ -524,10 +527,10 @@ function ecenter_network_select_form(&$form_state) {
             $form['results_wrapper']['results']['query_tools']['circuit_links']['#value'] = 
               '<p>'. l('&laquo; Back to IP results', 'network', array('html' => TRUE, 'query' => $data['parameters'])) .'</p>';
 
-            if (!$circuit || empty($circuits['circuits'][$circuit])) {
-              $circuit = array_shift(array_keys($circuits['circuits']));
+            if (!$circuit || empty($circuits['circuits'][$dst_value][$circuit])) {
+              $circuit = array_shift(array_keys($circuits[$dst_value]['circuits']));
             }
-            $circuit_data = $circuits['circuits'][$circuit];
+            $circuit_data = $circuits['circuits'][$dst_value][$circuit];
             $data += array(
               'drs' => $circuit_data,
             );
@@ -541,129 +544,141 @@ function ecenter_network_select_form(&$form_state) {
           $data += array(
             'drs' => ecenter_network_get_data($src, $dst, $start, $end)
           );
-
-          $circuit_data = ecenter_network_get_circuit_data($src, $dst, $start, $end, TRUE);
-          if (!empty($circuit_data['circuits'])) {
-            $circuit_links = array(); 
-            foreach ($circuit_data['circuits'] as $circuit_name => $circuit) {
-              $link_params = $params + array(
-                'mode' => 'circuit',
-                'circuit' => $circuit_name,
-              );
-              $circuit_links[] = l($circuit_name, 'network', array('query' => $link_params, 'absolute' => TRUE));
-
-              // Build links...
-              $form['results_wrapper']['results']['query_tools']['circuit_links']['#value'] = '<p>'. t('Circuits detected: '). implode(', ', $circuit_links) .'.</p>';
-            }
-          }
-          
-          $data['parameters'] += array(
-            'fds' => 0,
-            'ads' => 0,
-          );
-
-          if ($ads) {
-            $data['ads'] = ecenter_network_get_ads_data($src, $dst, $start, $end,
-              $algorithm, $detector_type, $sensitivity, $elevation1, $elevation2, $swc);
-            $data['parameters']['ads'] = 1;
-          }
-
-          if ($fds) {
-            $data['fds'] = ecenter_network_get_fds_data($src, $dst, $start, $end, $fds_type);
-            $data['parameters']['fds'] = 1;
-            $data['parameters']['fds_type'] = $fds_type;
-          }
-      }
-
-      // @TODO move...
-      $form['results_wrapper']['results']['query_settings'] = array(
-        '#weight' => 5,
-      );
-
-      // Render if data present
-      if ($data['drs']) {
-
-        // Call helper function to create messages
-        $form['results_wrapper']['results']['ecenter_messages'] = array(
-          '#prefix' => '<div id="ecenter-messages-wrapper">',
-          '#suffix' => '</div>',
-          '#weight' => 7, 
-          '#value' => theme('ecenter_network_messages', $data, $data['parameters']),
-        );
-
-        // Build timezone selector
-        $timezones = array_map('_ecenter_network_process_tz_name', date_timezone_names());
-        $timezone_select = array(
-          '#type' => 'combobox',
-          '#title' => t('Timezone'),
-          '#value' => $timezone,
-          '#options' => $timezones,
-          '#id' => 'timezone-select',
-          '#name' => 'timezone',
-        );
-
-        $title = theme('ecenter_network_query_title', $params);
-        drupal_set_title(strip_tags($title));
-
-        $form['results_wrapper']['results']['title_bar'] = array(
-          '#weight' => 0,
-          '#prefix' => '<div id="title-bar-wrapper" class="clearfix">',
-          '#suffix' => '</div>',
-          'title' => array(
-            '#prefix' => '<div id="title-wrapper">',
-            '#suffix' => '</div>',
-            '#value' => $title,
-          ),
-          'permalink' => array(
-            '#prefix' => '<div id="permalink-wrapper">',
-            '#suffix' => '</div>',
-            array(
-              '#type' => 'textfield',
-              '#size' => 25,
-              '#value' => $permalink,
-            ),
-            array(
-              '#value' => t('<a class="button" href="@url">Link</a>', array('@url' => $permalink)),
-            ),
-          ),
-          $timezone_select,
-        );        
-
-        if ($mode != 'circuit') {
-          $form['results_wrapper']['results']['query_tools']['analysis'] = array(
-            '#prefix' => '<div id="analysis-wrapper">',
-            '#suffix' => '</div>',
-            '#weight' => 5,
-          );
-
-          $form['results_wrapper']['results']['query_tools']['analysis']['ads'] = ecenter_network_ads_form($query_params['ads']);
-
-          $has_bwctl = (!empty($data['drs']['end_to_end']['bwctl']['forward']) ||
-            !empty($data['drs']['end_to_end']['bwctl']['reverse']));
-
-          $has_snmp = (!empty($data['drs']['traceroute']['forward']) ||
-            !empty($data['drs']['traceroute']['reverse']));
-
-          $has_owamp = (!empty($data['drs']['end_to_end']['owamp']['forward']) ||
-            !empty($data['drs']['end_to_end']['owamp']['reverse']));
-
-          $form['results_wrapper']['results']['query_tools']['analysis']['fds'] = 
-            ecenter_network_fds_form($query_params['fds'], $has_snmp, $has_bwctl, $has_owamp);
-        }
-
-        // Render data
-        $form['results_wrapper']['results']['result_data'] = array(
-          '#weight' => 10,
-          '#value' => theme('ecenter_network_data', $data),
-        );
-
-        // Render recent queries
-        $form['results_wrapper']['results']['recent'] = array(
-          '#weight' => 15,
-          '#value' => theme('ecenter_network_recent_queries', TRUE),
-        );
+          break;
       }
     }      
+
+    $form['results_wrapper']['results']['query_settings'] = array(
+      '#weight' => 5,
+    );
+
+    // Render if data present
+    if ($data['drs']) {
+
+      $link_params = array(
+        'src' => $data['parameters']['src'],
+        'dst' => $data['parameters']['dst'],
+        'start' => $data['parameters']['start'],
+        'end' => $data['parameters']['end'],
+      );
+      $permalink = shorturl_shorten(url('network', array('query' => $link_params, 'absolute' => TRUE)), TRUE);
+
+      $data['parameters']['timezone'] = $timezone;
+     
+      if ($mode != 'circuit') {
+        $circuit_data = ecenter_network_get_circuit_data($data['parameters']['src'], $data['parameters']['dst'], $data['parameters']['start'], $data['parameters']['end'], TRUE);
+        if (!empty($circuit_data['circuits'])) {
+          $circuit_links = array(); 
+          foreach ($circuit_data['circuits'][$dst_value] as $circuit_name => $circuit) {
+            $link_params = $data['parameters'] + array(
+              'mode' => 'circuit',
+              'circuit' => $circuit_name,
+            );
+            $circuit_links[] = l($circuit_name, 'network', array('query' => $link_params, 'absolute' => TRUE));
+
+            // Build links...
+            $form['results_wrapper']['results']['query_tools']['circuit_links']['#value'] = '<p>'. t('Circuits detected: '). implode(', ', $circuit_links) .'.</p>';
+          }
+        }
+      }
+      
+      $data['parameters'] += array(
+        'fds' => 0,
+        'ads' => 0,
+      );
+
+      if ($ads) {
+        $data['ads'] = ecenter_network_get_ads_data($data['parameters']['src'], $data['parameters']['dst'], $data['parameters']['start'], $data['parameters']['end'],
+          $algorithm, $detector_type, $sensitivity, $elevation1, $elevation2, $swc);
+        $data['parameters']['ads'] = 1;
+      }
+
+      if ($fds) {
+        $data['fds'] = ecenter_network_get_fds_data($data['parameters']['src'], $data['parameters']['dst'], $data['parameters']['start'], $data['parameters']['end'], $fds_type);
+        $data['parameters']['fds'] = 1;
+        $data['parameters']['fds_type'] = $fds_type;
+      }
+
+      // Call helper function to create messages
+      $form['results_wrapper']['results']['ecenter_messages'] = array(
+        '#prefix' => '<div id="ecenter-messages-wrapper">',
+        '#suffix' => '</div>',
+        '#weight' => 7, 
+        '#value' => theme('ecenter_network_messages', $data, $data['parameters']),
+      );
+
+      // Build timezone selector
+      $timezones = array_map('_ecenter_network_process_tz_name', date_timezone_names());
+      $timezone_select = array(
+        '#type' => 'combobox',
+        '#title' => t('Timezone'),
+        '#value' => $timezone,
+        '#options' => $timezones,
+        '#id' => 'timezone-select',
+        '#name' => 'timezone',
+      );
+
+      $title = theme('ecenter_network_query_title', $data['parameters']);
+      drupal_set_title(strip_tags($title));
+
+      $form['results_wrapper']['results']['title_bar'] = array(
+        '#weight' => 0,
+        '#prefix' => '<div id="title-bar-wrapper" class="clearfix">',
+        '#suffix' => '</div>',
+        'title' => array(
+          '#prefix' => '<div id="title-wrapper">',
+          '#suffix' => '</div>',
+          '#value' => $title,
+        ),
+        'permalink' => array(
+          '#prefix' => '<div id="permalink-wrapper">',
+          '#suffix' => '</div>',
+          array(
+            '#type' => 'textfield',
+            '#size' => 25,
+            '#value' => $permalink,
+          ),
+          array(
+            '#value' => t('<a class="button" href="@url">Link</a>', array('@url' => $permalink)),
+          ),
+        ),
+        $timezone_select,
+      );        
+
+      if ($mode != 'circuit') {
+        $form['results_wrapper']['results']['query_tools']['analysis'] = array(
+          '#prefix' => '<div id="analysis-wrapper">',
+          '#suffix' => '</div>',
+          '#weight' => 5,
+        );
+
+        $form['results_wrapper']['results']['query_tools']['analysis']['ads'] = ecenter_network_ads_form($query_params['ads']);
+
+        $has_bwctl = (!empty($data['drs']['end_to_end']['bwctl']['forward']) ||
+          !empty($data['drs']['end_to_end']['bwctl']['reverse']));
+
+        $has_snmp = (!empty($data['drs']['traceroute']['forward']) ||
+          !empty($data['drs']['traceroute']['reverse']));
+
+        $has_owamp = (!empty($data['drs']['end_to_end']['owamp']['forward']) ||
+          !empty($data['drs']['end_to_end']['owamp']['reverse']));
+
+        $form['results_wrapper']['results']['query_tools']['analysis']['fds'] = 
+          ecenter_network_fds_form($query_params['fds'], $has_snmp, $has_bwctl, $has_owamp);
+      }
+
+      // Render data
+      $form['results_wrapper']['results']['result_data'] = array(
+        '#weight' => 10,
+        '#value' => theme('ecenter_network_data', $data),
+      );
+
+      // Render recent queries
+      $form['results_wrapper']['results']['recent'] = array(
+        '#weight' => 15,
+        '#value' => theme('ecenter_network_recent_queries', TRUE),
+      );
+    }
   }
   else {
     $form['results_wrapper']['#value'] = theme('ecenter_network_recent_queries');
@@ -725,6 +740,158 @@ function ecenter_network_select_form_submit($form, &$form_state) {
 
   $form_state['storage'] = $form_state['values'];
   $form_state['rebuild'] = TRUE;
+}
+
+
+function ecenter_network_site_centric_form(&$form_state) {
+  global $user;
+  extract(_ecenter_network_extract_query());
+
+  if (empty($src)) {
+    $src = (!empty($user->ecenter_default_hub)) ? $user->ecenter_default_hub : variable_get('ecenter_site_default_hub', 'FNAL');
+  }
+  
+  $form = array();
+  
+  $sources = ecenter_network_get_hops();
+  $options = array('');
+
+  if (!empty($sources)) {
+    foreach ($sources['hubs'] as $key => $hop) {
+      $options['hub:'. $key] = theme('ecenter_network_hop_option', $hop);
+    }
+  }
+  $form['src'] = array(
+    '#title' => t('Source'),
+    '#type' => 'select',
+    '#options' => $options,
+    '#default_value' => $src,
+    '#ahah' => array(
+      'event' => 'change',
+      'path' => ahah_helper_path(array('site_view')),
+      'wrapper' => 'site-view-wrapper',
+    ),
+  );
+
+  drupal_add_js(libraries_get_path('raphael') .'/raphael-min.js');
+  drupal_add_js(libraries_get_path('qtip') .'/jquery.qtip.js');
+  drupal_add_js(drupal_get_path('module', 'ecenter_dashboard') .'/js/ecenter-dashboard.js');
+
+  module_load_include('inc', 'date_api', 'date_api_elements');
+  $now = time() - 3600;
+  $offset = 3600 * 3;
+  $inc = 60;
+  $tz = timezone_open('UTC');
+  $end = date_make_date($now, $tz, DATE_UNIX);
+  $start = date_make_date($now - $offset, $tz, DATE_UNIX);
+  date_increment_round($start, $inc);
+  date_increment_round($end, $inc);
+  $start = date_format($start, 'Y-m-d H:i:00');
+  $end = date_format($end, 'Y-m-d H:i:00');
+
+  $raw_data = ecenter_network_get_site_centric_data($src, $start, $end);
+  $circuit_data = ecenter_network_get_circuit_data($src, NULL, $start, $end);
+
+  $site_data = array('source' => $raw_data['source'], 'destinations' => array());
+
+  $ip_headers = array('hub' => t('Hub'));
+  $ip_rows = array();
+  
+  $tests = array(
+    'bwctl' => array('throughput'),
+    'owamp' => array('max_delay', 'sent', 'min_delay', 'loss'),
+    // @TODO Pinger? Other values
+  );
+
+  foreach ($raw_data['destinations'] as $hub => $data) {
+    $site_data['destinations'][] = array(
+      'hub' => $hub,
+      'data' => $data,
+    );
+
+    $row = array('hub' => array(
+      'data' => $hub,
+      'header' => TRUE,
+    ));
+
+    // @TODO Incorporate measurement API
+    foreach ($tests as $test => $measurements) {
+      foreach ($measurements as $measurement) {
+
+        $value_suggestions = array(
+          'ecenter_network_format_'. $test .'_'. $measurement,
+          'ecenter_network_format_'. $test,
+          'ecenter_network_format_default',
+        );
+        $label_suggestions = array(
+          'ecenter_network_format_'. $test .'_'. $measurement .'_label',
+          'ecenter_network_format_'. $test .'_label',
+          'ecenter_network_format_default_label',
+        );
+
+        $key = $test .'_'. $measurement;
+        if (empty($ip_headers[$key])) {
+          $ip_headers[$key] = theme($label_suggestions, $measurement, $test);
+        }
+        $row[$key] = array();
+        if (!empty($data['e2e'][$test][$measurement])) {
+          $row[$key] = array(
+            'data' => theme($value_suggestions, $data['e2e'][$test][$measurement], $test, $measurement, TRUE),
+            'class' => $key,
+          );
+        }
+        else {
+          $row[$key] = array(
+            'data' => t('Not available'),
+            'class' => 'no-data',
+          );
+        }
+      }
+    }
+    $ip_rows[$hub] = $row;
+  }
+
+  $circuit_headers = array('Hub' => t('Hub'), 'circuit' => t('Circuit name'));
+  $circuit_rows = array();
+  foreach ($circuit_data['circuits'] as $hub => $circuits) {
+    foreach ($circuits as $circuit_name => $circuit) {
+      $row = array(
+        'hub' => array(
+          'data' => $hub,
+          'header' => TRUE,
+        ),
+        $circuit_name,
+      );
+      $circuit_rows[$hub .'_'. $circuit_name] = $row;
+    }
+  }
+
+  ksort($ip_rows);
+  ksort($circuit_rows);
+
+  drupal_add_js(array('ecenterNetwork' => array('siteData' => $site_data)), 
+    'setting');
+
+  $form['site_view'] = array(
+    '#prefix' => '<div id="site-view-wrapper">',
+    '#suffix' => '</div>',
+  );
+
+  $form['site_view']['site_view_svg'] = array(
+    '#value' => '<div id="site-view-svg"></div>',  
+  );
+
+  $form['site_view']['site_view_ip_table'] = array(
+    '#value' => theme('jqplot_table', $ip_headers, $ip_rows, 
+      array('class' => 'data-table')),  
+  );
+
+  $form['site_view']['site_view_circuit_table'] = array(
+    '#value' => theme('jqplot_table', $circuit_headers, $circuit_rows,
+      array('class' => 'data-table')),  
+  );
+
+  return $form; 
 }
 
 /**
@@ -1220,9 +1387,9 @@ function ecenter_network_layers_sites() {
     'projection' => array('900913'),
   );
 
-  //if (!empty($src) && !empty($dst) && !empty($start) && !empty($end)) {
-  //  $data = ecenter_network_get_data($src, $dst, $start, $end);
-  //}
+  if (!empty($src) && !empty($dst) && !empty($start) && !empty($end)) {
+    $data = ecenter_network_get_data($src, $dst, $start, $end);
+  }
 
   if (empty($src) || empty($dst) || empty($start) || empty($end)) {
     foreach ($hops['hubs'] as $hub) {
@@ -1360,15 +1527,18 @@ function ecenter_network_layers_traceroute() {
 
   if (!empty($src) && !empty($dst) && !empty($start) && !empty($end)) {
 
+    list($src_type, $src_value) = explode(':', $src, 2);
+    list($dst_type, $dst_value) = explode(':', $dst, 2);
+    
     switch ($mode) {
       case 'circuit':
         $circuits = ecenter_network_get_circuit_data($src, $dst, $start, $end);
-        if (!empty($circuits['circuits'])) {
-          if (!$circuit || empty($circuits['circuits'][$circuit])) {
-            $data = array_shift($circuits['circuits']);
+        if (!empty($circuits['circuits'][$dst_value])) {
+          if (!$circuit || empty($circuits['circuits'][$dst_value][$circuit])) {
+            $data = array_shift($circuits['circuits'][$dst_value]);
           }
           else {
-            $data = $circuits['circuits'][$circuit];
+            $data = $circuits['circuits'][$dst_value][$circuit];
           }
         }
         break;
@@ -1451,7 +1621,6 @@ function _ecenter_network_layers_traceroute_rejigger(&$features) {
       case 'star-cr1':
         $features[$k]['style']['labelXOffset'] = 35;
         $features[$k]['style']['labelYOffset'] = 10;
-        break;
         break;
       case 'star-sdn1':
         $features[$k]['style']['labelXOffset'] = 30;
@@ -1688,19 +1857,15 @@ function _ecenter_network_process_tz_name($val) {
 /**
  * Package query variables as an array
  *
- * E-Center queries can come from form input, or query string variables. Let's
- * not worry about WHERE they came from during data processing. The returned 
- * array can extract()'ed to quickly popular local variables with network
- * query state.
+ * E-Center queries can come from form input, or query string variables.  Let's
+ * not worry about WHERE they came from during data processing.  Typically, you
+ * should invoke by extract()ing the contents of the array.
  *
  * @return array
  *  An array of query values
  */
 function _ecenter_network_extract_query() {
   $vars = array();
-
-  //dpm($_REQUEST);
-
   if (!empty($_REQUEST['form_id']) && $_REQUEST['form_id'] == 'ecenter_network_select_form') {
     $vars = array(
       'src' => $_REQUEST['network_wrapper']['query']['src_wrapper']['src'],

@@ -9,7 +9,7 @@ function ecenter_mail_feeds_importer_default() {
   $feeds_importer = new stdClass;
   $feeds_importer->disabled = FALSE; /* Edit this to true to make a default feeds_importer disabled initially */
   $feeds_importer->api_version = 1;
-  $feeds_importer->id = 'mailhandler_comments';
+  $feeds_importer->id = 'ecenter_mailhandler_comments';
   $feeds_importer->config = array(
     'name' => 'Mailhandler comments',
     'description' => 'Imports comments from a Mailhandler mailbox',

@@ -20,12 +20,8 @@ function ecenter_editor_install() {
       'SELECT format FROM {filter_formats} WHERE name = "%s"', array($format)
     ));
 
-    // Set variables
-    //variable_set('ecenter_editor_format', $format_id);
-
-    // Create filter configuration
     $modules = array(
-      'markdown', 'wysiwyg_filter', 'syntaxhighlighter', 'oembed', 'pathologic', 'tableofcontents',
+      'markdown', 'wysiwyg_filter', 'oembed', 'pathologic', 'tableofcontents',
     );
     foreach ($modules as $weight => $module) {
       db_query(
@@ -350,12 +346,18 @@ br,span,em,strong,cite,code,blockquote,ul,ol,li,dl,dt,dd';
           'italic' => 1,
           'bullist' => 1,
           'numlist' => 1,
-          'unlink' => 1,
           'image' => 1,
           'cut' => 1,
           'copy' => 1,
           'paste' => 1,
           'removeformat' => 1,
+          'unlink' => 1,
+        ),
+        'linkit' => array(
+          'linkit' => 1,
+        ),
+        'fullscreen' => array(
+          'fullscreen' => 1,
         ),
         'font' => array(
           'formatselect' => 1,
@@ -366,9 +368,6 @@ br,span,em,strong,cite,code,blockquote,ul,ol,li,dl,dt,dd';
         ),
         'markdown' => array(
           'markdown' => 1,
-        ),
-        'linkit' => array(
-          'linkit' => 1,
         ),
       ),
       'toolbar_loc' => 'top',

@@ -11,7 +11,7 @@ function ecenter_issues_menu_default_menu_links() {
     'menu_name' => 'primary-links',
     'link_path' => 'issues',
     'router_path' => 'issues',
-    'link_title' => 'View issues',
+    'link_title' => 'Issues',
     'options' => array(),
     'module' => 'system',
     'hidden' => '0',
@@ -22,7 +22,7 @@ function ecenter_issues_menu_default_menu_links() {
   );
   // Translatables
   // Included for use with string extractors like potx.
-  t('View issues');
+  t('Issues');
 
 
   return $menu_links;

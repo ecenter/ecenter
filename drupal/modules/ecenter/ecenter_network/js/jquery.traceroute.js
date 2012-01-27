@@ -123,8 +123,8 @@ $.fn.traceroute = function(data, options) {
 $.traceroute = function(el, data, options) {
   // Properties
   this.el = el;
-  this.options = options;
   this.data = data;
+  this.options = options;
   this.tracerouteDirections = { 'forward' : false, 'reverse' : false };
 
   this.paper = Raphael(el, options.container.width, options.container.height);
@@ -218,13 +218,10 @@ $.traceroute.prototype.draw = function() {
         var set_id = i + '_' + hop.hub_name;
         set = paper.set(set_id);
 
-        if (direction == 'forward' && typeof step.reverse != 'undefined' && step.reverse.length) {
+        if (direction == 'forward') {
           var markerYOffset = yOffset + this.marker.forwardYOffset;
-        } else if (direction == 'reverse' && typeof step.forward != 'undefined' && row_type == 'match') {
+        } else if (direction == 'reverse') { 
           var markerYOffset = yOffset + this.marker.reverseYOffset;
-        }
-        else {
-          var markerYOffset = yOffset + this.label.yOffset;
         }
 
         if (row_type == 'match') {
@@ -246,23 +243,31 @@ $.traceroute.prototype.draw = function() {
           .attr(this.options.label.style);
 
         // Draw marker
-        if (row_type == 'match' && typeof step[oppositeDirection] != 'undefined') {
-          var flip = (direction != 'forward') ? true : false;
-          var marker = paper.halfCircle(boxOffset + this.marker.xOffset, markerYOffset,
-            this.options.marker.radius, flip);
-          markerWidth = this.options.marker.radius * 2.2;
-        } else {
-          // Note the fudge factor
-          var marker = paper.circle(boxOffset + this.marker.xOffset, markerYOffset,
-            this.options.marker.radius * 1.15);
-          markerWidth = this.options.marker.radius * 2.5;
-        }
+        //if (row_type == 'match' && typeof step[oppositeDirection] != 'undefined') {
+        var flip = (direction != 'forward') ? true : false;
+        var marker = paper.halfCircle(boxOffset + this.marker.xOffset, markerYOffset,
+          this.options.marker.radius, flip);
+        markerWidth = this.options.marker.radius * 2.2;
+
         marker.attr(this.options.marker.style);
         marker['tracerouteDirection'] = direction;
         marker['tracerouteType'] = row_type;
         marker['tracerouteOnlyReverse'] = onlyReverse;
 
         set.push(marker);
+
+        if (row_type == 'diff') {
+          if (direction == 'forward') {
+            var revMarkerYOffset = yOffset + this.marker.reverseYOffset;
+          } else if (direction == 'reverse') { 
+            var revMarkerYOffset = yOffset + this.marker.forwardYOffset;
+          }
+
+          var revMarker = paper.halfCircle(boxOffset + this.marker.xOffset, revMarkerYOffset,
+            this.options.marker.radius, !flip);
+          revMarker.attr(this.options.marker.style);
+          set.push(revMarker);
+        }
 
         var bbox = label.getBBox();
         var labelWidth = (bbox.width > markerWidth) ? bbox.width : markerWidth;
@@ -322,21 +327,17 @@ $.traceroute.prototype.draw = function() {
             var rotation = 0;
 
             if (l.yOffset != hop.yOffset) {
-              if (direction == 'reverse') {
-                var arrowYOffset = l.yOffset - ((l.yOffset - hop.yOffset) / 2) + (parseInt(this.options.arrow.size) / 2);
-              }
-              else {
-                var arrowYOffset = l.yOffset - ((l.yOffset - hop.yOffset) / 2) - (parseInt(this.options.arrow.size) / 2);
-              }
-              var rotation = (180 / Math.PI) * Math.atan( (l.yOffset - hop.yOffset) / (l.xOffset - hop.xOffset));
+              arrowYOffset = l.yOffset - ((l.yOffset - hop.yOffset) / 2) + (parseInt(this.options.arrow.size) / 3);
+              rotation = (180 / Math.PI) * Math.atan( (l.yOffset - hop.yOffset) / (l.xOffset - hop.xOffset));
+            }
+            if (direction == 'reverse') {
+              rotation = 180 + rotation;
             }
 
             var arrow = paper.triangle(arrowXOffset, arrowYOffset, this.options.arrow.size)
               .attr(this.options.arrow.style);
 
-            if (direction == 'reverse') {
-              arrow.rotate(180 + rotation, true);
-            }
+            arrow.rotate(rotation, true);
             arrow.toBack();
           }
           link.toBack();

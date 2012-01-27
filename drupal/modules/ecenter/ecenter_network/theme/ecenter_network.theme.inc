@@ -186,7 +186,7 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
       t('Average'), t('Max'), t('Min'),
     );
     $vars['table'] = theme('jqplot_table', $headers, $table,
-      array('class' => 'end-to-end-table'));
+      array('class' => 'data-table end-to-end-table'));
     $vars['data_tables'] = theme('ecenter_network_end_to_end_tables',
       $data_tables, $vars['timezone']);
   }
@@ -335,7 +335,7 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
         }
 
         $attributes = array(
-          'class' => 'data '. $direction .' '. strtolower($hub_id) .'-data-table',
+          'class' => 'data-table '. $direction .' '. strtolower($hub_id) .'-data-table',
           'data-jqplotSeriesOptions' => '{"label":"'. ucfirst($direction) .' utilization' .'"}',
         );
 
@@ -635,8 +635,11 @@ function theme_ecenter_network_format_value($value, $units = NULL) {
  */
 function theme_ecenter_network_utilization_table($table, $hop, $direction, $attributes = array(), $capacity = 0) {
   $capacity_string = ($capacity) ? t(' - @capacity gbps', array('@capacity' => $capacity / pow(10, 9))) : '';
-  
-  $output = '<div class="data-table">';
+ 
+  $class = 'data-table-wrapper';
+  $class .= (empty($table)) ? ' no-data' : '';
+
+  $output = "<div class=\"{$class}\">";
   $output .= '<h3>'. ucfirst($direction) .': '. $hop['nodename'] .' ('. $hop['hub'] . $capacity_string .')</h3>';
 
   if (!empty($table)) {
@@ -754,7 +757,7 @@ function theme_ecenter_network_site_centric_data($data) {
     }
   }
   $tables[] = '<h2>'. t('End to end') .'</h2>'. 
-    theme('jqplot_table', $headers, array($row));
+    theme('jqplot_table', $headers, array($row), array('class' => 'data-table'));
 
   $headers = array(t('Measurement'), t('Value'), t('Interface'));
   if (!empty($data['traceroute'])) {
@@ -789,7 +792,7 @@ function theme_ecenter_network_site_centric_data($data) {
           );
       }
       $tables[] = '<h2>'. t(ucfirst($direction)) .'</h2>'. 
-        theme('jqplot_table', $headers, $table);
+        theme('jqplot_table', $headers, $table, array('class' => 'data-table'));
     }
   }
   return implode('', $tables);
@@ -935,6 +938,9 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
   }
 }
 
+/**
+ * Theme query title
+ */
 function theme_ecenter_network_query_title($params, $data = NULL) {
   list($src_type, $src_value) = explode(':', $params['src']);
   list($dst_type, $dst_value) = explode(':', $params['dst']);

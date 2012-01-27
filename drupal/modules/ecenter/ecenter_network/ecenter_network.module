@@ -582,6 +582,15 @@ function ecenter_network_select_form(&$form_state) {
 
       // Render if data present
       if ($data['drs']) {
+
+        // Call helper function to create messages
+        $form['results_wrapper']['results']['ecenter_messages'] = array(
+          '#prefix' => '<div id="ecenter-messages-wrapper">',
+          '#suffix' => '</div>',
+          '#weight' => 7, 
+          '#value' => theme('ecenter_network_messages', $data, $data['parameters']),
+        );
+
         // Build timezone selector
         $timezones = array_map('_ecenter_network_process_tz_name', date_timezone_names());
         $timezone_select = array(
@@ -593,6 +602,9 @@ function ecenter_network_select_form(&$form_state) {
           '#name' => 'timezone',
         );
 
+        $title = theme('ecenter_network_query_title', $params);
+        drupal_set_title(strip_tags($title));
+
         $form['results_wrapper']['results']['title_bar'] = array(
           '#weight' => 0,
           '#prefix' => '<div id="title-bar-wrapper" class="clearfix">',
@@ -600,7 +612,7 @@ function ecenter_network_select_form(&$form_state) {
           'title' => array(
             '#prefix' => '<div id="title-wrapper">',
             '#suffix' => '</div>',
-            '#value' => theme('ecenter_network_query_title', $params),
+            '#value' => $title,
           ),
           'permalink' => array(
             '#prefix' => '<div id="permalink-wrapper">',
@@ -1440,9 +1452,6 @@ function _ecenter_network_layers_traceroute_rejigger(&$features) {
         $features[$k]['style']['labelXOffset'] = 35;
         $features[$k]['style']['labelYOffset'] = 10;
         break;
-      case 'STAR':
-        $features[$k]['style']['labelXOffset'] = -10;
-        $features[$k]['style']['labelYOffset'] = 15;
         break;
       case 'star-sdn1':
         $features[$k]['style']['labelXOffset'] = 30;
@@ -1479,9 +1488,38 @@ function _ecenter_network_layers_traceroute_rejigger(&$features) {
         $features[$k]['style']['labelXOffset'] = -20;
         $features[$k]['style']['labelYOffset'] = 15;
         break;
+      case 'STAR':
+        $features[$k]['style']['labelXOffset'] = -10;
+        $features[$k]['style']['labelYOffset'] = 15;
+        break;
       case 'NEWY':
         $features[$k]['style']['labelXOffset'] = -25;
         $features[$k]['style']['labelYOffset'] = 0;
+        break;
+      case 'NERSC':
+        $features[$k]['style']['labelYOffset'] = 15;
+        $features[$k]['style']['labelXOffset'] = -10;
+        break;
+      case 'SNLL':
+        $features[$k]['style']['labelXOffset'] = -30;
+        $features[$k]['style']['labelYOffset'] = 0;
+        break;
+      case 'LLNL':
+        $features[$k]['style']['labelXOffset'] = -20;
+        $features[$k]['style']['labelYOffset'] = -15;
+        break;
+      case 'SNV':
+        $features[$k]['style']['labelXOffset'] = 10;
+        $features[$k]['style']['labelYOffset'] = -10;
+        break;
+      case 'SUNN':
+        $features[$k]['style']['labelXOffset'] = 25;
+        $features[$k]['style']['labelYOffset'] = 0;
+        break;
+      case 'ANL':
+        $features[$k]['style']['labelYOffset'] = 10;
+        $features[$k]['style']['labelXOffset'] = -15;
+        break;
       default:
         break;
     }
@@ -1551,6 +1589,15 @@ function ecenter_network_refresh_map($preset, $id = NULL) {
     $js = array('openlayers' => array('maps' => array($map['id'] => $map)));
     drupal_add_js($js, 'setting');
   }
+}
+
+/**
+ * Implementation of hook_cron()
+ */
+function ecenter_network_cron() {
+  cache_clear_all(NULL, 'cache_ecenter_data');
+  cache_clear_all(NULL, 'cache_ecenter_nodes');
+  cache_clear_all(NULL, 'cache_ecenter_hops');
 }
 
 /**

@@ -75,7 +75,7 @@ function ecenter_mail_feeds_importer_default() {
     'expire_period' => 3600,
     'import_on_create' => 1,
   );
-  $export['mailhandler_comments'] = $feeds_importer;
+  $export['ecenter_mailhandler_comments'] = $feeds_importer;
 
   return $export;
 }

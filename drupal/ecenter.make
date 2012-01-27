@@ -132,8 +132,20 @@ projects[markdownify][download][type] = "git"
 projects[markdownify][download][url] = "git://github.com/ecenter/markdownify"
 projects[markdownify][download][branch] = "6.x-1.0-dev"
 
+projects[mailcomment][subdir] = "contrib"
+projects[mailcomment][version] = "2.x-dev"
+
+projects[mailhandler][subdir] = "contrib"
+projects[mailhandler][version] = "2.4"
+
 projects[menu_block][subdir] = "contrib"
 projects[menu_block][version] = "2.4"
+
+projects[messaging][subdir] = "contrib"
+projects[messaging][version] = "4.x-dev"
+
+projects[notifications][subdir] = "contrib"
+projects[notifications][version] = "4.x-dev"
 
 projects[oembed][subdir] = "contrib"
 projects[oembed][version] = "0.8"

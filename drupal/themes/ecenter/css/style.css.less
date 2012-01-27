@@ -368,6 +368,13 @@ code {
   padding-left: 3px;
   padding-right: 3px;
 }
+a code, code a {
+  font-weight: bold;
+  color: @color_blue;
+  :hover, :active {
+    color: @color_black;
+  }
+}
 
 // }}}
 // Content {{{
@@ -527,6 +534,7 @@ form {
     margin: 0;
     padding: 3px 6px;
     background-color: @color_white;
+    color: @color_black;
     font-size: 15px;
     line-height: 15px;
     :hover { border: 1px solid @color_grey_53; }

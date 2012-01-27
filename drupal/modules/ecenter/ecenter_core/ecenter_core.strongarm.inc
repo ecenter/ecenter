@@ -32,16 +32,16 @@ noderelationships/*
   $strongarm = new stdClass;
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
-  $strongarm->name = 'user_email_verification';
-  $strongarm->value = TRUE;
-  $export['user_email_verification'] = $strongarm;
+  $strongarm->name = 'admin_theme';
+  $strongarm->value = 'seven';
+  $export['admin_theme'] = $strongarm;
 
   $strongarm = new stdClass;
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
-  $strongarm->name = 'admin_theme';
-  $strongarm->value = 'seven';
-  $export['admin_theme'] = $strongarm;
+  $strongarm->name = 'user_email_verification';
+  $strongarm->value = TRUE;
+  $export['user_email_verification'] = $strongarm;
 
   $strongarm = new stdClass;
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
@@ -711,16 +711,16 @@ Your account on !site has been deleted.';
   $strongarm = new stdClass;
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
-  $strongarm->name = 'simplemenu_css_filename';
-  $strongarm->value = 'sites/default/files/css/simplemenu-db5173177143e0a99d3b8ba14718b258.css';
-  $export['simplemenu_css_filename'] = $strongarm;
+  $strongarm->name = 'ultimate_cron_rule';
+  $strongarm->value = '0,30 * * * *';
+  $export['ultimate_cron_rule'] = $strongarm;
 
   $strongarm = new stdClass;
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
-  $strongarm->name = 'ultimate_cron_rule';
-  $strongarm->value = '0,30 * * * *';
-  $export['ultimate_cron_rule'] = $strongarm;
+  $strongarm->name = 'simplemenu_css_filename';
+  $strongarm->value = 'sites/default/files/css/simplemenu-db5173177143e0a99d3b8ba14718b258.css';
+  $export['simplemenu_css_filename'] = $strongarm;
 
   return $export;
 }

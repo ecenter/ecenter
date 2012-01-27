@@ -27,6 +27,9 @@ projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecente
 projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/ahah_helper_js_settings.patch"
 projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/ahah_helper_optional_validation_handlers.patch"
 
+projects[background_process][subdir] = "contrib"
+projects[background_process][version] = "1.10"
+
 projects[beautytips][subdir] = "contrib"
 projects[beautytips][version] = "2.0"
 
@@ -61,8 +64,8 @@ projects[devel][version] = "1.26"
 projects[diff][subdir] = "contrib"
 projects[diff][version] = "2.3"
 
-projects[elysia_cron][subdir] = "contrib"
-projects[elysia_cron][version] = "2.0"
+projects[ultimate_cron][subdir] = "contrib"
+projects[ultimate_cron][version] = "1.7"
 
 projects[features][subdir] = "contrib"
 projects[features][version] = "1.1"
@@ -149,6 +152,9 @@ projects[pathauto][version] = "1.6"
 
 projects[pathologic][subdir] = "contrib"
 projects[pathologic][version] = "3.4"
+
+projects[progress][subdir] = "contrib"
+projects[progress][version] = "1.4"
 
 projects[semanticviews][subdir] = "contrib"
 projects[semanticviews][version] = "1.1"

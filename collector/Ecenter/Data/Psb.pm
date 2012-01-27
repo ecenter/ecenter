@@ -55,6 +55,7 @@ has 'src_ip'   => (is => 'rw', isa => 'Ecenter::Types::IPAddr');
 has 'dst_ip'   => (is => 'rw', isa => 'Ecenter::Types::IPAddr');
 has 'src_name' => (is => 'rw', isa => 'Str');
 has 'dst_name' => (is => 'rw', isa => 'Str');
+has 'data'     => (is => 'rw', isa => 'ArrayRef');
  
 sub BUILD {
       my $self = shift;
@@ -151,19 +152,24 @@ after  'get_data' => sub   {
                 	     eventTypes => $self->eventtypes
 			   };
             my $result = $self->ma->setupDataRequest( $request );
-            $doc1 =  $self->parser->parse_string( $result->{"data"}->[0] ); };
-        if ( $EVAL_ERROR ) {
+	    #$self->logger->debug(" ------------------- DATA :: ", sub{ Dumper  $result->{"data"}->[1] } );
+            foreach my $data_el (@{$result->{"data"}} ) { 
+	        my $doc1 =  $self->parser->parse_string( $data_el);
+                my $datum1 = find( $doc1->getDocumentElement, "./*[local-name()='datum']", 0 );
+	        if ( $datum1 ) {
+                   foreach my $dt ( $datum1->get_nodelist ) {
+	                #$self->logger->debug("  Datum: ". $dt->toString);
+	                my $processed =  $self->process_datum($dt); ## provide implementation in the subclass
+	                #$self->logger->debug("  Datum Parsed ", sub{ Dumper  $processed}); 
+                        push  @data_raw,  $processed if $processed &&  @{$processed};
+                    }
+		}
+            }
+	};
+	if ( $EVAL_ERROR ) {
             $self->logger->logdie(" Problem with MA $EVAL_ERROR ");
         }
-        my $datum1 = find( $doc1->getDocumentElement, "./*[local-name()='datum']", 0 );
-        if ( $datum1 ) {
-            foreach my $dt ( $datum1->get_nodelist ) {
-	        $self->logger->debug("  Datum: ". $dt->toString);
-	        my $processed =  $self->process_datum($dt); ## provide implementation in the subclass
-	        $self->logger->debug("  Datum Parsed ", sub{ Dumper  $processed}); 
-                push  @data_raw,  $processed if $processed &&  @{$processed};
-            }
-        } 
+         
     } 
     $self->logger->debug("  Data Result ", sub{ Dumper  \@data_raw });
     return $self->data(\@data_raw);

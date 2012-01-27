@@ -141,7 +141,9 @@ sub get_circuits {
     my $now_str = strftime('%Y-%m-%d %H:%M:%S', localtime()); 
     my $date_table = strftime('%Y%m', localtime());
     foreach my $circuit_id (keys %{$circuits}){
-	$logger->debug("\t[Capacity] " . $circuits->{$circuit_id}{capacity} . 'Mbps');
+	$logger->debug("\t[Capacity] " . $circuits->{$circuit_id}{capacity} . "Mbps  $date_table circuit: " .  
+	             join("\n", map{ "\u$_=$circuits->{$circuit_id}{$_}"} qw/name description start end/));
+        $logger->debug("\t[Links] ", Dumper($circuits->{$circuit_id}{links}));	     
 	my $circuit = $dbh->resultset('Circuit' . $date_table)->update_or_create({ 
 	                                                      circuit =>  $circuits->{$circuit_id}{name},
 							      src_hub => 'albu-sdn1',
@@ -211,12 +213,12 @@ sub get_shards {
     $endTime ||= $startTime;
     
     my $list = {};
-    $logger->debug("Loading data tables for time period $startTime to $endTime");
+    #$logger->debug("Loading data tables for time period $startTime to $endTime");
     # go through every day and populate with new months
     for ( my $i = $startTime; $i <= $endTime; $i += 86400 ) {
         my $date_fmt = strftime "%Y%m",  localtime($i);
         my $end_i = $i + 86400;
-	$logger->debug("time_i=$i startime=$startTime end_time=$endTime");
+	#$logger->debug("time_i=$i startime=$startTime end_time=$endTime");
 	$list->{$date_fmt}{table}{dbic} = "\u$param->{data}Data$date_fmt";
         $list->{$date_fmt}{table}{dbi}  = "$param->{data}\_data_$date_fmt";
 	$list->{$date_fmt}{start} = $startTime;
@@ -351,7 +353,7 @@ sub get_ip_name {
        };
        if($EVAL_ERROR || !$ip_resolved) {
           $logger->error("DNS lookup failed for $unt_test extracted from  $ip_addr with $EVAL_ERROR ");
-	  return;
+	  return $ip_addr;
        }  
        return ( $unt_test, $ip_resolved );
     }
@@ -371,9 +373,9 @@ sub get_ip_name {
             $logger->debug(" Found IP: $ip_addr2  ");
             return  ($ip_addr2,  $unt_test);
 	}
-    }
+   }
    $logger->error(" IP is not found for $unt_test ");
-    return;
+   return $ip_addr;
 }
 
 =head2 pool_control(max_threads, finish_it)

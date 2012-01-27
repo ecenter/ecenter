@@ -57,7 +57,6 @@ use English qw( -no_match_vars );
 =cut
 
 has ma         => (is => 'rw', isa => 'Object' );
-has data       => (is => 'rw', isa => 'ArrayRef');
 has subject    => (is => 'rw', isa => 'Str');
 has metadata   => (is => 'rw', isa => 'HashRef');
 has namespace  => (is => 'rw', isa => 'Str');

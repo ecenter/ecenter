@@ -53,36 +53,17 @@ my %HUBS = ( FNAL  => {nets => {'131.225.0.0' => 16, '198.49.208.0' => 24, '198.
 	     SLAC  => {nets => {'134.79.0.0' => 16,  '198.51.111.0' => 24, 
 	                        '198.129.254.146' => 32, '134.55.217.1' => 31}, handle => 'THELE-44-Z'},
 	     BNL   => {nets => {'192.12.15.0' => 24, '134.55.221.138' => 31,
-	                        '198.124.238.38' => 31, '198.124.238.49' => 31}, handle => 'BNL'},
+	                        '198.124.238.38' => 31, '198.124.238.49' => 31, 
+				'130.199.3.0' => 24, '198.124.216.189' => 31}, handle => 'BNL'},
              ANL   => {nets => { '164.54.0.0' => 16,  '146.137.0.0' => 16,
         		       '130.202.0.0' => 16, '198.124.252.97' => 31, '198.124.252.117' => 31,
          		      '140.221.15.0' => 24,'134.55.220.38' => 31,
-         		      '140.221.8.0' => 24, }
+         		      '140.221.8.0' => 24 }, 
+		       handle => 'ANLB'
 			      }, # ANLB - commented for SC
-	     SC11   => {    nets => { '198.129.100.21' => 30, 
-	                              '198.129.100.37' => 30,
-	 			      '198.129.100.13' => 30, 
-				      '134.55.220.62' => 31,
-	                              '140.221.251.0' => 24,
-				      '140.221.146.0' => 24,
-	 			      '140.221.222.0' => 24,
-				      '140.221.219.0' => 24,
-				      }, handle => 'SC11'},
 	     NERSC => {nets => {'128.55.00.0'  => 16, '198.129.254.34' => 32, '134.55.217.22'=>31}, handle => 'NET-128-55-0-0-1'},
-	     PNWG  => {nets => {'134.55.218.0' => 24, 
-	                        '134.55.213.0' => 24, 
-			        '134.55.220.0' => 24, 
-	                        '134.55.221.0' => 24, 
-	                        '134.55.218.0' => 24, 
-	                        '192.101.100.0'=> 22,
-				'198.129.254.45' => 32,
-				'198.129.254.46' => 32,
-				'198.129.254.53' => 32,
-				'198.129.254.54' => 32,
-			        '198.129.248.113' => 31,
-				 }
-	     },
-	     PNNL  => {names => [qw/PNL PNNL/], nets => {'192.101.100.0' => 24,'192.101.102.0' => 24, '130.20.248.0' => 24, }
+	     PNNL  => {names => [qw/PNL PNNL PNWG/], nets => {'192.101.100.0' => 22,'192.101.104.0' => 22, '130.20.248.0' => 24 }, 
+	               handle => 'PNNL-Z'
 	     },
 	     NASA  => {nets => {'198.9.0.0' => 16},                         handle => 'NASA'},
 	     PPPL  => {nets => {'192.188.10.0' => 24, '198.124.238.166' => 31, '134.55.219.85' => 31}, handle => 'PPPL'},
@@ -141,6 +122,7 @@ sub get_hub_blocks {
     my $mech =   LWP::UserAgent->new(agent => 'Mozilla'); ## some unique id will be added
     $mech->default_header( 'Content-Type' => 'application/json' );
     foreach my $handle (keys %HUBS) {
+        next unless  $HUBS{$handle}{handle};
         my $response = $mech->get( ($HUBS{$handle}{handle} =~ /^NET-/?"$WHOIS_NET/$HUBS{$handle}{handle}.json":"$WHOIS_ORG/$HUBS{$handle}{handle}/nets.json") );
         if ($response->is_success) {
             my $nets_obj = decode_json($response->content);
@@ -162,7 +144,7 @@ sub get_hub_blocks {
 	    }  
 	    map { $HUBS{$handle}{nets}{$_->[0]} = $_->[1]} @nets;
         }   else {
-            $self->logger->debug( " Skipping this handle: $handle due " .$response->status_line);
+            ###$self->logger->debug( " Skipping this handle: $handle due " .$response->status_line);
 	    next;
         }
     }
@@ -219,7 +201,7 @@ sub match {
 sub _get_net {
     my ($self,  $net_obj ) =  @_;
     if(exists $net_obj->{net} && $net_obj->{net}{netBlocks} && $net_obj->{net}{netBlocks}{netBlock}  ) {
-        $self->logger->debug("netBlock::", sub{Dumper($net_obj->{net}{netBlocks}{netBlock} )});
+        ###$self->logger->debug("netBlock::", sub{Dumper($net_obj->{net}{netBlocks}{netBlock} )});
 	$net_obj->{net}{netBlocks}{netBlock} = [ $net_obj->{net}{netBlocks}{netBlock} ] 
 	    unless ref $net_obj->{net}{netBlocks}{netBlock} eq ref [];
 	my @return = ();

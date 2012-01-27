@@ -113,6 +113,7 @@ use Ecenter::ADS::Detector::APD;
 # Maximum working threads
 my $MAX_THREADS = 10;
 local $SIG{CHLD} = 'IGNORE';
+local $SIG{PIPE} = 'IGNORE';
 my %OPTIONS;
 
 my @E2E = qw/pinger owamp bwctl hop/;
@@ -156,9 +157,15 @@ unless($OPTIONS{password}) {
 my $parser = XML::LibXML->new();
 our $IP_TOPOLOGY = 'ps.es.net';
 my @esnet_hosts = qw/ps1 ps2 ps3/;
-my $dbh =  Ecenter::DB->connect("DBI:mysql:database=$OPTIONS{db};hostname=$OPTIONS{host};", $OPTIONS{user}, $OPTIONS{password}, 
+my $dbh;
+
+eval { $dbh =  Ecenter::DB->connect("DBI:mysql:database=$OPTIONS{db};hostname=$OPTIONS{host};", $OPTIONS{user}, $OPTIONS{password}, 
                                     {RaiseError => 1, PrintError => 1});
-$dbh->storage->debug(1)  if $OPTIONS{debug} || $OPTIONS{v};
+    #$dbh->storage->debug(1)  if $OPTIONS{debug} || $OPTIONS{v};
+};
+if($EVAL_ERROR) {
+    $logger->logdie("Failed DB connect $EVAL_ERROR");
+}
 #
 #  if asked then collect e2e stats from remote services asynchronously
 #
@@ -224,69 +231,71 @@ sub get_remote_snmp {
     my ($service, $now_table, $eventtype_id,  $port, $src_ip, $addr) = @_;
     my $dbh =  Ecenter::DB->connect("DBI:mysql:database=$OPTIONS{db};hostname=$OPTIONS{host};",  $OPTIONS{user}, $OPTIONS{password}, 
                                 	    {RaiseError => 1, PrintError => 1});
-        	$dbh->storage->debug(1)  if $OPTIONS{debug}|| $OPTIONS{v};
-		my $snmp_ma =  Ecenter::Data::Snmp->new({ url => $service->service });
-                my $search_cond =  {  'metaid.eventtype_id' =>  $eventtype_id, 
-    	    			      'metaid.dst_ip'	    => '0'
-	    	};
-		if($src_ip ) {
-		    $search_cond->{'metaid.src_ip'} = $src_ip;
-		} else {
-		    $search_cond->{'metaid.l2_urn'} =  $port->l2_urn;
-		}
-		my ($last_time) = $dbh->resultset("SnmpData$now_table")->search( $search_cond,
-	    						      { 'join' => 'metaid', limit => 1,  order_by => { -desc => 'timestamp'} }
-	    						    );
+     
+    my $snmp_ma =  Ecenter::Data::Snmp->new({ url => $service->service });
+    my $search_cond =  {  'metaid.eventtype_id' =>  $eventtype_id, 
+    			  'metaid.dst_ip'	=> '0'
+    };
+    if($src_ip ) {
+    	$search_cond->{'metaid.src_ip'} = $src_ip;
+    } else {
+    	$search_cond->{'metaid.l2_urn'} =  $port->l2_urn;
+    }
+    my ($last_time) = $dbh->resultset("SnmpData$now_table")->search( $search_cond,
+    						  { 'join' => 'metaid', limit => 1,  order_by => { -desc => 'timestamp'} }
+    						);
 
-        	my $secs_past = $last_time && ($last_time->timestamp >  $PAST_START)?$last_time->timestamp:$PAST_START;
-		my $t1 = time();
-                my $t_delta = 0;
-		my $meta_cond = {    start     => DateTime->from_epoch( epoch =>  $secs_past),
-    	    			     end       => DateTime->now()	
-	    			  };
-		if($addr) {
-		    $meta_cond->{ifAddress} = $addr;
-		} else {
-		   $meta_cond->{urn} = $port->l2_urn;
-		}		  
-    		$snmp_ma->get_data($meta_cond);
-    		$logger->debug("Data :: ", sub{Dumper( $snmp_ma->data)});
-		my $meta = [];
-    		foreach my $direction (qw/in out/) {
-		   push @{$meta},  $dbh->resultset('Metadata')->update_or_create({ 
-    	    						 eventtype_id => $eventtype_id ,
-    	    						 src_ip	  => ($src_ip?$src_ip:''),
-    	    						 dst_ip => '0',
-							 direction => $direction,
-							 l2_urn => $port->l2_urn . ":direction=direction",
-    	    					      },
-	    					      {key => 'md_ips_type'}
-    	    					      );
-		}
-		my $snmp_data  =  $snmp_ma->data;		
-    		if($snmp_data && @{$snmp_data}) {
-    		    foreach my $direction (0..1) {  
-		        foreach my $data (@{$snmp_data->[$direction]}) { 
-    	    	            eval {
-		                my ($got_snmp) = $dbh->resultset("SnmpData$now_table")->search({ metaid =>  $meta->[$direction]->metaid,
-    	    								                 timestamp => $data->[0]  },
-										      { limit => 1} );
-		                $dbh->resultset("SnmpData$now_table")->create({ metaid =>  $meta->[$direction]->metaid,
-    	    								        timestamp => $data->[0],
-    	    								        utilization => $data->[1],
-										errors => $data->[2],
-										drops => $data->[3]
-    	    								     },
-    	    								     { key => 'meta_time'}) unless $got_snmp;
-		            };
-		            if($EVAL_ERROR) {
-		                $logger->error($meta->[$direction]->metaid . " metaid failed due some error $EVAL_ERROR skipping ...  ");
-		            }
-    		        }
-		    }
-		}  
-		$dbh->storage->disconnect if $dbh;
-		return;
+    my $secs_past = $last_time && ($last_time->timestamp >  $PAST_START)?$last_time->timestamp:$PAST_START;
+    my $t1 = time();
+    my $t_delta = 0;
+    my $meta_cond = {	 start     => DateTime->from_epoch( epoch =>  $secs_past),
+    			 end	   => DateTime->now()	    
+    		      };
+    if($addr) {
+    	$meta_cond->{ifAddress} = [$addr];
+    } else {
+       $meta_cond->{urn} = [$port->l2_urn];
+    }		      
+    $snmp_ma->get_data($meta_cond);
+    $logger->debug("Data :: ", sub{Dumper( $snmp_ma->data)});
+    my $meta = {};
+    foreach my $direction (qw/in out/) {
+       $meta->{$direction}=  $dbh->resultset('Metadata')->update_or_create({ 
+    					     eventtype_id => $eventtype_id ,
+    					     src_ip   => ($src_ip?$src_ip:''),
+    					     dst_ip => '0',
+    					     direction => $direction,
+    					     l2_urn => $port->l2_urn . ":direction=direction",
+    					  },
+    					  {key => 'md_ips_type'}
+    					  );
+    }
+    my $data_hash_ref = $snmp_ma->data;
+    if($data_hash_ref && %{$data_hash_ref}) {
+	foreach my $md_id (keys %{$data_hash_ref}) {
+   	    foreach my $direction (keys %{$data_hash_ref->{$md_id}} ) {
+    		  foreach my $tm (keys %{$data_hash_ref->{$md_id}{$direction}} ) {  	    
+    		    eval {
+    			my ($got_snmp) = $dbh->resultset("SnmpData$now_table")->search({ metaid =>  $meta->{$direction}->metaid,
+    										 timestamp => $tm },
+    									      { limit => 1} );
+    			$dbh->resultset("SnmpData$now_table")->create({ metaid =>  $meta->{$direction}->metaid,
+    									timestamp =>  $tm ,
+    									utilization => $data_hash_ref->{$md_id}{$direction}{$tm}{utilization},
+    									errors =>  $data_hash_ref->{$md_id}{$direction}{$tm}{errors},
+    									drops =>  $data_hash_ref->{$md_id}{$direction}{$tm}{drops},
+    								     },
+    								     { key => 'meta_time'}) unless $got_snmp;
+    		    };
+    		    if($EVAL_ERROR) {
+    			$logger->error($meta->{$direction}->metaid . " metaid failed due some error $EVAL_ERROR skipping ...  ");
+    		    }
+    		}
+    	    }
+	}
+    }  
+    $dbh->storage->disconnect if $dbh;
+    return;
 
 }
 
@@ -302,6 +311,9 @@ sub parse_topo {
     my ($dbh, $xml) = @_;
     $xml->setNamespace("http://ogf.org/schema/network/topology/base/20070828/", "nmtb");
     my %l2_linkage = ();
+    $dbh =  Ecenter::DB->connect("DBI:mysql:database=$OPTIONS{db};hostname=$OPTIONS{host};", $OPTIONS{user}, $OPTIONS{password}, 
+                                    {RaiseError => 1, PrintError => 1});
+    #$dbh->storage->debug(1);
     my $now_str = strftime('%Y-%m-%d %H:%M:%S', localtime());
     my $nodes =   find( $xml, "./nmtb:node", 0 );
     foreach my $node ($nodes->get_nodelist) {
@@ -311,12 +323,18 @@ sub parse_topo {
         my $latitude    = extract( find( $node, "./nmtb:latitude", 1), 1);
 
 	my ($hub_name) = $name =~ m/^([^-]+)-/;
-	my $hub = $dbh->resultset('Hub')->update_or_create({  hub => $name,
+	my $hub ;
+	eval {
+	    $hub = $dbh->resultset('Hub')->update_or_create({  hub => $name,
 	                                                      hub_name => "\U$hub_name",
 		    				              longitude =>  $longitude,
 							      latitude => $latitude,
 							      description => $description
 							  });
+	};
+	if($EVAL_ERROR) {
+           $logger->logdie("Failed DB connect $EVAL_ERROR");
+        }
 	$node->setNamespace("http://ogf.org/schema/network/topology/l2/20070828/", "nmtl2");
 	my $l2_ports =   find( $node, "./nmtl2:port", 0 );
         foreach my $port2 ($l2_ports->get_nodelist) {
@@ -403,7 +421,7 @@ sub set_end_sites {
       my $aliases =   $hub->get_aliases();
       my $alias_sql = " n.nodename like '%$hub_name%'"; 
       if($aliases && @{$aliases}) {
-          map { $alias_sql .= " OR  n.nodename like '%$_%'"} @{$aliases};
+          map { $alias_sql .= " OR  n.nodename like '$_%'"} @{$aliases};
       }
       my %subnets =  %{$hub->get_ips()};
       my ($l2_port) =   $dbh->resultset('L2Port')->search({'hub.hub_name' => $hub_name}, {join => 'hub', limit => 1});
@@ -466,7 +484,7 @@ sub get_anomaly {
 	                              sub { 
 		my $dbh =  Ecenter::DB->connect("DBI:mysql:database=$OPTIONS{db};hostname=$OPTIONS{host};",  $OPTIONS{user}, $OPTIONS{password},
                                 	        { RaiseError => 1, PrintError => 1 } );
-        	$dbh->storage->debug(1)  if $OPTIONS{debug} || $OPTIONS{v};
+        	#$dbh->storage->debug(1)  if $OPTIONS{debug} || $OPTIONS{v};
         	my $dbi =  db_connect(\%OPTIONS);
 		  
 		$logger->debug("SRC/DST =  $metadata->{$md}{src_ip}   $metadata->{$md}{dst_ip}");
@@ -584,7 +602,7 @@ sub get_e2e {
 	                          sub { 
 	    my $dbh =  Ecenter::DB->connect("DBI:mysql:database=$OPTIONS{db};hostname=$OPTIONS{host};",  $OPTIONS{user}, $OPTIONS{password},
                                     {RaiseError => 1, PrintError => 1});
-            $dbh->storage->debug(1)  if $OPTIONS{debug} || $OPTIONS{v};
+            #$dbh->storage->debug(1)  if $OPTIONS{debug} || $OPTIONS{v};
             my $dbi =  db_connect(\%OPTIONS);
 	    my $last_time = $dbi->selectall_hashref( "select metaid, timestamp from $e2e\_data_$now_table where metaid='" . 
 	                             $md . "' ORDER BY timestamp DESC LIMIT 1", 'metaid');
@@ -639,25 +657,35 @@ sub get_e2e {
 		     delete $data->[1]->{ip_noted};
 		     my $nodename = '';
 		     unless(exists $hosts->{$ip_noted}) {
-		        ($ip_noted, $nodename) = get_ip_name( $ip_noted );
-			$hosts->{$ip_noted}{nodename} = $nodename if $nodename && $nodename =~ /^[a-z]+/;
+		         my $row =  $dbh->resultset('Node')->find({ip_noted => $ip_noted});
+                         if (defined $row) { 
+                              $hosts->{$ip_noted}{nodename} = $row->nodename;
+			 } else {
+			     ($ip_noted, $nodename) = get_ip_name( $ip_noted );
+			     $hosts->{$ip_noted}{nodename} = $nodename if $nodename && $nodename =~ /^[a-z]+/;
+			 }
 		     }
 		     ##$logger->info("Data[1]:: ", sub{Dumper( $data->[1] )});
 		     $nodename = $hosts->{$ip_noted} && $hosts->{$ip_noted}{nodename}?$hosts->{$ip_noted}{nodename}:$ip_noted;
 		     unless($ip_noted &&  $nodename) {
 		         $logger->error("BAD: DNS is not there for:     md=$md   ip=$ip_noted node=$nodename");
-			 next;
+			 if($ip_noted && $ip_noted =~ /^\:*?([\d\.]+|[\dabcdef\:]+)$/i) {
+			     $hosts->{$ip_noted}{nodename} = $ip_noted;
+			 } else {
+			     next;
+			 }
 		     }  
-		     update_create_fixed($dbh->resultset('Node'),
+		     my $ip = update_create_fixed($dbh->resultset('Node'),
     						  {ip_addr =>  \"=inet6_pton('$ip_noted')"},
     						  {ip_addr => \"inet6_pton('$ip_noted')",
     						   nodename =>  $nodename,
-    						   ip_noted => $ip_noted}, 0); 
+    						   ip_noted => $ip_noted}, 0);
+		    $data->[1]->{hop_ip} = $ip->ip_addr;
 		 }
 		 eval {
     		     $dbh->resultset("${table_name}Data$now_table")->update_or_create({ metaid =>  $md,
-    	    									   timestamp => $data->[0],
-    	    									   %{$data->[1]},
+    	    									        timestamp => $data->[0],
+    	    									        %{$data->[1]},
     	    									},
     	    									{ key => 'meta_time'});
 		};

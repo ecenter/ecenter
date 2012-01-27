@@ -463,9 +463,10 @@ sub process_site {
 						  drops       => {ip => 'NA', value => 0},
 					       };
 	       foreach my $ip  (keys %{$utilization->{$way}{$dst_hub}}) {
-	            foreach my $time (sort {$a<=>$b} grep {$_} keys %{$snmp->{$ip}}) {
-		        next unless $snmp->{$ip}{$time}{capacity};
-		        my %tmp =  %{$snmp->{$ip}{$time}};
+	            next unless $snmp && $snmp->{out} && $snmp->{out}{$ip};
+	            foreach my $time (sort {$a<=>$b} grep {$_} keys %{$snmp->{out}{$ip}}) {
+		        next unless $snmp->{out}{$ip}{$time}{capacity};
+		        my %tmp =  %{$snmp->{out}{$ip}{$time}};
 			$tmp{utilization} = $tmp{utilization}?($tmp{utilization}/$tmp{capacity})*100.:0;
 			foreach my $metric (qw/utilization  errors drops/) {
 		            if( $tmp{$metric} &&  
@@ -474,7 +475,7 @@ sub process_site {
 		                $data->{$way}{$dst_hub}{snmp}{$metric}{ip} = $ip;
 			    }
 		        }
-	    	    }
+		   }
 	        }
 	    }
 	}
@@ -567,7 +568,7 @@ sub process_data {
             my $hops_ref = database('ecenter')->selectall_hashref($cmd, 'ip_noted');
             $traceroute->{direct_traceroute}{hop_ips} =  $hops_ref;
 	    MalformedParameterException->throw( error => 'No HUBs were found for the provided traceroute')
-		unless    $hops->{src_ip} && $hops->{dst_ip} 
+		unless $hops->{src_ip} && $hops->{dst_ip} 
 	               && $hops_ref->{$hops->{src_ip}}{hub_name} &&  $hops_ref->{$hops->{dst_ip}}{hub_name};
             $params{src_hub} = $hops_ref->{$hops->{src_ip}}{hub_name};
 	    $params{dst_hub} = $hops_ref->{$hops->{dst_ip}}{hub_name};
@@ -611,7 +612,7 @@ sub process_data {
         	}
 		$data->{$way} = $traceroute->{$way}{hops}
                         	  if($traceroute->{$way} && $traceroute->{$way}{hops} && 
-			             ref $traceroute->{$way}{hops} &&  %{$traceroute->{$way}{hops}}); 
+			             ref $traceroute->{$way}{hops} && %{$traceroute->{$way}{hops}});
             }
             ### snmp data for each hop - all unique hop IPs
     	    %allhops = (%{$traceroute->{direct_traceroute}{hop_ips}}, %{$traceroute->{reverse_traceroute}{hop_ips}});
@@ -623,12 +624,12 @@ sub process_data {
 
 	$logger->debug("HOPS:::", sub{Dumper(\%allhops)});
 
-	$task_set = $g_client->new_task_set; 
+	$task_set = $g_client->new_task_set;
 	$data->{snmp} = {};
 	if(!$params{data_type} || $params{data_type} =~ /^snmp$/i) {
             eval {
 		get_snmp($task_set, $data->{snmp}, \%allhops, \%params);
-            }; 
+            };
             if($EVAL_ERROR) {
 		error "  No SNMP data - failed $EVAL_ERROR";
             }
@@ -759,6 +760,7 @@ sub _fix_sites {
     foreach my $ip (keys %{$hops_href}) {
         next if exists $skip_these->{$ip};
 	my (undef, $nodename) = get_ip_name($ip);
+	$nodename ||= $ip;
         my $hub = Ecenter::Data::Hub->find_hub($ip, $nodename);
 	unless ($hub) { 
 	    $logger->error(" Could not find hub - $ip, skipping ");
@@ -912,7 +914,7 @@ sub get_trace_conditions {
     } 
     if ($params{src_hub}) {
        $trace_cond->{direct_traceroute}{src}  = qq| AND  n_src.nodename like   '%$params{src_hub}%' |;
-       $trace_cond->{reverse_traceroute}{src} = qq| AND  n_src.nodename like   '%$params{dst_hub}%' |;
+       $trace_cond->{reverse_traceroute}{src} = $params{dst_hub}?qq| AND  n_src.nodename like   '%$params{dst_hub}%' |:' AND 1';
     }
     if($params{dst_ip}) {
     	$trace_cond->{direct_traceroute}{dst}	=   qq| AND   md.dst_ip =  inet6_pton('$params{dst_ip}') |;
@@ -920,7 +922,7 @@ sub get_trace_conditions {
     } 
     if ($params{dst_hub}) {
       $trace_cond->{direct_traceroute}{dst}   = qq| AND   n_dst.nodename like	'%$params{dst_hub}%' |;
-      $trace_cond->{reverse_traceroute}{dst}  = qq| AND  n_dst.nodename like	'%$params{src_hub}%' |;
+      $trace_cond->{reverse_traceroute}{dst}  = $params{src_hub}?qq| AND  n_dst.nodename like	'%$params{src_hub}%' |: ' AND 1';
     }
     return $trace_cond;
 }
@@ -939,11 +941,12 @@ sub get_traceroute {
     #if($trace_cond->{src} &&  $trace_cond->{dst}) {
      #    ($metaids[0], $md_rows[0]) = each  %{$md_traces};
      #} else {
+     my $count = 2;
      foreach my $md (keys %{ $md_traces }) {
         if($md_traces->{$md}{src_ipaddr} !~ /^::/ && $md_traces->{$md}{dst_ipaddr} !~ /^::/) {
 	  push @metaids, $md;
 	  push @md_rows, $md_traces->{$md};
-	  last;
+	  last if $count-- < 0;
 	}
     }
     return {hops => {}, hop_ips => {}}  unless @md_rows && ref $md_rows[0] eq ref {} && $md_rows[0]->{service};
@@ -1020,11 +1023,17 @@ sub get_circuit_data {
     my $FAILED = 0;
     $logger->debug(" get_circuit_data ---------- ");
     my $task_set = $g_client->new_task_set;
+    my $src_cond_fw = $params->{src_hub}?" h_src.hub_name = '$params->{src_hub}' ":' 1 ';
+    my $dst_cond_fw = $params->{dst_hub}?" h_dst.hub_name = '$params->{dst_hub}' ":' 1 ';
+    my $src_cond_bck = $params->{src_hub}?" h_dst.hub_name = '$params->{src_hub}' ":' 1 ';
+    my $dst_cond_bck = $params->{dst_hub}?" h_src.hub_name = '$params->{dst_hub}' ":' 1 ';
+  
     my $shards =  get_shards({data =>  'snmp', start => $params->{snmp}{start} , end =>  $params->{snmp}{end} }, database('ecenter'));
     foreach my $shard (sort  { $a <=> $b } keys %$shards) {
        $logger->debug(" Circuits table:$shard start=$shards->{$shard}{start} end=$shards->{$shard}{end}");
+     
        my $sql = qq|select   h_src.hub_name  as src_hub, h_dst.hub_name as dst_hub, hop_l2p.l2_urn as hop_urn, h_hop.hub_name as hub_name, 
-	                                                                 clink.link_num as hop_num, h_hop.longitude as longitude, 
+	                                                                 CONCAT(c.circuit,':', clink.link_num) as hop_id, clink.link_num as hop_num, h_hop.longitude as longitude, 
 									 h_hop.latitude as latitude,
 	                                                                 c.circuit, c.description, c.start_time, c.end_time
 	                                                     from 
@@ -1035,26 +1044,29 @@ sub get_circuit_data {
 								  join hub h_dst on(c.dst_hub=h_dst.hub)
 								  join hub h_hop on(hop_l2p.hub=h_hop.hub)
                                                                 where  clink.direction = 'forward' and 
-								      ((h_src.hub_name = '$params->{src_hub}' and h_dst.hub_name = '$params->{dst_hub}')
-								          OR
-								       (h_dst.hub_name = '$params->{src_hub}' and h_src.hub_name = '$params->{dst_hub}'))
+								      (($src_cond_fw and $dst_cond_fw) OR ($src_cond_bck  and $dst_cond_bck))
 								       and  c.end_time >=   $shards->{$shard}{start}|;
 	$logger->debug(" Circuits table	SQL:$sql");
-        my $hops = database('ecenter')->selectall_hashref($sql, 'hop_num');
+        my $hops = database('ecenter')->selectall_hashref($sql, 'hop_id');
         #$snmp->{hops}{$shard} = $hops;
-        my %urns = ();
+        my %urn_snmp = ();
+	
 	$logger->debug(" Circuits hops:", sub{Dumper($hops)});
-        foreach my $hop (keys %{$hops}) {
-	    map {  $snmp->{circuits}{$hops->{$hop}{src_hub}}{$hops->{$hop}{dst_hub}}{$hops->{$hop}{circuit}}{circuit}{$_} = $hops->{$hop}{$_} }
+	foreach my $hop_id (keys %{$hops}) {
+            my $hop = $hops->{$hop_id}{hop_num};
+	    
+	    map { $snmp->{circuits}{$hops->{$hop_id}{src_hub}}{$hops->{$hop_id}{dst_hub}}{$hops->{$hop_id}{circuit}}{circuit}{$_} = $hops->{$hop_id}{$_} }
 	        qw/start_time end_time description/;
-	    map { $snmp->{circuits}{$hops->{$hop}{src_hub}}{$hops->{$hop}{dst_hub}}{$hops->{$hop}{circuit}}{hops}{$hops->{$hop}{hop_urn}}{$_} =  $hops->{$hop}{$_}}
+	    map { $snmp->{circuits}{$hops->{$hop_id}{src_hub}}{$hops->{$hop_id}{dst_hub}}{$hops->{$hop_id}{circuit}}{hops}{$hops->{$hop_id}{hop_urn}}{$_} =  $hops->{$hop_id}{$_}}
 	        qw/hop_num hub_name longitude latitude/;
-	    $urns{$hops->{$hop}{hop_urn}}++;
+	   if($hops->{$hop_id}{hop_urn} =~ /\d+\.\d+$/) {
+	        $urn_snmp{$hops->{$hop_id}{hop_urn}}++;
+	   }
         }
 	## skipping
 	next if $params->{no_snmp};
 	## data
-        foreach my $urn (keys %urns) {
+        foreach my $urn (keys %urn_snmp) {
 	    $snmp->{snmp}{in}{$urn} = {}; 
     	    $snmp->{snmp}{out}{$urn} = {}; 
     	    

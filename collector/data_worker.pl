@@ -334,6 +334,7 @@ sub _get_remote_snmp {
     my ($request, $dbh) = @_;
     my $snmp_ma;
     my $result = {status => 'ok', data =>  { in => {}, out => {}}};
+    $logger->debug("SNMP remote request=", sub{Dumper($request)});
     eval {
 	$snmp_ma =  Ecenter::Data::Snmp->new({ url => $request->{service} });
 	my $meta_cond = {
@@ -358,30 +359,27 @@ sub _get_remote_snmp {
     } 
     #   $logger->info("$request->{service} :: SNMP Data=", sub {Dumper($snmp_ma->data)});
    #  $logger->info("$request->{service} :: SNMP DataN=" . scalar @{$snmp_ma->data});
-    my $data_arr = $snmp_ma->data;
-    if($data_arr && @{$data_arr}) {
-        foreach my $direction (0,1) {
-	    foreach my $data (@{$data_arr->[$direction]}) {
-		eval {
-	             my $datum = {  timestamp => $data->[0],
-			            utilization => $data->[1],
-				    errors => $data->[2],
-				    drops => $data->[3]
-				 };
-		     if($request->{snmp_ip} && $request->{metaid}) {
-			 $datum->{metaid} = $request->{metaid};
-			 $dbh->resultset($request->{table})->find_or_create( $datum,   {key => 'meta_time'}  );
-		     }
-		     $datum->{capacity} = $data->[4];
-		     $datum->{direction} = $direction?'out':'in';
-	             $result->{data}{$datum->{direction}}{$data->[0]} = $datum;
-
-		};
-		if($EVAL_ERROR) {
-		   $logger->error("  Some error with insertion    $EVAL_ERROR");
-		}
+    my $data_hash_ref = $snmp_ma->data;
+    if($data_hash_ref && %{$data_hash_ref}) {
+        foreach my $md_id (keys %{$data_hash_ref}) {
+	    foreach my $direction (keys %{$data_hash_ref->{$md_id}} ) {
+		foreach my $tm (keys %{$data_hash_ref->{$md_id}{$direction}} ) {
+		    eval {
+	                my %datum = %{$data_hash_ref->{$md_id}{$direction}{$tm}};
+		        $datum{timestamp} = $tm;
+		        if($request->{snmp_ip} && $request->{metaid}) {
+			    $datum{metaid} = $request->{metaid};
+			    my %sql_data =  map { $_ => $datum{$_}} qw/timestamp metaid utilization drops errors/;
+			    $dbh->resultset($request->{table})->find_or_create( \%sql_data,   {key => 'meta_time'}  );
+		         }
+		         $result->{data}{$direction}{$tm} = \%datum;
+		    };
+		    if($EVAL_ERROR) {
+		        $logger->error("  Some error with insertion    $EVAL_ERROR");
+		    } 
+                }
             }
-        }
+	}
     }
     return encode_json $result;
 }
@@ -486,15 +484,18 @@ sub dispatch_snmp {
 #
 sub  process_trace {
     my ($dbh, $sql_datum, $results ) = @_;
-    update_create_fixed($dbh->resultset('Node'),
+    my $ip = update_create_fixed($dbh->resultset('Node'),
         			 {ip_addr =>  \"=inet6_pton('$sql_datum->{ip_noted}')"},
         			 {ip_addr => \"inet6_pton('$sql_datum->{ip_noted}')",
         			  nodename =>  $sql_datum->{ip_noted},
         			  ip_noted =>  $sql_datum->{ip_noted}}, 
 				  undef); # no updates
     my %tmp = %$sql_datum;
-    $tmp{hop_ip} =  ref  $tmp{hop_ip}?$tmp{hop_ip}->ip_addr:$tmp{hop_ip};
+    $tmp{hop_ip} =  $ip?$ip->ip_addr:
+                              ref  $tmp{hop_ip}?$tmp{hop_ip}->ip_addr:
+			        $tmp{hop_ip};
     push @{$results->{data}}, \%tmp;
+    $sql_datum->{hop_ip} =  $tmp{hop_ip};
     delete $sql_datum->{ip_noted};
     #delete $sql_datum->{ip_noted};
 }

@@ -58,6 +58,7 @@ has 'src_regexp' => (is => 'rw', isa => 'Str');
 has 'dst_regexp' => (is => 'rw', isa => 'Str');
 has 'src_name'   => (is => 'rw', isa => 'Str');
 has 'dst_name'   => (is => 'rw', isa => 'Str');
+has 'data'       => (is => 'rw', isa => 'ArrayRef');
 
 sub BUILD {
       my $self = shift;

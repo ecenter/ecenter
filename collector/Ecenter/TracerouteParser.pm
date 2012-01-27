@@ -74,12 +74,16 @@ sub parse {
     my $result = {};
     my @hops = @{$self->{hops}};
     my $src_ip; # 
-    my $dst_ip =  $hops[$self->hops - 1]->[0][1]; # 
+    my $dst_ip;
     for(my $i = 0; $i < $self->hops; $i++) {
         next unless  $hops[$i] && ref $hops[$i] eq 'ARRAY';
-	$src_ip =  $hops[$i]->[0][1]
-	    unless $src_ip;
-        my $addr='';
+	if($hops[$i]->[0][1] && $hops[$i]->[0][1] !~ /^(127\.0\.0\.1)|(10\.)|(172\.1[6-9]\.)|
+                                                  (172\.2[0-9]\.)|(^172\.3[0-1]\.)|
+                                              (192\.168\.)|(255\.0)|(255\.255\.)/xm) {
+	    $src_ip ||= $hops[$i]->[0][1];
+	    $dst_ip   = $hops[$i]->[0][1];
+        }
+	my $addr='';
 	my $delay = 0;
 	foreach my $query (@{$hops[$i]}) {
 	    my ($status, $addr1, $delay1) = @$query;

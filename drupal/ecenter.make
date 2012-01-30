@@ -23,6 +23,11 @@ projects[advanced_help][version] = "1.2"
 
 projects[ahah_helper][subdir] = "contrib"
 projects[ahah_helper][version] = "2.2"
+
+; The following patches are required to make the primary E-Center query UI
+; function properly. They refine how ahah_helper determines form ID, override
+; all Drupal JS settings in AHAH responses and add a FAPI element to re-enable
+; submit and validation handlers for AHAH requests, respectively.
 projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/ahah_helper_form_id.patch"
 projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/ahah_helper_js_settings.patch"
 projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/ahah_helper_optional_validation_handlers.patch"
@@ -32,6 +37,10 @@ projects[autoload][version] = "2.1"
 
 projects[background_process][subdir] = "contrib"
 projects[background_process][version] = "1.10"
+
+; Remove the following patch if accepted upstream
+; See http://drupal.org/node/1421778
+projects[background_process][patch][] = "http://drupal.org/files/background_process_6.x-1.10_cwdfix.patch"
 
 projects[beautytips][subdir] = "contrib"
 projects[beautytips][version] = "2.0"
@@ -50,6 +59,11 @@ projects[conditional_styles][version] = "1.2"
 
 projects[context][subdir] = "contrib"
 projects[context][version] = "3.0"
+
+; Allow context to coexist with jQuery UI 1.8. Despite the multiple version patch
+; (see jquery_ui patches, below), multiple jQuery UI versions may not be loaded on
+; the same page. Because context runs on every page, this can cause problems on
+; E-Center provided pages which use jQuery UI 1.8.
 projects[context][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/context_jquery_ui_1.8.patch"
 
 projects[ctools][subdir] = "contrib"
@@ -108,10 +122,16 @@ projects[job_scheduler][version] = "1.0-beta3"
 
 projects[jquery_ui][subdir] = "contrib"
 projects[jquery_ui][version] = "1.5"
+
+; Allow multiple versions of jQuery UI to be loaded so that E-Center modules
+; which require jQuery UI 1.8.x may coexist with modules that require older
+; versions of the library.
 projects[jquery_ui][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/jquery_ui_multiple_versions.patch"
 
 projects[jquery_update][subdir] = "contrib"
 projects[jquery_update][version] = "1.1"
+
+; Use jQuery 1.4.x with jquery_update
 projects[jquery_update][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/jquery_update_jquery-1.4.4.patch"
 
 projects[less][subdir] = "contrib"
@@ -262,12 +282,10 @@ libraries[tinymce][download][type] = "get"
 libraries[tinymce][download][url] = "http://github.com/downloads/tinymce/tinymce/tinymce_3.4.7.zip"
 libraries[tinymce][directory_name] = "tinymce"
 
-; SyntaxHighlighter, probably won't work because of download url
-libraries[syntaxhighlighter][download][type] = "get"
-libraries[syntaxhighlighter][download][url] = "http://alexgorbatchev.com/SyntaxHighlighter/download/syntaxhighlighter_3.0.83.zip"
-libraries[syntaxhighlighter][directory_name] = "syntaxhighlighter"
-
 ; GeoIP
+; This is handled by the build.sh script because of the bug described in
+; http://drupal.org/node/1050262 and is retained here for posterity and in case 
+; this bug is fixed some day.
 ;libraries[geoip][download][type] = "get"
 ;libraries[geoip][download][url] = "http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz"
 ;libraries[geoip][directory_name] = "geoip"

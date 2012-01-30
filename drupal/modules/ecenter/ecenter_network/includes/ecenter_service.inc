@@ -59,7 +59,7 @@ function ecenter_network_get_client($status_check = FALSE, $type = 'drs', $name 
     $host = variable_get('ecenter_network_'. $type .'_host', 'localhost');
     $port = variable_get('ecenter_network_'. $type .'_port', 8000);
     $dir = variable_get('ecenter_network_'. $type .'_basedir', '');
-    $timeout = variable_get('ecenter_network_'. $type .'_timeout', 30);
+    $timeout = variable_get('ecenter_network_'. $type .'_timeout', 120);
     $status_timeout = variable_get('ecenter_network_'. $type .'_status_timeout', 2);
     $clients[$name] = new $klass($host, $port, $dir, $timeout, 
       $status_timeout);

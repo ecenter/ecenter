@@ -46,7 +46,7 @@ function ecenter_network_admin_form() {
       '#title' => t('Timeout'),
       '#type' => 'textfield',
       '#description' => t('Timeout for calls to the webservice, in seconds.'),
-      '#default_value' => variable_get('ecenter_network_'. $type .'_timeout', 30),
+      '#default_value' => variable_get('ecenter_network_'. $type .'_timeout', 120),
     );
     $form[$type]['ecenter_network_'. $type .'_status_timeout'] = array(
       '#title' => t('Status timeout'),

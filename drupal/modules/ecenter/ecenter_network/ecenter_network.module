@@ -419,6 +419,7 @@ function _ecenter_network_select_form() {
 
   // For ahah helper
   $form['#tree'] = TRUE;
+  $form['#submit'] = array('ecenter_network_select_form_submit');
 
   return $form;
 }

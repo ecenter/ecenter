@@ -22,7 +22,7 @@ projects[advanced_help][subdir] = "contrib"
 projects[advanced_help][version] = "1.2"
 
 projects[ahah_helper][subdir] = "contrib"
-projects[ahah_helper][version] = "2.1"
+projects[ahah_helper][version] = "2.2"
 projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/ahah_helper_form_id.patch"
 projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/ahah_helper_js_settings.patch"
 projects[ahah_helper][patch][] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/patches/ahah_helper_optional_validation_handlers.patch"

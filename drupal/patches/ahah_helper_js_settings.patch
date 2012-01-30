@@ -1,11 +1,8 @@
-Index: ahah_helper.module
-===================================================================
-RCS file: /cvs/drupal-contrib/contributions/modules/ahah_helper/ahah_helper.module,v
-retrieving revision 1.4
-diff -u -p -r1.4 ahah_helper.module
---- ahah_helper.module	18 Sep 2009 15:09:07 -0000	1.4
-+++ ahah_helper.module	30 Dec 2010 21:32:11 -0000
-@@ -197,7 +197,7 @@ function ahah_helper_render($form_item_t
+diff --git a/ahah_helper.module b/ahah_helper.module
+index dfd222a..018da14 100644
+--- a/ahah_helper.module
++++ b/ahah_helper.module
+@@ -236,7 +236,7 @@ function ahah_helper_render($form_item_to_render = FALSE) {
    drupal_json(array(
      'status'   => TRUE,
      'data'     => theme('status_messages') . drupal_render($form_item),

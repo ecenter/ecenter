@@ -38,9 +38,9 @@ projects[autoload][version] = "2.1"
 projects[background_process][subdir] = "contrib"
 projects[background_process][version] = "1.10"
 
-; Remove the following patch if accepted upstream
+; Remove the following patch when integrated upstream
 ; See http://drupal.org/node/1421778
-projects[background_process][patch][] = "http://drupal.org/files/background_process_6.x-1.10_cwdfix.patch"
+projects[background_process][patch][] = "http://drupal.org/files/cwdfix.patch"
 
 projects[beautytips][subdir] = "contrib"
 projects[beautytips][version] = "2.0"

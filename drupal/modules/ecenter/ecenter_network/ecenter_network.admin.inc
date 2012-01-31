@@ -148,7 +148,7 @@ function ecenter_network_admin_form() {
     '#title' => t('Site data cache time to live'),
     '#type' => 'textfield',
     '#description' => t('How long should results be cached, in seconds?'),
-    '#default_value' => variable_get('ecenter_network_site_data_cache_ttl', 3600),
+    '#default_value' => variable_get('ecenter_network_site_data_cache_ttl', 86400),
   );
 
   return system_settings_form($form);

@@ -783,7 +783,7 @@ function ecenter_network_site_centric_form(&$form_state) {
 
   module_load_include('inc', 'date_api', 'date_api_elements');
   $now = time() - 3600;
-  $offset = 3600 * 3;
+  $offset = 3600;
   $inc = 60;
   $tz = timezone_open('UTC');
   $end = date_make_date($now, $tz, DATE_UNIX);
@@ -1776,7 +1776,7 @@ function ecenter_network_cron() {
 
   module_load_include('inc', 'date_api', 'date_api_elements');
   $now = time();
-  $offset = 3600 * 3;
+  $offset = 3600;
   $inc = 60;
   $tz = timezone_open('UTC');
   $end = date_make_date($now, $tz, DATE_UNIX);

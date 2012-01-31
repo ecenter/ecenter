@@ -300,9 +300,10 @@ libraries[jquery.cycle][download][type] = "get"
 libraries[jquery.cycle][download][url] = "https://raw.github.com/malsup/cycle/master/jquery.cycle.all.js"
 libraries[jquery.cycle][directory_name] = "jquery.cycle"
 
-; qTip library
+; qTip library 
+; Because of insanity of qTip repository / download method, we host it ourself
 libraries[qtip][download][type] = "get"
-libraries[qtip][download][url] = "http://bazaar.launchpad.net/~craig.craigsworks/qtip/trunk/download/head:/jquery.qtip.js-20090423181637-fwr6qh3994kcod3i-2/jquery.qtip.js"
+libraries[qtip][download][url] = "https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/raw/drupal/misc/jquery.qtip.js"
 libraries[qtip][directory_name] = "qtip"
 
 ; Masonry

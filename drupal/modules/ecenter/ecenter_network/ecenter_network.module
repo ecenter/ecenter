@@ -743,17 +743,20 @@ function ecenter_network_select_form_submit($form, &$form_state) {
   $form_state['rebuild'] = TRUE;
 }
 
-
+/**
+ * Site centric display form constructor
+ */
 function ecenter_network_site_centric_form(&$form_state) {
   global $user;
   extract(_ecenter_network_extract_query());
 
   if (empty($src)) {
-    $src = (!empty($user->ecenter_default_hub)) ? $user->ecenter_default_hub : variable_get('ecenter_site_default_hub', 'FNAL');
+    $src = 'hub:';
+    $src .= (!empty($user->ecenter_default_hub)) ? $user->ecenter_default_hub : variable_get('ecenter_site_default_hub', 'FNAL');
   }
-  
+
   $form = array();
-  
+
   $sources = ecenter_network_get_hops();
   $options = array('');
 
@@ -797,7 +800,7 @@ function ecenter_network_site_centric_form(&$form_state) {
 
   $ip_headers = array('hub' => t('Hub'));
   $ip_rows = array();
-  
+
   $tests = array(
     'bwctl' => array('throughput'),
     'owamp' => array('max_delay', 'sent', 'min_delay', 'loss'),
@@ -808,6 +811,7 @@ function ecenter_network_site_centric_form(&$form_state) {
     $site_data['destinations'][] = array(
       'hub' => $hub,
       'data' => $data,
+      'markup' => theme('ecenter_network_site_centric_data', $data),
     );
 
     $row = array('hub' => array(
@@ -870,7 +874,7 @@ function ecenter_network_site_centric_form(&$form_state) {
   ksort($ip_rows);
   ksort($circuit_rows);
 
-  drupal_add_js(array('ecenterNetwork' => array('siteData' => $site_data)), 
+  drupal_add_js(array('ecenterNetwork' => array('siteData' => $site_data)),
     'setting');
 
   $form['site_view'] = array(
@@ -879,20 +883,20 @@ function ecenter_network_site_centric_form(&$form_state) {
   );
 
   $form['site_view']['site_view_svg'] = array(
-    '#value' => '<div id="site-view-svg"></div>',  
+    '#value' => '<div id="site-view-svg"></div>',
   );
 
   $form['site_view']['site_view_ip_table'] = array(
-    '#value' => theme('jqplot_table', $ip_headers, $ip_rows, 
-      array('class' => 'data-table')),  
+    '#value' => theme('jqplot_table', $ip_headers, $ip_rows,
+      array('class' => 'data-table')),
   );
 
   $form['site_view']['site_view_circuit_table'] = array(
     '#value' => theme('jqplot_table', $circuit_headers, $circuit_rows,
-      array('class' => 'data-table')),  
+      array('class' => 'data-table')),
   );
 
-  return $form; 
+  return $form;
 }
 
 /**
@@ -1785,7 +1789,7 @@ function ecenter_network_cron() {
   $hubs = ecenter_network_get_hops();
   foreach ($hubs['hubs'] as $key => $hop) {
     if ($key != 'PPPL' && $key != 'SNLL' && $key != 'LLNL') {
-      $data = ecenter_network_get_site_centric_data($key, $start, $end);
+      ecenter_network_get_site_centric_data('hub:'. $key, $start, $end);
     }
   }
 }

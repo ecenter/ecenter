@@ -19,7 +19,7 @@ function ecenter_network_get_site_centric_data($site, $start, $end) {
   static $results = array();
 
   $query = http_build_query(array(
-    'src_hub' => $site,
+    'src' => $site,
     'start' => $start,
     'end' => $end,
   ));

@@ -779,24 +779,14 @@ function ecenter_network_site_centric_form(&$form_state) {
 
   drupal_add_js(libraries_get_path('raphael') .'/raphael-min.js');
   drupal_add_js(libraries_get_path('qtip') .'/jquery.qtip.js');
+
+  // @TODO this should be refactored
   drupal_add_js(drupal_get_path('module', 'ecenter_dashboard') .'/js/ecenter-dashboard.js');
 
-  module_load_include('inc', 'date_api', 'date_api_elements');
-  $now = time() - 3600;
-  $offset = 3600;
-  $inc = 60;
-  $tz = timezone_open('UTC');
-  $end = date_make_date($now, $tz, DATE_UNIX);
-  $start = date_make_date($now - $offset, $tz, DATE_UNIX);
-  date_increment_round($start, $inc);
-  date_increment_round($end, $inc);
-  $start = date_format($start, 'Y-m-d H:i:00');
-  $end = date_format($end, 'Y-m-d H:i:00');
-
-  $raw_data = ecenter_network_get_site_centric_data($src, $start, $end);
+  $raw_data = ecenter_network_get_recent_scv_results($src, 3600);
   $circuit_data = ecenter_network_get_circuit_data($src, NULL, $start, $end);
 
-  $site_data = array('source' => $raw_data['source'], 'destinations' => array());
+  $site_data = array('source' => $raw_data['data']['source'], 'destinations' => array());
 
   $ip_headers = array('hub' => t('Hub'));
   $ip_rows = array();
@@ -807,7 +797,7 @@ function ecenter_network_site_centric_form(&$form_state) {
     // @TODO Pinger? Other values
   );
 
-  foreach ($raw_data['destinations'] as $hub => $data) {
+  foreach ($raw_data['data']['destinations'] as $hub => $data) {
     $site_data['destinations'][] = array(
       'hub' => $hub,
       'data' => $data,
@@ -855,24 +845,8 @@ function ecenter_network_site_centric_form(&$form_state) {
     }
     $ip_rows[$hub] = $row;
   }
-
-  $circuit_headers = array('Hub' => t('Hub'), 'circuit' => t('Circuit name'));
-  $circuit_rows = array();
-  foreach ($circuit_data['circuits'] as $hub => $circuits) {
-    foreach ($circuits as $circuit_name => $circuit) {
-      $row = array(
-        'hub' => array(
-          'data' => $hub,
-          'header' => TRUE,
-        ),
-        $circuit_name,
-      );
-      $circuit_rows[$hub .'_'. $circuit_name] = $row;
-    }
-  }
-
+  
   ksort($ip_rows);
-  ksort($circuit_rows);
 
   drupal_add_js(array('ecenterNetwork' => array('siteData' => $site_data)),
     'setting');
@@ -891,12 +865,55 @@ function ecenter_network_site_centric_form(&$form_state) {
       array('class' => 'data-table')),
   );
 
-  $form['site_view']['site_view_circuit_table'] = array(
-    '#value' => theme('jqplot_table', $circuit_headers, $circuit_rows,
-      array('class' => 'data-table')),
-  );
+  if (!empty($circuit_data['circuits'])) {
+    $circuit_headers = array('Hub' => t('Hub'), 'circuit' => t('Circuit name'));
+    $circuit_rows = array();
+    foreach ($circuit_data['circuits'] as $hub => $circuits) {
+      foreach ($circuits as $circuit_name => $circuit) {
+        $row = array(
+          'hub' => array(
+            'data' => $hub,
+            'header' => TRUE,
+          ),
+          $circuit_name,
+        );
+        $circuit_rows[$hub .'_'. $circuit_name] = $row;
+      }
+    }
+    ksort($circuit_rows);
+    $form['site_view']['site_view_circuit_table'] = array(
+      '#value' => theme('jqplot_table', $circuit_headers, $circuit_rows,
+        array('class' => 'data-table')),
+    );
+  }
 
   return $form;
+}
+
+/**
+ * Helper to get recent site centric results
+ * 
+ * @param $start_offset
+ *   An offset (relative to now) to query for, expressed in seconds.
+ * @param $duration
+ *   A timespan to query for, expressed in seconds. 
+ */
+function ecenter_network_get_recent_scv_results($src, $start_offset = 0, $duration = 3600) {
+  module_load_include('inc', 'date_api', 'date_api_elements');
+  $now = time() - $start_offset;
+  $inc = 60;
+  $tz = timezone_open('UTC');
+  $end = date_make_date($now, $tz, DATE_UNIX);
+  $start = date_make_date($now - $duration, $tz, DATE_UNIX);
+  date_increment_round($start, $inc);
+  date_increment_round($end, $inc);
+  $start = date_format($start, 'Y-m-d H:i:00');
+  $end = date_format($end, 'Y-m-d H:i:00');
+  return array(
+    'start' => $start,
+    'end' => $end,
+    'data' => ecenter_network_get_site_centric_data($src, $start, $end),
+  );
 }
 
 /**
@@ -1774,22 +1791,10 @@ function ecenter_network_cron() {
   cache_clear_all(NULL, 'cache_ecenter_hops');
   cache_clear_all(NULL, 'cache_ecenter_site_data');
 
-  module_load_include('inc', 'date_api', 'date_api_elements');
-  $now = time();
-  $offset = 3600;
-  $inc = 60;
-  $tz = timezone_open('UTC');
-  $end = date_make_date($now, $tz, DATE_UNIX);
-  $start = date_make_date($now - $offset, $tz, DATE_UNIX);
-  date_increment_round($start, $inc);
-  date_increment_round($end, $inc);
-  $start = date_format($start, 'Y-m-d H:i:00');
-  $end = date_format($end, 'Y-m-d H:i:00');
-
   $hubs = ecenter_network_get_hops();
   foreach ($hubs['hubs'] as $key => $hop) {
     if ($key != 'PPPL' && $key != 'SNLL' && $key != 'LLNL') {
-      ecenter_network_get_site_centric_data('hub:'. $key, $start, $end);
+      ecenter_network_get_recent_scv_results('hub:'. $key);
     }
   }
 }

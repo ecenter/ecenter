@@ -87,4 +87,12 @@ function _ecenter_profile_post_install() {
 
   // Disable Shib auth blocks
   db_query("UPDATE {blocks} SET status=0, region=NULL WHERE module='shib_auth'");
+
+  // Delete unused input formats and set up roles. Very hacky as it depends on
+  // a priori knowledge of assigned IDs for roles and formats. But it works.
+  db_query("DELETE FROM {filter_formats} WHERE format < 3");
+  db_query("UPDATE {filter_formats} SET roles=',1,2,3,4,5,' WHERE format=3");
+  db_query("UPDATE {filter_formats} SET roles=',3,5' WHERE format=4");
+  variable_set('filter_default_format', 3);
+
 }

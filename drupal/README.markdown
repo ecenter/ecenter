@@ -7,67 +7,61 @@ This is the root directory of the custom Drupal 6.x modules, themes, and other
 supporting files (patches, makefile, other assets) for the E-Center content
 management component and user interface.
 
-## Installing the frontend
+## Requirements
 
-### Building E-Center
+PHP 5.2+, Curl
+
+## Build E-Center
 
 You will need [Drush][drush] and [Drush Make][drush_make], and Curl to build the
-E-Center Drupal frontend.
+E-Center Drupal frontend. Clone from the Git repository:
 
-To install, run the `build.sh` script found in this directory with a single
-argument specifying which directory you would like to install E-Center.
+<pre>git clone https://github.com/ecenter/ecenter.git</pre>
 
-    # build.sh /path/to/install/target
+Run the build script:
 
-The build script works by:
+<pre>cd ecenter/drupal
+./build.sh /var/www/ecenter</pre>
 
- * Calling `drush make`
- * Symlinking the install profile, modules, and themes from E-Center in their
-correct locations under the Drupal directory tree.
- * Downloading and unpacking the MaxMind GeoIP Lite database (Drush make does
-not support un-tarred, gzipped archives).
- * Creating a custom build of the OpenLayers Javascript mapping library.
+This command will create an E-Center instance in the `/var/www/ecenter` directory. You may pass the `--tar` flag to create a gzipped tarball of the built distribution or the `--working-copy` flag to build E-Center for local development.
 
-### Installing E-Center
+## Install E-Center
 
-Place the E-Center codebase that you installed under your host's webroot and
-visit the new site. On the initial installation screen, select the E-Center 
-profile.
+Point your browser at the default Drupal install URL `http://ecenter.myhost.tld/install.php`.
 
-Drupal installation details are specific to your environment. See the
-[Drupal installation guide][drupal_install] for in-depth instructions.
-
-On the final installation screen, remember to configure the Data
-Retrieval Service and optional Anomaly Detection Service settings. The network
-weathermap and other DRS-based functionality requires proper configuration
-to work. These settings can be added or changed after installing at 
-`admin/settings/ecenter`.
-
-### Known installation issues
+## Known installation issues
 
  * The profiler module (which is used to help smooth out installation) may run
 for a fairly long time. If you run into these problems, you may wish to increase
 the `max_execution_time` variable in your php.ini files.
- * Input format permissions and defaults are not configured out of the box:
-   * Configure the 'WYSIWYG Markdown' filter at `admin/settings/filter` to 
-allow the 'trusted user' role (and any other desired roles) to access the 
-WYSIWYG markdown format. 
-   * Review per-node-type and per-role format defaults at 
-`admin/settings/filters/defaults`.
- * There is a bug in menu item exports which prevents a section's home page from 
-appearing in the secondary navigation (for example, if you visit `/network`, the 
-network weathermap link is missing from the secondary navigation menu). These
-links, if desired, must be added manually.
- * You may wish to disable some menu links in the administration menu.
 
 ## Repository layout
 
- * modules
-   * ecenter: E-Center-specific Drupal modules and [features][features]
-   * util: Utility / general purpose modules and features
- * patches: Custom patches
- * profile: Install profile
- * theme: Drupal theme
+Self-explanatory directories (such as `js` for Javascript assets) are omitted from this list:
+
+* misc: Random files, currently an OpenLayers build configuration file and a frozen version of the qTip library for convenience.
+* modules
+  * ecenter: E-Center-specific Drupal modules and [features][features]
+    * ecenter_backbone: Experimental module to include a Backbone JS application within Drupal (i.e. with access to Drupal's session cookie, protected by Drupal's permission system).
+    * ecenter_core: Provides basic permissions, roles (pre-authenticated, trusted, administrator), tag vocabulary, and page + snippet content types.
+    * ecenter_dashboard: Provides code and Views for the E-Center homepage.
+    * ecenter_editor: Provides Markdown Restricted and Markdown Advanced input formats, WYSIWYG editor configuration.
+    * ecenter_groups: Default settings and Views for Organic Groups integration.
+    * ecenter_help: Provides default E-Center documentation, and BeautyTip module settings.
+    * ecenter_issues: Provides issue and network query content types, custom logic for issue creation.
+    * ecenter_mail: Provides reply-by-email functionality for comment threads, notification settings.
+    * ecenter_network: The core E-Center module that provides the data visualization user interface and data access code. 
+      * includes: Drupal-agnostic Data Retrieval Service data access classes (e.g. data_retrieval_service.class.inc) and Drupal-specific wrappers and parsers (e.g. data_retrieval_service.inc).
+    * ecenter_test: A collection of simple-minded tests of various E-Center functionality. These are not formal tests and are provided mainly for debugging purposes.
+    * ecenter_user: Provides configuration defaults for authentication (OpenID, Shibboleth).
+    * ecenter_wiki: Defines wiki content type, basic wiki functionality.
+  * util: Utility / general purpose modules and features
+    * combobox: Provides select-box with full-text search functionality 
+    * jqplot: Provides simple jqPlot integration and jQuery plugin to automatically generate charts from HTML tables.
+* patches: Custom patches
+* profile: Install profile
+* theme
+  * ecenter: Custom E-center theme. Depends on the Drupal LESS CSS preprocessor module.
 
 ## License
 

@@ -54,7 +54,6 @@ dependencies[] = imageapi_gd
 dependencies[] = imageapi_imagemagick
 dependencies[] = imagecache
 dependencies[] = imagecache_ui
-dependencies[] = inline_css
 dependencies[] = jqplot
 dependencies[] = jquery_ui
 dependencies[] = jquery_update

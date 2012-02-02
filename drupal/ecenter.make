@@ -9,7 +9,7 @@ api = 2
 
 ; Drupal core
 projects[drupal][type] = "core"
-projects[drupal][version] = "6.22"
+projects[drupal][version] = "6.24"
 
 ; Patch Drupal to use jQuery 1.4 (see http://drupal.org/node/479368)
 projects[drupal][patch][] = "http://drupal.org/files/issues/do479468-drupal_to_js-expanded-comments-nostatic.patch"

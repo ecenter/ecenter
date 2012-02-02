@@ -199,9 +199,6 @@ function ecenter_network_get_node($ip) {
       $result = $client->getNode($ip);
       if ($result['code'] == 200) {
         $data = $result['response'];
-        // Calculate netblock -- @TODO may not be necessary
-        $data['netblock'] = long2ip(ip2long($data['ip_noted']) & 
-          ~((1 << (32 - $data['netmask'])) - 1));
         $nodes[$ip] = $data;
         if ($caching) {
           $expires = time() + variable_get('ecenter_network_node_cache_ttl', 300);

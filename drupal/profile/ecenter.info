@@ -79,6 +79,7 @@ dependencies[] = openlayers_cck
 dependencies[] = openlayers_ui
 dependencies[] = openlayers_views
 dependencies[] = optionwidgets
+dependencies[] = path
 dependencies[] = pathauto
 dependencies[] = pathologic
 dependencies[] = progress

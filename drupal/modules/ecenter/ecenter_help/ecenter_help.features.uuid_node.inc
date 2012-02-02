@@ -11,8 +11,130 @@ function ecenter_help_uuid_features_default_content() {
   'language' => '',
   'uid' => '1',
   'status' => '1',
+  'created' => '1328201556',
+  'changed' => '1328201758',
+  'comment' => '0',
+  'promote' => '0',
+  'moderate' => '0',
+  'sticky' => '0',
+  'tnid' => '0',
+  'translate' => '0',
+  'revision_uid' => '1',
+  'title' => 'Configuration notes',
+  'body' => '## Server configuration
+
+The running Drupal instance lives in `~/public_html/drupal`
+
+The custom codebase for Drupal is cloned at `~/workspace/eads/ecenter`
+
+The running Drupal instance symlinks to the custom module directories (`ecenter` and `util` under `profiles/ecenter/modules`) and theme (`ecenter` under`profiles/ecenter/themes`) in the cloned repository.
+
+The Apache configuration for E-Center frontend instances lives at `/etc/httpd/conf.d/ssl.conf`
+
+## Drupal architecture
+
+The frontend architecture depends heavily on Features module for exporting configuration.
+
+## Module overview
+
+E-Center\'s main functional areas are handled by clusters of modules:
+
+*   Network data visualization: Custom modules, primarily `ecenter_network`. The `ecenter_network` module relies heavily on custom classes for querying the Data Retrieval Service, OpenLayers for mapping, jQuery UI for interactive widgets and modal popups, and the jqPlot library (provided with a simple integration module) for charting.
+*   Group functionality: Organic Groups module.
+*   Email integration: Notifications 4.x, Messaging 4.x, Mailhandler, Mailcomment
+*   Cron: Ultimate Cron (and dependencies background_process and progress) are required for data caching and email integration.
+*   Theme: The theme uses the LESS CSS preprocessor, provided by the Drupal LESS module.
+*   Content editing: Markdown source (in restricted and advanced flavors) is the only input style provided by E-Center. The `ecenter_editor` module uses the Markdownify library to allow TinyMCE to act as a WYSIWYG editor for Markdown source.
+
+In terms of stability, the least stable and messiest component of the custom modules is the code to handle the site-centric view. The primary "weathermap" user interface is far more complex, but nonetheless more coherent.
+
+## Content types
+
+E-Center defines a handful of content types:
+
+*   Wiki page: A collaboratively edited wiki page.
+*   Group: Group content type
+*   Issue: Issue/conversation for users.
+*   Snippet: Snippet of HTML for inclusion somewhere on the site, such as the front page carousel.
+*   Network query: Internal representation of a network query.
+*   Page: Static page such as an about page.
+
+## Gotchas
+
+### Drush make on xenmon
+
+Because the server does not have common certificates installed, `drush make` fails when trying to download from secure hosts such as github. E-Center must be built elsewhere until this problem is resolved.
+
+### Disappearing theme
+
+Due to long-standing bugs in the Drupal 6 bootstrap process, the E-Center theme may have to be re-enabled after running updates.
+
+### Patches
+
+These components must be re-patched (or patches re-rolled) if they are updated:
+
+*   Drupal core
+*   ahah_helper
+*   context
+*   jquery_ui
+*   jquery_update
+*   background_process
+
+None of these modules are updated frequently, and unlikely to require re-rolled patches. See the E-Center makefile for patch details.',
+  'teaser' => '## Server configuration
+
+The running Drupal instance lives in `~/public_html/drupal`
+
+The custom codebase for Drupal is cloned at `~/workspace/eads/ecenter`
+
+The running Drupal instance symlinks to the custom module directories (`ecenter` and `util` under `profiles/ecenter/modules`) and theme (`ecenter` under`profiles/ecenter/themes`) in the cloned repository.
+
+The Apache configuration for E-Center frontend instances lives at `/etc/httpd/conf.d/ssl.conf`
+
+## Drupal architecture
+
+The frontend architecture depends heavily on Features module for exporting configuration.
+
+## Module o',
+  'log' => '',
+  'revision_timestamp' => '1328201758',
+  'format' => '3',
+  'name' => 'admin',
+  'picture' => '',
+  'data' => 'a:1:{s:23:"ecenter_network_queries";a:1:{s:100:"src=hub%3ANERSC&amp;dst=hub%3AFNAL&amp;start=2012-02-02+13%3A30%3A00&amp;end=2012-02-02+16%3A30%3A00";a:2:{s:4:"time";i:1328200582;s:5:"query";s:100:"src=hub%3ANERSC&amp;dst=hub%3AFNAL&amp;start=2012-02-02+13%3A30%3A00&amp;end=2012-02-02+16%3A30%3A00";}}}',
+  'path' => 'wiki/ecenter/configuration',
+  'og_groups_both' => array(),
+  'og_groups' => array(),
+  'tableofcontents_toc_automatic' => '0',
+  'og_public' => TRUE,
+  'last_comment_timestamp' => '1328201556',
+  'last_comment_name' => NULL,
+  'comment_count' => '0',
+  'taxonomy' => array(
+    '1' => array(
+      'tid' => '1',
+      'vid' => '1',
+      'name' => 'Documentation',
+      'description' => '',
+      'weight' => '0',
+      'v_weight_unused' => '0',
+    ),
+  ),
+  'uuid' => '91e3953c-4dbf-11e1-ba2b-0026b9b97a6a',
+  'revision_uuid' => 'c7bbe6ce-4dbe-11e1-ba2b-0026b9b97a6a',
+  'pathauto_perform_alias' => FALSE,
+  'date' => '2012-02-02 10:52:36 -0600',
+  'uuid_term' => array(
+    '0' => 'ee90cb44-4930-11e1-ba2b-0026b9b97a6a',
+  ),
+);
+  $nodes[] = array(
+  'type' => 'wiki',
+  'language' => '',
+  'uid' => '1',
+  'status' => '1',
   'created' => '1323710681',
-  'changed' => '1327700947',
+  'changed' => '1328201860',
   'comment' => '0',
   'promote' => '0',
   'moderate' => '0',
@@ -128,19 +250,17 @@ You may always change the E-Center data service configuration by visiting [`admi
 
 You may wish to change the default security and permissions settings: See the Drupal documentation on [roles][20] and [permissions][21].
 
-See the [E-Center Administration Guide][22] for in-depth administration details.
-
 ## E-Center for developers
 
 Developers who wish to hack E-Center should:
 
-*   ** Build for E-Center for development**: Build the distribution from a Git clone of the codebase. Use the `--working-copy` flag when building the Drupal distribution.
+*   **Build for E-Center for development**: Build the distribution from a Git clone of the codebase. Use the `--working-copy` flag when building the Drupal distribution.
 *   **Enable devel:** The Drupal `devel` module is included in the E-Center distribution. Enable `devel` and `simplemenu_devel` from the modules page or using `drush`.
-*   **Enable LESS CSS developer mode:** To debug and develop CSS, enable LESS development mode at [`admin/settings/less`][23] to rebuild CSS files on every request.
+*   **Enable LESS CSS developer mode:** To debug and develop CSS, enable LESS development mode at [`admin/settings/less`][22] to rebuild CSS files on every request.
 
 Remember to disable these settings in production, as they can have a serious performance impact. Leaving `devel` module enabled could also pose security risks if debugging messages are leaked to unauthorized users.
 
-See the [E-Center Configuration Notes][24] for an in-depth description of the E-Center architecture.
+See the [E-Center Configuration Notes][23] for an in-depth description of the E-Center architecture.
 
  [1]: http://drupal.org/documentation/install
  [2]: https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/entry/DEPLOYMENT.markdown
@@ -163,23 +283,22 @@ See the [E-Center Configuration Notes][24] for an in-depth description of the E-
  [19]: admin/settings/ecenter
  [20]: http://drupal.org/getting-started/6/admin/user/roles
  [21]: http://drupal.org/getting-started/6/admin/user/permissions
- [22]: wiki/ecenter/administration
- [23]: admin/settings/less
- [24]: wiki/ecenter/architecture',
+ [22]: admin/settings/less
+ [23]: wiki/ecenter/configuration',
   'teaser' => 'The E-Center frontend is packaged as a Drupal 6 distribution. The E-Center distribution follows the standard [Drupal installation procedure][1] and assumes you have a basic understanding of the Drupal installation procedure and PHP web application administration.
 
 The core E-Center network analysis functionality requires a running version of the Data Retrieval Service.',
   'log' => '',
-  'revision_timestamp' => '1327700947',
+  'revision_timestamp' => '1328201860',
   'format' => '3',
   'name' => 'admin',
   'picture' => '',
-  'data' => 'a:0:{}',
+  'data' => 'a:1:{s:23:"ecenter_network_queries";a:1:{s:100:"src=hub%3ANERSC&amp;dst=hub%3AFNAL&amp;start=2012-02-02+13%3A30%3A00&amp;end=2012-02-02+16%3A30%3A00";a:2:{s:4:"time";i:1328200582;s:5:"query";s:100:"src=hub%3ANERSC&amp;dst=hub%3AFNAL&amp;start=2012-02-02+13%3A30%3A00&amp;end=2012-02-02+16%3A30%3A00";}}}',
+  'path' => 'wiki/ecenter/install',
   'og_groups_both' => array(),
   'og_groups' => array(),
   'tableofcontents_toc_automatic' => '0',
   'og_public' => TRUE,
-  'old_status' => '1',
   'last_comment_timestamp' => '1323808503',
   'last_comment_name' => NULL,
   'comment_count' => '0',
@@ -190,10 +309,12 @@ The core E-Center network analysis functionality requires a running version of t
       'name' => 'Documentation',
       'description' => '',
       'weight' => '0',
+      'v_weight_unused' => '0',
     ),
   ),
   'uuid' => 'b0a988e6-24e8-11e1-b676-0026b9b97a6a',
-  'revision_uuid' => 'bd004ce4-4930-11e1-ba2b-0026b9b97a6a',
+  'revision_uuid' => '0413b3fe-4dbf-11e1-ba2b-0026b9b97a6a',
+  'pathauto_perform_alias' => FALSE,
   'date' => '2011-12-12 11:24:41 -0600',
   'uuid_term' => array(
     '0' => 'ee90cb44-4930-11e1-ba2b-0026b9b97a6a',

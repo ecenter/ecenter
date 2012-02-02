@@ -1,5 +1,10 @@
 /**
  * E-Center theme CSS style
+ *
+ * This file uses VIM fold markers for organization. The following line should
+ * be sufficient for VIM users to automatically use the folding:
+ *
+ * vim:fdm=marker
  */
 
 /* --- Less CSS Variables --- */
@@ -1369,19 +1374,17 @@ form {
 }
 // }}}
 // Autocomplete menu {{{
-.ui-autocomplete { 
+#autocomplete, .ui-autocomplete { 
   background-color: #fff;
   border: 1px solid #999;
-  max-width: 210px;
   z-index: 100 !important;
   max-height: 280px;
   overflow-y: scroll;
   .shadow(2px; 2px; 3px; #999);
   li {
-    font-size: 12px;
     margin: 0;
     a {
-      padding: 1px 3px;
+      padding: 2px 5px;
       display: block;
       strong {
         color: @color_black;
@@ -1391,7 +1394,19 @@ form {
       }
     }
   }
-} // }}}
+}
+#autocomplete {
+  li {
+    padding: 2px 5px;
+  }
+}
+.ui-autocomplete {
+  max-width: 210px;
+  li {
+    font-size: 12px;
+  }
+}
+// }}}
 // Loading overlay {{{ 
 #loading-overlay { 
   display: none;

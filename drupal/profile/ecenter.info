@@ -1,5 +1,5 @@
 name = E-Center
-description = Select this profile to install the U.S. Department of Energy E-Center project (version 1.0).
+description = Select this profile to install the U.S. Department of Energy E-Center project (version 1.3).
 core = 6.x
 theme = ecenter
 

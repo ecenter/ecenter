@@ -209,6 +209,7 @@ $.fn.ecenter_network.plugins.ajax = function() {
 
       $('#traceroute-paste-wrapper').fadeOut();
       $('#traceroute-paste-wrapper textarea').val('');
+      $('#traceroute-paste-copy textarea').val('');
 
       $(el).removeClass('data-loading');
       var overlay = $('#loading-overlay', self.el)
@@ -299,6 +300,7 @@ $.fn.ecenter_network.plugins.change = function() {
   $('#src-wrapper select, #dst-wrapper select', this.el).bind('change', function(e) {
     $('#traceroute-paste-wrapper').fadeOut();
     $('#traceroute-paste-wrapper textarea').val('');
+    $('#traceroute-paste-copy textarea').val('');
   });
 }
 
@@ -766,10 +768,8 @@ $.fn.ecenter_network.plugins.traceroute_paste = function() {
     width: 700,
     buttons: {
       'Submit traceroute' : function() {
-        // Debug by showing field
         $('#traceroute-paste-wrapper').fadeIn();
-        // Copy the value
-        $('#src-wrapper input, #dst-wrapper input').val(null);
+        $('#src-wrapper input, #dst-wrapper input, #src-wrapper select, #dst-wrapper select').val('');
         var traceroute = $('textarea', this).val();
         $('textarea', target)
           .val(traceroute)

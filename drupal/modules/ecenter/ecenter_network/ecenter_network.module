@@ -508,7 +508,7 @@ function ecenter_network_select_form(&$form_state) {
       '#weight' => 0,
     );
 
-    if (!empty($traceroute)) {
+    if (!empty($traceroute) && empty($src) && empty($dst)) {
       $data = array(
         'drs' => ecenter_network_get_traceroute_data($traceroute, $start, $end)
       );

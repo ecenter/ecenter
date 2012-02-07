@@ -1424,15 +1424,22 @@ form {
 // }}}
 // Nodes {{{
 .submitted {
-  font-size: 15px;
+  font-size: 14px;
   line-height: 27px;
   padding-bottom: 4px;
-  font-weight: bold;
-  color: #555;
+  color: @color_grey_33;
   margin-bottom: 21px;
+  .new {
+    background-color: @color_orange;
+    color: @color_white;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 0 3px;
+    text-transform: uppercase;
+  }
 }
 .node {
-  margin-bottom: 21px;
+  margin-bottom: 42px;
   .picture {
     .box;
     line-height: 1;
@@ -1599,11 +1606,12 @@ form {
 #comments {
   .box {
     float: none;
-    h2, .box-title {
-      font-size: 1.2em;
-      line-height: 1.25;
-      margin-bottom: 1em;
-      border-bottom: 1px solid #999;
+    margin-top: 32px;
+    .box-title {
+      margin-bottom: 10px;
+      padding: 3px 5px;
+      font-weight: bold;
+      background-color: @color_grey_93;
     }
   }
   .picture {

@@ -18,9 +18,9 @@ function ecenter_help_uuid_features_default_vocabularies() {
     'module' => 'features_tags',
     'weight' => '0',
     'nodes' => array(
-      'wiki' => 'wiki',
-      'page' => 'page',
       'issue' => 'issue',
+      'page' => 'page',
+      'wiki' => 'wiki',
     ),
   );
   return $vocabularies;

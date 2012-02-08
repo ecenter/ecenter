@@ -52,24 +52,14 @@ In terms of stability, the least stable and messiest component of the custom mod
 
 E-Center defines a handful of content types:
 
-*   Wiki page: A collaboratively edited wiki page.
-*   Group: Group content type
-*   Issue: Issue/conversation for users.
-*   Snippet: Snippet of HTML for inclusion somewhere on the site, such as the front page carousel.
-*   Network query: Internal representation of a network query.
-*   Page: Static page such as an about page.
+*   **Wiki page:** A collaboratively edited wiki page.
+*   **Group:** Group content type
+*   **Issue:** Issue/conversation for users.
+*   **Snippet:** Snippet of HTML for inclusion somewhere on the site, such as the front page carousel.
+*   **Network query:** Internal representation of a network query.
+*   **Page:** Static page such as an about page.
 
-## Gotchas
-
-### Drush make on xenmon
-
-Because the server does not have common certificates installed, `drush make` fails when trying to download from secure hosts such as github. E-Center must be built elsewhere until this problem is resolved.
-
-### Disappearing theme
-
-Due to long-standing bugs in the Drupal 6 bootstrap process, the E-Center theme may have to be re-enabled after running updates.
-
-### Patches
+## Updates and patches
 
 These components must be re-patched (or patches re-rolled) if they are updated:
 
@@ -80,7 +70,24 @@ These components must be re-patched (or patches re-rolled) if they are updated:
 *   jquery_update
 *   background_process
 
-None of these modules are updated frequently, and unlikely to require re-rolled patches. See the E-Center makefile for patch details.',
+None of these modules are updated frequently, and unlikely to require re-rolled patches. See the E-Center makefile for patch details.
+
+It is possible to update these components manually using `drush up` or by downloading the latest module from the project page on drupal.org. However, it is easier and safer to rebuild the environment entirely while leaving the Drupal database in tact. Here\'s the general procedure:
+
+* Update the [drush makefile](https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/entry/drupal/ecenter.make) to reflect the new component version(s).
+* Run the [build script](https://cdcvs.fnal.gov/redmine/projects/ecenter/repository/revisions/master/entry/drupal/build.sh) to recreate the Drupal environment.
+* Overwrite the Drupal webroot with the rebuilt environment.
+* Run `drush updb` or visit [update.php](update.php) as an administrative user to run database updates.
+
+## Gotchas
+
+### Drush make on xenmon
+
+Because the server does not have common certificates installed, `drush make` fails when trying to download from secure hosts such as github. E-Center must be built elsewhere until this problem is resolved.
+
+### Disappearing theme
+
+Due to long-standing bugs in the Drupal 6 bootstrap process, the E-Center theme may have to be re-enabled after running updates.',
   'teaser' => '## Server configuration
 
 The running Drupal instance lives in `~/public_html/drupal`
@@ -121,8 +128,8 @@ The frontend architecture depends heavily on Features module for exporting confi
     ),
   ),
   'uuid' => '91e3953c-4dbf-11e1-ba2b-0026b9b97a6a',
+  'revision_uuid' => 'c763f7ba-527e-11e1-9296-003048c5048c',
   'pathauto_perform_alias' => FALSE,
-  'revision_uuid' => 'e4915520-50db-11e1-ba2b-0026b9b97a6a',
   'date' => '2012-02-02 10:52:36 -0600',
   'uuid_term' => array(
     '0' => 'ee90cb44-4930-11e1-ba2b-0026b9b97a6a',
@@ -313,8 +320,8 @@ The core E-Center network analysis functionality requires a running version of t
     ),
   ),
   'uuid' => 'b0a988e6-24e8-11e1-b676-0026b9b97a6a',
+  'revision_uuid' => '5b2b966e-50fa-11e1-9296-003048c5048c',
   'pathauto_perform_alias' => FALSE,
-  'revision_uuid' => 'f0888a4c-50db-11e1-ba2b-0026b9b97a6a',
   'date' => '2011-12-12 11:24:41 -0600',
   'uuid_term' => array(
     '0' => 'ee90cb44-4930-11e1-ba2b-0026b9b97a6a',

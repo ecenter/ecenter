@@ -1,8 +1,0 @@
-This is root dir for the End-to-End visualization tool
----------------------------
-codname: E2Evisual
-
-
-Run script/e2evisual_server.pl to test the application.
-
-author: Maxim Grigoriev maxim_at_fnal_gov, 2009

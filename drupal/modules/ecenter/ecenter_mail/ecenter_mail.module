@@ -1,0 +1,3 @@
+<?php
+
+include_once('ecenter_mail.features.inc');

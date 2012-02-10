@@ -137,7 +137,7 @@ Drupal.behaviors.siteView = function(context) {
       },
       style: {
         background: 'rgba(255, 255, 255, 0.75)',
-        width: 280
+        width: 350
       }
     });
 

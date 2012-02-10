@@ -262,13 +262,6 @@ function ecenter_core_strongarm() {
   $strongarm = new stdClass;
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
-  $strongarm->name = 'simplemenu_css_filename';
-  $strongarm->value = 'sites/default/files/css/simplemenu-db5173177143e0a99d3b8ba14718b258.css';
-  $export['simplemenu_css_filename'] = $strongarm;
-
-  $strongarm = new stdClass;
-  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
-  $strongarm->api_version = 1;
   $strongarm->name = 'simplemenu_detect_popup';
   $strongarm->value = 1;
   $export['simplemenu_detect_popup'] = $strongarm;
@@ -356,16 +349,16 @@ function ecenter_core_strongarm() {
   $strongarm = new stdClass;
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
-  $strongarm->name = 'simplemenu_menu_scope';
-  $strongarm->value = 'footer';
-  $export['simplemenu_menu_scope'] = $strongarm;
+  $strongarm->name = 'simplemenu_menubar_zindex';
+  $strongarm->value = '9999';
+  $export['simplemenu_menubar_zindex'] = $strongarm;
 
   $strongarm = new stdClass;
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
-  $strongarm->name = 'simplemenu_menubar_zindex';
-  $strongarm->value = '9999';
-  $export['simplemenu_menubar_zindex'] = $strongarm;
+  $strongarm->name = 'simplemenu_menu_scope';
+  $strongarm->value = 'footer';
+  $export['simplemenu_menu_scope'] = $strongarm;
 
   $strongarm = new stdClass;
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
@@ -445,6 +438,13 @@ noderelationships/*
     'toggle_node_info_conversation' => 1,
   );
   $export['theme_settings'] = $strongarm;
+
+  $strongarm = new stdClass;
+  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
+  $strongarm->api_version = 1;
+  $strongarm->name = 'ultimate_cron_rule';
+  $strongarm->value = '0,30 * * * *';
+  $export['ultimate_cron_rule'] = $strongarm;
 
   $strongarm = new stdClass;
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
@@ -648,6 +648,13 @@ Your account on !site has been deleted.';
   $strongarm = new stdClass;
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
+  $strongarm->name = 'user_pictures';
+  $strongarm->value = '1';
+  $export['user_pictures'] = $strongarm;
+
+  $strongarm = new stdClass;
+  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
+  $strongarm->api_version = 1;
   $strongarm->name = 'user_picture_default';
   $strongarm->value = '';
   $export['user_picture_default'] = $strongarm;
@@ -679,13 +686,6 @@ Your account on !site has been deleted.';
   $strongarm->name = 'user_picture_path';
   $strongarm->value = 'pictures';
   $export['user_picture_path'] = $strongarm;
-
-  $strongarm = new stdClass;
-  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
-  $strongarm->api_version = 1;
-  $strongarm->name = 'user_pictures';
-  $strongarm->value = '1';
-  $export['user_pictures'] = $strongarm;
 
   $strongarm = new stdClass;
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */

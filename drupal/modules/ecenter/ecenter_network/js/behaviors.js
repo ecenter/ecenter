@@ -69,7 +69,7 @@ $.ecenter_network.hoverOver = function() {
       set = this.paper.groups[hub_id],
       tc = $('#utilization-tables').data('tablechart');
 
-    if (tc) {
+    if (tc && hop) {
       var fwd_idx = hop.sidx[0] % tc['default'].chart.seriesColors.length;
       forward_style['stroke'] = tc['default'].chart.seriesColors[fwd_idx];
       if (hop.sidx[1] != undefined) {
@@ -168,13 +168,10 @@ $.fn.ecenter_network.plugins.ajax = function() {
           return false;
         });
 
+        $('#results-wrapper > div').fadeOut(900, function() {
+          $(this).remove();
+        });
         $('.messages').fadeOut(900, function() {
-          $(this).remove();
-        });
-        $('#results').fadeOut(900, function() {
-          $(this).remove();
-        });
-        $('#recent-queries').slideUp(900, function() {
           $(this).remove();
         });
       }
@@ -212,6 +209,7 @@ $.fn.ecenter_network.plugins.ajax = function() {
 
       $('#traceroute-paste-wrapper').fadeOut();
       $('#traceroute-paste-wrapper textarea').val('');
+      $('#traceroute-paste-copy textarea').val('');
 
       $(el).removeClass('data-loading');
       var overlay = $('#loading-overlay', self.el)
@@ -302,6 +300,7 @@ $.fn.ecenter_network.plugins.change = function() {
   $('#src-wrapper select, #dst-wrapper select', this.el).bind('change', function(e) {
     $('#traceroute-paste-wrapper').fadeOut();
     $('#traceroute-paste-wrapper textarea').val('');
+    $('#traceroute-paste-copy textarea').val('');
   });
 }
 
@@ -372,10 +371,10 @@ $.fn.ecenter_network.plugins.map = function() {
     $(id).live('featureOver', function(e, feature, layer, control, cancel) {
       if (feature.ecenterID) {
         if (layer.drupalID == 'ecenter_network_traceroute') {
-          var hub = Drupal.settings.ecenterNetwork.seriesLookupByHub[feature.ecenterID];
+          var hub = Drupal.settings.ecenterNetwork.seriesLookupByHub[feature.ecenterID] || false;
           var tc = $('#utilization-tables').data('tablechart');
 
-          if (tc) {
+          if (tc && hub) {
             var length = tc['default'].chart.seriesColors.length;
             var sidx = hub.sidx[0] % length;
             var color = tc['default'].chart.seriesColors[sidx];
@@ -522,11 +521,13 @@ $.fn.ecenter_network.plugins.traceroute = function() {
         $.ecenter_network.hoverOver.call(element);
 
         if (!cancel_highlight) {
-          var hop = Drupal.settings.ecenterNetwork.seriesLookupByHub[hub_id];
-          var tc = $('#utilization-tables').data('tablechart');
-          var lh = tc['default'].chart.plugins.linehighlighter;
-          for (key in hop.sidx) {
-            lh.highlightSeries(hop.sidx[key], tc['default'].chart);
+          var hop = Drupal.settings.ecenterNetwork.seriesLookupByHub[hub_id] || false;
+          if (hop) {
+            var tc = $('#utilization-tables').data('tablechart');
+            var lh = tc['default'].chart.plugins.linehighlighter;
+            for (key in hop.sidx) {
+              lh.highlightSeries(hop.sidx[key], tc['default'].chart);
+            }
           }
         }
 
@@ -542,12 +543,15 @@ $.fn.ecenter_network.plugins.traceroute = function() {
       },
       'elementmouseout' : function(e, element) {
         var hub_id = element.groups[0];
-        var hop = Drupal.settings.ecenterNetwork.seriesLookupByHub[hub_id];
-        var tc = $('#utilization-tables').data('tablechart');
-        var lh = tc['default'].chart.plugins.linehighlighter;
+        var hop = Drupal.settings.ecenterNetwork.seriesLookupByHub[hub_id] || false;
+        
+        if (hop) {
+          var tc = $('#utilization-tables').data('tablechart');
+          var lh = tc['default'].chart.plugins.linehighlighter;
 
-        for (key in hop.sidx) {
-          lh.unhighlightSeries(hop.sidx[key], tc['default'].chart);
+          for (key in hop.sidx) {
+            lh.unhighlightSeries(hop.sidx[key], tc['default'].chart);
+          }
         }
 
         if (!(element.tracerouteType == 'diff' && element.tracerouteDirection == 'reverse')) {
@@ -764,10 +768,8 @@ $.fn.ecenter_network.plugins.traceroute_paste = function() {
     width: 700,
     buttons: {
       'Submit traceroute' : function() {
-        // Debug by showing field
         $('#traceroute-paste-wrapper').fadeIn();
-        // Copy the value
-        $('#src-wrapper input, #dst-wrapper input').val(null);
+        $('#src-wrapper input, #dst-wrapper input, #src-wrapper select, #dst-wrapper select').val('');
         var traceroute = $('textarea', this).val();
         $('textarea', target)
           .val(traceroute)

@@ -58,18 +58,18 @@ function ecenter_help_strongarm() {
   $strongarm = new stdClass;
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
-  $strongarm->name = 'beautytips_default_style';
-  $strongarm->value = 'facebook';
-  $export['beautytips_default_style'] = $strongarm;
-
-  $strongarm = new stdClass;
-  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
-  $strongarm->api_version = 1;
   $strongarm->name = 'beautytips_defaults';
   $strongarm->value = array(
     'cssStyles' => array(),
   );
   $export['beautytips_defaults'] = $strongarm;
+
+  $strongarm = new stdClass;
+  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
+  $strongarm->api_version = 1;
+  $strongarm->name = 'beautytips_default_style';
+  $strongarm->value = 'facebook';
+  $export['beautytips_default_style'] = $strongarm;
 
   $strongarm = new stdClass;
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
@@ -217,6 +217,29 @@ function ecenter_help_strongarm() {
   $strongarm->name = 'bt-options-cssClass';
   $strongarm->value = '';
   $export['bt-options-cssClass'] = $strongarm;
+
+  $strongarm = new stdClass;
+  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
+  $strongarm->api_version = 1;
+  $strongarm->name = 'uuid_automatic_for_nodes';
+  $strongarm->value = array(
+    'snippet' => 'snippet',
+    'wiki' => 'wiki',
+    'group' => 0,
+    'issue' => 0,
+    'network_query' => 0,
+    'page' => 0,
+  );
+  $export['uuid_automatic_for_nodes'] = $strongarm;
+
+  $strongarm = new stdClass;
+  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
+  $strongarm->api_version = 1;
+  $strongarm->name = 'uuid_automatic_for_taxonomy';
+  $strongarm->value = array(
+    1 => 1,
+  );
+  $export['uuid_automatic_for_taxonomy'] = $strongarm;
 
   return $export;
 }

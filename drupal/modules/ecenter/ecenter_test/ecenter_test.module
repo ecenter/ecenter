@@ -43,6 +43,9 @@ function ecenter_test_theme() {
     'ecenter_test_data_clients' => array(
       'arguments' => array(),
     ),
+    'ecenter_test_circuit_data' => array(
+      'arguments' => array(),
+    ),
   );
 }
 
@@ -147,6 +150,11 @@ function theme_ecenter_test_ecenter_network() {
   return ' ';
 }
 
+function theme_ecenter_test_circuit_data() {
+  $client = ecenter_network_get_client(FALSE, 'drs_circuit');
+  return kpr($client->getCircuitData('hub:BNL', 'hub:FNAL', '2011-12-13 10:30:00', '2011-12-13 19:30:00'), TRUE);
+}
+
 function theme_ecenter_test_data_clients() {
   $drs_client = ecenter_network_get_client();
   $ads_client = ecenter_network_get_client(FALSE, 'ads');
@@ -166,7 +174,7 @@ function theme_ecenter_test_data_clients() {
 
   $output = '';
 
-  $output .= '<h2>Forecasting request</h2>';
+  /*$output .= '<h2>Forecasting request</h2>';
 
   $fn_start = microtime(true);
   $fds_result = $fds_client->getData($src, $dst, $start, $end, 'snmp');
@@ -174,8 +182,7 @@ function theme_ecenter_test_data_clients() {
 
   $output .= '<h3>Raw results</h3>';
   $output .= kpr($fds_result, TRUE);
-  $output .= 'Performance: '. round($fn_end - $fn_start, 4) .' sec';
-
+  $output .= 'Performance: '. round($fn_end - $fn_start, 4) .' sec';*/
 
   $output .= '<h2>Data request (resolution '. $drs_resolution .')</h2>';
 
@@ -195,7 +202,7 @@ function theme_ecenter_test_data_clients() {
   $output .= kpr($parsed, TRUE);
   $output .= 'Performance: '. round($fn_end - $fn_start, 4) .' sec';
 
-  $traceroute = "traceroute to 198.129.254.146 (198.129.254.146), 30 hops max, 60 byte packets
+  /*$traceroute = "traceroute to 198.129.254.146 (198.129.254.146), 30 hops max, 60 byte packets
  1  r-s-hub-fcc-vlan87.fnal.gov (131.225.87.200)  0.263 ms  0.512 ms  0.525 ms
  2  r-s-edge-1-vlan608.fnal.gov (131.225.102.1)  0.786 ms  0.781 ms  0.775 ms
  3  r-s-bdr-vlan375.fnal.gov (131.225.15.202)  0.491 ms  0.495 ms  0.723 ms
@@ -207,7 +214,7 @@ function theme_ecenter_test_data_clients() {
  9  sunncr1-denvcr2.es.net (134.55.220.50)  52.821 ms  52.847 ms  52.847 ms
 10  sunnsdn2-sunncr1.es.net (134.55.209.97)  52.711 ms  52.792 ms  52.793 ms
 11  slacmr2-ip-sunnsdn2.es.net (134.55.217.1)  53.098 ms  53.107 ms  53.090 ms
-12  slac-owamp.es.net (198.129.254.146)  53.087 ms  53.174 ms  53.191 ms";
+12  slac-owamp.es.net (198.129.254.146)  53.087 ms  53.174 ms  53.191 ms"; */
 
 /*  $traceroute = "traceroute to ornl-owamp.es.net (198.124.238.85), 30 hops max, 60 byte packets
  1  r-s-hub-fcc-vlan87.fnal.gov (131.225.87.200)  0.250 ms  0.509 ms  0.500 ms
@@ -252,7 +259,7 @@ $traceroute = "traceroute to ornl.gov (128.219.168.100), 30 hops max, 60 byte pa
  7  nashcr1-chiccr1.es.net (134.55.219.137)  14.677 ms  14.687 ms  14.681 ms
  8  ornl-esnet-chi.ornl.gov (198.125.140.218)  18.761 ms  18.764 ms  18.756 ms"; */
 
-  $traceroute_result = $drs_client->getTraceroute($traceroute, $start, $end, $drs_resolution);
+  /*$traceroute_result = $drs_client->getTraceroute($traceroute, $start, $end, $drs_resolution);
   $fn_end = microtime(true);
 
   $output .= '<h3>Traceroute results</h3>';
@@ -323,7 +330,7 @@ $traceroute = "traceroute to ornl.gov (128.219.168.100), 30 hops max, 60 byte pa
   $output .= '<tr><td>Dynamic get matches static post</td>';
   $output .= '<td>'. $match .'</td></tr>';
 
-  $output .= '</tbody></table>';
+  $output .= '</tbody></table>';*/
 
   return $output;
 

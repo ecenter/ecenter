@@ -9,17 +9,29 @@ profiler_v2('ecenter');
  */
 function ecenter_form_alter(&$form, $form_state, $form_id) {
   if ($form_id == 'install_configure') {
-    if (module_exists('ecenter_network')) {
-      module_load_include('inc', 'ecenter_network', 'ecenter_network.admin');
-      $ecenter_settings = ecenter_network_admin_form();
-      $ecenter_settings['#tree'] = TRUE;
-      unset($ecenter_settings['buttons']);
-    }
 
+    // Drop timezone offset and add date module's timezone name select box
+    $form['server_settings']['date_default_timezone']['#access'] = FALSE;
+    date_timezone_site_form($form);
+
+    // Date module uses the validate callback to set timezone name and includes
+    // date and time settings form specific logic. We'll do it ourselves in the
+    // submit callback.
+    unset($form['locale']['#element_validate']);
+
+    // Add E-Center settings
     $form['ecenter'] = array(
       '#type' => 'fieldset',
       '#title' => t('E-Center settings'),
-    ) + $ecenter_settings;
+      '#tree' => TRUE,
+    );
+
+    if (module_exists('ecenter_network')) {
+      module_load_include('inc', 'ecenter_network', 'ecenter_network.admin');
+      $ecenter_settings = ecenter_network_admin_form();
+      unset($ecenter_settings['buttons']);
+      $form['ecenter'] += $ecenter_settings;
+    }
 
     $form['#submit'] = array('ecenter_profile_submit', 'install_configure_form_submit');
   }
@@ -29,7 +41,16 @@ function ecenter_form_alter(&$form, $form_state, $form_id) {
  * Submit callback for site install form
  */
 function ecenter_profile_submit($form, &$form_state) {
-  // Set E-center settings
+
+  // Set timezone name variable and offset, similar to date module
+  if (!empty($form_state['values']['date_default_timezone_name'])) {
+    variable_set('date_default_timezone_name', $form_state['values']['date_default_timezone_name']);
+    $date = date_make_date('now', $form_state['values']['date_default_timezone_name']);
+    $offset = date_offset_get($date);
+    variable_set('date_default_timezone', $offset);
+  }
+
+  // Set E-Center variables
   foreach ($form_state['values']['ecenter'] as $settings) {
     foreach ($settings as $key => $value) {
       variable_set($key, $value);
@@ -64,21 +85,14 @@ function _ecenter_profile_post_install() {
 
   variable_set('menu_block_ids', array(1, 2));
 
-  // Install syntaxhighlighter and ecenter_editor (must be installed after 
-  // everything else)
-  foreach (array('shib_auth', 'syntaxhighlighter', 'ecenter_editor', 'ecenter_help') as $module) {
-    module_load_install($module);
-    $versions = drupal_get_schema_versions($module);
-    drupal_set_installed_schema_version($module, SCHEMA_UNINSTALLED);
-    module_invoke($module, 'uninstall');
-    _drupal_install_module($module);
-    module_invoke($module, 'enable');
-    drupal_get_schema(NULL, TRUE);
-
-    // Reset messages
-    drupal_get_messages();
-  }
-
   // Disable Shib auth blocks
   db_query("UPDATE {blocks} SET status=0, region=NULL WHERE module='shib_auth'");
+
+  // Delete unused input formats and set up roles. Very hacky as it depends on
+  // a priori knowledge of assigned IDs for roles and formats. But it works.
+  db_query("DELETE FROM {filter_formats} WHERE format < 3");
+  db_query("UPDATE {filter_formats} SET roles=',1,2,3,4,5,' WHERE format=3");
+  db_query("UPDATE {filter_formats} SET roles=',3,5' WHERE format=4");
+  variable_set('filter_default_format', 3);
+
 }

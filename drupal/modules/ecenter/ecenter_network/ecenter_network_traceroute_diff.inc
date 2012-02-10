@@ -74,7 +74,7 @@ function ecenter_network_traceroute_array_keys($hops, $match) {
     if ($hop['hop_ip'] == $match['hop_ip']) {
       $return[] = $k;
     }
-    elseif ($hop['hub'] == $match['hub']) {
+    elseif ($hop['hub_name'] == $match['hub_name']) {
       $return[] = $k;
     }
   }

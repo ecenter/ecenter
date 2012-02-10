@@ -10,10 +10,11 @@ function ecenter_network_admin_form() {
   $services = array(
     'drs' => t('Data Retrieval Service'),
     'drs_sitecentric' => t('Data Retrieval Service (Site-centric)'),
+    'drs_circuit' => t('Circuit data service'),
     'ads' => t('Anomaly Detection Service'),
     'fds' => t('Forecasting Detection Service'),
   );
-  $form = array(); 
+  $form = array();
 
   foreach ($services as $type => $name) {
 
@@ -45,7 +46,7 @@ function ecenter_network_admin_form() {
       '#title' => t('Timeout'),
       '#type' => 'textfield',
       '#description' => t('Timeout for calls to the webservice, in seconds.'),
-      '#default_value' => variable_get('ecenter_network_'. $type .'_timeout', 30),
+      '#default_value' => variable_get('ecenter_network_'. $type .'_timeout', 120),
     );
     $form[$type]['ecenter_network_'. $type .'_status_timeout'] = array(
       '#title' => t('Status timeout'),
@@ -147,7 +148,7 @@ function ecenter_network_admin_form() {
     '#title' => t('Site data cache time to live'),
     '#type' => 'textfield',
     '#description' => t('How long should results be cached, in seconds?'),
-    '#default_value' => variable_get('ecenter_network_site_data_cache_ttl', 3600),
+    '#default_value' => variable_get('ecenter_network_site_data_cache_ttl', 86400),
   );
 
   return system_settings_form($form);

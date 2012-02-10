@@ -31,51 +31,34 @@ function ecenter_editor_markdownify_html2markdown_postprocess_alter(&$output, $p
 
 // Disable some form settings
 function ecenter_editor_form_alter(&$form, $form_state, $form_id) {
-  if ($form_id == 'filter_admin_format_form') {
-    if (($format = variable_get('ecenter_editor_format', NULL))
-      && $form['format']['#value'] == $format) {
-      drupal_set_message(t('This input format is for use with the TinyMCE
-        Markdown module. Changing the enabled filters have may undesireable
-        results.'));
-    }
+  // Node forms
+  if ($form['#id'] == 'node-form') {
+    // Remove options for internal Drupal workflow states
+    $form['options']['promote']['#access'] = FALSE;
+    $form['options']['sticky']['#access'] = FALSE;
+
+    // Remove summary / teaser silliness
+    $form['body_field']['teaser_include']['#access'] = FALSE;
+
+    $form['content_edit'] = array(
+      '#prefix' => '<div id="content-edit-wrapper" class="clearfix container">',
+      '#suffix' => '</div>',
+      'content_meta' => array(
+        '#prefix' => '<div class="content-meta">',
+        '#suffix' => '</div>',
+        'revision_information' => $form['revision_information'],
+        'taxonomy' => $form['taxonomy'],
+        'og_nodeapi' => $form['og_nodeapi'],
+      ),
+      'body_field' => $form['body_field'],
+    );
+    
+    unset($form['body_field'], $form['revision_information'], 
+      $form['taxonomy'], $form['og_nodeapi']);
+
+    $form['buttons']['#prefix'] = '<div class="buttons clearfix">';
+    $form['buttons']['#suffix'] = '</div>';
   }
-  
-  if ($form_id == 'filter_admin_order') {
-    if (($format = variable_get('ecenter_editor_format', NULL))
-      && $form['format']['#value'] == $format) {
-      drupal_set_message(t('This input format is for use with the TinyMCE
-        Markdown module. Changing the filter order may have undesirable 
-        results.'));
-    }
-  }
-
-  if ($form_id == 'wysiwyg_profile_form') {
-    if (($format = variable_get('ecenter_editor_format', NULL))
-      && $form['format']['#value'] == $format) {
-
-      drupal_set_message(t('This WYSWYG profile is managed by the TinyMCE
-        Markdown module. Output settings and some plugins may not be changed.')
-      );
-
-      // Some plugins may not be removed: linkit and unlink because they are
-      // required for wysiwyg icon reordering, markdown because the editor will
-      // break without it.
-      $form['buttons']['default']['unlink']['#value'] = TRUE;
-      $form['buttons']['default']['unlink']['#disabled'] = TRUE;
-
-      $form['buttons']['linkit']['linkit']['#value'] = TRUE;
-      $form['buttons']['linkit']['linkit']['#disabled'] = TRUE;
-
-      $form['buttons']['markdown']['markdown']['#value'] = TRUE;
-      $form['buttons']['markdown']['markdown']['#disabled'] = TRUE;
-
-      // All output settings are disabled
-      foreach (element_children($form['output']) as $item) {
-        $form['output'][$item]['#disabled'] = TRUE;
-        $form['output'][$item]['#value'] = $form['output'][$item]['#default_value'];
-      }
-    }
-  } 
 }
 
 /**

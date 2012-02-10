@@ -13,119 +13,24 @@ function template_preprocess_ecenter_network_data(&$vars) {
   global $user;
   $data = $vars['data'];
 
-  // DRS parameters
-  $params = $data['drs']['parameters'];
-
   // All parameters
-  $query_params = $data['parameters'];
-
-  // Call helper function to create messages
-  $vars['ecenter_messages'] = theme('ecenter_network_messages', $data, $query_params);
-
+  $params = $data['parameters'];
+  
   drupal_add_js(array('ecenterNetwork' => array('tracerouteData' => 
     $data['drs']['traceroute']['diff'])), 'setting');
   drupal_add_js(array('ecenterNetwork' => array('tracerouteMaxLength' => 
     $data['drs']['traceroute']['traceroute_max'])), 'setting');
 
-  // Generate date range -- internal date is stored as UTC
-  $dates = array();
-  foreach (array('start', 'end') as $val) {
-    $dates[$val] = _ecenter_network_utc_to_local($params[$val], 
-      'M j, Y H:i', $query_params['timezone']);
-  }
-
-  if (empty($query_params['src'])) {
-    list($src_type, $src_value) = explode(':', $params['src']);
-  }
-  else {
-    list($src_type, $src_value) = explode(':', $query_params['src']);
-  }
-  if (empty($query_params['dst'])) {
-    list($dst_type, $dst_value) = explode(':', $params['dst']);
-  }
-  else {
-    list($dst_type, $dst_value) = explode(':', $query_params['dst']);
-  }
-
-  $vars['title'] = t('<span class="src-dst">@src_hub to
-@dst_hub</span><span class="separator">, </span>
-<span class="date-range"><span class="start">@start to</span> 
-<span class="end">@end</span></span>',
-    array(
-      '@src_hub' => $src_value,
-      '@dst_hub' => $dst_value,
-      '@start' => $dates['start'],
-      '@end' => $dates['end'],
-    )
-  );
-
-  if (!$vars['standalone']) {
-    // Set title
-    drupal_set_title(t('E-Center Network Query | ') . $vars['title']);
-
-    // Generate issue link -- encode params for use with custom ecenter_issues
-    // module
-    if (module_exists('ecenter_issues') && user_access('create issue content')) {
-      $issue_params = array();
-      foreach ($params as $key => $param) {
-        $issue_params[] = "$key=$param";
-      }
-      $issue_query = urlencode(implode('&', $issue_params));
-
-      $vars['issuelink'] = l('Create issue from results', 'node/add/issue',
-        array(
-          'query' => array('query' => $issue_query),
-        )
-      );
-    }
-
-    $query = ecenter_issues_get_query_node($params);
-    if ($query->nid) {
-      $issue_links = array();
-      $issues = ecenter_issues_get_query_issues($query);
-      foreach ($issues as $issue) {
-        $issue_links[] = l($issue->title, 'node/'. $issue->nid) . t(' by ') . $issue->name;
-      }
-      $vars['issues'] = '<label>'. t('Issues from this query: ') .'</label>'. implode(', ', $issue_links);
-    }
-
-    $ads = ecenter_network_ads_form($query_params['ads']);
-    $vars['ads'] = drupal_render($ads);
-
-    $has_bwctl = (!empty($data['drs']['end_to_end']['bwctl']['forward']) || !empty($data['drs']['end_to_end']['bwctl']['reverse']));
-    $has_snmp = (!empty($data['drs']['traceroute']['forward']) || !empty($data['drs']['traceroute']['reverse']));
-    $has_owamp = (!empty($data['drs']['end_to_end']['owamp']['forward']) || !empty($data['drs']['end_to_end']['owamp']['reverse']));
-
-    $fds = ecenter_network_fds_form($query_params['fds'], $has_snmp, $has_bwctl, $has_owamp);
-    $vars['fds'] = drupal_render($fds);
-
-    $timezones = array_map('_ecenter_network_process_tz_name', date_timezone_names());
-    $timezone_select = array(
-      '#type' => 'combobox',
-      '#title' => t('Timezone'),
-      '#value' => $query_params['timezone'],
-      '#options' => $timezones,
-      '#id' => 'timezone-select',
-      '#name' => 'timezone',
-    );
-    if ($user->uid) {
-      $timezone_select['#description'] = t('Timezone for results. <a href="@url">Set default timezone</a>.', array('@url' => url('user')));
-    }
-    else {
-      $timezone_select['#description'] = t('Timezone for results. <a href="@login_url">Login</a> or <a href="@register_url">register</a> to set default.', array('@login_url' => url('user'), '@register_url' => url('user/register')));
-    }
-    $vars['timezone_select'] = drupal_render($timezone_select);
- 
-  }
-
   // End to end measurements
-  $vars['end_to_end'] = theme('ecenter_network_end_to_end',
-    $data['drs']['end_to_end'], $query_params['timezone'], $data['ads'], 
-    $data['fds'], !$vars['standalone']);
+  if (!empty($data['drs']['end_to_end'])) {
+    $vars['end_to_end'] = theme('ecenter_network_end_to_end',
+      $data['drs']['end_to_end'], $params['timezone'], $data['ads'], 
+      $data['fds'], !$vars['standalone']);
+  }
 
   // Per-hop measurements
-  $vars['hops'] = theme('ecenter_network_traceroute', 
-    $data['drs']['traceroute']['diff'], $query_params['timezone'], $data['fds']);
+  $vars['traceroute'] = theme('ecenter_network_traceroute', 
+    $data['drs']['traceroute']['diff'], $params['timezone'], $data['fds']);
 
   // Generate permalink
   $vars['permalink'] = l(t('Link'), 'network', array(
@@ -133,14 +38,17 @@ function template_preprocess_ecenter_network_data(&$vars) {
     'absolute' => TRUE,
     'attributes' => array('title' => $vars['title']),
   ));
+ 
+  // @TODO This works! Should we include it?
+  $url = url('network', array('query' => $params, 'absolute' => TRUE,));
+  $short_url = shorturl_shorten($url, TRUE);
+
   $permalink_field['permalink'] = array(
     '#id' => 'ecenter-permalink',
     '#type' => 'textfield',
     '#size' => 115,
     '#attributes' => array('readonly' => 'readonly'),
-    '#value' => url('network',
-      array('query' => $params, 'absolute' => TRUE,)
-    ),
+    '#value' => $short_url, 
   );
   $vars['permalink_field'] = drupal_render($permalink_field);
 }
@@ -278,7 +186,7 @@ function template_preprocess_ecenter_network_end_to_end(&$vars) {
       t('Average'), t('Max'), t('Min'),
     );
     $vars['table'] = theme('jqplot_table', $headers, $table,
-      array('class' => 'end-to-end-table'));
+      array('class' => 'data-table end-to-end-table'));
     $vars['data_tables'] = theme('ecenter_network_end_to_end_tables',
       $data_tables, $vars['timezone']);
   }
@@ -427,19 +335,19 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
         }
 
         $attributes = array(
-          'class' => 'data '. $direction .' '. strtolower($hub_id) .'-data-table',
-          'data-jqplotHighlightColor' => '#ff0000',
+          'class' => 'data-table '. $direction .' '. strtolower($hub_id) .'-data-table',
           'data-jqplotSeriesOptions' => '{"label":"'. ucfirst($direction) .' utilization' .'"}',
         );
 
         $capacity = $hop['data']['snmp'][0][1]['capacity'];
         $tables[] = theme('ecenter_network_utilization_table', $table, $hop, $direction, $attributes, $capacity);
 
-        if (!empty($fds_data['snmp']['utilization'][$hop['hop_ip']])) {
+        if (!empty($fds_data['snmp']['utilization'][$hop['hop_ip']]) && !empty($hop['data']['snmp'])) {
           $forecast_table = array();
           $forecast_data = $fds_data['snmp']['utilization'][$hop['hop_ip']];
 
           $last_value = array_pop($hop['data']['snmp']);
+
           $forecast_data[$last_value[0]] = array(
             'value' => $last_value[1]['utilization'], 
             'stderr' => 0, 
@@ -451,7 +359,6 @@ function theme_ecenter_network_traceroute($traceroute = array(), $timezone = FAL
             $time = _ecenter_network_timestamp_to_local($timestamp, 'Y-m-d H:i:s', $timezone);
             $value = 100 * ($forecast['value'] / $last_value[1]['capacity']);
             $err = $forecast['stderr'] / 2;
-
             $min_err = 100 * (($forecast['value'] - $err) / $last_value[1]['capacity']);
             $max_err = 100 * (($forecast['value'] + $err) / $last_value[1]['capacity']);
 
@@ -728,8 +635,11 @@ function theme_ecenter_network_format_value($value, $units = NULL) {
  */
 function theme_ecenter_network_utilization_table($table, $hop, $direction, $attributes = array(), $capacity = 0) {
   $capacity_string = ($capacity) ? t(' - @capacity gbps', array('@capacity' => $capacity / pow(10, 9))) : '';
-  
-  $output = '<div class="data-table">';
+ 
+  $class = 'data-table-wrapper';
+  $class .= (empty($table)) ? ' no-data' : '';
+
+  $output = "<div class=\"{$class}\">";
   $output .= '<h3>'. ucfirst($direction) .': '. $hop['nodename'] .' ('. $hop['hub'] . $capacity_string .')</h3>';
 
   if (!empty($table)) {
@@ -847,7 +757,7 @@ function theme_ecenter_network_site_centric_data($data) {
     }
   }
   $tables[] = '<h2>'. t('End to end') .'</h2>'. 
-    theme('jqplot_table', $headers, array($row));
+    theme('jqplot_table', $headers, array($row), array('class' => 'data-table'));
 
   $headers = array(t('Measurement'), t('Value'), t('Interface'));
   if (!empty($data['traceroute'])) {
@@ -882,7 +792,7 @@ function theme_ecenter_network_site_centric_data($data) {
           );
       }
       $tables[] = '<h2>'. t(ucfirst($direction)) .'</h2>'. 
-        theme('jqplot_table', $headers, $table);
+        theme('jqplot_table', $headers, $table, array('class' => 'data-table'));
     }
   }
   return implode('', $tables);
@@ -1026,6 +936,36 @@ function ecenter_network_ecenter_network_plot_options_alter(&$options, $measurem
         );
     }
   }
+}
+
+/**
+ * Theme query title
+ */
+function theme_ecenter_network_query_title($params, $data = NULL) {
+  list($src_type, $src_value) = explode(':', $params['src']);
+  list($dst_type, $dst_value) = explode(':', $params['dst']);
+
+  $dates = array();
+  foreach (array('start', 'end') as $val) {
+    $dates[$val] = _ecenter_network_utc_to_local($params[$val], 
+      'M j, Y H:i', $params['timezone']);
+  }
+
+  $circuit = (!empty($params['circuit'])) ? t(' | Circuit: <span class="value">@circuit</span>', array('@circuit' => $params['circuit'])) : NULL;
+
+  return t('<span class="src-dst"><span class="value">@src_hub</span> to
+<span class="value">@dst_hub</span>!circuit
+</span><span class="separator"> - </span>
+<span class="date-range"><span class="start">@start to</span> 
+<span class="end">@end</span></span>',
+    array(
+      '@src_hub' => $src_value,
+      '@dst_hub' => $dst_value,
+      '@start' => $dates['start'],
+      '@end' => $dates['end'],
+      '!circuit' => $circuit,  
+    )
+  );
 }
 
 /**

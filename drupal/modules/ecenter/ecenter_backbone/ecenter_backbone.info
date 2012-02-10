@@ -1,0 +1,5 @@
+;$Id$
+name = E-Center Backbone
+package = E-Center Project
+description = Integrate with E-Center Backbone data visualization application.
+core = 6.x

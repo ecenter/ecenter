@@ -35,6 +35,7 @@ function ecenter_preprocess_node(&$vars) {
   // Unset author picture on group node
   if ($node->type == 'group') {
     unset($vars['picture']);
+    drupal_set_title(t('Group: !title', array('!title' => $node->title)));
   }
 
   if ($vars['teaser']) {
@@ -83,14 +84,6 @@ function ecenter_preprocess_node(&$vars) {
       unset($vars['groups']);
     }
 
-    if ($node->type == 'wiki') {
-      $revisions = node_revision_list($node);
-      $last_revision = array_shift($revisions);
-      $last_log = _ecenter_trim($last_revision->log);
-      $vars['message'] = (!empty($last_log)) ? $last_log : t('No log message.');
-    }
-
-    // If comment timestamp newer than updated, we'll display a special
     // 'commented' message, otherwise that the node was created/updated
     if ($node->last_comment_timestamp > $node->changed) {
       $date = $node->last_comment_timestamp;
@@ -128,6 +121,15 @@ function ecenter_preprocess_node(&$vars) {
       // body value to avoid build mode wrangling.
       $vars['message'] = _ecenter_trim($node->body);
     }
+
+    if ($node->type == 'wiki') {
+      $revisions = node_revision_list($node);
+      $last_revision = array_shift($revisions);
+      $last_log = _ecenter_trim($last_revision->log);
+      $vars['message'] = (!empty($last_log)) ? strip_tags($last_log) : t('No log message.');
+    }
+
+    // If comment timestamp newer than updated, we'll display a special
 
     // If message is for 'you'
     if ($user->uid && $user->uid == $author->uid) {

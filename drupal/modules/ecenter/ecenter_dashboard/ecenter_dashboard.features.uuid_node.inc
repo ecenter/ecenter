@@ -19,7 +19,7 @@ function ecenter_dashboard_uuid_features_default_content() {
   'sticky' => '0',
   'tnid' => '0',
   'translate' => '0',
-  'revision_uid' => '1',
+  'revision_uid' => '0',
   'title' => 'An API for network data',
   'body' => '<div style="font-family: Lato; position: relative; width: 555px;">
   <div style="position: absolute;">
@@ -54,18 +54,17 @@ function ecenter_dashboard_uuid_features_default_content() {
   'name' => 'admin',
   'picture' => '',
   'data' => 'a:0:{}',
-  'path' => 'content/api-network-data',
   'field_snippet_image' => array(),
   'og_groups_both' => array(),
   'og_groups' => array(),
   'tableofcontents_toc_automatic' => '0',
+  'old_status' => '1',
   'last_comment_timestamp' => '1323980637',
   'last_comment_name' => NULL,
   'comment_count' => '0',
   'taxonomy' => array(),
   'uuid' => '12245122-275b-11e1-b676-0026b9b97a6a',
   'revision_uuid' => '12248dcc-275b-11e1-b676-0026b9b97a6a',
-  'pathauto_perform_alias' => FALSE,
   'date' => '2011-12-15 14:23:57 -0600',
 );
   $nodes[] = array(
@@ -81,7 +80,7 @@ function ecenter_dashboard_uuid_features_default_content() {
   'sticky' => '0',
   'tnid' => '0',
   'translate' => '0',
-  'revision_uid' => '1',
+  'revision_uid' => '0',
   'title' => 'Visualize network performance',
   'body' => '<div style="float: left; width: 555px;">
   <div style="float: left; width: 350px; margin-right: 20px;">
@@ -122,18 +121,17 @@ function ecenter_dashboard_uuid_features_default_content() {
   'name' => 'admin',
   'picture' => '',
   'data' => 'a:0:{}',
-  'path' => 'content/visualize-network-performance',
   'field_snippet_image' => array(),
   'og_groups_both' => array(),
   'og_groups' => array(),
   'tableofcontents_toc_automatic' => '0',
+  'old_status' => '1',
   'last_comment_timestamp' => '1323980681',
   'last_comment_name' => NULL,
   'comment_count' => '0',
   'taxonomy' => array(),
   'uuid' => '12246388-275b-11e1-b676-0026b9b97a6a',
   'revision_uuid' => '12249ede-275b-11e1-b676-0026b9b97a6a',
-  'pathauto_perform_alias' => FALSE,
   'date' => '2011-12-15 14:24:41 -0600',
 );
   $nodes[] = array(
@@ -149,7 +147,7 @@ function ecenter_dashboard_uuid_features_default_content() {
   'sticky' => '0',
   'tnid' => '0',
   'translate' => '0',
-  'revision_uid' => '1',
+  'revision_uid' => '0',
   'title' => 'Knowledge sharing & collaboration',
   'body' => '<div style="float: left; width: 540px; margin-left: 15px;">
   <div style="float: right; width: 300px; margin-left: 20px;">
@@ -190,18 +188,17 @@ function ecenter_dashboard_uuid_features_default_content() {
   'name' => 'admin',
   'picture' => '',
   'data' => 'a:0:{}',
-  'path' => 'content/knowledge-sharing-collaboration',
   'field_snippet_image' => array(),
   'og_groups_both' => array(),
   'og_groups' => array(),
   'tableofcontents_toc_automatic' => '0',
+  'old_status' => '1',
   'last_comment_timestamp' => '1323980716',
   'last_comment_name' => NULL,
   'comment_count' => '0',
   'taxonomy' => array(),
   'uuid' => '12246fea-275b-11e1-b676-0026b9b97a6a',
   'revision_uuid' => '1224ab90-275b-11e1-b676-0026b9b97a6a',
-  'pathauto_perform_alias' => FALSE,
   'date' => '2011-12-15 14:25:16 -0600',
 );
   return $nodes;
